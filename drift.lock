@@ -1,9 +1,39 @@
 version = 1
 
 [[bindings]]
+doc = "docs/vault/Concepts/Feel.md"
+target = "src/physics/sim.ts"
+sig = "5182fb41a910b5e1"
+
+[[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/boot.ts"
 sig = "c792e7b2ffb80e0f"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "src/feel/feeltrack.ts"
+sig = "02008942f6f39b83"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "src/feel/run.ts"
+sig = "69e7a13f0db28f26"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "src/physics/car.ts"
+sig = "fa2e17b13a302ff2"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "src/physics/sim.ts"
+sig = "5182fb41a910b5e1"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "tools/feel.mjs"
+sig = "23066f3a8a4da8ee"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
