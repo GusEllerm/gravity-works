@@ -36,3 +36,27 @@ export function canonicalCamera(shot: CanonicalShot): CameraRig {
 export function isCanonicalShot(value: string): value is CanonicalShot {
   return (SHOT_NAMES as string[]).includes(value)
 }
+
+/**
+ * PER-SET canonical camera data. A set that ships its own framings registers
+ * them here (sourced FROM the set, so `scene=<set>&level=<id>` renders and
+ * the game camera list read one list of shots). The production kitchen has
+ * no camera data of its own yet — `src/sets/kitchen` owns props, sockets and
+ * hazard data, deliberately not cameras — so `setCameras('kitchen-set', …)`
+ * falls back to the provisional kitchen rig above, which stays the shipped
+ * framing until the Environment Artist's next round ships set-side rigs.
+ */
+const SET_SHOTS: Record<string, Partial<Record<CanonicalShot, CameraRig>>> = {}
+
+/** The canonical camera for one set's shot — the set's own rig when the set
+ *  ships one, else the provisional kitchen rig (never a forked number). */
+export function setCameras(setId: string, shot: CanonicalShot): CameraRig {
+  return SET_SHOTS[setId]?.[shot] ?? canonicalCamera(shot)
+}
+
+/** The set's canonical shot list — its own keys when it has them, else the
+ *  shared canonical list. This is the harness's one shot list per set. */
+export function setShotList(setId: string): CanonicalShot[] {
+  const own = Object.keys(SET_SHOTS[setId] ?? {}) as CanonicalShot[]
+  return own.length > 0 ? own : SHOT_NAMES
+}

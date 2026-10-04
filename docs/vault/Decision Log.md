@@ -124,6 +124,10 @@ Both variants DNF the provisional feel track; raycast wheels beat wheel-collider
 
 The bake-off's chord-slab track geometry (boxes stitched along a spline) produced seam-stitching deceleration ~2.5× the tuned rolling-resistance target and ploughed the chassis into the deck on slopes — it, not the car, caused both misses (roll 0.61 m vs ≈2.5 m target; loop unmeasurable). Stage-2 track colliders will be generated smooth from the same spline as the mesh (compound convexs or swept channel hulls), which the brief already demands; the bake-off numbers are baseline, not ceiling.
 
+## 2026-10-07 — Kitchen set is PLACED per level, not re-modelled `[agent decision]` (Systems Engineer)
+
+The L04 tap↔wet-patch disconnect looked like a geometry bug (EA measured the spout ~1.55 cm off the deck) but was a SPACE bug: the sink lives in the level's chain space, the tap in the set's canonical layout, and nothing had ever mapped one to the other. Chose a per-level MOUNT table (`src/world/setPlacement.ts`) — standard levels translate the counter under the timed rail; kitchen04 yaws so `TAP.drip` maps exactly onto the authored zone on the ground-build seam deck. Rejected alternatives: editing the tap geometry (teleports a prop ~1.9 m off the counter to chase one anchor) and moving the zone data (comes off the deck the ground line drives — would silently break the Feel Engineer's measured bite). All six kitchen par hashes unchanged (pinned in `tests/unit/set-wiring.test.ts`); the physics-neutrality proof is browser-hash-equals-headless-hash in `tests/e2e/set-wiring.spec.ts`.
+
 ## 2026-10-04 — SIM_SCALE = 10 `[agent decision]` (Feel Engineer)
 
 Sim lengths ×10, gravity ×10, mass ×1000; time unchanged. Rapier's absolute tolerances bite a 7.5 cm toy 13× harder than their design scale. The one true record is `Concepts/Feel` §Physics scale factor; everything else references it.

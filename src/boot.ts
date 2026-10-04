@@ -16,7 +16,12 @@
  */
 import * as THREE from 'three';
 import { FIXED_DT } from './physics/sim.ts';
-import { FEELTRACK, getLevel } from './world/levels/feeltrack.level.ts';
+import { getLevel } from './world/levels/feeltrack.level.ts';
+import { KITCHEN01 } from './world/levels/kitchen01.level.ts';
+import { KITCHEN02 } from './world/levels/kitchen02.level.ts';
+import { KITCHEN03 } from './world/levels/kitchen03.level.ts';
+import { KITCHEN04 } from './world/levels/kitchen04.level.ts';
+import { KITCHEN05, KITCHEN_SANDBOX } from './world/levels/kitchen05.level.ts';
 import { World, type RunStatus } from './world/world.ts';
 import type { Build } from './track/build.ts';
 import type { Level } from './world/level.ts';
@@ -31,6 +36,57 @@ import { createResultPanel, createRunRecorder, resultModel } from './ui/result.t
 import { createHelpDrawer } from './ui/help.ts';
 import { firstSight } from './ui/callouts.ts';
 import { downloadBlob, generateShareCard } from './share/card.ts';
+import { buildKitchenSet } from './sets/kitchen/index.ts';
+import { kitchenSetPlacement, placeSet } from './world/setPlacement.ts';
+
+// Level registry ids reachable through ?level= (importing each file is what
+// registers it; the feel track stays addressable for the stage-2 specs).
+void [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04, KITCHEN05, KITCHEN_SANDBOX];
+
+/** The set a level declares (`KitchenLevel.set`), structurally — the boot
+ *  must not depend on the level modules' types to decide what to mount. */
+function levelSet(level: Level): string | null {
+  const set = (level as { set?: string }).set;
+  return typeof set === 'string' ? set : null;
+}
+
+/** The named solid props of a built kitchen set as world-space AABBs — the
+ *  builder's placement-guard input (cheap: boxes, never mesh tests). Films
+ *  and the counter floor are excluded: a wet patch must never block a piece,
+ *  and the deck the track rides on is not an obstacle. */
+export function setPlacementGuard(group: THREE.Group): THREE.Box3[] {
+  const boxes: THREE.Box3[] = [];
+  // Box3.setFromObject does not refresh PARENT matrices — a freshly repositioned
+  // mount would otherwise box the props at their UNPLACED coordinates
+  group.updateMatrixWorld(true);
+  const skip = new Set(['counter', 'wet-patch-films']);
+  const collect = (root: THREE.Object3D): void => {
+    for (const child of root.children) {
+      if (child.name.includes('film') || skip.has(child.name)) continue;
+      if (child.children.length === 0 || child.name === 'book-stack' || child.name === 'tap') {
+        boxes.push(new THREE.Box3().setFromObject(child));
+        continue;
+      }
+      collect(child);
+    }
+  };
+  const dress = group.getObjectByName('dress');
+  if (dress) collect(dress);
+  return boxes;
+}
+
+/** The level the game boots: ?level=<id> for anything registered, KITCHEN 01
+ *  by default (the ladder's first rung; the feel track remains reachable as
+ *  ?level=feeltrack for the stage-2 specs). */
+export function resolveLevel(params: URLSearchParams): Level {
+  const id = params.get('level');
+  if (!id) return KITCHEN01;
+  try {
+    return getLevel(id);
+  } catch {
+    return KITCHEN01; // an unknown id is the default level, not a dead page
+  }
+}
 
 export function boot(root: HTMLElement): void {
   // a bare fragment change is a new run request on a static host: reload into it
@@ -40,7 +96,7 @@ export function boot(root: HTMLElement): void {
     void bootSharedRun(root);
     return;
   }
-  void bootGame(root, FEELTRACK);
+  void bootGame(root, resolveLevel(new URLSearchParams(window.location.search)));
 }
 
 function paragraph(id: string, parent: HTMLElement, role = 'status'): HTMLParagraphElement {
@@ -138,6 +194,14 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   stage.appendChild(renderer.domElement);
   const camera = new THREE.PerspectiveCamera(35, 960 / 540, 0.01, 20);
 
+  // Stage 3 wiring: a level that declares a set renders INSIDE it. The set
+  // is mounted under the world root beside the track group as a VISUAL only
+  // — no colliders, no physics reads — per level via `kitchenSetPlacement`.
+  // Mounting it cannot perturb a hash: the solver never sees it (proved in
+  // tests/unit/set-wiring.test.ts and tests/e2e/set-wiring.spec.ts).
+  const setGroup = levelSet(level) === 'kitchen' ? buildGameKitchenSet(level.id) : null;
+  const setSolids = setGroup ? setPlacementGuard(setGroup) : undefined;
+
   // Stage 3 post-stack hook: the game renders through the composer only when
   // the URL explicitly asks (?post=on); the module is imported dynamically
   // so the default page ships the exact stage-2 render path, untouched.
@@ -152,15 +216,24 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   const resultPanel = createResultPanel(stage);
   let lastStatus: RunStatus = 'idle';
   let placedCount = level.placeholderBuild().pieces.length;
+  // the hazard tally the result screen reports: wheel contacts whose sampled
+  // deck grip dipped below 1 this run (0 for every grip-independent line)
+  let hazardsTouched = 0;
   // ?launch=1 releases as soon as the first world is ready — the test hook
   // the result e2e drives the whole loop with, and nothing else reads it
   let launchQueued = new URLSearchParams(window.location.search).has('launch');
+
+  if (setGroup) stage.dataset.setMounted = 'kitchen';
+  // the e2e seam for the hazard status path: the live zone count of the
+  // current world (0 for hazard-free levels) — debug surface, not UI
+  (window as unknown as Record<string, unknown>).__gwHazardZones = (): number => world?.hazardZones.length ?? 0;
 
   createHelpDrawer(root, { reducedMotion: loadSave().settings.reducedMotion ?? undefined });
 
   const builder = createBuilder(builderHost, {
     level,
     build: level.placeholderBuild(),
+    solids: setSolids,
     onChange: (build) => {
       rememberBuild(build);
       // first-time callout (§9.3): the first piece of a kind ever PLACED
@@ -178,6 +251,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
 
   function startRun(): void {
     acc = 0;
+    hazardsTouched = 0;
     const w = world;
     if (!w) return;
     w.launch();
@@ -187,13 +261,22 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
 
   async function rebuild(build: Build): Promise<void> {
     const next = await World.create(level, build, { visuals: true });
+    // the set group belongs to the shell, not to any one world — pull it out
+    // before dispose() traverses (it disposes every mesh material it finds)
+    setGroup?.removeFromParent();
     world?.dispose();
     world = next;
     post?.dispose();
     post = null;
-    if (next.scene && wantPost) {
-      const { createPostStack } = await import('./render/post/index.ts');
-      post = createPostStack(renderer, camera, { tokens: SET_TOKENS.kitchen });
+    if (next.scene) {
+      if (setGroup) {
+        next.scene.add(setGroup);
+        next.scene.background = new THREE.Color(SET_TOKENS.kitchen.background);
+      }
+      if (wantPost) {
+        const { createPostStack } = await import('./render/post/index.ts');
+        post = createPostStack(renderer, camera, { tokens: SET_TOKENS.kitchen });
+      }
     }
     builder.setScene(next.scene);
     const box = new THREE.Box3().setFromObject(next.scene ?? new THREE.Object3D());
@@ -223,6 +306,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       let steps = 0;
       while (acc >= FIXED_DT && steps < 24 && w.status === 'running') {
         w.step();
+        if (w.state().car.grip < 0.999) hazardsTouched = 1; // a dipped sample is a touch
         recorder.sample(w.state());
         acc -= FIXED_DT;
         steps += 1;
@@ -235,7 +319,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         status: w.status,
         time: w.time,
         piecesUsed: builder.build().pieces.length,
-        hazardsTouched: 0, // the hazard tally joins when the kitchen props ship
+        hazardsTouched,
       };
       resultPanel.show(resultModel(result, parFor(level.id, level.par), recorder.evidence()));
     }
@@ -254,6 +338,14 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     }
   };
   requestAnimationFrame(frame);
+}
+
+/** Build the hero set once per game boot, mounted where this level wants it. */
+function buildGameKitchenSet(levelId: string): THREE.Group | null {
+  const placement = kitchenSetPlacement(levelId);
+  const set = buildKitchenSet(THREE, { tokens: SET_TOKENS.kitchen });
+  if (placement) placeSet(set.group, placement);
+  return set.group;
 }
 
 /** Plain-text run status; the aria-live line the run reports through. */

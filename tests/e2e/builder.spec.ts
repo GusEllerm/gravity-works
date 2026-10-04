@@ -21,7 +21,7 @@ test('builder: ghost appears on hover, place and remove move the piece counter',
   })
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/')
+  await page.goto('/?level=feeltrack')
   await expect(page.getByRole('heading', { name: 'Gravity Works' })).toBeVisible()
   await expect(page.getByRole('toolbar', { name: 'Piece tray' })).toBeVisible()
   await expect(page.locator('#gw-tray button')).toHaveCount(13)

@@ -16,7 +16,7 @@
 //                   session log
 
 import * as THREE from 'three'
-import { canonicalCamera, isCanonicalShot, RENDER_DPR, RENDER_HEIGHT, RENDER_WIDTH, type CanonicalShot } from './cameras.ts'
+import { canonicalCamera, isCanonicalShot, setCameras, RENDER_DPR, RENDER_HEIGHT, RENDER_WIDTH, type CanonicalShot } from './cameras.ts'
 import { getSceneFactory, sceneNames } from './registry.ts'
 import { createPostStack, type PostQuality, type PostStack } from '../render/post/index.ts'
 import { isPostQuality, parseFocusParam } from './post-params.ts'
@@ -95,7 +95,10 @@ function start(): void {
   canvas.style.height = `${height}px`
   document.body.appendChild(canvas)
 
-  const entry = factory({ rig: canonicalCamera(shot), time: FIXED_TIME })
+  // the shot list is SOURCED FROM THE SET (`setCameras`): a set that ships
+  // its own canonical framings renders with them; until one does, the set
+  // rig call falls through to the provisional kitchen rig, unchanged
+  const entry = factory({ rig: setCameras(sceneName, shot) ?? canonicalCamera(shot), time: FIXED_TIME, level: params.get('level') ?? undefined })
 
   // post off by default: with the param absent no post object is ever
   // constructed and the render call below is the stage-1/2 line, unchanged

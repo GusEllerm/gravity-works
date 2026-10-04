@@ -49,7 +49,7 @@ import {
 } from '../physics/car.ts';
 import { reify, type Build, type PlacedPiece } from '../track/build.ts';
 import { ROLL_COEF } from '../feel/run.ts';
-import { HazardField } from './hazards.ts';
+import { HazardField, type HazardZone } from './hazards.ts';
 import { PIECES, type PieceDef } from '../track/pieces.ts';
 import { TRACK_FRICTION } from '../track/material.ts';
 import { transformSocket } from '../track/socket.ts';
@@ -425,6 +425,13 @@ export class World {
 
   get time(): number {
     return this.steps * FIXED_DT;
+  }
+
+  /** The level's hazard zones after normalisation (world-space cuboids).
+   *  Read-only surface for the shell's hazard-status path (the e2e seam and
+   *  any future HUD tell); physics reads the same field through `gripAt`. */
+  get hazardZones(): readonly HazardZone[] {
+    return this.hazards.zones;
   }
 
   /** Free the physics world and scene resources when the run is done. */

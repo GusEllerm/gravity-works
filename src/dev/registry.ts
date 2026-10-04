@@ -10,6 +10,9 @@ export interface SceneContext {
   rig: CameraRig
   /** Fixed clock in seconds — never advances unless a scene opts into time. */
   time: number
+  /** The harness's `&level=` param (stage-3 set wiring: mount a registered
+   *  level's build inside the set — `scene=kitchen-set&level=kitchen03`). */
+  level?: string
 }
 
 export interface SceneEntry {

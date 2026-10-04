@@ -72,9 +72,10 @@ track set.
 
 **KITCHEN 03 — The Bowl** (`kitchen03.level.ts`). Teaches: the set's
 signature at speed — the gap verbs back to back beside the cereal bowl. The
-bowl is BUILT as rim geometry (a `bank` + counter-`curve` pair past the cup)
-and exposes `bowl.in` / `bowl.out` sockets; the timed line runs past it into
-the cup. Common failure: none on the par line — but the car visibly begs to
+bowl IS the set's bowl: the rim line (a `bank` + counter-`curve` pair) is
+seated THROUGH the set's `bowl.in` / `bowl.out` socket frames (`BOWL_SOCKET_FRAMES`
+carried into world space by the level's set mount, `src/world/setPlacement.ts`),
+not chained off the timed line; the timed line runs past it into the cup. Common failure: none on the par line — but the car visibly begs to
 take the rim, and cannot (ask #1). Par is the par because it is everything
 drivable today on the way to the bowl. The bowl's intended banked line
 becomes a data edit — seat a `bank` between the rim sockets — the day
@@ -84,7 +85,11 @@ steering lands; that half of the rung is BLOCKED.
 affordance (the tap dripping, upstream, visibly) before hazard (its splash
 halves grip on the patch below the sink's far rim). The wet patch is
 `hazards` DATA (see convention below): centre on the ground build's decked-
-sink seam, `gripFactor: 0.5`, source `tap`. Two lines, both measured with
+sink seam, `gripFactor: 0.5`, source `tap`. The AFFORDANCE reaches the data
+through the mount, not a re-model: kitchen04's set placement yaws the whole
+set so the tap's `drip` anchor maps exactly onto that zone centre — the
+drips land in the patch, the zone stays on the deck the car drives
+(Decision Log 2026-10-07; coordinate-tested in `tests/unit/set-wiring.test.ts`). Two lines, both measured with
 the live zone hook (stage 3): the par line FLIES the sink (`gapLip` →
 `drop` → `landing`, then past the patch — grip-independent to the BIT,
 2.45 s, hash unchanged by the zone), and the ground line decks straight over
@@ -125,7 +130,8 @@ prop's rim carries TWO named sockets, `bowl.in` and `bowl.out`, and the rim's
 centreline is a planar arc tangent to `bowl.in` in the rim's plane; the
 prop's mesh geometry must pass through both socket poses. KITCHEN 03 exports
 the actual world poses as `propSockets` (`bowlSockets()` in
-`kitchen03.level.ts`, derived from the fixture bank+curve pair, radius 0.12,
+`kitchen03.level.ts` — the set's socket frames as PLACED by the level's set
+mount, radius 0.12,
 120° sweep, 25° bank); the artist's mesh is built TO those numbers so a
 future bank piece seats without either side moving. The tap prop's drip
 point is a plain anchor point (no socket — nothing snaps to it); the wet

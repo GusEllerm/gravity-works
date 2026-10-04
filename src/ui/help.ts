@@ -133,8 +133,12 @@ export function createHelpDrawer(host: HTMLElement, options: HelpOptions = {}): 
   const list = document.createElement('ul');
   list.id = 'gw-help-list';
   list.hidden = true;
+  // the live bug the director caught on the deployed page: a `hidden`
+  // attribute does NOT hide an element whose inline style sets `display` —
+  // the drawer rendered always-expanded. Visibility is now driven by BOTH
+  // channels together (hidden for a11y, display for layout) in open/close.
   list.style.cssText =
-    'position:relative;list-style:none;margin:8px 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px';
+    'position:relative;list-style:none;margin:8px 0;padding:0;display:none;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px';
   const cells: Cell[] = [];
   for (const entry of entries) {
     const li = document.createElement('li');
@@ -235,6 +239,7 @@ export function createHelpDrawer(host: HTMLElement, options: HelpOptions = {}): 
   function openDrawer(): void {
     open = true;
     list.hidden = false;
+    list.style.display = 'grid';
     toggle.setAttribute('aria-expanded', 'true');
     cancelAnimationFrame(raf);
     if (reduced) {
@@ -248,6 +253,7 @@ export function createHelpDrawer(host: HTMLElement, options: HelpOptions = {}): 
   function close(): void {
     open = false;
     list.hidden = true;
+    list.style.display = 'none';
     toggle.setAttribute('aria-expanded', 'false');
     cancelAnimationFrame(raf);
   }

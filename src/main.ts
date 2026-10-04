@@ -1,4 +1,5 @@
 import { boot } from './boot.ts'
+import './ui/shell.css'
 
 // The deterministic render harness is dev tooling, but it must ride the exact
 // production build so renders cannot diverge from shipped code. With

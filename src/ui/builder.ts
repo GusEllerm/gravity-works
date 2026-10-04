@@ -27,7 +27,7 @@ import type { Level } from '../world/level.ts';
 /** Two socket origins this close are joined (metres; well above float noise). */
 export const JOIN_TOL = 0.004;
 
-export type GhostState = 'hidden' | 'snapped' | 'seated' | 'invalid';
+export type GhostState = 'hidden' | 'snapped' | 'seated' | 'invalid' | 'blocked';
 
 export interface BuilderOptions {
   level: Level;
@@ -35,6 +35,11 @@ export interface BuilderOptions {
   build?: Build;
   /** Called after every mutation with the canonical new build. */
   onChange?: (build: Build) => void;
+  /** Stage-3 set wiring: world-space AABBs of the set's solid props. A seat
+   *  whose piece box overlaps one of them is REJECTED — the ghost goes red
+   *  (`blocked`) and `place` refuses. Deliberately cheap: AABB-vs-AABB per
+   *  ghost update, no mesh tests, nothing per frame. */
+  solids?: readonly THREE.Box3[];
 }
 
 export interface BuilderElements {
@@ -82,6 +87,7 @@ function button(id: string, label: string, parent: HTMLElement): HTMLButtonEleme
 
 export function createBuilder(host: HTMLElement, options: BuilderOptions): Builder {
   const { level } = options;
+  const solids = options.solids ?? [];
   let pieces: PlacedPiece[] = canonicalBuild(
     (options.build ?? { levelId: level.id, pieces: [], seed: level.seed }).pieces,
   ).map((p, i) => ({ ...p, seq: i }));
@@ -202,6 +208,22 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     return flip.multiply(seat);
   }
 
+  /** True when a placed piece's world AABB overlaps one of the set's solids.
+   *  The ghost geometry is the piece geometry, so ghost and placement agree. */
+  function overlapsSolid(transform: THREE.Matrix4, held: PieceKind): boolean {
+    if (solids.length === 0) return false;
+    const box = new THREE.Box3();
+    for (const geo of pieceGeometries(held)) {
+      geo.computeBoundingBox();
+      if (geo.boundingBox) box.union(geo.boundingBox.clone().applyMatrix4(transform));
+    }
+    if (box.isEmpty()) return false;
+    // a hair of tolerance: a piece SEATED on a socket brushes neighbouring
+    // geometry; only a real overlap (beyond 2 mm) is a collision
+    box.expandByScalar(-0.002);
+    return solids.some((s) => s.intersectsBox(box));
+  }
+
   function updateGhost(): void {
     rebuildGhostGeometry();
     const list = targets();
@@ -220,7 +242,12 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       ghostGroup.matrix.copy(m);
       ghostGroup.visible = true;
       const seated = transformSocket(PIECES[kind].sockets(PIECES[kind].params)[0], m);
-      state = snapSocket(target, seated) !== null ? 'snapped' : flipped ? 'seated' : 'invalid';
+      if (overlapsSolid(m, kind)) {
+        // the set's solids outrank the socket graph: red ghost, no seat
+        state = 'blocked';
+      } else {
+        state = snapSocket(target, seated) !== null ? 'snapped' : flipped ? 'seated' : 'invalid';
+      }
       ghostMaterial.color.set(state === 'snapped' ? 0x2fbf71 : state === 'seated' ? 0xffb627 : 0xd7263d);
     }
     ghostState.textContent = state;
@@ -272,9 +299,15 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       return false;
     }
     const target = list[targetIndex]!.socket;
+    const transform = placement(target, kind);
+    if (overlapsSolid(transform, kind)) {
+      // the ghost is already red; say why, and refuse the seat
+      ghostState.textContent = 'blocked';
+      return false;
+    }
     pieces = [
       ...pieces,
-      { def: kind, params: { ...PIECES[kind].params }, transform: placement(target, kind), seq: pieces.length },
+      { def: kind, params: { ...PIECES[kind].params }, transform, seq: pieces.length },
     ];
     updateGhost();
     emit();

@@ -17,6 +17,9 @@ import { GLOBAL_TOKENS, SET_TOKENS, clampLightness } from '../../render/tokens.t
 import { applyKeyLight, createLightingRig } from '../../render/lighting.ts'
 import { buildKitchenSet, bowlArcPoint, STAGING } from '../../sets/kitchen/index.ts'
 import { registerScene, type SceneEntry, type SceneFactory } from '../registry.ts'
+import { LEVELS } from '../../world/levels/feeltrack.level.ts'
+import { buildTrackMeshes } from '../../world/world.ts'
+import { kitchenSetPlacement, placeSet } from '../../world/setPlacement.ts'
 
 const tokens = SET_TOKENS.kitchen
 const rig = createLightingRig(tokens, { accentMix: 0.4 })
@@ -84,13 +87,41 @@ function trackRun(a: readonly number[], b: readonly number[], mat: THREE.Materia
 
 function kitchenSetScene(): SceneFactory {
   return (ctx): SceneEntry => {
+    // &level=<id> — the stage-3 wiring shot list: the real set mounted where
+    // THAT level mounts it, carrying THAT level's par build instead of the
+    // decorative stand-in runs (the game shell's own camera seam).
+    const level = ctx.level ? LEVELS[ctx.level] : undefined
+    const setPlacement = level ? kitchenSetPlacement(level.id) : null
+
     const scene = new THREE.Scene()
     scene.background = new THREE.Color(tokens.background)
     scene.add(rig.key)
 
     // the permanent set — data + generators, no lights, no cars
     const set = buildKitchenSet(THREE, { tokens, rig })
+    if (setPlacement) placeSet(set.group, setPlacement)
     scene.add(set.group)
+
+    if (level) {
+      // the level's own reference build, reified the way the game reifies it
+      scene.add(buildTrackMeshes((level.parBuild ?? level.placeholderBuild).call(level)))
+      // one car parked at the level's release pose — the shot's protagonist
+      const runner = car()
+      runner.position.copy(level.startSocket.pos)
+      runner.lookAt(
+        level.startSocket.pos.x + level.startSocket.tangent.x,
+        level.startSocket.pos.y + level.startSocket.tangent.y,
+        level.startSocket.pos.z + level.startSocket.tangent.z,
+      )
+      runner.rotateY(-Math.PI / 2)
+      scene.add(runner)
+      applyKeyLight(scene, rig)
+
+      const camera = new THREE.PerspectiveCamera(ctx.rig.fov, 16 / 9, ctx.rig.near, ctx.rig.far)
+      camera.position.set(...ctx.rig.position)
+      camera.lookAt(new THREE.Vector3(...ctx.rig.target))
+      return { scene, camera, focus: [level.startSocket.pos.x, level.startSocket.pos.y + 0.02, level.startSocket.pos.z], tokens }
+    }
 
     // render staging: the two decorative orange runs and three parked cars —
     // the composition the reference frames (the built track comes from the

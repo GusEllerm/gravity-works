@@ -1,0 +1,26 @@
+/* Gravity Works — stage 3 minimum-viable shell styling (the director's
+ * quiet pass: a sane text face, a canvas with a real height, the tray as one
+ * tidy row, a visible run-status line). Stage 6 owns the real UI pass; no
+ * theming system lives here. */
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: #2c2013;
+  background: #efe0c8;
+}
+#app { max-width: 980px; margin: 0 auto; padding: 12px 16px 32px; }
+h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
+#gw-stage { background: #efe0c8; border-radius: 6px; overflow: hidden; }
+#gw-stage canvas { display: block; width: 100%; height: auto; max-height: 540px; }
+#gw-status, #gw-callout { font-size: 13px; margin: 8px 0; }
+#gw-builder { margin-top: 10px; }
+#gw-tray { display: flex; flex-wrap: wrap; gap: 6px; }
+#gw-tray button, #gw-controls button, #gw-help-toggle {
+  font: inherit; font-size: 13px; padding: 4px 10px; border-radius: 4px;
+  border: 1px solid #b9a37c; background: #fff8ec; color: inherit; cursor: pointer;
+}
+#gw-tray button[aria-pressed='true'] { background: #f0d9a8; border-color: #8a7040; }
+#gw-controls { display: flex; gap: 6px; margin-top: 6px; }
+#gw-piece-count, #gw-ghost-state, #gw-target-label { font-size: 12px; color: #6a5636; margin: 4px 0; }
+#gw-help-list { background: #fff8ec; border: 1px solid #d8c49a; border-radius: 6px; padding: 8px; }
+#gw-result { background: #fff8ec; border: 1px solid #d8c49a; border-radius: 6px; padding: 10px 14px; }

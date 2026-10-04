@@ -24,7 +24,7 @@ test('finishing the feel track shows the result panel with stars and time', asyn
   })
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?launch=1')
+  await page.goto('/?level=feeltrack&launch=1')
   // during the run: no panel over the set (§5.11)
   await expect(page.locator('#gw-result')).toBeHidden({ timeout: 5_000 })
 

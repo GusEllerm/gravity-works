@@ -28,6 +28,10 @@ Determinism: one rAF → one render, fixed clock, fixed DPR and viewport, no ani
 
 Guarded by `tests/e2e/harness.spec.ts` (a registered scene renders >0 nonblack pixels headlessly, with `__sceneError` checked — including the `post=on` path, so the tilt-shift/bloom/grade shaders must compile in a real browser, not just Node).
 
+## Stage-3 wiring
+
+`setCameras(setId, shot)` / `setShotList(setId)` resolve the harness rig THROUGH the set: a set that ships its own camera data wins, and until the kitchen set does (the file is the EA's; it ships none yet), the provisional kitchen rig in `SHOTS` is the fallback verbatim. The harness accepts `&level=<id>` beside `scene=kitchen-set`: a registered level id mounts the set in that level's own placement (`placeSet(level.parBuild(), level.id)`) plus the level's par build and a car parked at its start socket — the level-in-context render shot the EA needs; no id (or an unknown one) keeps the decorative tile-B staging runs.
+
 ## Depends on / used by
 
 Depends on `src/render` and `three`. Used by `tools/render.mjs`, `tests/e2e/harness.spec.ts`, and the Director/Art Director render-review loop.
