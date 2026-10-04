@@ -31,3 +31,5 @@ screenshots/
 docs/vault/.obsidian/workspace.json
 docs/vault/.obsidian/workspace-mobile.json
 docs/vault/.trash/
+test-results/
+playwright-report/
