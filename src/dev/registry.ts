@@ -4,6 +4,7 @@
 
 import type * as THREE from 'three'
 import type { CameraRig } from './cameras.ts'
+import type { SetTokens } from '../render/tokens.ts'
 
 export interface SceneContext {
   rig: CameraRig
@@ -14,6 +15,14 @@ export interface SceneContext {
 export interface SceneEntry {
   scene: THREE.Scene
   camera: THREE.Camera
+  /**
+   * Optional world-space point the harness tilt-shift centres its focus band
+   * on when `post=on` and no `focus=` param overrides it — usually the car
+   * or the shot's protagonist prop (art bible §Camera).
+   */
+  focus?: readonly [number, number, number]
+  /** Optional set tokens for the color grade; defaults to kitchen. */
+  tokens?: SetTokens
 }
 
 export type SceneFactory = (ctx: SceneContext) => SceneEntry

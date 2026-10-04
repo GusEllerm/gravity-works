@@ -24,6 +24,8 @@ import { createBuilder } from './ui/builder.ts';
 import { parseShareUrl } from './share/share.ts';
 import { replayRun } from './replay/replay.ts';
 import { rememberBuild } from './save/save.ts';
+import { SET_TOKENS } from './render/tokens.ts';
+import type { PostStack } from './render/post/index.ts';
 
 export function boot(root: HTMLElement): void {
   // a bare fragment change is a new run request on a static host: reload into it
@@ -83,6 +85,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   stage.appendChild(renderer.domElement);
   const camera = new THREE.PerspectiveCamera(35, 960 / 540, 0.01, 20);
 
+  // Stage 3 post-stack hook: the game renders through the composer only when
+  // the URL explicitly asks (?post=on); the module is imported dynamically
+  // so the default page ships the exact stage-2 render path, untouched.
+  const wantPost = new URLSearchParams(window.location.search).get('post') === 'on';
+  let post: PostStack | null = null;
+
   let world: World | null = null;
   let acc = 0;
 
@@ -104,6 +112,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     const next = await World.create(level, build, { visuals: true });
     world?.dispose();
     world = next;
+    post?.dispose();
+    post = null;
+    if (next.scene && wantPost) {
+      const { createPostStack } = await import('./render/post/index.ts');
+      post = createPostStack(renderer, camera, { tokens: SET_TOKENS.kitchen });
+    }
     builder.setScene(next.scene);
     const box = new THREE.Box3().setFromObject(next.scene ?? new THREE.Object3D());
     const center = box.isEmpty() ? new THREE.Vector3() : box.getCenter(new THREE.Vector3());
@@ -139,7 +153,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       w.carMesh.quaternion.set(pose.quat.x, pose.quat.y, pose.quat.z, pose.quat.w);
     }
     statusLine.textContent = runStatusLine(w, builder.build().pieces.length);
-    renderer.render(w.scene, camera);
+    if (post) {
+      post.setFocus([pose.pos.x, pose.pos.y, pose.pos.z]); // §7.3: band centred on the car
+      post.render(w.scene);
+    } else {
+      renderer.render(w.scene, camera);
+    }
   };
   requestAnimationFrame(frame);
 }

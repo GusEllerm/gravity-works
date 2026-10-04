@@ -12,7 +12,7 @@ import process from 'node:process'
 import { chromium } from '@playwright/test'
 
 function parseArgs(argv) {
-  const out = { scene: 'materials-a', shot: 'material-review', out: null, build: true, port: 4188 }
+  const out = { scene: 'materials-a', shot: 'material-review', out: null, build: true, port: 4188, params: [] }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     const next = () => {
@@ -26,6 +26,7 @@ function parseArgs(argv) {
     else if (a === '--out') out.out = next()
     else if (a === '--port') out.port = Number.parseInt(next(), 10)
     else if (a === '--no-build') out.build = false
+    else if (a === '--param') out.params.push(next()) // extra harness params, e.g. --param post=on
     else throw new Error(`unknown flag: ${a}`)
   }
   if (!out.out) throw new Error('--out <path.png> is required')
@@ -75,7 +76,9 @@ try {
 
   browser = await chromium.launch({ headless: true })
   const page = await browser.newPage({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 1 })
-  const url = `${base}/?harness=1&scene=${encodeURIComponent(opts.scene)}&shot=${encodeURIComponent(opts.shot)}`
+  const url =
+    `${base}/?harness=1&scene=${encodeURIComponent(opts.scene)}&shot=${encodeURIComponent(opts.shot)}` +
+    opts.params.map((p) => `&${p}`).join('')
   await page.goto(url)
   await page.waitForFunction(
     () => window.__sceneReady === true || window.__sceneError !== undefined,
