@@ -7,7 +7,10 @@
 import * as THREE from 'three'
 import { canonicalCamera, isCanonicalShot, RENDER_DPR, RENDER_HEIGHT, RENDER_WIDTH, type CanonicalShot } from './cameras.ts'
 import { getSceneFactory, sceneNames } from './registry.ts'
-import './scenes/material-ramp.ts'
+
+// Scene modules self-register on import. Auto-discovery means adding a scene
+// is dropping a file in ./scenes/ — no edit to this file.
+import.meta.glob('./scenes/*.ts', { eager: true })
 
 export interface PixelStats {
   nonBlack: number

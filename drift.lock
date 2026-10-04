@@ -13,7 +13,7 @@ sig = "9512fc975c9378c7"
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
 target = "src/dev/harness.ts"
-sig = "9306c60d6e91b389"
+sig = "6a01938f287fa21a"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -73,7 +73,7 @@ sig = "c792e7b2ffb80e0f"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/dev/harness.ts"
-sig = "9306c60d6e91b389"
+sig = "6a01938f287fa21a"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"

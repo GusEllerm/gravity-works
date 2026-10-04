@@ -14,7 +14,7 @@ tags: [module]
 
 `src/dev/cameras.ts` holds `canonicalCamera(shot)` for `establishing` / `hero` / `floor` / `material-review` in one place — provisional kitchen framings that move into level files at stage 2 — plus `RENDER_WIDTH`/`RENDER_HEIGHT`/`RENDER_DPR`.
 
-`src/dev/scenes/material-ramp.ts` registers the stage-1 exploration scenes `materials-a`, `materials-b`, `materials-c`: three `RAMP_VARIANTS` (hard cel / three hard steps / painterly) shown on the same three props (die-cast beveled car with stripe, ceramic bowl lathe form, orange track channel) over a painted-wood turntable under one key light.
+`src/dev/scenes/*.ts` modules self-register on import; the harness pulls them all in with `import.meta.glob` (eager), so **adding a scene is dropping a file in `src/dev/scenes/`** — no edit to `src/dev/harness.ts` is ever needed (parallel-safe for exploration rounds). For example `src/dev/scenes/material-ramp.ts` registers the stage-1 exploration scenes `materials-a`, `materials-b`, `materials-c`: three `RAMP_VARIANTS` (hard cel / three hard steps / painterly) shown on the same three props (die-cast beveled car with stripe, ceramic bowl lathe form, orange track channel) over a painted-wood turntable under one key light.
 
 `tools/render.mjs` (npm script `render`) builds, serves with `vite preview`, drives headless chromium through Playwright and screenshots the canvas: `npm run render -- --scene materials-a --shot material-review --out out.png`. Headless-safe for CI.
 
