@@ -13,9 +13,11 @@ tags: [module, save]
 
 Garbage never crashes the game: unparseable, structurally invalid or from-the-future blobs all become `freshSave()`. `memoryStorage` is the injectable `StorageLike` that makes the whole module run under Vitest with no DOM; `rememberBuild`/`savedBuild` are the game-facing pair (`src/boot.ts` autosaves through it); `saveFileJson`/`importSaveFile`/`downloadSaveFile` move the same envelope through a file (brief's export/import).
 
+`SaveSettings` is `{ muted?, reducedMotion?, calloutsSeen? }` — `calloutsSeen` (stage 3) is the list of first-sight callout ids already shown, owned by `src/ui/callouts.ts`; optional by design, so an absent list means "nothing seen yet" and the envelope stays v1 — no migrade needed.
+
 ## Guarded by
 
-`tests/unit/save.test.ts` (v0→v1 from nothing, round-trip, garbage→fresh, legacy adoption, future version, file import, build-validation drop).
+`tests/unit/save.test.ts` (v0→v1 from nothing, round-trip, garbage→fresh, legacy adoption, future version, file import, build-validation drop) and `tests/unit/callouts.test.ts` (the `calloutsSeen` list round-trips alongside other settings).
 
 ## Depends on / used by
 

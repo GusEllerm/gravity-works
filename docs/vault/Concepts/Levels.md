@@ -12,8 +12,7 @@ tags: [concept, levels]
 
 ## The data model
 
-A level is a plain-data `Level` (`src/world/level.ts`): start socket, budget,
-par, seed, max time, and a build factory. The kitchen levels are one rung
+A level is a plain-data `Level` (`src/world/level.ts`): start socket, budget, par, seed, max time, a build factory, and an optional `parBuild` seam (the reference build `scripts/gen-pars.mjs` replays to regenerate `src/world/pars.json`; falls back to the build factory until a designer authors one). The kitchen levels are one rung
 richer — `KitchenLevel` (`src/world/levels/kitchen01.level.ts`) adds:
 
 - `tray` — a per-kind piece count map, the pieces the player may place. Its

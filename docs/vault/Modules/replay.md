@@ -11,7 +11,7 @@ tags: [module, replay]
 
 `src/replay/replay.ts` — `replayRun(level, build, { maxSteps?, launchSpeed? })`: create the World with `visuals: false`, `launch()`, step until a terminal status or the fixed cap (default 15 s of sim time), return `{ hash, hashValue, steps, time, status }` and free the physics world. Termination depends only on the data, so equal inputs execute equal step sequences and must hash equal — which is the whole point.
 
-The browser side of a replay is `src/boot.ts`'s shared-run page: `parseShareUrl` → `getLevel` → `replayRun` → compare with the embedded hash → `verified`/`mismatch` in `#gw-replay-status`, echoing the recomputed hash beside it.
+The browser side of a replay is `src/boot.ts`'s shared-run page: `parseShareUrl` → `getLevel` → `replayRun` → compare with the embedded hash → `verified`/`mismatch` in `#gw-replay-status`, echoing the recomputed hash beside it. Since stage 3 the page also wires `#gw-share-card` — a share-card PNG of the replayed run through `src/share/card.ts`, its stars scored from the replay time and the regenerated pars (`Modules/world`).
 
 ## Measured
 

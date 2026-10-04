@@ -13,6 +13,10 @@ tags: [module, share]
 
 Compression is injectable (`ShareCodec`): the browser uses platform `CompressionStream('deflate-raw')` (`platformCodec`); Node paths may pass a `zlib.deflateRawSync` codec. The module imports no Node APIs, so the browser bundle stays clean, and the two codecs are RFC1951-identical — `tests/unit/share.test.ts` proves interop in BOTH directions against `node:zlib`.
 
+## Share card (stage 3, brief §8 "share card" + §9.4)
+
+`src/share/card.ts` — `generateShareCard(state): Promise<Blob>` renders the final build state (live `scene` if given, else `buildTrackMeshes(build)` from `src/world`) into an offscreen WebGL canvas from `heroCameraFor` — the hero rig's front-up-right three-quarter attitude and fov, scaled to the build's own bounding box, because the fixed hero rig in `src/dev/cameras.ts` frames the provisional kitchen bowl and a card must frame the build actually being shared (Decision Log) — then composites a warm-paper caption strip in a 2D canvas: `cardCaption` (level, time, the shared `starGlyphs` readout, the verified mark when the share page answered) and the URL. Returns a PNG `Blob`; in Node it rejects with a clear "needs a browser canvas" rather than shipping a blank PNG. `downloadBlob` is the file-save sugar `src/boot.ts` uses for the `#gw-share-card` button on the shared-run page (`#gw-card-status` narrates: rendering card… / card ready / card failed).
+
 ## Invariants
 
 - The hash inside a payload is the ONLY trust anchor: replay recomputes, compare prints the verdict. Same-machine verification is exact; the cross-platform claim awaits the stage-2 harness measurement ([[Home]] Deferred).
@@ -20,7 +24,7 @@ Compression is injectable (`ShareCodec`): the browser uses platform `Compression
 
 ## Guarded by
 
-`tests/unit/share.test.ts` (round-trip, embedded hash, byte-stable canonical JSON, zlib⇄CompressionStream interop, garbage refusal, base64url safety) and `tests/e2e/replay.spec.ts` (zlib-encoded fragment opens the real page → `mismatch` with an echo of the recomputed hash → same fragment re-embedded → `verified`).
+`tests/unit/share.test.ts` (round-trip, embedded hash, byte-stable canonical JSON, zlib⇄CompressionStream interop, garbage refusal, base64url safety), `tests/e2e/replay.spec.ts` (zlib-encoded fragment opens the real page → `mismatch` with an echo of the recomputed hash → same fragment re-embedded → `verified`) and `tests/unit/card.test.ts` (caption content, hero framing of an arbitrary build, the honest Node rejection).
 
 ## Depends on / used by
 
