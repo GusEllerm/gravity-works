@@ -4,11 +4,14 @@ import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts'
 import { encodeShareUrl, type ShareCodec } from '../../src/share/share.ts'
 
 /**
- * Share -> replay -> verified, end to end. The fragment here is produced by
- * the Node-side zlib codec (proving the zlib/CompressionStream interop
- * direction against the real page), embedded with a deliberately wrong hash
- * first — the page must say `mismatch` and echo the hash it recomputed — and
- * then with that hash embedded, which the page must confirm as `verified`.
+ * Share -> replay -> verified, end to end, on the REAL feel track: the
+ * fragment embeds `FEELTRACK.placeholderBuild()` — the kit feel track the
+ * page and Node now agree on (level, build, seed). The fragment here is
+ * produced by the Node-side zlib codec (proving the zlib/CompressionStream
+ * interop direction against the real page), embedded with a deliberately
+ * wrong hash first — the page must say `mismatch` and echo the hash it
+ * recomputed — and then with that hash embedded, which the page must confirm
+ * as `verified`.
  */
 const zlibCodec: ShareCodec = {
   deflate: async (b) => new Uint8Array(zlib.deflateRawSync(Buffer.from(b))),

@@ -28,8 +28,9 @@ export interface Level {
   /** Hard run cap in seconds; beyond it the run ends as `timeout`. */
   maxTime: number;
   /**
-   * The level's reference build as plain data. The feel track's real one is
-   * the Feel Engineer's to replace — same signature, nothing else changes.
+   * The level's reference build as plain data. For `feeltrack` this is now
+   * the REAL kit feel track (laid from `src/feel/feeltrack.ts`'s constants);
+   * the seam is unchanged — same signature, nothing else changes.
    */
   placeholderBuild(): Build;
 }

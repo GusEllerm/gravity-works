@@ -16,7 +16,7 @@ test('builder: ghost appears on hover, place and remove move the piece counter',
   await expect(page.getByRole('heading', { name: 'Gravity Works' })).toBeVisible()
   await expect(page.getByRole('toolbar', { name: 'Piece tray' })).toBeVisible()
   await expect(page.locator('#gw-tray button')).toHaveCount(13)
-  await expect(page.locator('#gw-piece-count')).toHaveText('5 / 16 pieces')
+  await expect(page.locator('#gw-piece-count')).toHaveText('8 / 16 pieces')
   await expect(page.locator('#gw-ghost-state')).toHaveText('hidden')
 
   // hover the straight in the tray -> a translucent ghost appears at the open socket
@@ -26,7 +26,7 @@ test('builder: ghost appears on hover, place and remove move the piece counter',
   // click to hold, Enter-equivalent button to place -> counter increments
   await page.click('#gw-tray button[data-kind="straight"]')
   await page.click('#gw-place')
-  await expect(page.locator('#gw-piece-count')).toHaveText('6 / 16 pieces')
+  await expect(page.locator('#gw-piece-count')).toHaveText('9 / 16 pieces')
 
   // the R button rotates the held piece into a reverse seat and back
   await page.click('#gw-rotate')
@@ -36,7 +36,7 @@ test('builder: ghost appears on hover, place and remove move the piece counter',
 
   // remove puts it back
   await page.click('#gw-remove-piece')
-  await expect(page.locator('#gw-piece-count')).toHaveText('5 / 16 pieces')
+  await expect(page.locator('#gw-piece-count')).toHaveText('8 / 16 pieces')
 
   expect(errors).toEqual([])
 })

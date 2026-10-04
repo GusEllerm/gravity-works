@@ -55,11 +55,18 @@ import type { Level } from './level.ts';
 
 /** Toy-plastic deck friction; same constant the feel rigs' boxes use. */
 export const TRACK_FRICTION = 0.6;
-/** Explicit track collision group (bit0 member, filter all) — never the
- * default all-ones group, which the suspension rays' wheel-exclusion
- * predicate would match and silently filter the deck out of (see
- * docs/vault/Modules/physics.md gotchas). */
-export const TRACK_GROUP = 0x0001_ffff;
+/** Explicit track collision group (bit0 member) — never the default all-ones
+ * group, which the suspension rays' wheel-exclusion predicate would match and
+ * silently filter the deck out of (see docs/vault/Modules/physics.md gotchas).
+ * The FILTER excludes bit1 (the chassis), matching `src/feel/kittrack.ts`
+ * (0x0001_fffd): a raycast chassis is a pure-ray body — the moment it can
+ * physically touch the kit hulls it hoovers the loop's ~3 mm chord risers and
+ * anchors on them (measured on the feel track: energy-pumped ramp descent +
+ * inelastic stall at the loop bottom). Physical wheels (bit2, the
+ * wheelColliders bake-off variant) still hit the track. Support rays are
+ * unaffected: `castRay` is called without a group filter, so a collider's
+ * filter mask never hides the deck from suspension. */
+export const TRACK_GROUP = 0x0001_fffd;
 /** Rolling-resistance coefficient used until the Feel Engineer retunes
  * `src/feel` ROLL_COEF on the real feel track (mirror of 0.02, 2026-10-04). */
 export const WORLD_ROLL_COEF = 0.02;

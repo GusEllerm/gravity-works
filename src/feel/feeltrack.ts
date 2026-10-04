@@ -81,7 +81,7 @@ export const FEEL_TRACK_KINDS: readonly PieceKind[] = [
   'ramp', 'straight', 'loop', 'gapLip', 'landing', 'finishCup', 'bank', 'curve',
 ];
 
-const FEEL_PARAMS: Record<string, PieceParams> = {
+export const FEEL_PARAMS: Record<string, PieceParams> = {
   ramp: { angle: -DROP_RAMP_ANGLE, blend: DROP_BLEND, level: rampLevelForDrop(FEEL_DROP_HEIGHT, -DROP_RAMP_ANGLE, DROP_BLEND, RELEASE_FRACTION * DROP_BLEND) },
   straight: { length: 0.05 },
   bank: { radius: 1.8, angle: 30, bank: 9 },

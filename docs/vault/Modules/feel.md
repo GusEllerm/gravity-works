@@ -78,3 +78,12 @@ Findings that cost real debugging and must not be re-learned:
 0.4 s speed-scaled lead, 150 ms positional lag, ~350 ms rotational lag aimed
 at the *lead* frame — the turn is begun before the eye arrives. Every filter
 is the step-independent exponential form; guarded by `tests/unit/camera.test.ts`.
+
+### Cross-reference (systems engineer, 2026-10-05)
+
+The world level registry (`src/world/levels/feeltrack.level.ts`) now desugars
+`FEEL_TRACK_KINDS` + `FEEL_PARAMS` from this module directly (both exported)
+instead of duplicating geometry, so retuning a constant here moves the
+level, its replay hash and the share links automatically;
+`tests/unit/feeltrack-level.test.ts` asserts the two routes reify to
+identical splines and collider hulls.
