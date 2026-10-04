@@ -51,6 +51,7 @@ const fragmentShader = /* glsl */ `
 varying vec3 vNormal;
 varying vec3 vViewPosition;
 varying vec3 vModelPos;
+varying vec3 vWorldPos;
 
 uniform vec3 uBase;
 uniform vec3 uShadowTint;
@@ -148,7 +149,7 @@ void RE_Direct_Toon(
 	// at 1 the raw IGN dither is back. Default 0.35 keeps a breath of texture.
 	vec3 weaveW = mod( vWorldPos + vec3( 32.0 ), vec3( 64.0 ) ) - vec3( 32.0 );
 	float weave = hash21( floor( weaveW.xz * 450.0 ) ) - 0.5;
-	float hard = step( 0.5 + weave * 0.5, att );
+	float hard = step( 0.5 + weave * 0.6, att );
 	att = mix( hard, att, uShadowDither );
 	vec3 effective = mix( material.shadowTint * uKeyLength * 0.4, directLight.color, att );
 
@@ -314,7 +315,7 @@ export class ToonMaterial extends THREE.ShaderMaterial {
         uGrain: { value: params.grain ?? 0 },
         uGrainScale: { value: params.grainScale ?? 1 },
         uFillStrength: { value: params.fillStrength ?? 0.25 },
-        uShadowDither: { value: params.shadowDither ?? 0.35 },
+        uShadowDither: { value: params.shadowDither ?? 0.3 },
         uLiquid: { value: params.liquid ?? 0 },
         uTime: { value: 0 },
         uDiffuseStrength: { value: params.diffuseStrength ?? 1 },

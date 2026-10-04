@@ -45,40 +45,36 @@ describe('tilt-shift (§5.6/§7.3)', () => {
     const top = tiltShiftParams(new THREE.Vector3(0, 0.6, 0), cam, { floorY: 0 });
     expect(rim.radiusPx).toBeGreaterThan(floor.radiusPx);
     expect(top.radiusPx).toBeGreaterThan(rim.radiusPx - 1e-9);
-    expect(top.radiusPx).toBeLessThanOrEqual(20 + 1e-9); // capped at the frame-edge radius
+    expect(top.radiusPx).toBeLessThanOrEqual(14 + 1e-9); // capped at the frame-edge radius
     expect(floor.radiusPx).toBeGreaterThan(0);
   });
 });
 
 describe('quality ladder — stages drop before resolution', () => {
-  const tapsOf = (stages: ReturnType<typeof buildPostStages>): number =>
-    stages.tilt.passes[0]!.material.uniforms.uTaps!.value as number;
-
   it('high runs every stage', () => {
     const s = buildPostStages();
     applyQuality(s, 'high');
     expect(s.bloom.enabled).toBe(true);
-    expect(s.tilt.passes.every((p) => p.enabled)).toBe(true);
-    expect(tapsOf(s)).toBe(6);
+    expect(s.tilt.enabled).toBe(true);
+    expect(s.tilt.tapsUsed).toBe(6);
+    expect(s.grade.enabled).toBe(true);
   });
 
   it('medium drops bloom first, then halves tilt taps — resolution untouched', () => {
     const s = buildPostStages();
     applyQuality(s, 'medium');
     expect(s.bloom.enabled).toBe(false);
-    expect(s.tilt.passes.every((p) => p.enabled)).toBe(true);
-    expect(tapsOf(s)).toBe(3);
+    expect(s.tilt.enabled).toBe(true);
+    expect(s.tilt.tapsUsed).toBe(3);
     expect(s.grade.enabled).toBe(true);
-    expect(s.vignette.enabled).toBe(true);
   });
 
-  it('low keeps only the two one-tap stages', () => {
+  it('low keeps only the always-on grade pass', () => {
     const s = buildPostStages();
     applyQuality(s, 'low');
     expect(s.bloom.enabled).toBe(false);
-    expect(s.tilt.passes.every((p) => !p.enabled)).toBe(true);
+    expect(s.tilt.enabled).toBe(false);
     expect(s.grade.enabled).toBe(true);
-    expect(s.vignette.enabled).toBe(true);
   });
 });
 

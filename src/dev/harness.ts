@@ -11,8 +11,9 @@
 //   focus=(x,y,z)   world-space point the tilt-shift band centres on; falls
 //                   back to the scene's own SceneEntry.focus, then (0,0.05,0)
 //   perf=N          after the ready frame, time N more full renders (each
-//                   serialised with gl.finish) into window.__perfStats() —
-//                   the frame-cost probe for the session log
+//                   serialised with a blocking readPixels) into
+//                   window.__perfStats() — the frame-cost probe for the
+//                   session log
 
 import * as THREE from 'three'
 import { canonicalCamera, isCanonicalShot, RENDER_DPR, RENDER_HEIGHT, RENDER_WIDTH, type CanonicalShot } from './cameras.ts'
@@ -33,6 +34,7 @@ export interface PerfStats {
   samples: number[]
   medianMs: number
   p95Ms: number
+  rafMedianMs?: number
   config: { scene: string; shot: string; post: string; quality: string; frames: number }
 }
 
@@ -50,13 +52,15 @@ export const FIXED_TIME = 0
 
 function readPixelStats(renderer: THREE.WebGLRenderer): PixelStats {
   const gl = renderer.getContext()
-  const buf = new Uint8Array(RENDER_WIDTH * RENDER_HEIGHT * 4)
-  gl.readPixels(0, 0, RENDER_WIDTH, RENDER_HEIGHT, gl.RGBA, gl.UNSIGNED_BYTE, buf)
+  const w = gl.drawingBufferWidth
+  const h = gl.drawingBufferHeight
+  const buf = new Uint8Array(w * h * 4)
+  gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf)
   let nonBlack = 0
   for (let i = 0; i < buf.length; i += 4) {
     if (buf[i]! + buf[i + 1]! + buf[i + 2]! > 30) nonBlack++
   }
-  return { nonBlack, total: RENDER_WIDTH * RENDER_HEIGHT }
+  return { nonBlack, total: w * h }
 }
 
 function start(): void {
@@ -68,6 +72,12 @@ function start(): void {
   const quality: PostQuality = isPostQuality(params.get('quality')) ? (params.get('quality') as PostQuality) : 'high'
   const focusFromUrl = parseFocusParam(params.get('focus'))
   const perfFrames = Math.max(0, Math.floor(Number(params.get('perf') ?? '0') || 0))
+  // perf-probe only: size=960x540 renders at the game canvas resolution so
+  // the frame budget can be measured the way the shipped page pays it.
+  // Canonical renders never use this — §5.8 fixes 1600×900.
+  const sizeParam = /^([0-9]{2,4})x([0-9]{2,4})$/.exec(params.get('size') ?? '')
+  const width = sizeParam ? THREE.MathUtils.clamp(Number(sizeParam[1]), 64, 4096) : RENDER_WIDTH
+  const height = sizeParam ? THREE.MathUtils.clamp(Number(sizeParam[2]), 64, 4096) : RENDER_HEIGHT
 
   const factory = getSceneFactory(sceneName)
   if (!factory) throw new Error(`harness: unknown scene "${sceneName}"; have: ${sceneNames().join(', ')}`)
@@ -77,12 +87,12 @@ function start(): void {
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
   renderer.setPixelRatio(RENDER_DPR)
-  renderer.setSize(RENDER_WIDTH, RENDER_HEIGHT, false)
+  renderer.setSize(width, height, false)
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFShadowMap // 0.186 removed PCFSoft; radius still softens via PCF blur
   const canvas = renderer.domElement
-  canvas.style.width = `${RENDER_WIDTH}px`
-  canvas.style.height = `${RENDER_HEIGHT}px`
+  canvas.style.width = `${width}px`
+  canvas.style.height = `${height}px`
   document.body.appendChild(canvas)
 
   const entry = factory({ rig: canonicalCamera(shot), time: FIXED_TIME })
@@ -111,10 +121,13 @@ function start(): void {
 }
 
 /**
- * Frame-cost probe: each timed frame ends in gl.finish() so the number is
- * the full draw's wall cost, not a submission timestamp — the honest measure
- * under SwiftShader, at the cost of removing pipelining slack (a hardware
- * GPU can only look better than this).
+ * Frame-cost probe: each timed frame ends in a 1-pixel readPixels, which
+ * blocks until the whole draw has actually rasterised — the honest full-cost
+ * measure under SwiftShader, where gl.finish() alone returns before the GPU
+ * process is done (it measures ~0.4 ms for a frame that verifiably costs
+ * more). rAF deltas are recorded alongside: in headless they are vsync-
+ * paced, so their median is a budget ceiling (like QA's stage-2 mode A),
+ * while blockMs is the measured cost.
  */
 function startPerfProbe(
   renderer: THREE.WebGLRenderer,
@@ -123,21 +136,34 @@ function startPerfProbe(
   config: PerfStats['config'],
 ): void {
   const gl = renderer.getContext()
+  const probe = new Uint8Array(4)
   const samples: number[] = []
-  const step = (): void => {
+  const rafDeltas: number[] = []
+  let lastRaf = 0
+  const step = (now: number): void => {
+    if (lastRaf > 0) rafDeltas.push(now - lastRaf)
+    lastRaf = now
     const t0 = performance.now()
     renderFrame()
-    gl.finish()
+    gl.readPixels(Math.floor(gl.drawingBufferWidth / 2), Math.floor(gl.drawingBufferHeight / 2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, probe)
     samples.push(performance.now() - t0)
     if (samples.length < frames) {
       requestAnimationFrame(step)
       return
     }
-    const sorted = [...samples].sort((a, b) => a - b)
+    const med = (arr: number[]): number => {
+      const s = [...arr].sort((a, b) => a - b)
+      return s[Math.floor(s.length / 2)]!
+    }
+    const p95 = (arr: number[]): number => {
+      const s = [...arr].sort((a, b) => a - b)
+      return s[Math.min(s.length - 1, Math.floor(s.length * 0.95))]!
+    }
     window.__perfStats = () => ({
       samples,
-      medianMs: sorted[Math.floor(sorted.length / 2)]!,
-      p95Ms: sorted[Math.floor(sorted.length * 0.95)] ?? sorted[sorted.length - 1]!,
+      medianMs: med(samples),
+      p95Ms: p95(samples),
+      rafMedianMs: med(rafDeltas),
       config,
     })
   }

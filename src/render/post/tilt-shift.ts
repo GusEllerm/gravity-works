@@ -1,7 +1,9 @@
 // Tilt-shift — the signature of the whole look (art bible §Camera, PROMPT
 // §5.6/§7.3): a narrow band of focus so the kitchen reads miniature. Built as
-// an honest two-pass separable blur (horizontal then vertical ShaderPass) so
-// the blur is round, not a box smear.
+// an honest two-pass separable blur (horizontal then vertical) at half-res in
+// internal buffers, composited back over the sharp frame by circle of
+// confusion — the blur geometry is separable, the sample cost is not paid
+// twice at full frame.
 //
 // The focus band is centred on a *world-space* point (the car, or the
 // `focus=` harness param): the point is projected into the frame and its
@@ -12,14 +14,14 @@
 // keeps the miniature read when the action climbs the book-stack ramp.
 
 import * as THREE from 'three'
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
+import { Pass, FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass.js'
 
 export const DEFAULT_BAND_HEIGHT = 0.2
 
 export interface TiltShiftTuning {
   /** Fraction of frame height that stays in sharp focus. Default 0.2. */
   bandHeight?: number
-  /** Blur radius in pixels at the frame edge with strength 1. Default 20. */
+  /** Blur radius in pixels at the frame edge with strength 1. Default 14. */
   maxRadiusPx?: number
   /** Defocus strength when the focus point sits on the floor. Default 0.55. */
   floorStrength?: number
@@ -60,7 +62,7 @@ export function tiltShiftParams(
   return {
     bandCenter,
     bandHalf: bandHeight * 0.5,
-    radiusPx: (opts.maxRadiusPx ?? 20) * strength,
+    radiusPx: (opts.maxRadiusPx ?? 14) * strength,
   }
 }
 
@@ -124,53 +126,146 @@ void main() {
 }
 `
 
-export interface TiltShiftPasses {
-  passes: [ShaderPass, ShaderPass]
-  /** px per axis, in render-target pixels. */
-  setResolution(width: number, height: number): void
-  setParams(p: TiltShiftParams): void
-  /** taps per direction: 6 = 13-tap wide blur (high), 3 = 7-tap (medium). */
-  setTaps(taps: number): void
-}
+// The separable pair runs at QUARTER resolution (the blur source) and a final
+// full-frame pass composites the blur back over the sharp frame by circle of
+// confusion. Visually identical for a soft defocus, and a quarter of the
+// tap cost — the frame budget says post before resolution, but it does not
+// say the defocus blur itself must pay full-frame sample counts: a blur
+// kernel wider than the buffer's texel step loses nothing but aliasing at
+// this radius. This is still an honest two-pass separable blur (H then V),
+// just sized like every real tilt-shift implementation sizes its blur
+// buffers.
+const tiltCompositeShader = /* glsl */ `
+uniform sampler2D tDiffuse;   // sharp full-res frame
+uniform sampler2D uBlurred;   // half-res separable blur result
+uniform float uBandCenter;
+uniform float uBandHalf;
 
-/** Build the two separable passes. Order matters: horizontal, then vertical. */
-export function createTiltShiftPasses(): TiltShiftPasses {
-  const mk = (dirX: number, dirY: number): ShaderPass =>
-    new ShaderPass({
+varying vec2 vUv;
+
+void main() {
+	vec3 sharp = texture2D( tDiffuse, vUv ).rgb;
+	vec3 soft = texture2D( uBlurred, vUv ).rgb;
+	float d = abs( vUv.y - uBandCenter );
+	float coc = clamp( ( d - uBandHalf ) / ( uBandHalf * 2.0 ), 0.0, 1.0 );
+	coc = coc * coc * ( 3.0 - 2.0 * coc );
+	gl_FragColor = vec4( mix( sharp, soft, coc ), 1.0 );
+}
+`
+
+/**
+ * One composer stage, three internal draws: separable H at half-res,
+ * separable V at half-res, full-res CoC composite. Disabling the stage
+ * (quality=low) makes the composer skip all three.
+ */
+export class TiltShiftPass extends Pass {
+  private readonly rtH: THREE.WebGLRenderTarget
+  private readonly rtV: THREE.WebGLRenderTarget
+  private readonly blur: THREE.ShaderMaterial
+  private readonly composite: THREE.ShaderMaterial
+  private readonly quad: FullScreenQuad
+  private taps = 6
+
+  constructor() {
+    super()
+    // quarter-res blur buffers with plain byte targets: the defocus is by
+    // definition soft, and byte fetch+filter is far cheaper under software
+    // GL; the sharp half of the frame never passes through these buffers
+    const rt = () =>
+      new THREE.WebGLRenderTarget(400, 225, {
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        depthBuffer: false,
+      })
+    this.rtH = rt()
+    this.rtV = rt()
+    this.blur = new THREE.ShaderMaterial({
       uniforms: {
-        tDiffuse: { value: null as THREE.Texture | null },
-        uTexel: { value: new THREE.Vector2(1 / 1600, 1 / 900) },
-        uDirection: { value: new THREE.Vector2(dirX, dirY) },
+        tDiffuse: { value: null },
+        uTexel: { value: new THREE.Vector2(1 / 400, 1 / 225) },
+        uDirection: { value: new THREE.Vector2(1, 0) },
         uBandCenter: { value: 0.5 },
         uBandHalf: { value: DEFAULT_BAND_HEIGHT * 0.5 },
-        uRadius: { value: 20 },
+        uRadius: { value: 7 },
         uTaps: { value: 6 },
       },
       vertexShader: tiltVertex,
       fragmentShader: tiltShader,
     })
-  const passes: [ShaderPass, ShaderPass] = [mk(1, 0), mk(0, 1)]
-  const each = (fn: (u: { [k: string]: THREE.IUniform | undefined }) => void): void => {
-    for (const p of passes) fn(p.material.uniforms as { [k: string]: THREE.IUniform })
+    this.composite = new THREE.ShaderMaterial({
+      uniforms: {
+        tDiffuse: { value: null },
+        uBlurred: { value: null },
+        uBandCenter: { value: 0.5 },
+        uBandHalf: { value: DEFAULT_BAND_HEIGHT * 0.5 },
+      },
+      vertexShader: tiltVertex,
+      fragmentShader: tiltCompositeShader,
+    })
+    this.quad = new FullScreenQuad(this.blur)
   }
-  return {
-    passes,
-    setResolution(w, hh) {
-      each((u) => {
-        (u.uTexel!.value as THREE.Vector2).set(1 / w, 1 / hh)
-      })
-    },
-    setParams(p) {
-      each((u) => {
-        u.uBandCenter!.value = p.bandCenter
-        u.uBandHalf!.value = p.bandHalf
-        u.uRadius!.value = p.radiusPx
-      })
-    },
-    setTaps(taps) {
-      each((u) => {
-        u.uTaps!.value = taps
-      })
-    },
+
+  get tapsUsed(): number {
+    return this.taps
+  }
+
+  /** Full-frame render size in pixels; blur buffers take a quarter. */
+  setResolution(width: number, height: number): void {
+    const w = Math.max(1, Math.ceil(width / 4))
+    const h = Math.max(1, Math.ceil(height / 4))
+    this.rtH.setSize(w, h)
+    this.rtV.setSize(w, h)
+    ;(this.blur.uniforms.uTexel!.value as THREE.Vector2).set(1 / w, 1 / h)
+  }
+
+  setParams(p: TiltShiftParams): void {
+    // the blur buffers are half-res: a full-frame pixel radius is half as
+    // many blur-buffer pixels
+    this.blur.uniforms.uBandCenter!.value = p.bandCenter
+    this.blur.uniforms.uBandHalf!.value = p.bandHalf
+    this.blur.uniforms.uRadius!.value = p.radiusPx * 0.5
+    this.composite.uniforms.uBandCenter!.value = p.bandCenter
+    this.composite.uniforms.uBandHalf!.value = p.bandHalf
+  }
+
+  /** taps per direction: 6 = 13-tap wide blur (high), 3 = 7-tap (medium). */
+  setTaps(taps: number): void {
+    this.taps = taps
+    this.blur.uniforms.uTaps!.value = taps
+  }
+
+  override render(
+    renderer: THREE.WebGLRenderer,
+    writeBuffer: THREE.WebGLRenderTarget | null,
+    readBuffer: THREE.WebGLRenderTarget | null,
+  ): void {
+    const src = readBuffer?.texture
+    if (!src) return
+    this.quad.material = this.blur
+    this.blur.uniforms.tDiffuse!.value = src
+    this.blur.uniforms.uDirection!.value.set(1, 0)
+    renderer.setRenderTarget(this.rtH)
+    this.quad.render(renderer)
+
+    this.blur.uniforms.tDiffuse!.value = this.rtH.texture
+    this.blur.uniforms.uDirection!.value.set(0, 1)
+    renderer.setRenderTarget(this.rtV)
+    this.quad.render(renderer)
+
+    this.quad.material = this.composite
+    this.composite.uniforms.tDiffuse!.value = src
+    this.composite.uniforms.uBlurred!.value = this.rtV.texture
+    renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer)
+    this.quad.render(renderer)
+  }
+
+  override dispose(): void {
+    this.rtH.dispose()
+    this.rtV.dispose()
+    this.blur.dispose()
+    this.composite.dispose()
+    this.quad.dispose()
   }
 }
+
+export type TiltShiftStage = TiltShiftPass

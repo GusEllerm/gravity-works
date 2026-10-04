@@ -92,9 +92,12 @@ export class SoftBloomPass extends Pass {
   constructor(opts: SoftBloomOptions = {}) {
     super()
     this.strength = Math.min(opts.strength ?? 0.18, BLOOM_SOFT_CEILING)
+    // plain byte internals: software rasterisers fetch/filter half-float
+    // targets several times slower, and a soft glow has no dynamic-range
+    // need — the highlights above 1.0 clip to white here, which is exactly
+    // what a soft bloom does to them anyway
     const rt = () =>
       new THREE.WebGLRenderTarget(400, 225, {
-        type: THREE.HalfFloatType,
         minFilter: THREE.LinearFilter,
         magFilter: THREE.LinearFilter,
         depthBuffer: false,

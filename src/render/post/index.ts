@@ -1,5 +1,6 @@
-// The post stack (PROMPT §8, §5.6): RenderPass → tilt-shift (two separable
-// passes) → soft bloom → color grade → vignette → output. One entry point,
+// The post stack (PROMPT §8, §5.6): RenderPass → tilt-shift (separable
+// half-res pair + CoC composite) → soft bloom → color grade (with the
+// vignette term and the sRGB encode inside) — one entry point,
 // `createPostStack`, used by the render harness (`?post=on`) and — behind a
 // URL flag only — the game shell in `src/boot.ts`. Post is OFF by default
 // everywhere: with the flag absent nothing here is even constructed, so
@@ -9,21 +10,19 @@
 // resolution** (brief §8) — and in this stack it never drops resolution at
 // all: `high` runs everything; `medium` drops bloom (the most machine per
 // pixel, the least story) and halves the tilt-shift taps; `low` also drops
-// the tilt-shift, leaving only the one-tap grade and vignette. Dropping
+// the tilt-shift, leaving only the one always-on grade pass. Dropping
 // resolution is reserved for a worse tier that has never been needed.
 
 import * as THREE from 'three'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { SET_TOKENS } from '../tokens.ts'
 import type { SetTokens } from '../tokens.ts'
-import { createGradePass, createVignettePass, gradeFromTokens } from './grade.ts'
+import { createGradePass, gradeFromTokens } from './grade.ts'
 import type { Grade, VignetteSpec } from './grade.ts'
 import { SoftBloomPass } from './bloom.ts'
-import { createTiltShiftPasses, tiltShiftParams } from './tilt-shift.ts'
-import type { TiltShiftPasses, TiltShiftTuning } from './tilt-shift.ts'
-import type { Pass } from 'three/examples/jsm/postprocessing/Pass.js'
+import { TiltShiftPass, tiltShiftParams } from './tilt-shift.ts'
+import type { TiltShiftTuning } from './tilt-shift.ts'
 
 export type PostQuality = 'high' | 'medium' | 'low'
 
@@ -41,10 +40,10 @@ export interface PostStackOptions extends TiltShiftTuning {
 }
 
 export interface PostStages {
-  tilt: TiltShiftPasses
+  tilt: TiltShiftPass
   bloom: SoftBloomPass
-  grade: Pass
-  vignette: Pass
+  /** The terminal pass: LUT-lite grade with the vignette term inside. */
+  grade: import('three/examples/jsm/postprocessing/ShaderPass.js').ShaderPass
 }
 
 export interface PostStack {
@@ -62,18 +61,16 @@ export interface PostStack {
 export function buildPostStages(opts: PostStackOptions = {}): PostStages {
   const tokens = opts.tokens ?? SET_TOKENS.kitchen
   return {
-    tilt: createTiltShiftPasses(),
+    tilt: new TiltShiftPass(),
     bloom: new SoftBloomPass({ strength: opts.bloomStrength ?? 0.18 }),
-    grade: createGradePass(opts.grade ?? gradeFromTokens(tokens)),
-    vignette: createVignettePass(opts.vignette ?? { strength: 0.26, softness: 0.72 }),
+    grade: createGradePass(opts.grade ?? gradeFromTokens(tokens), opts.vignette),
   }
 }
 
 /** The documented drop order, applied once per quality. */
 export function applyQuality(stages: PostStages, quality: PostQuality): void {
   stages.bloom.enabled = quality === 'high'
-  const tiltOn = quality !== 'low'
-  for (const p of stages.tilt.passes) p.enabled = tiltOn
+  stages.tilt.enabled = quality !== 'low'
   stages.tilt.setTaps(quality === 'high' ? 6 : 3)
 }
 
@@ -90,12 +87,9 @@ export function createPostStack(
   stages.tilt.setResolution(size.x, size.y)
 
   composer.addPass(renderPass)
-  composer.addPass(stages.tilt.passes[0])
-  composer.addPass(stages.tilt.passes[1])
+  composer.addPass(stages.tilt)
   composer.addPass(stages.bloom)
   composer.addPass(stages.grade)
-  composer.addPass(stages.vignette)
-  composer.addPass(new OutputPass())
 
   let quality: PostQuality = opts.quality ?? 'high'
   applyQuality(stages, quality)
@@ -126,6 +120,7 @@ export function createPostStack(
     },
     dispose() {
       composer.dispose()
+      stages.tilt.dispose()
       stages.bloom.dispose()
     },
   }

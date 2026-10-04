@@ -220,7 +220,7 @@ function wetPatchFilms(): THREE.Group {
   const splash = stainDecal(tokens, {
     kind: 'splashRing',
     color: '#CFEADF',
-    opacity: 0.55,
+    opacity: 0.4,
     size: 0.008,
     width: 0.0016,
     sheen: 0.3,
@@ -440,10 +440,10 @@ function kitchenIntegratedScene(): SceneFactory {
     mugG.rotation.y = -1.7
     vignette.add(mugG)
     const ring = mugRingFilm()
-    ring.position.set(0.185, ring.position.y, 0.085)
+    ring.position.set(0.15, ring.position.y, 0.075)
     vignette.add(ring)
     const soldier = toast()
-    soldier.position.set(0.212, 0.024, 0.07)
+    soldier.position.set(0.212, 0.024, 0.088)
     soldier.rotation.set(-0.05, -0.75, -0.5)
     vignette.add(soldier)
     const crumbTrail = crumbs()

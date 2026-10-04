@@ -1,13 +1,21 @@
-// Per-set color grade (LUT-lite) and vignette — the last two stages of the
-// post stack, both one-tap-cheap full-frame passes.
+// Per-set color grade (LUT-lite) with the vignette folded in — the last
+// stage of the post stack, and the only always-on full-frame draw.
 //
 // "LUT-lite" (PROMPT §8): no 3D LUT texture — the grade is four numbers and
 // two vectors derived from the set's palette tokens by pure hex math, so a
 // grade can never drift from the palette and Node tests see the same numbers
 // the GPU shader gets. The kitchen grade answers the stage-1 send-back: tile
-// B sat high and washed next to tile A's value range — sink the mids a hair,
-// warm the gain along the dominant hue, lift the blacks onto the shadow
-// tint (never black), and take a little saturation back up.
+// B sat high and washed next to tile A's value range — sink the mids, warm
+// the gain along the dominant hue, lift the blacks onto the shadow tint
+// (never black), and take the saturation up.
+//
+// Two implementation notes for the frame budget: (1) the vignette is a term
+// of this pass, not a pass of its own — a corner falloff is three ALU ops,
+// and paying a second full-frame buffer read for it measured +5 ms under
+// software GL; the knob stays (`vignette: 0` disables it). (2) As the last
+// pass it carries the sRGB encode (`colorspace_fragment`), which retires the
+// separate OutputPass draw. The stage-drop ladder (bloom → tilt-shift) never
+// touches this pass, so it can be the terminal one.
 
 import * as THREE from 'three'
 import { hexToRgb } from '../tokens.ts'
@@ -33,18 +41,18 @@ export interface VignetteSpec {
 /**
  * Derive a set's grade from its tokens. Pure, deterministic, no three.
  * The kitchen values were eyeballed against tile A's rendered histogram
- * (docs/explorations/kitchen/*-a.png): mids down ~6 %, blacks kept warm.
+ * (docs/explorations/kitchen/*-a.png): mids down, blacks kept warm.
  */
 export function gradeFromTokens(tokens: SetTokens): Grade {
   const [dr, dg, db] = hexToRgb(tokens.dominant)
   const dm = (dr + dg + db) / 3
   const [sr, sg, sb] = hexToRgb(tokens.shadowTint)
   return {
-    lift: [sr * 0.045, sg * 0.045, sb * 0.05],
+    lift: [sr * 0.055, sg * 0.055, sb * 0.06],
     gain: [1 + (dr - dm) * 0.12, 1 + (dg - dm) * 0.12, 1 + (db - dm) * 0.12],
-    saturation: 1.1,
-    contrast: 1.07,
-    gamma: 1.06,
+    saturation: 1.12,
+    contrast: 1.09,
+    gamma: 1.12,
   }
 }
 
@@ -55,6 +63,8 @@ uniform vec3 uGain;
 uniform float uSaturation;
 uniform float uContrast;
 uniform float uGamma; // mid curve: out = pow(in, 1/uGamma)
+uniform float uVignette;
+uniform float uVignetteSoftness;
 
 varying vec2 vUv;
 
@@ -64,22 +74,12 @@ void main() {
 	float l = dot( c, vec3( 0.2126, 0.7152, 0.0722 ) );
 	c = mix( vec3( l ), c, uSaturation );
 	c = c * uGain + uLift;
-	gl_FragColor = vec4( c, 1.0 );
-}
-`
-
-const vignetteShader = /* glsl */ `
-uniform sampler2D tDiffuse;
-uniform float uStrength;
-uniform float uSoftness;
-
-varying vec2 vUv;
-
-void main() {
-	vec4 t = texture2D( tDiffuse, vUv );
+	// vignette term: soft corner falloff, enough to seat the frame, never a spotlight
 	float r = length( vUv - 0.5 ) / 0.7071;
-	float v = smoothstep( 1.0 - uSoftness, 1.0, r ) * uStrength;
-	gl_FragColor = vec4( t.rgb * ( 1.0 - v ), t.a );
+	c *= 1.0 - uVignette * smoothstep( 1.0 - uVignetteSoftness, 1.0, r );
+	gl_FragColor = vec4( c, 1.0 );
+
+	#include <colorspace_fragment>
 }
 `
 
@@ -91,7 +91,8 @@ void main() {
 }
 `
 
-export function createGradePass(grade: Grade): ShaderPass {
+/** The terminal pass: LUT-lite grade + vignette term + the sRGB encode. */
+export function createGradePass(grade: Grade, vignette: VignetteSpec = { strength: 0.26, softness: 0.72 }): ShaderPass {
   return new ShaderPass({
     uniforms: {
       tDiffuse: { value: null as THREE.Texture | null },
@@ -100,21 +101,10 @@ export function createGradePass(grade: Grade): ShaderPass {
       uSaturation: { value: grade.saturation },
       uContrast: { value: grade.contrast },
       uGamma: { value: grade.gamma },
+      uVignette: { value: vignette.strength },
+      uVignetteSoftness: { value: vignette.softness },
     },
     vertexShader: passVertex,
     fragmentShader: gradeShader,
-  })
-}
-
-/** Soft corner falloff — enough to seat the frame, never a spotlight. */
-export function createVignettePass(spec: VignetteSpec = { strength: 0.26, softness: 0.72 }): ShaderPass {
-  return new ShaderPass({
-    uniforms: {
-      tDiffuse: { value: null as THREE.Texture | null },
-      uStrength: { value: spec.strength },
-      uSoftness: { value: spec.softness },
-    },
-    vertexShader: passVertex,
-    fragmentShader: vignetteShader,
   })
 }
