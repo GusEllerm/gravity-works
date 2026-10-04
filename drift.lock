@@ -1,6 +1,26 @@
 version = 1
 
 [[bindings]]
+doc = "docs/vault/Concepts/Art Bible.md"
+target = "docs/explorations/cars/hero-a.png"
+sig = "1a757ddc3c2831a1"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Art Bible.md"
+target = "src/dev/scenes/cars.ts"
+sig = "482eff61dd1440fc"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Art Bible.md"
+target = "src/dev/scenes/kitchen-b.ts"
+sig = "9f4bce417acc7d9b"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Art Bible.md"
+target = "src/render/materials.ts"
+sig = "31477df388547628"
+
+[[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/boot.ts"
 sig = "c792e7b2ffb80e0f"

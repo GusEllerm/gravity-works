@@ -18,7 +18,7 @@ Chunky over detailed · saturated over muted · one strong light over ambient mu
 
 - Each set: **one dominant hue + one accent**, chosen for its story and time of day (see the set table in `PROMPT.md` §6).
 - The **orange track** is the constant in every set, never re-hued — it is the reader's path and the brand.
-- Cars: high-chroma single colors with one stripe; palette must stay distinguishable for colorblind players.
+- Cars: single-color bodies from the colorblind-safe Okabe–Ito seeds pushed through `shiftHex` (blue / bluish green / reddish purple), never from the track's orange hue family — the hue must not *read* as orange at the floor camera; one cream stripe as raised geometry, clear of the wheel envelope.
 - Neutrals are warm (paper, cream, oak, putty) — never grey. Shadows tinted toward the set's dominant hue — never black.
 - Palettes live once in a tokens file, generated into CSS and the material system so they cannot drift. Contrast validated for UI text and for the track against every set's floor.
 
@@ -32,7 +32,7 @@ One key light per set (sun through a window, or one lamp), long soft shadows, vi
 
 ## Camera
 
-**Tilt-shift is the signature**: a narrow focus band around the car, soft defocus above/below, so the kitchen reads miniature. FOV ≈ 35° in play, 28° in replay. Build camera: orbital, framed on the set, never free-fly. Run camera: leads the car along the track spline, anticipates turns. Replay camera: composed shots (crane, rail, lock-off, low tracking) chosen procedurally from track geometry.
+**Tilt-shift is the signature**: a narrow focus band around the car, soft defocus above/below, so the kitchen reads miniature. *(Not yet in the render system as of stage 1 — until the focus-band pass lands, renders can only carry the oversized-prop / low-angle scale cues and rubric line 3 is capped at 1. Blocking dependency before the stage-3 review.)* FOV ≈ 35° in play, 28° in replay. Build camera: orbital, framed on the set, never free-fly. Run camera: leads the car along the track spline, anticipates turns. Replay camera: composed shots (crane, rail, lock-off, low tracking) chosen procedurally from track geometry.
 
 ## Motion
 
@@ -64,7 +64,8 @@ UI is a thin layer over the world: piece tray, budget counter, launch button, re
 
 ## Chosen references
 
-*(filled by the Art Director at stage 1; empty = nothing approved yet)*
-- Set look (kitchen): _unchosen_
-- Car look: _unchosen_
-- Material ramp: _unchosen_
+*(stage 1, chosen at the 2026-10-04 review — see `Reference/Review 2026-10-04 Stage 1 explorations.md`)*
+
+- **Set look (kitchen): tile B** — `docs/explorations/kitchen/{establishing,hero,floor}-b.png` (`src/dev/scenes/kitchen-b.ts`). Why: the only kitchen tile with no broken frame and a hero shot that is a painting — the car parked mid-bank in the bowl, the tap shadow drawing itself. Keeps from tile A: its gold density and value range, the sugar-cube track supports, bitten toast / crumb trail / dropped pencil, the cereal-box cliff. Tile C contributes no pixels; its system audit is the stage-2 material backlog. The tile-B integration re-render (grading, bowl glaze, wet-patch film, mug pull-back, brighter tyres) becomes the permanent reference.
+- **Car look: car-a "sedan blocky"** — `docs/explorations/cars/hero-a.png` (`src/dev/scenes/cars.ts`). Rule: chunky beveled-toy geometry, fat wheels outside the flanks, one cream stripe as raised geometry, **one small absurd cast detail per trim level** (the ladder rule), silhouette names its type at 200 px in both canonical cameras; stripes and details never intersect the wheel envelope.
+- **Material ramp: variant B (three hard steps)** — production defaults for `src/render/materials.ts`: steps `[0.42, 0.7, 1.0]`, thresholds `[0.25, 0.62]`, softness `0.03`, rim `1.0×`, toy `0.3`; die-cast paint may use the harder cel rim (≈1.4×, chrome read). Painterly softness 0.3 is rejected: dither speckle at grazing angles.
