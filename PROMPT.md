@@ -75,17 +75,25 @@ server. A cinematic replay camera makes a run worth sharing as a clip.
 
 ## 3. Bootstrap (do this first, exactly)
 
-You start inside the project directory `gravity-works`, which already contains this file. Keep it.
+You start inside the project directory `gravity-works`. The git repository and its remote
+**already exist**: the default branch is `main`, the remote is `origin` at
+https://github.com/GusEllerm/gravity-works (public, owned by the human), and the only commit so far
+contains this file. Do not re-initialise git or create another repository. Commit to `main` and push
+to `origin` as you go; GitHub Pages will deploy from a workflow you add in Stage 0.
 
 ```sh
-git init -b main
-npm create vite@latest . -- --template vanilla-ts      # accept overwriting into the current dir
+git status                                   # expect: on main, clean, PROMPT.md tracked
+npm create vite@latest . -- --template vanilla-ts      # scaffold into the existing directory; keep PROMPT.md
 printf 'node_modules/\ndist/\n.playwright/\nscreenshots/\n' >> .gitignore
-git add -A && git commit -m "init"
-gh repo create gravity-works --public --source=. --push --description "Build the track. Let go. Physics decides."
+git add -A && git commit -m "vite scaffold" && git push
 livedocs new-vault docs/vault
-git add -A && git commit -m "vault"
+git add -A && git commit -m "vault" && git push
 ```
+
+Git conventions for the whole project: small commits with a message that names the stage and the
+role that did the work; one tag per stage close (`stage-0` … `stage-6`), pushed; never force-push
+`main`; never `--no-verify`. Sub-agents commit their own work on `main` when their file sets are
+disjoint, or hand their diff back to you to integrate when they are not; you decide per brief.
 
 Then read what `new-vault` produced: `docs/vault/Home.md`, the `Templates/`, `.livedocs/config.json`,
 `.githooks/`, and the `AGENTS.md` block it added at the repo root. Those are your documentation
