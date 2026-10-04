@@ -1,0 +1,96 @@
+/**
+ * KITCHEN 04 — "The Tap" (the set's hazard enters).
+ *
+ * The dripping tap wets a patch of counter, and the patch HALVES GRIP. As
+ * data that is this level's `hazards` entry (a `WetPatch`: centre, radius,
+ * `gripFactor: 0.5`) — `World` does not read zones yet, and this file says so
+ * plainly instead of pretending (Concepts/Levels §Hazards as data: the ask to
+ * the Feel Engineer is one collider-material region hook). What the LEVEL
+ * already does with the convention is the design: the par line FLIES the sink
+ * and lands past the wet patch, so the par build is grip-independent and
+ * provably finishes today; the ground line decks straight over the sink with
+ * two loose straights and drives through the patch — it finishes today (dry),
+ * and once the zone hook exists it becomes the level's speed-management
+ * question. Affordance before hazard, per the progression rule: the tap
+ * drips visibly upstream of the patch at all five canonical cameras.
+ */
+import { KitRig } from '../../feel/kittrack.ts';
+import type { Build } from '../../track/build.ts';
+import {
+  KITCHEN_GAP,
+  KITCHEN_GEOM,
+  kitchenRamp,
+  lay,
+  registerKitchen,
+  kitchenLevel,
+  startSocketFromBuild,
+  type KitchenLevel,
+  type WetPatch,
+} from './kitchen01.level.ts';
+
+export const KITCHEN04_ID = 'kitchen04';
+
+/** Piece indices in the par chain (for the wet-patch placement maths). */
+const I = { landing: 3, straight: 4 } as const;
+
+function parBuild(): Build {
+  return lay(
+    [
+      { def: 'ramp', params: kitchenRamp(0.26) }, // the books (fixture)
+      { def: 'gapLip', params: KITCHEN_GAP.lip }, // tray: the sink's edge
+      { def: 'drop', params: KITCHEN_GAP.drop }, // tray: the sink
+      { def: 'landing', params: KITCHEN_GAP.landing }, // tray
+      { def: 'straight', params: { length: 0.35 } }, // tray: past the wet
+      { def: 'finishCup' }, // fixture
+    ],
+    KITCHEN04_ID,
+    1,
+  );
+}
+
+/** The ground line: two straights deck the sink and drive through the patch.
+ *  Exported as data so the test can prove it is a real second route. */
+export function kitchen04GroundBuild(): Build {
+  return lay(
+    [
+      { def: 'ramp', params: kitchenRamp(0.26) },
+      { def: 'straight', params: { length: 0.3 } },
+      { def: 'straight', params: { length: 0.3 } },
+      { def: 'finishCup' },
+    ],
+    KITCHEN04_ID,
+    1,
+  );
+}
+
+/** The wet patch sits on the landing's level run — deck the ground line
+ *  drives across and the par line flies past. Centred from the par rig. */
+function wetPatch(): WetPatch {
+  const build = parBuild();
+  const rig = new KitRig(build, 10);
+  const p = rig.frameAt(rig.starts[I.landing]! + KITCHEN_GAP.landing.blend + KITCHEN_GAP.landing.level / 2).pos;
+  return {
+    id: 'sinkSplash',
+    kind: 'wetPatch',
+    center: { x: p.x, y: p.y, z: p.z },
+    radius: 0.14,
+    gripFactor: 0.5,
+    source: 'tap',
+  };
+}
+
+export const KITCHEN04: KitchenLevel = registerKitchen(
+  kitchenLevel({
+    id: KITCHEN04_ID,
+    name: 'The Tap',
+    set: 'kitchen',
+    seed: 1,
+    startSocket: startSocketFromBuild(parBuild(), KITCHEN_GEOM.release * KITCHEN_GEOM.rampBlend),
+    par: { pieces: 4, time: 2.45 }, // the par line places 4 of the 5 tray pieces
+    maxTime: 12,
+    tray: { gapLip: 1, drop: 1, landing: 1, straight: 2 },
+    fixtures: { ramp: 1, finishCup: 1 },
+    hazards: [wetPatch()],
+    parBuild,
+  }),
+);

@@ -26,6 +26,36 @@ target = "src/physics/sim.ts"
 sig = "09c7f3eef715d605"
 
 [[bindings]]
+doc = "docs/vault/Concepts/Levels.md"
+target = "docs/vault/Modules/feel.md"
+sig = "ccfbe66271494028"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Levels.md"
+target = "src/replay/replay.ts"
+sig = "358c8994ef168677"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Levels.md"
+target = "src/world/level.ts"
+sig = "19d3e70488480f5e"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Levels.md"
+target = "src/world/levels/kitchen01.level.ts"
+sig = "6c77c38f078c5bf0"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Levels.md"
+target = "src/world/levels/kitchen05.level.ts"
+sig = "dde4698d91a1234c"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Levels.md"
+target = "tests/unit/kitchen-levels.test.ts"
+sig = "aba95ef42e6aa53d"
+
+[[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/boot.ts"
 sig = "eb6213d912d3dac9"
@@ -507,13 +537,28 @@ sig = "9512fc975c9378c7"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
+target = "src/boot.ts"
+sig = "eb6213d912d3dac9"
+
+[[bindings]]
+doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/feel/feeltrack.ts"
 sig = "cbba72af04a17c24"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
+target = "src/replay/replay.ts"
+sig = "358c8994ef168677"
+
+[[bindings]]
+doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/world/levels/feeltrack.level.ts"
 sig = "fb06ede3e0b45cba"
+
+[[bindings]]
+doc = "docs/vault/Reference/Level Ladder.md"
+target = "tests/unit/kitchen-levels.test.ts"
+sig = "aba95ef42e6aa53d"
 
 [[bindings]]
 doc = "docs/vault/Reference/Performance Baselines.md"
