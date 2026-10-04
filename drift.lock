@@ -186,6 +186,61 @@ target = "tests/unit/tokens.test.ts"
 sig = "0f065f90d47289b6"
 
 [[bindings]]
+doc = "docs/vault/Modules/replay.md"
+target = "src/boot.ts"
+sig = "eb6213d912d3dac9"
+
+[[bindings]]
+doc = "docs/vault/Modules/replay.md"
+target = "src/replay/replay.ts"
+sig = "358c8994ef168677"
+
+[[bindings]]
+doc = "docs/vault/Modules/replay.md"
+target = "tests/e2e/replay.spec.ts"
+sig = "7c1bfa6b96e6988b"
+
+[[bindings]]
+doc = "docs/vault/Modules/replay.md"
+target = "tests/unit/replay.test.ts"
+sig = "23be0adcf3c58b41"
+
+[[bindings]]
+doc = "docs/vault/Modules/save.md"
+target = "src/boot.ts"
+sig = "eb6213d912d3dac9"
+
+[[bindings]]
+doc = "docs/vault/Modules/save.md"
+target = "src/save/save.ts"
+sig = "db2fa327595baa14"
+
+[[bindings]]
+doc = "docs/vault/Modules/save.md"
+target = "tests/unit/save.test.ts"
+sig = "a95cd4732e132a95"
+
+[[bindings]]
+doc = "docs/vault/Modules/share.md"
+target = "src/boot.ts"
+sig = "eb6213d912d3dac9"
+
+[[bindings]]
+doc = "docs/vault/Modules/share.md"
+target = "src/share/share.ts"
+sig = "fc117b5b67ee7421"
+
+[[bindings]]
+doc = "docs/vault/Modules/share.md"
+target = "tests/e2e/replay.spec.ts"
+sig = "7c1bfa6b96e6988b"
+
+[[bindings]]
+doc = "docs/vault/Modules/share.md"
+target = "tests/unit/share.test.ts"
+sig = "4027748e1e9f62a9"
+
+[[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/boot.ts"
 sig = "eb6213d912d3dac9"
@@ -264,6 +319,56 @@ sig = "c1d72905e8feea04"
 doc = "docs/vault/Modules/track.md"
 target = "tests/unit/track.test.ts"
 sig = "70230c6497753041"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
+target = "src/boot.ts"
+sig = "eb6213d912d3dac9"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
+target = "src/ui/builder.ts"
+sig = "315df5f7e3656d5a"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
+target = "tests/e2e/builder.spec.ts"
+sig = "fe173ae0b02a81de"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "src/boot.ts"
+sig = "eb6213d912d3dac9"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "src/physics/car.ts"
+sig = "f48178a239bfc8e2"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "src/world/level.ts"
+sig = "4868f552e38e4e2b"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "src/world/levels/feeltrack.level.ts"
+sig = "d3e7a146684de9c8"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "src/world/world.ts"
+sig = "b8156c3e8ab5a128"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "tests/unit/replay.test.ts"
+sig = "23be0adcf3c58b41"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "tests/unit/world.test.ts"
+sig = "3eb6eaf704a9ecab"
 
 [[bindings]]
 doc = "docs/vault/Reference/Canonical Cameras.md"
