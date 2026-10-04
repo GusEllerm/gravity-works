@@ -1,0 +1,4 @@
+# livedocs stamps live in one append-only JSONL; parallel worktrees add lines
+# to opposite ends of it, so merge them as a union (never hand-resolve, never
+# lose a stamp line to a conflicting hunk).
+docs/vault/.livedocs/stamps.jsonl merge=union

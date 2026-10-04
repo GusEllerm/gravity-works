@@ -97,6 +97,11 @@ sig = "6a01938f287fa21a"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
+target = "src/dev/post-params.ts"
+sig = "eb7edff0fcbccfaa"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
 target = "src/dev/registry.ts"
 sig = "10c95ddb0fa1d051"
 
@@ -142,8 +147,18 @@ sig = "777f9bdbd60fe546"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
+target = "src/render/post/index.ts"
+sig = "b55f915c4ff306d2"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
 target = "tests/e2e/harness.spec.ts"
 sig = "076a54f22734436c"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
+target = "tests/unit/render-post.test.ts"
+sig = "35a2037b0e32333f"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
