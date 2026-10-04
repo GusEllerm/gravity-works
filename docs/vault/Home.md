@@ -64,4 +64,5 @@ Staffing is per-stage and recorded in `Sessions/` notes; roles and protocols liv
 2. This note (state + plan)
 3. [[Decision Log]]
 4. [[Studio]] (roles/protocols), [[Art Bible]], [[Feel]]
-5. Recent notes under `Sessions/`
+5. `Reference/Review 2026-10-04 Stage 1 explorations.md` (what was chosen, scored, and sent back)
+6. Recent notes under `Sessions/`

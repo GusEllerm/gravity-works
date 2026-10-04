@@ -47,6 +47,26 @@ sig = "10c95ddb0fa1d051"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
+target = "src/dev/scenes/cars.ts"
+sig = "482eff61dd1440fc"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
+target = "src/dev/scenes/kitchen-a.ts"
+sig = "b3ffed4b20b94135"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
+target = "src/dev/scenes/kitchen-b.ts"
+sig = "9f4bce417acc7d9b"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
+target = "src/dev/scenes/kitchen-c.ts"
+sig = "6076250d77860d77"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
 target = "src/dev/scenes/material-ramp.ts"
 sig = "0b8956e4fdc50db2"
 
@@ -64,6 +84,71 @@ sig = "076a54f22734436c"
 doc = "docs/vault/Modules/dev.md"
 target = "tools/render.mjs"
 sig = "20dbcfc36e4d734a"
+
+[[bindings]]
+doc = "docs/vault/Modules/feel.md"
+target = "src/feel/feeltrack.ts"
+sig = "02008942f6f39b83"
+
+[[bindings]]
+doc = "docs/vault/Modules/feel.md"
+target = "src/feel/run.ts"
+sig = "69e7a13f0db28f26"
+
+[[bindings]]
+doc = "docs/vault/Modules/feel.md"
+target = "src/physics/car.ts"
+sig = "fa2e17b13a302ff2"
+
+[[bindings]]
+doc = "docs/vault/Modules/feel.md"
+target = "src/physics/sim.ts"
+sig = "5182fb41a910b5e1"
+
+[[bindings]]
+doc = "docs/vault/Modules/feel.md"
+target = "tests/unit/feel.test.ts"
+sig = "a9f4437344dfdce0"
+
+[[bindings]]
+doc = "docs/vault/Modules/feel.md"
+target = "tools/feel.mjs"
+sig = "23066f3a8a4da8ee"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "src/physics/car.ts"
+sig = "fa2e17b13a302ff2"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "src/physics/sim.ts"
+sig = "5182fb41a910b5e1"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "tools/feel.mjs"
+sig = "23066f3a8a4da8ee"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/dev/scenes/cars.ts"
+sig = "482eff61dd1440fc"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/dev/scenes/kitchen-a.ts"
+sig = "b3ffed4b20b94135"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/dev/scenes/kitchen-b.ts"
+sig = "9f4bce417acc7d9b"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/dev/scenes/kitchen-c.ts"
+sig = "6076250d77860d77"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
@@ -119,3 +204,8 @@ sig = "3dc33ac21de385ff"
 doc = "docs/vault/Modules/src.md"
 target = "tests/unit/boot.test.ts"
 sig = "f895f1e0ad7fd8c9"
+
+[[bindings]]
+doc = "docs/vault/Reference/Canonical Cameras.md"
+target = "src/dev/cameras.ts"
+sig = "9512fc975c9378c7"

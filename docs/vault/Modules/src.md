@@ -4,7 +4,7 @@ tags: [module]
 # src (app root)
 
 > [!abstract] Role
-> The browser entry point and shell of Gravity Works. At stage 0 it only renders a placeholder; the game `World` lands at stage 2.
+> The browser entry point and shell of Gravity Works. Still only renders a placeholder at stage 1 close; the game `World` lands at stage 2.
 
 ## What it does
 
@@ -16,4 +16,4 @@ One DOM query, one function call — no router, no framework (per the brief's "s
 
 ## Depends on / used by
 
-Depends on nothing. Used by `index.html` only. Future modules (`src/world`, `src/track`, `src/physics`, `src/render`, `src/ui`, `src/sets/*`) will be created stage by stage, each with its own note here. Created so far: `src/render`, `src/dev`.
+Depends on nothing. Used by `index.html` only. Future modules (`src/world`, `src/track`, `src/ui`, `src/sets/*`) will be created stage by stage, each with its own note here. Created so far: `src/render`, `src/dev`, `src/physics`, `src/feel`.

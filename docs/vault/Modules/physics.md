@@ -15,11 +15,8 @@ no DOM — safe under Vitest (node) and `tools/feel.mjs` alike.
   (`SIM_SCALE = 10`, see [[Feel#Physics scale factor]]).
 - `src/physics/car.ts` — `spawnCar(world, variant, pose)` + `carStep()`.
   Variants: `wheelColliders` (a) and `raycastWheels` (b).
-- `src/feel/feeltrack.ts` — frame-integrated centreline → chord-slab box
-  colliders (floor + two wall slabs per pose pair). Feel track, roll track,
-  loop test track.
-- `src/feel/run.ts` — headless scenario runners + metrics extraction.
-- `tools/feel.mjs` — prints the comparison table (`npm run feel`).
+- The tracks and scenario runners these run on live in `src/feel` — see
+  [[feel]]. `tools/feel.mjs` (`npm run feel`) prints the comparison table.
 
 ## Variant design (stage 1, bake-off outcome)
 

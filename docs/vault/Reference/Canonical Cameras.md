@@ -24,7 +24,7 @@ Plus one system-level shot for material review:
 
 | Shot | Frames | Purpose |
 |---|---|---|
-| `material-review` | three neutral test props (die-cast beveled box, lathe bowl, orange track segment) on a neutral set floor | ramp/material comparison only |
+| `material-review` | three neutral test props (die-cast beveled car with stripe, lathe bowl, orange track segment) on a neutral set floor | ramp/material comparison only |
 
 ## Per-set status
 

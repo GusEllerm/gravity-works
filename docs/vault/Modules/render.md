@@ -26,4 +26,4 @@ Guarded by `tests/unit/tokens.test.ts` (golden kitchen derivation, hex math). Re
 
 ## Depends on / used by
 
-Depends on `three` only. Used by `src/dev/scenes/material-ramp.ts` and `src/dev/scenes/kitchen-c.ts` (exploration scenes) and, from stage 3, the set directories. The frame budget (draw calls, tris, post cost) will also live here.
+Depends on `three` only. Used by every exploration scene — `src/dev/scenes/material-ramp.ts`, `src/dev/scenes/kitchen-a.ts`, `src/dev/scenes/kitchen-b.ts`, `src/dev/scenes/kitchen-c.ts`, `src/dev/scenes/cars.ts` — and, from stage 3, the set directories. The frame budget (draw calls, tris, post cost) will also live here.
