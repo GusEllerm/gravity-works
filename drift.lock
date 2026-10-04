@@ -31,6 +31,31 @@ target = "src/boot.ts"
 sig = "eb6213d912d3dac9"
 
 [[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "src/boot.ts"
+sig = "eb6213d912d3dac9"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "src/camera/run-camera.ts"
+sig = "710213edb443a6b7"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "src/feel/kittrack.ts"
+sig = "4f428e09ac0f3887"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "src/track/spline.ts"
+sig = "94a2ee27e5931879"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "tests/unit/camera.test.ts"
+sig = "e8778d9e1f60e91d"
+
+[[bindings]]
 doc = "docs/vault/Modules/dev.md"
 target = "src/dev/cameras.ts"
 sig = "9512fc975c9378c7"
