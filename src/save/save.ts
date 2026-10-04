@@ -25,6 +25,13 @@ export interface StorageLike {
 export interface SaveSettings {
   muted?: boolean;
   reducedMotion?: boolean;
+  /**
+   * Callout ids the player has already been shown (brief §9.3: every new
+   * piece or prop gets a one-line callout the first time it appears).
+   * Optional — an absent list means "nothing seen yet" — so the shape stays
+   * v1 and needs no migration. `src/ui/callouts.ts` owns the read/write.
+   */
+  calloutsSeen?: string[];
 }
 
 export interface SaveData {
