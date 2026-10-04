@@ -46,6 +46,7 @@ Staffing is per-stage and recorded in `Sessions/` notes; roles and protocols liv
 
 ## Deferred
 
+- Stage-1 review findings to fix in stage 2 (see `Sessions/2026-10-04 Stage 1 review.md`): honest roll-test rig (no launch velocity; real world-metre decks); corrected wheel-collider variant for the standing physics gate; remove dead `setRollCoef`/`startOffset`; make `tokens.test.ts` assertions non-vacuous; roll test must pass when the target is *met*; `quant()` must not map NaN→0 in the state hash.
 - Tile-B integration re-render (Art Director send-back) → first task of stage 3.
 - Material backlog (grain frequency, accent-to-light, decals, ceramic saturation, dither budget, tyre lightness floor) → stage 3, Technical Artist.
 - Tilt-shift/post stack → stage 3; renders are *provisional* until then.
