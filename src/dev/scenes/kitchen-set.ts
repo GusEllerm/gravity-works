@@ -130,9 +130,9 @@ function kitchenSetScene(): SceneFactory {
     // parked where Sunday stopped it, not committed to the bowl.in→out line
     const [rx, ry, rz] = bowlArcPoint(STAGING.rimCar.angleDeg)
     const racer = car()
-    racer.position.set(rx, ry + 0.0035, rz)
+    racer.position.set(rx, ry - 0.006, rz)
     const a = (STAGING.rimCar.angleDeg * Math.PI) / 180
-    racer.lookAt(rx - Math.sin(a) * 0.06, ry + 0.0035, rz + Math.cos(a) * 0.06)
+    racer.lookAt(rx - Math.sin(a) * 0.06, ry - 0.006, rz + Math.cos(a) * 0.06)
     racer.rotateY(-Math.PI / 2)
     racer.rotateX(STAGING.rimCar.bank)
     scene.add(racer)

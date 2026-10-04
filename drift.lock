@@ -58,7 +58,7 @@ sig = "120e535ceaaff91b"
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
 target = "src/dev/post-params.ts"
-sig = "e8d58c6ce45588bf"
+sig = "eb7edff0fcbccfaa"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
