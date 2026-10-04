@@ -28,7 +28,7 @@ sig = "800726337fe0db86"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/boot.ts"
-sig = "c792e7b2ffb80e0f"
+sig = "d945850bc5b90374"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -188,7 +188,7 @@ sig = "0f065f90d47289b6"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/boot.ts"
-sig = "c792e7b2ffb80e0f"
+sig = "d945850bc5b90374"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -208,7 +208,7 @@ sig = "3dc33ac21de385ff"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/unit/boot.test.ts"
-sig = "f895f1e0ad7fd8c9"
+sig = "7dbf9bb0d7da5a40"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"

@@ -30,7 +30,7 @@ commit that changes the code is blocked until the note is updated or acknowledge
 
 ## Current status
 
-**Stage 1 (explorations) — closed.** References chosen by the fresh Art Director (scores in `Reference/Review 2026-10-04 Stage 1 explorations.md`): **kitchen tile B** (hero shot is a painting; one integration send-back queued for stage 3), **car-a sedan blocky**, **ramp variant B (three hard steps)**. Physics reference: **raycast wheels** (bake-off measured; jointed wheels rejected). `src/render/` (toon system + tokens), `src/dev/` (deterministic harness), `src/physics/` + provisional `src/feel/` exist; nothing player-facing yet — `src/boot.ts` still shows the placeholder. Tilt-shift is the flagged blocking dependency for all future render finals.
+**Stage 1 (explorations) — closed.** References chosen by the fresh Art Director (scores in `Reference/Review 2026-10-04 Stage 1 explorations.md`): **kitchen tile B** (hero shot is a painting; one integration send-back queued for stage 3), **car-a sedan blocky**, **ramp variant B (three hard steps)**. Physics reference: **raycast wheels** (bake-off measured; jointed wheels rejected). `src/render/` (toon system + tokens), `src/dev/` (deterministic harness), `src/physics/` + provisional `src/feel/` exist. The stage-2 spine's right half has landed: `src/world/` (`World`, levels), `src/ui/` (builder), `src/save/`, `src/share/`, `src/replay/`, and `src/boot.ts` boots the real game (placeholder feel-track build) plus a share-replay `verified` page — the track kit's left half (feel track, run camera) is the Feel Engineer's parallel branch. Tilt-shift is the flagged blocking dependency for all future render finals.
 
 ## Plan
 
