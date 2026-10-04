@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "render": "node tools/render.mjs"
+    "render": "node tools/render.mjs",
+    "feel": "node tools/feel.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

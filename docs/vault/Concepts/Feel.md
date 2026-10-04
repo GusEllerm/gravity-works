@@ -46,4 +46,4 @@ _Currently provisional — the real track lands at stage 2._
 
 ## Physics scale factor
 
-_Decided at stage 1/2; recorded here once and referenced everywhere else._
+**SIM_SCALE = 10** — the sim runs every length ×10, gravity ×10 (98.1), and mass ×1000 (constant density), and maps back for gameplay: length/10, velocity/√10, time unchanged. Why: Rapier's solver tolerances, contact prediction margins and sleep thresholds are tuned for bodies around its default length unit (~1 m). A 7.5 cm toy is 13× below that, and every absolute tolerance then bites proportionally harder — penetration recovery, seam stitching, and small-velocity stiction thresholds swallow the car. Scaling geometry and gravity by the same factor keeps real-world time (a 120 Hz fixed step stays real-time), and ×1000 mass keeps density physically meaningful. This is a rendering-agnostic sim-space choice: all track/car authoring is in world metres; `src/physics/sim.ts` owns the conversion. Decided here; referenced, never re-derived. — Feel Engineer, stage 1 bake-off
