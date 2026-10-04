@@ -21,6 +21,7 @@ import {
   vcross,
   vdot,
   vscale,
+  vsub,
   type Vec,
   type Quat,
 } from './sim.ts';
@@ -40,15 +41,43 @@ export const CAR = {
                  // (overlapping wheel/chassis colliders deadlock revolute joints)
   wheelZ: 0.185,
   wheelDensity: 1500,
-  wheelFriction: 0.05, // low so the static-friction cone can never "brake-lock" a wheel
+  // Tyre grip. Free PD-held wheels cannot brake-lock the CAR (the chassis
+  // rides the contact-normal rays, and a zero-error PD transmits no static
+  // force), so the joint-era reason for mu 0.05 does not apply: higher grip
+  // only makes wheels spin up to rolling faster instead of scrub-slipping.
+  wheelFriction: 0.35,
   chassisFriction: 0.01,
   // suspension: variant b full spring; variant a support spring at the axle
   // (revolute joints alone are too soft in Rapier's solver to carry the
   // chassis — measured: 0.3 m sag, chassis ploughs through slabs)
   suspRest: 0.42,
   suspK: 12000,
-  suspC: 260,
+  suspC: 550,
   suspMaxForce: 9000,
+  bumpSpeed: 6.6, // sim m/s: one step of full-throttle spring dV — see the catcher note
+  // Lateral tyre grip (scrub) — deliberately small: the CHANNEL does the
+  // steering, not the tyres (see the rail-contact block in `supportStep`).
+  // A Hot Wheels car is guided by its wheels touching the U-channel walls;
+  // tyre scrub only shows up as drag. Measured without any wall contact no
+  // tyre model keeps the car on a flat yaw arc: nothing couples velocity to
+  // the track direction (the deck normal is vertical there), and every
+  // grip/alignment scheme invented in this session either spiralled the car
+  // or pinned it at the joint.
+  latFriction: 0.25,
+  // Channel geometry: the virtual wheel side face (|z| = wheelZ +
+  // wheelHalfW = .225) clears the rail lip's inner face (.22) by `railSlack`.
+  // A feeler ray of `railSlack + railLook` at `railBand` height above the
+  // deck reports wall contact; see supportStep for the response.
+  railSlack: 0.0035, // wheel side face (|z| .225) vs rail lip inner face (.22)
+  railBand: 0.2, // sim above the deck hit point: mid-height of the lip band
+  railLook: 0.05, // look-range beyond slack: the wall force ramps over this
+  rollDamp: 0.35, // anti-roll torque budget (fraction of support impulse x track width)
+  rollCut: 0.85, // fraction of the estimated roll rate cancelled each step
+  railK: 30000, // channel wall stiffness (ramps over the look range)
+  railC: 900, // local outward dashpot on the wheel-side/wall contact
+  // Self-aligning torque strength (friction-circle fraction) — see the note
+  // in supportStep.
+  alignGrip: 0.15,
   armRest: 0.25, // variant a spring arm rest length (attach -> wheel centre)
   armK: 25000,
   rideH: 0.4, // chassis centre height above floor at spawn
@@ -182,7 +211,12 @@ function chassisFrame(car: Car): { pos: Vec; quat: Quat; up: Vec } {
 function supportStep(world: RAPIER.World, car: Car): WheelSupport {
   const { pos, quat } = chassisFrame(car);
   let grounded = false;
-  for (const aLocal of car.attach) {
+  let normImpulse = 0;
+  const sideSum = [0, 0]; // per-side sums of contact-normal mount velocity
+  const sideN: (Vec | null)[] = [null, null];
+  const sidePt: (Vec | null)[] = [null, null];
+  for (let k = 0; k < car.attach.length; k++) {
+    const aLocal = car.attach[k]!;
     const attach = vadd(pos, qrot(quat, aLocal));
     const down = vscale(qrot(quat, v(0, -1, 0)), 1);
     const ray = new RAPIER.Ray(attach, down);
@@ -194,17 +228,32 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
     if (hit === null) continue;
     const toi = hit.timeOfImpact;
     const compression = CAR.suspRest - toi;
-    // Bump stop: inside the last sliver of travel, cancel the approach
+    // Bump stop: inside the last stretch of travel, cancel the approach
     // velocity outright. Without it a >5 m/s landing walks the chassis
     // through the deck faster than the explicit spring can react, and a
-    // buried chassis anchors on slab end-faces (nose plough).
+    // buried chassis anchors on slab end-faces (nose plough). Measured on
+    // the kit ramps this catcher is also what makes the ramp->flat valley
+    // crossing CLEAN (roll metric 2.64 m with it, 1.47 m stalled without
+    // the full-stop — the spring/damper alone soak the deck approach over
+    // many steps and the car never recovers it). Two tried "improvements"
+    // regressed it: a tighter toi<0.08 window and a >1.5 m/s speed gate.
     if (toi < 0.14) {
       const nB = v(hit.normal.x, hit.normal.y, hit.normal.z);
       const upB = qrot(quat, v(0, 1, 0));
       if (vdot(nB, upB) > 0.7) {
         const vb = car.chassis.velocityAtPoint(attach);
         const vn = vdot(v(vb.x, vb.y, vb.z), nB);
-        if (vn < 0) car.chassis.applyImpulseAtPoint(vscale(nB, -vn * car.chassis.mass() / 4), attach, true);
+        // The catcher fires only where the spring could NOT react in time:
+        // a faster approach than one step's full-throttle spring dV, or a
+        // compression already past most of the travel. Letting the spring
+        // otherwise do its job matters: a loop circle is a ~19-step
+        // staircase of chords (rings cannot merge — each turns ~19 deg), so
+        // the deck approaches the car continuously at a few cm/s, and a
+        // full-stop bump stop there dumps that climb — i.e. forward speed —
+        // inelastically every step (measured: stall at the loop bottom).
+        if (vn < 0 && (vn < -CAR.bumpSpeed || compression > 0.3 * CAR.suspRest)) {
+          car.chassis.applyImpulseAtPoint(vscale(nB, -vn * car.chassis.mass() / 4), attach, true);
+        }
       }
     }
     if (compression <= 0) continue;
@@ -214,7 +263,12 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
     grounded = true;
     const mc = car.chassis.mass() / 4;
     const vb = car.chassis.velocityAtPoint(attach);
-    const relV = vdot(v(vb.x, vb.y, vb.z), n0);
+    const v3 = v(vb.x, vb.y, vb.z);
+    const relV = vdot(v3, n0);
+    const side = aLocal.z >= 0 ? 1 : 0;
+    sideSum[side] += relV;
+    sideN[side] = n0;
+    sidePt[side] = attach;
     // Push along the CONTACT NORMAL: a support force tilted with body pitch
     // creates slope drag that can exactly balance gravity and stall the car.
     // Semi-implicit damper first, then the explicit spring term.
@@ -222,6 +276,105 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
     car.chassis.applyImpulseAtPoint(vscale(n0, -relV * dampFrac * mc), attach, true);
     const f = Math.min(Math.max(CAR.suspK * compression, 0), CAR.suspMaxForce);
     car.chassis.applyImpulseAtPoint(vscale(n0, f * FIXED_DT), attach, true);
+    normImpulse += f * FIXED_DT;
+
+    // Channel-contact feeler (the actual steering mechanism — see
+    // CAR.railSlack): a short lateral ray at rail-lip height, out from this
+    // wheel's centre plane. The deck hit gives the contact patch; +n *
+    // railBand lands in the lip's vertical band; a hit nearer than the
+    // wheel-side clearance means this wheel has reached the channel wall.
+    // The wall FORCE is applied once per side at the centre of mass after
+    // the mount loop — see the note there.
+    const contact = vadd(attach, vscale(down, toi));
+    const bandP = vadd(contact, vscale(n0, CAR.railBand));
+    const latC = qrot(quat, v(0, 0, aLocal.z >= 0 ? 1 : -1));
+    const out0 = vsub(latC, vscale(n0, vdot(latC, n0)));
+    const outL = Math.sqrt(vdot(out0, out0));
+    // The direction must stay essentially horizontal: at extreme roll the
+    // chassis z axis tilts toward -y and the "lateral" ray points DOWN —
+    // measured: the spring then punches the car upward through the deck
+    // plane every contact step (a violent vertical energy pump). Guard it.
+    if (outL > 0.3 && Math.abs(out0.y / outL) < 0.5) {
+      const outD = vscale(out0, 1 / outL);
+      const hit2 = world.castRay(new RAPIER.Ray(bandP, outD), CAR.railSlack + CAR.railLook, true, undefined, undefined, undefined, car.chassis, pred);
+      if (hit2 !== null) {
+        const toi2 = Math.max(hit2.timeOfImpact, 0);
+        const pen = CAR.railSlack - toi2; // > 0 once the wheel side passes the wall
+        if (pen > 0) {
+          // Progressive channel wall: force ramps with PENETRATION over the
+          // look range, not with the (tiny) clearance — measured教训: a
+          // spring whose full force lands within the 0.35 mm clearance is
+          // either too weak to hold the wheel out of the lip (ploughed 25 mm
+          // and fell off the bank's inside) or, when replaced by outright
+          // velocity cancellation, an impulse machine that brakes the car at
+          // every curvature-sign junction (4 m/s -> 0.2 m/s in 0.2 s). A
+          // compliant wall lets the car sag ~2 mm in a steady bank and
+          // ramps smoothly when a junction asks for more.
+          const pc = vadd(bandP, vscale(outD, Math.max(toi2, 0.001)));
+          const vc = car.chassis.velocityAtPoint(pc);
+          const vOut = vc.x * outD.x + vc.y * outD.y + vc.z * outD.z;
+          const railN = vscale(outD, -1);
+          const dFrac = Math.min(0.5, (CAR.railC * FIXED_DT) / mc);
+          if (vOut > 0) car.chassis.applyImpulseAtPoint(vscale(railN, vOut * dFrac * mc), pc, true);
+          const rf = Math.min(CAR.railK * pen, CAR.suspMaxForce);
+          car.chassis.applyImpulseAtPoint(vscale(railN, rf * FIXED_DT), pc, true);
+        }
+      }
+    }
+  }
+  // Anti-roll damper. The mounts sit BELOW the chassis centre of mass, so
+  // the spring layout carries an inverted-pendulum roll term — gravity's
+  // roll demand eats the geometric spring spread and the chassis roll mode
+  // is only marginally stable: measured as roll ringing (12° to 60°) and
+  // hops mid-bank where the banking ramp (~5 Hz at these speeds) matches
+  // the feeble roll natural frequency. Mount dampers barely touch roll
+  // (small lateral lever), so damp the mode directly as a torque about the
+  // chassis FORWARD axis: estimate the roll rate from the two sides' mean
+  // contact-normal mount velocities and cancel most of it, budgeted by the
+  // support impulse across the track width (an anti-roll bar does no more).
+  if (grounded && sideN[0] !== null && sideN[1] !== null) {
+    const rollRate = (sideSum[1] - sideSum[0]) / (2 * CAR.wheelZ * 2);
+    const Ix = (car.chassis.mass() / 12) * (4 * CAR.halfH * CAR.halfH + 4 * CAR.halfW * CAR.halfW);
+    const budget = CAR.rollDamp * normImpulse * 2 * CAR.wheelZ;
+    const j = Math.min(Math.abs(rollRate) * Ix * CAR.rollCut, budget);
+    if (j > 1e-9) {
+      const fwd = qrot(quat, v(1, 0, 0));
+      car.chassis.applyTorqueImpulse(vscale(fwd, -Math.sign(rollRate) * j), true);
+    }
+  }
+  // Axle-scrub self-aligning torque. A rigid-axle car pushed from behind
+  // through a slot is a pushed hockey stick: position-bounded (the channel)
+  // but yaw-unstable, and on the kit bank the chassis yaw ran to −90 deg
+  // against a +45 track (measured) before the rails spun it off the deck.
+  // Real axles resist this — scrubbing a solid axle across its wheels
+  // produces a torque that turns the axle toward its travel direction.
+  // Model it: drive the chassis heading toward the (horizontal) velocity,
+  // about the chassis up axis, budgeted by the friction circle like any
+  // other tyre force.
+  if (grounded) {
+    const lvv = car.chassis.linvel();
+    const hSp = Math.sqrt(lvv.x * lvv.x + lvv.z * lvv.z);
+    if (hSp > 2) {
+      // gate: > ~0.2 m/s world; below, "travel direction" is suspension noise
+      const fwdH = qrot(quat, v(1, 0, 0));
+      const fl = Math.sqrt(fwdH.x * fwdH.x + fwdH.z * fwdH.z);
+      if (fl > 0.2) {
+        const cros = (fwdH.x * lvv.z - fwdH.z * lvv.x) / (fl * hSp);
+        const dot = (fwdH.x * lvv.x + fwdH.z * lvv.z) / (fl * hSp);
+        const dpsi = Math.atan2(cros, dot);
+        if (Math.abs(dpsi) > 0.03) {
+          const up = qrot(quat, v(0, 1, 0));
+          const av = car.chassis.angvel();
+          const wUp = av.x * up.x + av.y * up.y + av.z * up.z;
+          const wantW = Math.min(Math.max(-dpsi * 6, -5), 5);
+          const Iy = (car.chassis.mass() / 12) * (4 * CAR.halfL * CAR.halfL + 4 * CAR.halfW * CAR.halfW);
+          const budget = CAR.alignGrip * normImpulse * CAR.wheelX;
+          const j = Iy * (wantW - wUp);
+          const jm = Math.min(Math.abs(j), budget);
+          if (jm > 1e-9) car.chassis.applyTorqueImpulse(vscale(up, Math.sign(j) * jm), true);
+        }
+      }
+    }
   }
   return { grounded };
 }
@@ -255,18 +408,22 @@ function jointedStep(world: RAPIER.World, car: Car): WheelSupport {
     const wp0 = wheel.translation();
     const wp = v(wp0.x, wp0.y, wp0.z);
     // PD centring under the mount, clamped (an unclamped PD flings wheels;
-    // see probe39 note).
+    // see probe39 note). The stage-1 clamp ceiling (25 sim/s^2) sat BELOW the
+    // chassis ramp acceleration (~60), so the wheels lagged metres behind
+    // their mounts and fell off the deck on kit hulls — the "variant a rolls
+    // 0.7 m on kit colliders" number was wheel scatter, not the car. Re-
+    // trimmed around a ~6 Hz critically-damped strut with a 300 accel clamp.
     const attach = vadd(pos, qrot(quat, car.attach[k]));
     const mw = wheel.mass();
     const lv = wheel.linvel();
     const cv = car.chassis.linvel();
-    const clamp = (x: number): number => Math.min(Math.max(x, -0.04), 0.04);
-    const fx = clamp(attach.x - wp.x) * mw * 625 - (lv.x - cv.x) * mw * 50;
-    const fz = clamp(attach.z - wp.z) * mw * 625 - (lv.z - cv.z) * mw * 50;
+    const clamp = (x: number): number => Math.min(Math.max(x, -0.25), 0.25);
+    const fx = clamp(attach.x - wp.x) * mw * 1400 - (lv.x - cv.x) * mw * 60;
+    const fz = clamp(attach.z - wp.z) * mw * 1400 - (lv.z - cv.z) * mw * 60;
     if (Number.isFinite(fx) && Number.isFinite(fz)) {
       wheel.applyImpulse(
-        v(Math.min(Math.max(fx, -mw * 25), mw * 25) * FIXED_DT, 0,
-          Math.min(Math.max(fz, -mw * 25), mw * 25) * FIXED_DT), true,
+        v(Math.min(Math.max(fx, -mw * 300), mw * 300) * FIXED_DT, 0,
+          Math.min(Math.max(fz, -mw * 300), mw * 300) * FIXED_DT), true,
       );
     }
   }
