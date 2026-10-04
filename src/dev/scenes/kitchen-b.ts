@@ -105,7 +105,7 @@ function bookStack(): THREE.Group {
     toyBlock(0.17, 0.019, 0.125, 0.004, 0.0015),
     paintedWood(tokens, '#D9883B', { ...fillOver(), grain: 0.5 }),
   )
-  ramp.position.set(0.005, y + 0.023, 0.012)
+  ramp.position.set(0.005, y + 0.015, 0.012)
   ramp.rotation.x = -0.24
   ramp.rotation.y = -0.1
   props(ramp)
@@ -316,42 +316,48 @@ function kitchenScene(): SceneFactory {
     wall.receiveShadow = true
     scene.add(wall)
 
+    // everything that tells the story lives in one group, scaled to fill the
+    // canonical frames without touching the shared camera rigs
+    const vignette = new THREE.Group()
+    vignette.scale.setScalar(1.06)
+    scene.add(vignette)
+
     // monumental cereal bowl — the banked turn. The flared rim self-shadows
     // the wall below it; the bowl's shadow band is set to a bright warm gold
     // so that band reads as ceramic in shade, never grey.
-    const bowlMat = ceramic(tokens, '#E5C187', {
+    const bowlMat = ceramic(tokens, '#F0DDB2', {
       ...fillOver(),
-      shadowTint: '#F5C97E',
-      ramp: { steps: [0.78, 1.0], thresholds: [0.12], softness: 0.1 },
+      shadowTint: '#FFDFA8',
+      ramp: { steps: [0.88, 1.0], thresholds: [0.12], softness: 0.1 },
       specular: { size: 0.55, strength: 0.22 },
-      diffuseStrength: 0.92,
+      diffuseStrength: 1.15,
     })
     bowlMat.side = THREE.DoubleSide
     const bowl = new THREE.Mesh(bowlForm(0.098, 0.054, 0.005), bowlMat)
     props(bowl)
-    bowl.position.set(0.01, 0, -0.01)
-    scene.add(bowl)
+    bowl.position.set(-0.035, 0, -0.045)
+    vignette.add(bowl)
 
     // a second car, on the ramp, caught mid-descent
     {
       const runner = car()
       const a = new THREE.Vector3(-0.24, 0.09, 0.22)
-      const b = new THREE.Vector3(-0.06, 0.024, 0.06)
+      const b = new THREE.Vector3(-0.1, 0.022, 0.022)
       runner.position.lerpVectors(a, b, 0.62)
-      runner.position.y += 0.006
+      runner.position.y += 0.004
       const d = b.clone().sub(a).normalize()
       runner.lookAt(runner.position.x + d.x, runner.position.y + d.y, runner.position.z + d.z)
       runner.rotateY(-Math.PI / 2)
-      scene.add(runner)
+      vignette.add(runner)
     }
 
     // milk settled in the bottom, with a few cereal rings floating
     const milk = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.066, 0.06, 0.003, 40),
+      new THREE.CylinderGeometry(0.062, 0.058, 0.003, 40),
       liquid(tokens, '#F7EFDE', { ...fillOver(), opacity: 0.95, liquid: 0.08 }),
     )
-    milk.position.set(0.01, 0.02, -0.01)
-    scene.add(milk)
+    milk.position.set(-0.035, 0.032, -0.045)
+    vignette.add(milk)
     const rings = new THREE.InstancedMesh(
       new THREE.TorusGeometry(0.0055, 0.0024, 8, 18),
       fabric(tokens, '#E8B063', fillOver()),
@@ -363,75 +369,75 @@ function kitchenScene(): SceneFactory {
       for (let i = 0; i < 6; i++) {
         const a = rnd() * Math.PI * 2
         const r = 0.012 + rnd() * 0.042
-        d.position.set(0.01 + Math.cos(a) * r, 0.023, -0.01 + Math.sin(a) * r)
+        d.position.set(-0.035 + Math.cos(a) * r, 0.035, -0.045 + Math.sin(a) * r)
         d.rotation.set(-Math.PI / 2 + (rnd() - 0.5) * 0.5, 0, rnd() * 3)
         d.updateMatrix()
         rings.setMatrixAt(i, d.matrix)
       }
     }
     props(rings)
-    scene.add(rings)
+    vignette.add(rings)
 
     // a third car, racing out along the flat run — floor-camera's hero
     {
       const racer2 = car()
-      racer2.position.set(0.145, 0.0045, -0.043)
-      racer2.lookAt(0.145 + 0.96, 0.0041, -0.043 - 0.25)
+      racer2.position.set(0.145, 0.0185, -0.043)
+      racer2.lookAt(0.145 + 0.96, 0.0165, -0.043 - 0.25)
       racer2.rotateY(-Math.PI / 2)
-      scene.add(racer2)
+      vignette.add(racer2)
     }
 
     // the car riding the bowl's banked rim — the story of the tile
     const racer = car()
     const psi = -Math.PI * 0.15
-    const rx = 0.01 + Math.cos(psi) * 0.088
-    const rz = -0.01 + Math.sin(psi) * 0.088
+    const rx = -0.035 + Math.cos(psi) * 0.088
+    const rz = -0.045 + Math.sin(psi) * 0.088
     racer.position.set(rx, 0.045, rz)
     racer.lookAt(rx - Math.sin(psi) * 0.06, 0.045, rz + Math.cos(psi) * 0.06)
     racer.rotateY(-Math.PI / 2)
     racer.rotateX(0.35)
-    scene.add(racer)
+    vignette.add(racer)
 
     // book-stack ramp up-left behind the bowl, with the orange track down
     const books = bookStack()
     books.position.set(-0.27, 0, 0.17)
     books.rotation.y = 0.42
-    scene.add(books)
+    vignette.add(books)
 
     const trackMat = trackPlastic(tokens, GLOBAL_TOKENS.trackOrange, { ...fillOver(), toy: 0.2 })
-    const rampTrack = trackRun(new THREE.Vector3(-0.24, 0.09, 0.22), new THREE.Vector3(-0.06, 0.024, 0.06), trackMat)
-    scene.add(rampTrack)
+    const rampTrack = trackRun(new THREE.Vector3(-0.24, 0.09, 0.22), new THREE.Vector3(-0.1, 0.022, 0.022), trackMat)
+    vignette.add(rampTrack)
     const flatTrack = trackRun(new THREE.Vector3(0.095, 0.02, -0.03), new THREE.Vector3(0.21, 0.005, -0.06), trackMat)
-    scene.add(flatTrack)
+    vignette.add(flatTrack)
 
     // mug with its ring, toast soldier leaning on the mug
     const mugG = mug()
     mugG.position.set(0.24, 0, 0.13)
     mugG.rotation.y = -1.7
-    scene.add(mugG)
+    vignette.add(mugG)
     const ring = new THREE.Mesh(
       new THREE.TorusGeometry(0.034, 0.0032, 8, 40),
       liquid(tokens, '#B98A5C', { ...fillOver(), opacity: 0.55, liquid: 0 }),
     )
     ring.rotation.x = -Math.PI / 2
     ring.position.set(0.155, 0.0022, 0.185)
-    scene.add(ring)
+    vignette.add(ring)
     const soldier = toast()
     soldier.position.set(0.207, 0.024, 0.113)
     soldier.rotation.set(-0.05, -0.75, -0.5)
-    scene.add(soldier)
+    vignette.add(soldier)
     const crumbTrail = crumbs()
     crumbTrail.position.set(0.17, 0, 0.13)
-    scene.add(crumbTrail)
+    vignette.add(crumbTrail)
 
     // the dripping tap, frozen mid-drip, up-left rear; wet patch + splash
     const tapG = tap()
     tapG.position.set(-0.31, 0, -0.2)
     tapG.rotation.y = -1.2
-    scene.add(tapG)
+    vignette.add(tapG)
     const patch = wetPatch()
     patch.position.set(-0.271, 0, -0.1)
-    scene.add(patch)
+    vignette.add(patch)
 
     // folded mint cloth — the accent, catching the key
     const cloth = new THREE.Group()
@@ -445,16 +451,16 @@ function kitchenScene(): SceneFactory {
     c2.rotation.y = 0.25
     props(c2)
     cloth.add(c2)
-    cloth.position.set(0.35, 0, -0.04)
+    cloth.position.set(0.30, 0, 0.02)
     cloth.rotation.y = 0.35
-    scene.add(cloth)
+    vignette.add(cloth)
 
     // a second pencil, lying across the counter — lived-in, and it leads
     // the floor camera toward the bowl
     const lazyPencil = pencilProp()
     lazyPencil.position.set(0.14, 0.0043, -0.19)
     lazyPencil.rotation.set(Math.PI / 2, 0, 1.0)
-    scene.add(lazyPencil)
+    vignette.add(lazyPencil)
 
     // Tell every ToonMaterial the key light so dark bands tint, not blacken.
     scene.traverse((obj) => {
