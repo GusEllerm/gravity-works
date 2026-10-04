@@ -138,7 +138,7 @@ sig = "c81ca04b4f17d0ab"
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
 target = "src/physics/car.ts"
-sig = "f48178a239bfc8e2"
+sig = "e9755c633be7a34f"
 
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
