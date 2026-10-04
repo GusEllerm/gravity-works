@@ -114,6 +114,9 @@ export interface WorldState {
     quat: Quat;
     /** m/s world. */
     speed: number;
+    /** World m/s — the juice hooks' derivation input (landing vy for the
+     *  squash, forward projection for the hazard tell's lead time). */
+    velocity: Vec;
     grounded: boolean;
     /** Mean deck grip over the last step's wheel contacts (1 = dry; the
      *  hazard tell's numeric companion — see `src/world/hazards.ts`). */
@@ -465,6 +468,7 @@ export class World {
   private snapshot(grounded = false, support?: WheelSupport): WorldState {
     const t = this.car.chassis.translation();
     const r = this.car.chassis.rotation();
+    const lv = this.car.chassis.linvel();
     return {
       step: this.steps,
       time: this.steps * FIXED_DT,
@@ -473,6 +477,7 @@ export class World {
         pos: v(t.x / SIM_SCALE, t.y / SIM_SCALE, t.z / SIM_SCALE),
         quat: { w: r.w, x: r.x, y: r.y, z: r.z },
         speed: carSpeed(this.car) / SIM_SCALE,
+        velocity: v(lv.x / SIM_SCALE, lv.y / SIM_SCALE, lv.z / SIM_SCALE),
         grounded,
         grip: support?.grip ?? 1,
         slip: support ? Math.max(...support.slipPerWheel.map(Math.abs)) : 0,

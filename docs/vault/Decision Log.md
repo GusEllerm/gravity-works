@@ -6,6 +6,25 @@ livedocs: snapshot
 
 Dated entries tagged `[agent decision]`. Newest first.
 
+## 2026-10-06 — Loop: a speed window BY DESIGN, `[2.30 R, +∞)`; the droop tether is declared the modelled up-stop `[agent decision]` `[feel engineer]`
+
+The stage-2 carry-in (up-stop wheels / "size the loop for the collider
+variant") resolved without new physics. A full `loopTry` release-height
+scan (shipped car + `ROLL_COEF`, 0.1 R steps to 6 R, both variants —
+table in [[Modules/physics]]) shows an identical pattern: floor at 2.30 R
+(the shipped bisected gate), then completes everywhere above it apart from
+bounce-phase dip rows, with NO ceiling — because the suspension's droop
+tether (tension-capable strut force, added in the loop-geometry round)
+already expresses an up-stop wheel in the one place the solver sees
+forces. Options weighed: (a) model a bounded-capacity up-stop so a real
+physical ceiling (~2.5 R ideal) exists — rejected for the slice: it moves
+shipped hashes to buy a fidelity the 5-level vertical slice never drives
+past the gate, and the knob (`droopMaxForce`) already exists if stage 5+
+playtests want it; (b) leave it silent — rejected, the brief demands the
+window be stated. Chose (c): document the window as design, keep
+`LOOP_RADIUS = 0.10` (still serves the shipped car's 1.25× passage rule),
+and record the collider variant as PROVEN for the loop piece.
+
 ## 2026-10-06 — Hazard grip acts on the friction channels the solver HAS, and the lateral-slip claim is stated as measured `[agent decision]` `[feel engineer]`
 
 Ask #2a (the wet patch's "halves grip") could be wired three ways: a live

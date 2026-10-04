@@ -49,10 +49,10 @@ Staffing is per-stage and recorded in `Sessions/` notes; roles and protocols liv
 ## Deferred
 
 - Stage-2 reviewer carry-ins to stage 3 (from `Sessions/2026-10-06 Stage 2 review.md` and the round's notes):
-  - **Size the loop piece for the collider variant** — the shipped `LOOP_RADIUS` and gate bracket are tuned with the raycast car; the `wheelColliders` variant's tyres physically touch the lips and its banked-yaw crossing is unproven.
+  - ~~Size the loop piece for the collider variant~~ — RESOLVED stage 3: the collider variant's loop window is the same pass/fail pattern as the raycast car through 6 R (table in [[physics]] §speed window); the loop piece needs no resizing for it. The banked-yaw lip graze remains a geometry-cosmetics question, not physics.
   - **Feel-track gap length** — a carry-in quoted "the feel-track gap is fixed at 45 cm"; VERIFIED STALE at the stage-2 close: `FEEL_DROP_HEIGHT` is **0.52 m** (the 2026-10-06 energy audit rebalanced 0.45 → 0.52 and the fix-crew swept the stale 0.45 comments; the value deliberately sits in a narrow two-line window — see [[feel]] Layout). Do not re-apply 45 cm.
   - **Hardware 60 fps confirmation** — every stage-2 rendered number is SwiftShader software GL; the ~59.9 fps line needs one pass on a real GPU (stage-3 re-measure, [[Performance/stage-2|Performance/stage-2]]).
-  - **Up-stop wheels question** — the loop's speed-window ceiling is real physics with a missing component: either model up-stop wheels or state in the brief that a loop has a speed window by design (carried from `Sessions/2026-10-05 Stage 2 - loop geometry fix.md`; the post-audit "holds through 7 R" result removed the solver-made ceiling, not the physical question).
+  - ~~Up-stop wheels question~~ — RESOLVED stage 3 by documentation: the loop has a speed window BY DESIGN, `[2.30 R, +∞)` — the floor is the bisected gate, and the top end is held because the droop tether already IS the up-stop expressed in forces (full scan + verdict in [[physics]] §speed window). Bounding the tether for a physical ceiling remains an optional fidelity knob.
   - Run-camera wiring into the game shell ([[camera]] Integration status).
 - Stage-1 review findings to fix in stage 2 (see `Sessions/2026-10-04 Stage 1 review.md`) — all landed in stage 2: honest roll-test rig; corrected wheel-collider variant; `setRollCoef`/`startOffset` removed; `tokens.test.ts` assertions non-vacuous; roll test passes when the target is met; `quant()` NaN no longer maps to 0.
 - Tile-B integration re-render (Art Director send-back) → first task of stage 3.

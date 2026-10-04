@@ -188,6 +188,54 @@ open question is banked-yaw crossing (its tyres physically touch the lips),
 and sizing the loop piece for the collider variant is a stage-3 carry-in
 ([[Home]] Deferred).
 
+## The loop's speed window, measured — and the up-stop question, answered (stage 3)
+
+The stage-2 carry-in asked whether the loop has (and should have) a speed
+WINDOW: real 30-cent toys fly off the apex above a release of ~2.5 R
+(ideal `v_apex² > g·r` ⇒ `h ≤ 2.5 R` energy ceiling), and the shipped
+variant's window had only ever been bisected at its FLOOR. A full release-
+height scan through `loopTry` (shipped car, shipped `ROLL_COEF = 0.12`,
+0.1 R steps to 6 R, both variants) settles it:
+
+| release h/R | 2.2 | 2.3 | 2.4 | 2.5 | 2.6–2.8 | 2.9–3.1 | 3.2 | 3.3 | 3.4+ … 6.0 |
+|---|---|---|---|---|---|---|---|---|---|
+| raycastWheels | ✗ | ✓ | ✓ | ✗ | ✓ | ✗ | ✓ | ✗ | ✓ (dips at 5.4/5.6/5.9) |
+| wheelColliders | ✗ | ✓ | ✓ | ✗ | ✓ | ✗ | ✓ | ✗ | ✓ — **row identical** |
+
+Three honest conclusions:
+
+1. **The floor is real physics and IS the shipped gate**: below 2.30 R the
+   car cannot pay rolling drag to the apex — the bisected
+   [[feel]] `loopGate` value, first FAIL/first PASS exactly at the 2.2/2.3
+   step boundary.
+2. **The model has no ceiling, by construction**: the droop tether (feel
+   §Suspension: the toy axle carries tension, so the strut PULLS —
+   `droopK`/`droopMax`) **is** an up-stop wheel expressed in the one place
+   the solver sees forces. Both variants hold the ring through 6 R
+   (30 cm of release on a 10 cm loop). The mid-window dips (2.5, 2.9–3.1,
+   3.3, 5.4/5.6/5.9) are bounce-phase losses — the spring hands the chassis
+   back at the apex seam at certain phases — not a ceiling: 2.6 passes and
+   the ideal ceiling lies BELOW 2.6, so no lift-off explanation can
+   survive them. A physical ceiling would need the tether's capacity
+   bounded (`droopMaxForce`) — the knob exists; capping it at the toy's
+   real retention is a fidelity decision, not a bug, and changing it would
+   move the shipped hashes.
+3. **Collider-variant status: PROVEN for the loop piece.** Its window is
+   bit-for-bit the same pass/fail pattern — the tyre-collider lips never
+   prevented a completion anywhere in the scan. The residual variant-a
+   worry (banked-yaw lip graze cosmetics) is a [[render]]/geometry matter,
+   not a physics one.
+
+Documentation decision (the carry-in's preferred branch): **the loop has a
+speed window BY DESIGN — `[2.30 R, +∞)`** — floor physical, top end held
+by the modelled droop tether. Noted at the `loopGate` row in [[feel]];
+no new physics component needed for the slice. `LOOP_RADIUS = 0.10` itself
+still serves the shipped car and the shipped loop GEOMETRY RULE
+(R ≥ 1.25 × car length = 0.0938 m world; 0.10 is the rule with a 7 %
+margin — comment in `src/feel/feeltrack.ts`, rule in
+[[Concepts/Feel|Concepts/Feel]] §Loop geometry) — no resize is warranted
+by anything measured here.
+
 ## Solver energy honesty (stage-2 audit, 2026-10-06)
 
 `node tools/feel.mjs audit [hR] [arc0 arc1]` prints a per-step ledger — total

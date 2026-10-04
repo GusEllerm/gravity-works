@@ -47,7 +47,7 @@ the loop-gate audit and the SIM_SCALE velocity-mapping fix:
 |---|---|---|
 | roll from 0.3 m drop-ramp (§7.1) | **2.47 m** — target 2.5 m MET | 2.47 m ✓ |
 | feel-track completion | **completes, 3.31 s** (world replay finishes 3.01 s) | 3.31 s ✓ |
-| min loop height / radius, honest gate | **2.30 R** — bracketed bisect on the friction-aware loop rig at shipped `ROLL_COEF`, band [2.25, 2.75] R asserted (`LOOP_BAND_OVER_R`); no solver-made ceiling — the audited car holds the ring through 7 R | 2.30 R ✓ (identical) |
+| min loop height / radius, honest gate | **2.30 R** — bracketed bisect on the friction-aware loop rig at shipped `ROLL_COEF`, band [2.25, 2.75] R asserted (`LOOP_BAND_OVER_R`); no solver-made ceiling — the audited car holds the ring through 7 R; the window's two ends (floor physical, no top — the droop tether is the modelled up-stop) are documented in [[physics]] §speed window | 2.30 R ✓ (identical) |
 | apex speed / floor | 1.08 / 0.99 m/s (1.09×) | same ✓ |
 | peak speed | 3.00 m/s | 3.00 m/s ✓ |
 | landing impulse across the gap jump | **0.061 N·s** after a real ~0.2 s flight | same ✓ |

@@ -28,7 +28,7 @@ sig = "09c7f3eef715d605"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "docs/vault/Modules/feel.md"
-sig = "22a9b3298fd1ac3e"
+sig = "e4e17cd7588ac713"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -253,12 +253,27 @@ sig = "c574d75a051da4fc"
 [[bindings]]
 doc = "docs/vault/Modules/hazards.md"
 target = "src/world/world.ts"
-sig = "2106de1891a550d2"
+sig = "d2bf3182aeb37c64"
 
 [[bindings]]
 doc = "docs/vault/Modules/hazards.md"
 target = "tests/unit/hazards.test.ts"
 sig = "be1d9f07e84f7b87"
+
+[[bindings]]
+doc = "docs/vault/Modules/juice.md"
+target = "src/juice/juice.ts"
+sig = "bed52996239942a5"
+
+[[bindings]]
+doc = "docs/vault/Modules/juice.md"
+target = "tests/unit/juice.test.ts"
+sig = "77db69ce72487675"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "src/feel/feeltrack.ts"
+sig = "cbba72af04a17c24"
 
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
@@ -488,7 +503,7 @@ sig = "94a2ee27e5931879"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "src/world/world.ts"
-sig = "2106de1891a550d2"
+sig = "d2bf3182aeb37c64"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -563,12 +578,17 @@ sig = "fb06ede3e0b45cba"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/world.ts"
-sig = "2106de1891a550d2"
+sig = "d2bf3182aeb37c64"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/feeltrack-level.test.ts"
 sig = "76aa13d75bc81d94"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "tests/unit/juice.test.ts"
+sig = "77db69ce72487675"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"

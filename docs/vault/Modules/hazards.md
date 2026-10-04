@@ -94,6 +94,8 @@ the ground line.
 ## Depends on / used by
 
 `src/world/world.ts` (wiring: one `HazardField` per World, `gripAt` arrow
-into `carStep`, support into `applyRollingResistance`), `src/feel/run.ts`
-(`SimOpts.gripAt` + slip telemetry in `RunResult`), `src/juice` (hazard
-tell + per-wheel slip numbers). See [[world]], [[physics]], [[feel]].
+into `carStep`, support into `applyRollingResistance`; `WorldState.car`
+carries the `grip`/`slip`/`velocity` telemetry), `src/feel/run.ts`
+(`SimOpts.gripAt` + slip telemetry in `RunResult`), `src/juice` (the
+hazard tell projects a velocity ray at these zone boxes — see [[juice]]).
+See [[world]], [[physics]], [[feel]].
