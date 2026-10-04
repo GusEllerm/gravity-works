@@ -26,6 +26,8 @@ import { replayRun } from './replay/replay.ts';
 import { rememberBuild } from './save/save.ts';
 
 export function boot(root: HTMLElement): void {
+  // a bare fragment change is a new run request on a static host: reload into it
+  window.addEventListener('hashchange', () => window.location.reload())
   const fragment = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
   if (fragment.startsWith('s=')) {
     void bootSharedRun(root);
