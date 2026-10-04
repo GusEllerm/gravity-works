@@ -284,7 +284,7 @@ function kitchenScene(): SceneFactory {
     // One gold key, low — breakfast sun with long shadows that fly away
     // from camera so the forms read in every rig.
     const key = new THREE.DirectionalLight(GLOBAL_TOKENS.keyLight, KEY_INTENSITY)
-    key.position.set(0.95, 0.42, 0.62)
+    key.position.set(0.9, 0.55, 0.6)
     key.castShadow = true
     key.shadow.mapSize.set(2048, 2048)
     key.shadow.camera.left = -1.2
@@ -316,24 +316,38 @@ function kitchenScene(): SceneFactory {
     wall.receiveShadow = true
     scene.add(wall)
 
-    // monumental cereal bowl — the banked turn. Double-sided lathe; the
-    // interior reads as ceramic in shade via the warm shadow band.
+    // monumental cereal bowl — the banked turn. The flared rim self-shadows
+    // the wall below it; the bowl's shadow band is set to a bright warm gold
+    // so that band reads as ceramic in shade, never grey.
     const bowlMat = ceramic(tokens, '#E5C187', {
       ...fillOver(),
-      shadowTint: '#E8A658',
-      ramp: { steps: [0.6, 1.0], thresholds: [0.3], softness: 0.08 },
+      shadowTint: '#F5C97E',
+      ramp: { steps: [0.78, 1.0], thresholds: [0.12], softness: 0.1 },
       specular: { size: 0.55, strength: 0.22 },
       diffuseStrength: 0.92,
     })
     bowlMat.side = THREE.DoubleSide
-    const bowl = new THREE.Mesh(bowlForm(0.105, 0.056, 0.005), bowlMat)
+    const bowl = new THREE.Mesh(bowlForm(0.098, 0.054, 0.005), bowlMat)
     props(bowl)
     bowl.position.set(0.01, 0, -0.01)
     scene.add(bowl)
 
+    // a second car, on the ramp, caught mid-descent
+    {
+      const runner = car()
+      const a = new THREE.Vector3(-0.24, 0.09, 0.22)
+      const b = new THREE.Vector3(-0.06, 0.024, 0.06)
+      runner.position.lerpVectors(a, b, 0.62)
+      runner.position.y += 0.006
+      const d = b.clone().sub(a).normalize()
+      runner.lookAt(runner.position.x + d.x, runner.position.y + d.y, runner.position.z + d.z)
+      runner.rotateY(-Math.PI / 2)
+      scene.add(runner)
+    }
+
     // milk settled in the bottom, with a few cereal rings floating
     const milk = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.078, 0.07, 0.003, 40),
+      new THREE.CylinderGeometry(0.066, 0.06, 0.003, 40),
       liquid(tokens, '#F7EFDE', { ...fillOver(), opacity: 0.95, liquid: 0.08 }),
     )
     milk.position.set(0.01, 0.02, -0.01)
@@ -348,7 +362,7 @@ function kitchenScene(): SceneFactory {
       const rnd = makeRng(911)
       for (let i = 0; i < 6; i++) {
         const a = rnd() * Math.PI * 2
-        const r = 0.014 + rnd() * 0.05
+        const r = 0.012 + rnd() * 0.042
         d.position.set(0.01 + Math.cos(a) * r, 0.023, -0.01 + Math.sin(a) * r)
         d.rotation.set(-Math.PI / 2 + (rnd() - 0.5) * 0.5, 0, rnd() * 3)
         d.updateMatrix()
@@ -358,11 +372,20 @@ function kitchenScene(): SceneFactory {
     props(rings)
     scene.add(rings)
 
+    // a third car, racing out along the flat run — floor-camera's hero
+    {
+      const racer2 = car()
+      racer2.position.set(0.145, 0.0045, -0.043)
+      racer2.lookAt(0.145 + 0.96, 0.0041, -0.043 - 0.25)
+      racer2.rotateY(-Math.PI / 2)
+      scene.add(racer2)
+    }
+
     // the car riding the bowl's banked rim — the story of the tile
     const racer = car()
     const psi = -Math.PI * 0.15
-    const rx = 0.01 + Math.cos(psi) * 0.093
-    const rz = -0.01 + Math.sin(psi) * 0.093
+    const rx = 0.01 + Math.cos(psi) * 0.088
+    const rz = -0.01 + Math.sin(psi) * 0.088
     racer.position.set(rx, 0.045, rz)
     racer.lookAt(rx - Math.sin(psi) * 0.06, 0.045, rz + Math.cos(psi) * 0.06)
     racer.rotateY(-Math.PI / 2)
