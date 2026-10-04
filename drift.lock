@@ -87,6 +87,11 @@ sig = "6076250d77860d77"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
+target = "src/dev/scenes/kitchen-set.ts"
+sig = "340eaefcc0f1fe45"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
 target = "src/dev/scenes/material-ramp.ts"
 sig = "0b8956e4fdc50db2"
 
@@ -129,6 +134,26 @@ sig = "f88a45cfb6aaf777"
 doc = "docs/vault/Modules/dev.md"
 target = "tools/render.mjs"
 sig = "5455fbef64c07ef3"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets-kitchen.md"
+target = "src/dev/scenes/kitchen-set.ts"
+sig = "340eaefcc0f1fe45"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets-kitchen.md"
+target = "src/sets/kitchen/data.ts"
+sig = "43186a00b27f8234"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets-kitchen.md"
+target = "src/sets/kitchen/index.ts"
+sig = "8055ce0ebf3f9a95"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets-kitchen.md"
+target = "tests/unit/kitchen-set.test.ts"
+sig = "419088dfb08c761f"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"

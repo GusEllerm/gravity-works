@@ -219,7 +219,7 @@ export function buildKitchenSet(T = THREE_NS, opts: KitchenSetOptions = {}): Kit
     coffee.position.y = 0.05
     mugG.add(coffee)
   }
-  mugG.position.set(0.24, 0, 0.05)
+  mugG.position.set(0.225, 0, 0.062)
   mugG.rotation.y = -1.7
   dress.add(mugG)
 
@@ -313,7 +313,7 @@ export function buildKitchenSet(T = THREE_NS, opts: KitchenSetOptions = {}): Kit
     bite.name = 'toast-bite'
     bite.position.set(0.013, 0.011, 0.0063)
     soldier.add(bite)
-    soldier.position.set(0.212, 0.024, 0.088)
+    soldier.position.set(0.2, 0.024, 0.101)
     soldier.rotation.set(-0.05, -0.75, -0.5)
     dress.add(soldier)
   }
