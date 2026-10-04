@@ -171,6 +171,15 @@ colliders and loses ~31 % of its roll to chord-slab plough, exactly as
 predicted from the joint-era probes. Recommend raycastWheels as the stage-2
 base; re-run the bake-off on track-kit colliders once they exist.
 
+**Re-run on track-kit colliders — done (stage 2, kit-integration round
+onward).** On the kit's merged-run hulls the two variants now agree at every
+shipped metric (feel track completes 3.31 s both, roll 2.47 m both, loop
+gate 2.30 R both — table in [[feel]]); the chord-slab plough was indeed a
+property of the retired geometry, not of variant a. The remaining variant-a
+open question is banked-yaw crossing (its tyres physically touch the lips),
+and sizing the loop piece for the collider variant is a stage-3 carry-in
+([[Home]] Deferred).
+
 ## Solver energy honesty (stage-2 audit, 2026-10-06)
 
 `node tools/feel.mjs audit [hR] [arc0 arc1]` prints a per-step ledger — total
