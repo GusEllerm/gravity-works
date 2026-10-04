@@ -8,7 +8,7 @@
 import * as THREE from 'three'
 import { ceramic, dieCastPaint, fabric, liquid, paintedWood, trackPlastic } from '../../render/materials.ts'
 import { bowlForm, toyBlock, trackChannel } from '../../render/geometry.ts'
-import { GLOBAL_TOKENS, SET_TOKENS, mixHex } from '../../render/tokens.ts'
+import { GLOBAL_TOKENS, SET_TOKENS, darken, mixHex } from '../../render/tokens.ts'
 import { ToonMaterial } from '../../render/toon-material.ts'
 import { registerScene, type SceneEntry, type SceneFactory } from '../registry.ts'
 
@@ -17,8 +17,8 @@ const KEY_INTENSITY = 1.3
 
 // Mint-leaning soft fill: the token fill (gold-derived) nudged toward the
 // kitchen's mint accent so shadows breathe cool against the gold key.
-const FILL_HIGH = mixHex(tokens.fillHigh, '#A9DFCC', 0.3)
-const FILL_LOW = mixHex(tokens.fillLow, '#7FC7B0', 0.18)
+const FILL_HIGH = darken(mixHex(tokens.fillHigh, '#8FCEBB', 0.4), 0.06)
+const FILL_LOW = mixHex(tokens.fillLow, '#6FB9A2', 0.25)
 
 /** Deterministic pseudo-random (fixed seed — the clock never moves). */
 function makeRng(seed: number): () => number {
@@ -40,7 +40,11 @@ function props(mesh: THREE.Object3D, cast = true, receive = true): void {
   })
 }
 
-const fillOver = () => ({ fillHigh: FILL_HIGH, fillLow: FILL_LOW })
+const fillOver = () => ({
+  fillHigh: FILL_HIGH,
+  fillLow: FILL_LOW,
+  shadowTint: mixHex(tokens.shadowTint, tokens.dominant, 0.3),
+})
 
 // ---- props ------------------------------------------------------------
 
@@ -96,19 +100,19 @@ function bookStack(): THREE.Group {
     g.add(b)
     y += h!
   })
-  // ramp book, tilted on a pencil shim
+  // ramp book, tilted, propped on a pencil shim
   const ramp = new THREE.Mesh(
     toyBlock(0.17, 0.019, 0.125, 0.004, 0.0015),
     paintedWood(tokens, '#D9883B', { ...fillOver(), grain: 0.5 }),
   )
-  ramp.position.set(0.005, y + 0.017, -0.012)
+  ramp.position.set(0.005, y + 0.023, 0.012)
   ramp.rotation.x = -0.24
   ramp.rotation.y = -0.1
   props(ramp)
   g.add(ramp)
   // the pencil shim — someone built this
   const pencil = pencilProp()
-  pencil.position.set(0.012, y + 0.012, 0.05)
+  pencil.position.set(0.012, y + 0.025, 0.055)
   pencil.rotation.set(0, 0.35, Math.PI / 2)
   g.add(pencil)
   return g
@@ -145,48 +149,48 @@ function pencilProp(): THREE.Group {
 function toast(): THREE.Group {
   const g = new THREE.Group()
   const slice = new THREE.Mesh(
-    toyBlock(0.048, 0.046, 0.013, 0.012, 0.003),
+    toyBlock(0.041, 0.04, 0.012, 0.01, 0.003),
     paintedWood(tokens, '#E3A75B', { ...fillOver(), grain: 0.85 }),
   )
   props(slice)
   g.add(slice)
   // bitten corner: crumb-colour patch where a bite is missing
   const bite = new THREE.Mesh(
-    new THREE.CircleGeometry(0.012, 20),
-    paintedWood(tokens, '#F3E3C2', { ...fillOver(), grain: 0.15 }),
+    new THREE.CircleGeometry(0.008, 20),
+    paintedWood(tokens, '#EFCF92', { ...fillOver(), grain: 0.15 }),
   )
-  bite.position.set(0.016, 0.014, 0.0068)
+  bite.position.set(0.013, 0.011, 0.0063)
   g.add(bite)
   return g
 }
 
 function tap(): THREE.Group {
   const g = new THREE.Group()
-  const brass = dieCastPaint(tokens, '#D8C29A', { ...fillOver(), toy: 0.35, rim: { strength: 0.4, size: 0.15 } })
-  const riser = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.015, 0.26, 20), brass)
-  riser.position.y = 0.25
+  const brass = dieCastPaint(tokens, '#C9A45E', { ...fillOver(), toy: 0.5, rim: { strength: 0.42, size: 0.15 } })
+  const riser = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.013, 0.21, 24), brass)
+  riser.position.y = 0.105
   props(riser)
   g.add(riser)
-  const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.015, 18, 14), brass)
-  elbow.position.y = 0.38
+  const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.0125, 20, 16), brass)
+  elbow.position.y = 0.21
   props(elbow)
   g.add(elbow)
-  const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.012, 0.13, 20), brass)
-  spout.position.set(0.058, 0.38, 0)
+  const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.0085, 0.009, 0.12, 24), brass)
+  spout.position.set(0.054, 0.21, 0)
   spout.rotation.z = Math.PI / 2
   props(spout)
   g.add(spout)
-  const lip = new THREE.Mesh(new THREE.CylinderGeometry(0.0125, 0.0105, 0.014, 20), brass)
-  lip.position.set(0.118, 0.373, 0)
+  const lip = new THREE.Mesh(new THREE.CylinderGeometry(0.0095, 0.008, 0.012, 24), brass)
+  lip.position.set(0.108, 0.203, 0)
   props(lip)
   g.add(lip)
   // the frozen drip
   const drop = new THREE.Mesh(
-    new THREE.SphereGeometry(0.006, 16, 12),
-    liquid(tokens, '#CBE0D6', { ...fillOver(), opacity: 0.85 }),
+    new THREE.SphereGeometry(0.009, 16, 12),
+    liquid(tokens, '#C2DFD2', { ...fillOver(), opacity: 0.85 }),
   )
-  drop.scale.y = 1.7
-  drop.position.set(0.118, 0.11, 0)
+  drop.scale.y = 1.4
+  drop.position.set(0.108, 0.03, 0)
   g.add(drop)
   return g
 }
@@ -194,17 +198,17 @@ function tap(): THREE.Group {
 function wetPatch(): THREE.Group {
   const g = new THREE.Group()
   const patch = new THREE.Mesh(
-    new THREE.SphereGeometry(0.042, 28, 12),
-    liquid(tokens, '#BBD6CB', { ...fillOver(), opacity: 0.6, liquid: 0.15 }),
+    new THREE.SphereGeometry(0.038, 28, 12),
+    liquid(tokens, '#8FB7A5', { ...fillOver(), opacity: 0.45, liquid: 0.15 }),
   )
-  patch.scale.y = 0.035
+  patch.scale.y = 0.05
   patch.position.y = 0.001
   patch.receiveShadow = true
   g.add(patch)
   // the drip's splash, frozen — a crown ring on the puddle
   const splash = new THREE.Mesh(
-    new THREE.TorusGeometry(0.011, 0.0016, 8, 28),
-    liquid(tokens, '#D8EAE1', { ...fillOver(), opacity: 0.9 }),
+    new THREE.TorusGeometry(0.008, 0.001, 8, 28),
+    liquid(tokens, '#BCD8CC', { ...fillOver(), opacity: 0.9 }),
   )
   splash.rotation.x = -Math.PI / 2
   splash.position.y = 0.0035
@@ -239,6 +243,15 @@ function car(): THREE.Group {
   return g
 }
 
+/** A straight track run from a to b, laid along the line (deck at a.y/b.y). */
+function trackRun(a: THREE.Vector3, b: THREE.Vector3, mat: THREE.Material): THREE.Mesh {
+  const m = new THREE.Mesh(trackChannel(Math.max(a.distanceTo(b) - 0.008, 0.02)), mat)
+  m.position.copy(a).lerp(b, 0.5)
+  m.lookAt(b)
+  props(m)
+  return m
+}
+
 function crumbs(): THREE.InstancedMesh {
   const n = 16
   const mesh = new THREE.InstancedMesh(
@@ -253,7 +266,7 @@ function crumbs(): THREE.InstancedMesh {
     const r = 0.02 + rnd() * 0.075
     dummy.position.set(Math.cos(a) * r, 0.0022 + rnd() * 0.002, Math.sin(a) * r)
     dummy.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3)
-    dummy.scale.setScalar(0.5 + rnd() * 0.9)
+    dummy.scale.setScalar(0.35 + rnd() * 0.5)
     dummy.updateMatrix()
     mesh.setMatrixAt(i, dummy.matrix)
   }
@@ -285,28 +298,75 @@ function kitchenScene(): SceneFactory {
     key.shadow.radius = 4
     scene.add(key)
 
-    // warm wood counter
+    // warm wood counter, a touch deeper so the key light has somewhere to land
     const ground = new THREE.Mesh(
-      new THREE.CircleGeometry(1.2, 64),
-      paintedWood(tokens, tokens.ground, { ...fillOver(), grain: 0.3 }),
+      new THREE.CircleGeometry(1.4, 72),
+      paintedWood(tokens, darken(tokens.ground, 0.06), { ...fillOver(), grain: 0.32 }),
     )
     ground.rotation.x = -Math.PI / 2
     ground.receiveShadow = true
     scene.add(ground)
 
-    // monumental cereal bowl — the banked turn
-    const bowlMat = ceramic(tokens, '#EFE4CE', fillOver())
+    // flat cream wall behind — catches the long shadows, never a gradient
+    const wall = new THREE.Mesh(
+      new THREE.PlaneGeometry(20, 4),
+      paintedWood(tokens, mixHex(tokens.background, tokens.dominant, 0.28), { ...fillOver(), grain: 0.06, diffuseStrength: 0.85 }),
+    )
+    wall.position.set(0, 1.6, -0.6)
+    wall.receiveShadow = true
+    scene.add(wall)
+
+    // monumental cereal bowl — the banked turn. Double-sided lathe; the
+    // interior reads as ceramic in shade via the warm shadow band.
+    const bowlMat = ceramic(tokens, '#E5C187', {
+      ...fillOver(),
+      shadowTint: '#E8A658',
+      ramp: { steps: [0.6, 1.0], thresholds: [0.3], softness: 0.08 },
+      specular: { size: 0.55, strength: 0.22 },
+      diffuseStrength: 0.92,
+    })
     bowlMat.side = THREE.DoubleSide
-    const bowl = new THREE.Mesh(bowlForm(0.095, 0.052, 0.005), bowlMat)
+    const bowl = new THREE.Mesh(bowlForm(0.105, 0.056, 0.005), bowlMat)
     props(bowl)
     bowl.position.set(0.01, 0, -0.01)
     scene.add(bowl)
 
+    // milk settled in the bottom, with a few cereal rings floating
+    const milk = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.078, 0.07, 0.003, 40),
+      liquid(tokens, '#F7EFDE', { ...fillOver(), opacity: 0.95, liquid: 0.08 }),
+    )
+    milk.position.set(0.01, 0.02, -0.01)
+    scene.add(milk)
+    const rings = new THREE.InstancedMesh(
+      new THREE.TorusGeometry(0.0055, 0.0024, 8, 18),
+      fabric(tokens, '#E8B063', fillOver()),
+      6,
+    )
+    {
+      const d = new THREE.Object3D()
+      const rnd = makeRng(911)
+      for (let i = 0; i < 6; i++) {
+        const a = rnd() * Math.PI * 2
+        const r = 0.014 + rnd() * 0.05
+        d.position.set(0.01 + Math.cos(a) * r, 0.023, -0.01 + Math.sin(a) * r)
+        d.rotation.set(-Math.PI / 2 + (rnd() - 0.5) * 0.5, 0, rnd() * 3)
+        d.updateMatrix()
+        rings.setMatrixAt(i, d.matrix)
+      }
+    }
+    props(rings)
+    scene.add(rings)
+
     // the car riding the bowl's banked rim — the story of the tile
     const racer = car()
-    racer.position.set(-0.048, 0.036, 0.048)
-    racer.rotation.set(0, 2.35, 0)
-    racer.rotateZ(0.55)
+    const psi = -Math.PI * 0.15
+    const rx = 0.01 + Math.cos(psi) * 0.093
+    const rz = -0.01 + Math.sin(psi) * 0.093
+    racer.position.set(rx, 0.045, rz)
+    racer.lookAt(rx - Math.sin(psi) * 0.06, 0.045, rz + Math.cos(psi) * 0.06)
+    racer.rotateY(-Math.PI / 2)
+    racer.rotateX(0.35)
     scene.add(racer)
 
     // book-stack ramp up-left behind the bowl, with the orange track down
@@ -316,22 +376,15 @@ function kitchenScene(): SceneFactory {
     scene.add(books)
 
     const trackMat = trackPlastic(tokens, GLOBAL_TOKENS.trackOrange, { ...fillOver(), toy: 0.2 })
-    const rampTrack = new THREE.Mesh(trackChannel(0.30), trackMat)
-    props(rampTrack)
-    rampTrack.position.set(-0.165, 0.062, 0.085)
-    rampTrack.rotation.set(-0.36, -0.5, 0)
+    const rampTrack = trackRun(new THREE.Vector3(-0.24, 0.09, 0.22), new THREE.Vector3(-0.06, 0.024, 0.06), trackMat)
     scene.add(rampTrack)
-
-    const flatTrack = new THREE.Mesh(trackChannel(0.16), trackMat)
-    props(flatTrack)
-    flatTrack.position.set(-0.075, 0.004, -0.075)
-    flatTrack.rotation.set(0, Math.PI - 0.75, 0)
+    const flatTrack = trackRun(new THREE.Vector3(0.095, 0.02, -0.03), new THREE.Vector3(0.21, 0.005, -0.06), trackMat)
     scene.add(flatTrack)
 
     // mug with its ring, toast soldier leaning on the mug
     const mugG = mug()
     mugG.position.set(0.24, 0, 0.13)
-    mugG.rotation.y = -0.5
+    mugG.rotation.y = -1.7
     scene.add(mugG)
     const ring = new THREE.Mesh(
       new THREE.TorusGeometry(0.034, 0.0032, 8, 40),
@@ -341,8 +394,8 @@ function kitchenScene(): SceneFactory {
     ring.position.set(0.155, 0.0022, 0.185)
     scene.add(ring)
     const soldier = toast()
-    soldier.position.set(0.196, 0.021, 0.075)
-    soldier.rotation.set(-0.28, -0.35, 0.06)
+    soldier.position.set(0.207, 0.024, 0.113)
+    soldier.rotation.set(-0.05, -0.75, -0.5)
     scene.add(soldier)
     const crumbTrail = crumbs()
     crumbTrail.position.set(0.17, 0, 0.13)
@@ -350,34 +403,34 @@ function kitchenScene(): SceneFactory {
 
     // the dripping tap, frozen mid-drip, up-left rear; wet patch + splash
     const tapG = tap()
-    tapG.position.set(-0.30, 0, -0.24)
-    tapG.rotation.y = 0.55
+    tapG.position.set(-0.31, 0, -0.2)
+    tapG.rotation.y = -1.2
     scene.add(tapG)
     const patch = wetPatch()
-    patch.position.set(-0.24, 0, -0.155)
+    patch.position.set(-0.271, 0, -0.1)
     scene.add(patch)
 
     // folded mint cloth — the accent, catching the key
     const cloth = new THREE.Group()
     const clothMat = fabric(tokens, tokens.accent, fillOver())
-    const c1 = new THREE.Mesh(toyBlock(0.062, 0.007, 0.048, 0.008, 0.002), clothMat)
-    c1.position.y = 0.0035
+    const c1 = new THREE.Mesh(toyBlock(0.075, 0.005, 0.055, 0.01, 0.002), clothMat)
+    c1.position.y = 0.0025
     props(c1)
     cloth.add(c1)
-    const c2 = new THREE.Mesh(toyBlock(0.052, 0.006, 0.04, 0.008, 0.002), clothMat)
-    c2.position.set(0.002, 0.01, 0.001)
+    const c2 = new THREE.Mesh(toyBlock(0.062, 0.0045, 0.045, 0.01, 0.002), clothMat)
+    c2.position.set(0.002, 0.007, 0.001)
     c2.rotation.y = 0.25
     props(c2)
     cloth.add(c2)
-    cloth.position.set(-0.09, 0, -0.21)
+    cloth.position.set(0.35, 0, -0.04)
     cloth.rotation.y = 0.35
     scene.add(cloth)
 
     // a second pencil, lying across the counter — lived-in, and it leads
     // the floor camera toward the bowl
     const lazyPencil = pencilProp()
-    lazyPencil.position.set(0.12, 0.0043, -0.06)
-    lazyPencil.rotation.set(Math.PI / 2, 0, 0.85)
+    lazyPencil.position.set(0.14, 0.0043, -0.19)
+    lazyPencil.rotation.set(Math.PI / 2, 0, 1.0)
     scene.add(lazyPencil)
 
     // Tell every ToonMaterial the key light so dark bands tint, not blacken.
