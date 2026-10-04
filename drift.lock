@@ -1,1 +1,26 @@
 version = 1
+
+[[bindings]]
+doc = "docs/vault/Home.md"
+target = "src/boot.ts"
+sig = "c792e7b2ffb80e0f"
+
+[[bindings]]
+doc = "docs/vault/Modules/src.md"
+target = "src/boot.ts"
+sig = "c792e7b2ffb80e0f"
+
+[[bindings]]
+doc = "docs/vault/Modules/src.md"
+target = "src/main.ts"
+sig = "74ff3097ab79287a"
+
+[[bindings]]
+doc = "docs/vault/Modules/src.md"
+target = "tests/e2e/smoke.spec.ts"
+sig = "3dc33ac21de385ff"
+
+[[bindings]]
+doc = "docs/vault/Modules/src.md"
+target = "tests/unit/boot.test.ts"
+sig = "f895f1e0ad7fd8c9"
