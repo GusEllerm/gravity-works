@@ -15,11 +15,11 @@ The browser side of a replay is `src/boot.ts`'s shared-run page: `parseShareUrl`
 
 ## Measured
 
-Node and the built Chromium page produce the same hash for the placeholder feel track (`77b6cfc3` seen from both sides) — same-machine and same-engine verification holds with the shipped rapier3d-compat build. The cross-platform claim is still open ([[Home]] Deferred; QA owns the stage gate).
+Node and the built Chromium page produce the same hash for the real kit feel track (`074b1ef6` seen from both sides; run finished in 239 steps / 1.99 s) — same-machine and same-engine verification holds with the shipped rapier3d-compat build. (Stage-2 placeholder-era number `77b6cfc3` retired with the placeholder.) The cross-platform claim is still open ([[Home]] Deferred; QA owns the stage gate).
 
 ## Guarded by
 
-`tests/unit/replay.test.ts` (same build twice → same hash; JSON round-trip → same hash; a piece removed → different hash) and `tests/e2e/replay.spec.ts` (verified/mismatch in the real page).
+`tests/unit/replay.test.ts` (the REAL feel track: same build twice → same hash; JSON round-trip → same hash; piece removed → different hash; ONE piece parameter changed → different hash — determinism is asserted to be sensitive, not just stable) and `tests/e2e/replay.spec.ts` (verified/mismatch in the real page on a feel-track `#s=` fragment).
 
 ## Depends on / used by
 

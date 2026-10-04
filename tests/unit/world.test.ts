@@ -1,8 +1,8 @@
 /**
- * World module tests: the placeholder feel track runs to a finish, the state
- * snapshots are interpolable pairs, and the state hash is a pure function of
- * (level, build, seed) — the determinism half of the stage-2 acceptance lives
- * here and in replay.test.ts.
+ * World module tests: the feel track (the real kit build) runs to a finish
+ * headlessly, the state snapshots are interpolable pairs, and the state hash
+ * is a pure function of (level, build, seed) — the determinism half of the
+ * stage-2 acceptance lives here and in replay.test.ts.
  */
 import { describe, expect, test } from 'vitest';
 import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts';
@@ -10,7 +10,7 @@ import { World } from '../../src/world/world.ts';
 import { replayRun } from '../../src/replay/replay.ts';
 
 describe('world', () => {
-  test('the placeholder feel track finishes headlessly', async () => {
+  test('the feel track finishes headlessly', async () => {
     const run = await replayRun(FEELTRACK, FEELTRACK.placeholderBuild());
     expect(run.status).toBe('finished');
     expect(run.time).toBeGreaterThan(0.5);
