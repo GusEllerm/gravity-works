@@ -399,3 +399,8 @@ sig = "3eb6eaf704a9ecab"
 doc = "docs/vault/Reference/Canonical Cameras.md"
 target = "src/dev/cameras.ts"
 sig = "9512fc975c9378c7"
+
+[[bindings]]
+doc = "docs/vault/Reference/Performance Baselines.md"
+target = "tests/e2e/perf.spec.ts"
+sig = "3ca50b308a93f143"
