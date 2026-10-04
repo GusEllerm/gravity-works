@@ -133,7 +133,7 @@ sig = "0b8956e4fdc50db2"
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
 target = "src/dev/scenes/post-preview.ts"
-sig = "6d7d0cfc5b23c9db"
+sig = "3b1ed986703b2730"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -273,7 +273,7 @@ sig = "0b8956e4fdc50db2"
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
 target = "src/render/film.ts"
-sig = "148f66ab6a4d4050"
+sig = "2eb775c4288f5c26"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
@@ -283,7 +283,7 @@ sig = "0e4e78212a50e506"
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
 target = "src/render/lighting.ts"
-sig = "dcf9e754713fcf1a"
+sig = "0f44d434a7edb272"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
@@ -298,7 +298,7 @@ sig = "23049e685bb54f7b"
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
 target = "src/render/toon-material.ts"
-sig = "6f1266952d957632"
+sig = "70ac714cea9ffc13"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"

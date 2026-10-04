@@ -210,10 +210,10 @@ function wetPatchFilms(): THREE.Group {
   const fill = fillOver()
   const patch = stainDecal(tokens, {
     kind: 'wetPatch',
-    color: '#7FA393',
-    opacity: 0.4,
+    color: '#4F7667',
+    opacity: 0.45,
     size: 0.045,
-    sheen: 0.6,
+    sheen: 0.5,
     ...fill,
   })
   g.add(patch)

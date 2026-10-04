@@ -149,7 +149,11 @@ void RE_Direct_Toon(
 	// at 1 the raw IGN dither is back. Default 0.35 keeps a breath of texture.
 	vec3 weaveW = mod( vWorldPos + vec3( 32.0 ), vec3( 64.0 ) ) - vec3( 32.0 );
 	float weave = hash21( floor( weaveW.xz * 450.0 ) ) - 0.5;
-	float hard = step( 0.5 + weave * 0.6, att );
+	// the hard call is biased toward the SHADOW side: a fragment keeps full
+	// light only above 70 % coverage. Snapping a 50/50 penumbra to "lit"
+	// smeared bright patches wherever the tap shadow grazed the floor —
+	// snapping to tint reads as shadow, which is the truth anyway.
+	float hard = step( 0.7 + weave * 0.6, att );
 	att = mix( hard, att, uShadowDither );
 	vec3 effective = mix( material.shadowTint * uKeyLength * 0.4, directLight.color, att );
 

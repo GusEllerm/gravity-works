@@ -94,16 +94,18 @@ float filmShape(vec2 p) {
 
 void main() {
 	float a = filmShape( vFilmPos.xy );
-	vec3 fill = mix( uFillLow, uFillHigh, 0.55 ) * uFillStrength * 2.4;
+	vec3 fill = mix( uFillLow, uFillHigh, 0.55 ) * uFillStrength * 1.6;
 	// Fresnel: a wet film catches the room at grazing view angles; a dry
 	// stain (sheen 0) never does — it just darkens what is under it.
+	// The glint is STREAKY (high-frequency fbm gate) and its color
+	// contribution is halved: at a floor camera every pixel is grazing,
+	// and an ungated Fresnel term whitened the whole film into a sticker.
 	vec3 toCam = normalize( cameraPosition - vWorldPos );
 	float steepness = clamp( abs( dot( toCam, vec3( 0.0, 1.0, 0.0 ) ) ), 0.0, 1.0 );
-	// exponent 5, not 3: at true grazing view angles a 3-curve saturates and
-	// the whole film reads as a sticker — the floor camera was the tell.
-	float glint = uSheen * pow( 1.0 - steepness, 5.0 ) * ( 0.7 + 0.3 * fbm( vFilmPos.xy * 130.0 ) );
-	vec3 shaded = uColor * fill + vec3( 1.0, 0.98, 0.92 ) * glint;
-	gl_FragColor = vec4( shaded, a * uAlpha * ( 1.0 + glint * 0.8 ) );
+	float fb = fbm( vFilmPos.xy * 130.0 );
+	float glint = uSheen * pow( 1.0 - steepness, 4.0 ) * smoothstep( 0.45, 0.85, fb );
+	vec3 shaded = uColor * fill + vec3( 0.95, 0.98, 0.95 ) * glint * 0.5;
+	gl_FragColor = vec4( shaded, a * uAlpha * ( 1.0 + glint * 0.6 ) );
 
 	#include <tonemapping_fragment>
 	#include <colorspace_fragment>

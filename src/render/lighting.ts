@@ -78,7 +78,7 @@ export function createLightingRig(tokens: SetTokens, opts: LightingRigOptions = 
   // speckle), and the negative depth bias stays small enough not to detach
   // the long breakfast shadows.
   key.shadow.bias = -0.0002
-  key.shadow.normalBias = 0.003
+  key.shadow.normalBias = 0.006
   key.shadow.radius = opts.shadowRadius ?? 4
   key.shadow.camera.updateProjectionMatrix()
 
