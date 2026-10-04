@@ -114,7 +114,13 @@ export function addStaticBoxes(
         .setTranslation(b.center.x, b.center.y, b.center.z)
         .setRotation(b.quat)
         .setFriction(friction)
-        .setRestitution(0),
+        .setRestitution(0)
+        // Track = explicit membership bit0, filter all. Not the default
+        // all-ones group: the suspension rays exclude the car's wheel group
+        // (bit2) by a membership predicate, and an all-ones track matches
+        // that mask too — which silently filtered the TRACK out of every
+        // variant-a support ray (the car fell onto its chassis box).
+        .setCollisionGroups(0x0001_ffff),
       body,
     ),
   );
@@ -141,8 +147,22 @@ function fnvMix(h: number, word: number): number {
   return x;
 }
 
+/**
+ * Poison words for non-finite state. `Math.round(NaN) | 0` is 0, so a naive
+ * quantisation would hash a NaN-diverged run identically to a run parked at
+ * exactly 0 — the determinism test would pass on dead state (stage-1 review
+ * finding 7). NaN and each infinity get their own word instead; a hash that
+ * contains them can never equal a healthy run's.
+ */
+export const QUANT_NAN_WORD = 0x7a7a_01c0 >>> 0;
+export const QUANT_POSINF_WORD = 0x7a7a_01c1 >>> 0;
+export const QUANT_NEGINF_WORD = 0x7a7a_01c2 >>> 0;
+
 /** Quantise a float to a stable 32-bit word (position step 1e-4, quat 1e-5). */
-function quant(x: number, step: number): number {
+export function quant(x: number, step: number): number {
+  if (Number.isNaN(x)) return QUANT_NAN_WORD;
+  if (x === Infinity) return QUANT_POSINF_WORD;
+  if (x === -Infinity) return QUANT_NEGINF_WORD;
   const q = Math.round(x / step) | 0;
   return q >>> 0;
 }

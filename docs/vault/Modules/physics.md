@@ -14,7 +14,13 @@ no DOM — safe under Vitest (node) and `tools/feel.mjs` alike.
   state hash every `HASH_INTERVAL` steps, world↔sim conversion helpers
   (`SIM_SCALE = 10`, see [[Feel#Physics scale factor]]).
 - `src/physics/car.ts` — `spawnCar(world, variant, pose)` + `carStep()`.
-  Variants: `wheelColliders` (a) and `raycastWheels` (b).
+  Variants: `wheelColliders` (a) and `raycastWheels` (b). Collision groups
+  are explicit and load-bearing (stage-2 fix): track `0x0001_ffff`, chassis
+  `0x0002_fffd`, wheels `0x0004_fff9` — wheels hit the track for real, never
+  their own chassis; the track no longer uses the default all-ones group
+  because it matched the suspension rays' wheel-exclusion predicate and was
+  silently filtered out of every variant-a support ray (the car fell onto
+  its chassis box — see Engine gotchas).
 - The tracks and scenario runners these run on live in `src/feel` — see
   [[feel]]. `tools/feel.mjs` (`npm run feel`) prints the comparison table.
 
@@ -29,9 +35,17 @@ and stalls the car on any incline (found by measurement, not theory).
 - **Variant b (raycastWheels)** — chassis-only body; the four rays are the
   wheels. Winner: rolls true down the drop (peak 7.25 m/s world ≈ free-fall
   7.7), no contact path, no sleep/joint pathologies.
-- **Variant a (wheelColliders)** — adds four free wheel bodies (real mass +
-  rotational inertia) under their mounts via a clamped PD, colliding with the
-  world in their own group. Loser on every metric.
+- **Variant a (wheelColliders)** — four free **cylinder** wheel bodies with
+  **real colliders and tyre friction** (μ 0.05, group `0x0004_fff9`) riding
+  under their mounts on a clamped PD plus the same contact-normal support
+  springs. Stage 1 shipped this variant with a filter-0 collision group —
+  telemetry masses touching nothing — which made the "wheel-collider
+  variant measured" claim false (review finding 2); stage 2 made it honest.
+  With real contacts it ploughs the chord-slab stitching: on the drop-ramp
+  roll rig it stops 2.6 m (31 %) short of the raycast variant (5.87 vs
+  8.46 m). That plough is a property of the hand-chorded provisional track,
+  not something to tune around — it is precisely why the track kit's
+  stitched convex colliders are a stage-2 deliverable.
 
 ## Why variant a has no revolute joints (measured, do not re-litigate casually)
 
@@ -67,29 +81,56 @@ variant a. Joints are absent from the codebase on purpose.
   `numSolverIterations = 20`, `numInternalPgsIterations = 4`.
 - Trimesh track surfaces grip rolling bodies (edge plough); chord **box
   slabs** roll clean — the track is compound convex boxes, not a trimesh.
+  (Honest caveat now that variant a has real wheel contacts: chord slabs
+  roll clean for *sprung raycast* bodies; free *wheel cylinders* still
+  plough each slab end-face — see the variant a note above.)
+- Collision-group **predicates match membership masks, and the default
+  group is all-ones**: the suspension rays exclude the wheel group with
+  `groups >>> 16 & 0x4`, which also matched the default-grouped TRACK — so
+  every variant-a support ray filtered the track out and the "dropped" car
+  fell onto its chassis box. All world colliders now carry explicit
+  memberships (`addStaticBoxes` sets `0x0001_ffff`).
+- A symmetric vertical free-drop carries zero horizontal momentum: the
+  honest 30 cm drop-on-flat rig rolls ~0.00 m for any collider. The brief's
+  "rolls ~2.5 m from a 30 cm drop" is a drop-**ramp** release measurement
+  (`rampRollRun`), not a vertical drop — stage 1 conflated the two.
 - CCD on *rolling/sliding* bodies applies viscous predictive braking; CCD is
   enabled on the chassis only (belt-and-braces against tunnelling thin loop
   walls) and off on wheel bodies.
 
-## Measured vs targets (2026-10-03)
+## Measured vs targets (2026-10-04, honest rigs)
 
-| metric            | target        | wheelColliders | raycastWheels |
-|-------------------|---------------|----------------|---------------|
-| roll (0.3 m drop) | ≈2.5 m        | 0.28 m         | 0.61 m        |
-| feel peak speed   | —             | 2.66 m/s       | 7.25 m/s      |
-| feel track        | finish        | DNF            | DNF           |
-| loop threshold    | 2.50 r ±10 %  | unmeasurable   | unmeasurable  |
-| determinism       | equal hashes  | pass           | pass          |
+Stage-1's roll numbers were rig artifacts (a 3 sim/s launch velocity, a 0.2 m
+offset labelled "2 m", and measurement from `flatEnd` instead of touchdown —
+review finding 1). Re-measured on honest rigs: no launch velocity, true
+world-metre decks, wheel-centre travel after touchdown.
 
-Honest misses: the roll test bleeds energy through the chord-slab seam
-stitching + spring damping (measured deceleration ≈ 2.5× the tuned rolling
-resistance term), and the post-ramp landing sinks the chassis into the deck
-far enough that support rays start inside geometry — the car never enters
-the loop, so the 2.5 r threshold bisect cannot run. Both are stage-2
-suspension/track-stitching tuning items, tracked in the session log.
+| metric                       | target        | wheelColliders | raycastWheels |
+|------------------------------|---------------|----------------|---------------|
+| roll — free-drop rig         | ≈2.5 m (not observable here — 0 by symmetry) | 0.00 m | 0.00 m |
+| roll — drop-ramp rig (§7.1)  | ≈2.5 m        | 5.87 m         | 8.46 m        |
+| feel peak speed              | —             | 12.57 m/s      | 7.25 m/s      |
+| feel track                   | finish        | DNF            | DNF           |
+| loop threshold               | 2.50 r ±10 %  | unmeasurable   | unmeasurable  |
+| determinism                  | equal hashes  | pass           | pass          |
+
+Stage-1 → stage-2 movement stated plainly: wheelColliders 0.28 m → 0.00/5.87
+(it previously never had supported wheels or working support rays at all —
+the 0.28 was a chassis dropped on the deck sliding 0.08 m); raycastWheels
+0.61 m → 0.00/8.46 — **materially moved, and the stage-1 number never
+measured rolling**: the car sank below the deck plane and the reported 0.61 m
+was buried-car creep to the timeout. The drop-ramp overshoot (8.46 vs 2.5)
+is ROLL_COEF history: μ = 0.02 was tuned against the broken rig; the ideal
+roll from a 30 cm drop is d ≈ h/μ ≈ 15 m, so μ needs re-tuning up toward the
+0.1 ballpark, with chord-slab seam + spring losses and (variant a) wheel
+plough pulling the other way. Loop landing sink is unchanged and still
+blocks the 2.5 r bisect — stage-2 suspension/track-kit item.
 
 ## Verdict
 
-**raycastWheels wins the stage-1 bake-off** on every measured metric, and is
-the only variant that runs the feel track's first half at plausible speed.
-Recommend raycastWheels as the stage-2 base.
+**raycastWheels still wins the bake-off** — it is the only variant that runs
+the feel track's first half at plausible speed, and it still DNFs late. The
+comparison is now honest on both sides: variant a has genuine wheel
+colliders and loses ~31 % of its roll to chord-slab plough, exactly as
+predicted from the joint-era probes. Recommend raycastWheels as the stage-2
+base; re-run the bake-off on track-kit colliders once they exist.

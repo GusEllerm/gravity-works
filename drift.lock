@@ -23,7 +23,7 @@ sig = "31477df388547628"
 [[bindings]]
 doc = "docs/vault/Concepts/Feel.md"
 target = "src/physics/sim.ts"
-sig = "5182fb41a910b5e1"
+sig = "800726337fe0db86"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -93,42 +93,42 @@ sig = "02008942f6f39b83"
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/feel/run.ts"
-sig = "69e7a13f0db28f26"
+sig = "ccdc65f809b88680"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/physics/car.ts"
-sig = "fa2e17b13a302ff2"
+sig = "f48178a239bfc8e2"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/physics/sim.ts"
-sig = "5182fb41a910b5e1"
+sig = "800726337fe0db86"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "tests/unit/feel.test.ts"
-sig = "a9f4437344dfdce0"
+sig = "110ca750b0e9892a"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "tools/feel.mjs"
-sig = "23066f3a8a4da8ee"
+sig = "c81ca04b4f17d0ab"
 
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
 target = "src/physics/car.ts"
-sig = "fa2e17b13a302ff2"
+sig = "f48178a239bfc8e2"
 
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
 target = "src/physics/sim.ts"
-sig = "5182fb41a910b5e1"
+sig = "800726337fe0db86"
 
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
 target = "tools/feel.mjs"
-sig = "23066f3a8a4da8ee"
+sig = "c81ca04b4f17d0ab"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"

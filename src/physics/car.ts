@@ -1,7 +1,9 @@
 /**
  * The Gravity Works car — one chassis, two wheel models (the stage-1 bake-off).
  *
- * Variant "wheelColliders": four cylinder colliders on free revolute joints.
+ * Variant "wheelColliders": four real cylinder colliders with tyre friction,
+ * riding on stiff tyre springs and PD-centred under their chassis mounts
+ * (no joints — see jointedStep's note on why they were dropped).
  * Variant "raycastWheels": chassis only; four suspension rays per step with
  * manual spring/damper forces.
  *
@@ -82,7 +84,24 @@ const ATTACH_LOCAL: Vec[] = [
   v(-CAR.wheelX, -0.1, -CAR.wheelZ),
 ];
 
-export function spawnCar(world: RAPIER.World, variant: CarVariant, pose: Pose): Car {
+// Rapier cylinders are Y-aligned; spin this quaternion (90 deg about X) into
+// the wheel collider so the axle lies along body-local z (a rolling wheel).
+const WHEEL_AXLE_QUAT = { w: Math.SQRT1_2, x: Math.SQRT1_2, y: 0, z: 0 };
+
+/** Default bake-off launch speed (sim units); roll rigs pass 0. */
+export const DEFAULT_LAUNCH_SPEED = 3;
+
+export interface SpawnOpts {
+  /** Forward release speed (sim). 0 = pure free-drop, no launch. */
+  launchSpeed?: number;
+}
+
+export function spawnCar(
+  world: RAPIER.World,
+  variant: CarVariant,
+  pose: Pose,
+  opts: SpawnOpts = {},
+): Car {
   const up = vadd(pose.p, vscale(pose.u, CAR.rideH));
   const q = quatFromBasis(pose.f, pose.u);
   const chassisDesc = RAPIER.RigidBodyDesc.dynamic()
@@ -112,15 +131,19 @@ export function spawnCar(world: RAPIER.World, variant: CarVariant, pose: Pose): 
       wheelDesc.canSleep = false;
       const wheel = world.createRigidBody(wheelDesc);
       world.createCollider(
-        RAPIER.ColliderDesc.ball(CAR.wheelR)
+        RAPIER.ColliderDesc.cylinder(CAR.wheelHalfW, CAR.wheelR)
+          .setRotation(WHEEL_AXLE_QUAT)
           .setDensity(CAR.wheelDensity)
           .setFriction(CAR.wheelFriction)
           .setRestitution(0)
-          // group: wheel = bit2, collides with nothing (see jointedStep
-          // docs): jointed wheels plough their own load path on this build,
-          // so variant a's wheels are telemetry bodies - they still add
-          // real mass and rotational inertia through the joints.
-          .setCollisionGroups(0x0004_0000),
+          // group: wheel = bit2, filter excludes bit2 (other wheels) and
+          // bit1 (own chassis) — so wheels collide with the TRACK for real.
+          // (Stage 1 shipped filter 0 here, i.e. telemetry-only bodies that
+          // touched nothing; that was not a wheel-collider model at all.
+          // With real contacts this variant ploughs on the chord slabs —
+          // documented in Modules/physics.md, and precisely why the track
+          // kit's stitched colliders are the point.)
+          .setCollisionGroups(0x0004_fff9),
         wheel,
       );
       wheels.push(wheel);
@@ -128,7 +151,8 @@ export function spawnCar(world: RAPIER.World, variant: CarVariant, pose: Pose): 
   }
   // Launch-gate release: start rolling without slip (variant a) at a small
   // forward speed; identical for both variants so the bake-off is fair.
-  const v0 = 3;
+  // Roll-drop rigs pass launchSpeed 0 for a true free fall.
+  const v0 = opts.launchSpeed ?? DEFAULT_LAUNCH_SPEED;
   chassis.setLinvel(vscale(pose.f, v0), true);
   for (const wn of wheels) {
     wn.setLinvel(vscale(pose.f, v0), true);
@@ -204,12 +228,11 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
 
 /**
  * Variant a step — physical wheel colliders.
- * Each wheel is a free dynamic body riding on its own stiff tyre spring and
- * pressed to the surface; a clamped PD keeps it under its chassis mount;
- * the chassis itself is carried by the same contact-normal coil springs
- * variant b uses. Wheel-track contacts are REAL colliders: wheel angular
- * dynamics emerge from solver friction, and the wheel-speed vs ground-speed
- * telemetry differs from variant b by genuine wheel physics.
+ * Each wheel is a free dynamic body with a REAL cylinder collider and tyre
+ * friction, touching the track in its own collision group; a clamped PD keeps
+ * it under its chassis mount; the chassis itself is carried by the same
+ * contact-normal coil springs variant b uses. Wheel angular dynamics emerge
+ * from solver friction at the tyre patch.
  *
  * Why not joint-carried wheels? Measured on this Rapier build at 120 Hz,
  * joint load paths either brake-lock the car (the static friction cone
@@ -217,6 +240,12 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
  * the track slabs (position-joint softness); see probes 31-43. Springs
  * everywhere was the only stable arrangement, and revolute joints were
  * dropped entirely. That is the bake-off finding for variant a.
+ *
+ * Known, measured cost of real wheel contacts on THIS provisional track:
+ * the wheels plough the chord-slab stitching (each slab end-face is a
+ * vertical wall the tyre climbs), bleeding roll distance. That is a defect
+ * of the hand-slabbed track, not of the wheel model — the stage-2 track
+ * kit's stitched convex colliders exist to remove it.
  */
 function jointedStep(world: RAPIER.World, car: Car): WheelSupport {
   const support = supportStep(world, car);

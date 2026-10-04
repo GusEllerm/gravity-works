@@ -10,6 +10,7 @@ import {
   hashBodies,
   hashHex,
   HASH_INTERVAL,
+  qrot,
   stepWorld,
   toWorldDist,
   toWorldImpulse,
@@ -23,7 +24,9 @@ import {
   carSpeed,
   carStep,
   carVel,
+  CAR,
   spawnCar,
+  type Car,
   type CarVariant,
 } from '../physics/car.ts';
 import {
@@ -36,10 +39,7 @@ import {
 } from './feeltrack.ts';
 
 /** Tuned rolling-resistance coefficient (effective mu) — see Feel.md metrics. */
-export let ROLL_COEF = 0.02;
-export function setRollCoef(c: number): void {
-  ROLL_COEF = c;
-}
+export const ROLL_COEF = 0.02;
 
 export interface RunResult {
   completed: boolean;
@@ -48,7 +48,7 @@ export interface RunResult {
   apexSpeed: number | null; // m/s world at loop apex
   apexMin: number; // sqrt(g r) world
   landingImpulse: number; // N s world
-  rollDistance: number | null; // m world (roll scenario)
+  rollDistance: number | null; // m world — wheel-centre travel after touchdown (roll scenario)
   hash: string;
 }
 
@@ -57,8 +57,35 @@ interface RunOpts {
   variant: CarVariant;
   coef: number; // rolling-resistance coefficient
   timeout: number; // s
-  scenario: 'feel' | 'roll';
-  startOffset?: number; // sim units along the track from pose 0
+  scenario: 'feel' | 'roll' | 'ramp';
+}
+
+/**
+ * World metres of deck between the roll-drop release point and `flatEnd`
+ * (the ramp's run-out). The stage-1 rig wrote `+2` in SIM units here —
+ * 0.2 m, not the 2 m the comment claimed — and measured from `flatEnd`,
+ * folding that offset into the result. It is now a world-metre constant and
+ * the measurement starts at touchdown instead.
+ */
+export const ROLL_DECK_OFFSET_M = 2;
+
+/**
+ * x of the wheel-centre reference point (m... sim units): variant a averages
+ * its four real wheel-body centres; variant b has no wheel bodies, so use
+ * the point rigidly attached to the chassis at the axle-plane height
+ * (CAR.wheelY below the chassis centre — the same plane the real wheels of
+ * variant a ride in).
+ */
+function wheelRefX(car: Car): number {
+  if (car.wheels.length > 0) {
+    let sx = 0;
+    for (const w of car.wheels) sx += w.translation().x;
+    return sx / car.wheels.length;
+  }
+  const t = car.chassis.translation();
+  const r = car.chassis.rotation();
+  const off = qrot({ w: r.w, x: r.x, y: r.y, z: r.z }, v(0, CAR.wheelY, 0));
+  return t.x + off.x;
 }
 
 export function runScenario(opts: RunOpts): RunResult {
@@ -66,24 +93,32 @@ export function runScenario(opts: RunOpts): RunResult {
   const world = createWorld();
   addStaticBoxes(world, track.boxes);
 
-  let start = track.poses[opts.startOffset ?? 4] ?? track.poses[0];
+  let start = track.poses[4] ?? track.poses[0];
   if (scenario === 'roll' && track.marks.flatEnd !== undefined) {
-    // The roll test is a 0.3 m (world) free drop onto the flat deck, 2 m of
-    // deck before the measured stretch - NOT the feel track's big ramp.
+    // The roll test is a TRUE free drop: no launch velocity, chassis dropped
+    // flat from DROP_HEIGHT (0.3 m world) above the deck, ROLL_DECK_OFFSET_M
+    // (2 m world) down-deck of the ramp run-out, then measured from
+    // touchdown. Stage 1 faked this with spawnCar's v0 = 3 launch and a
+    // 0.2 m "deck offset" measured from flatEnd (review finding 1).
+    // Honest consequence, measured: a symmetric vertical drop converts no
+    // drop energy into forward travel - both variants roll ~0.00 m on this
+    // rig. The brief's "rolls ~2.5 m from a 30 cm drop" is the RAMP metric
+    // (scenario 'ramp' / rampRollRun); it is reported alongside, not hidden.
     const fe = track.marks.flatEnd;
     start = {
-      p: { x: fe.p.x + 2, y: fe.p.y + 0.3 * S, z: 0 },
+      p: { x: fe.p.x + ROLL_DECK_OFFSET_M * S, y: fe.p.y + DROP_HEIGHT * S, z: 0 },
       f: { x: 1, y: 0, z: 0 },
       u: { x: 0, y: 1, z: 0 },
     };
   }
-  const car = spawnCar(world, variant, start);
+  const car = spawnCar(world, variant, start, {
+    launchSpeed: scenario === 'feel' ? undefined : 0,
+  });
   const hashBodiesList = [car.chassis, ...car.wheels];
 
   const finish = track.marks.finish;
   const apex = track.marks.loopApex;
   const gapStart = track.marks.gapStart;
-  const flatEnd = track.marks.flatEnd;
 
   const maxSteps = Math.round(timeout * 120);
   let hash = 0x811c9dc5 >>> 0;
@@ -94,6 +129,7 @@ export function runScenario(opts: RunOpts): RunResult {
   let airborneSteps = 0;
   let stoppedSteps = 0;
   let finished = false;
+  let touchdownX: number | null = null; // wheel-centre x (sim) at first touchdown
 
   for (let step = 0; step < maxSteps; step++) {
     const support = carStep(world, car);
@@ -105,6 +141,12 @@ export function runScenario(opts: RunOpts): RunResult {
     const pos = v(t.x, t.y, t.z);
     const speed = carSpeed(car);
     if (speed > peak) peak = speed;
+
+    // roll/ramp rigs: touchdown = first step the suspension finds support
+    if (scenario !== 'feel' && touchdownX === null && support.grounded) {
+      touchdownX = wheelRefX(car);
+      stoppedSteps = 0;
+    }
 
     // loop apex: first measurement near the apex pose, high in the loop
     if (
@@ -146,7 +188,8 @@ export function runScenario(opts: RunOpts): RunResult {
       }
     }
 
-    if (scenario === 'roll') {
+    if (scenario !== 'feel') {
+      if (touchdownX === null) continue; // still in free fall
       if (speed < 0.08) stoppedSteps++;
       else stoppedSteps = 0;
       if (stoppedSteps > 40) {
@@ -157,10 +200,11 @@ export function runScenario(opts: RunOpts): RunResult {
     if (t.y < -8) break;
   }
 
-  const t = car.chassis.translation();
   let rollDistance: number | null = null;
-  if (scenario === 'roll' && track.marks.flatEnd !== undefined) {
-    rollDistance = toWorldDist(Math.max(0, t.x - flatEnd.p.x));
+  if (scenario !== 'feel' && touchdownX !== null) {
+    // Honest measure: wheel-centre travel since touchdown (stage 1 measured
+    // from flatEnd and included the pre-release launch offset).
+    rollDistance = toWorldDist(Math.abs(wheelRefX(car) - touchdownX));
   }
   return {
     completed: finished,
@@ -191,6 +235,24 @@ export function rollRun(variant: CarVariant): RunResult {
     coef: ROLL_COEF,
     timeout: 30,
     scenario: 'roll',
+  });
+}
+
+/**
+ * The brief §7.1 metric done honestly: release FROM REST at the top of the
+ * 30 cm drop ramp (no launch velocity, same reference pose index as the feel
+ * track's start), roll down onto the flat, and report wheel-centre travel
+ * from touchdown to stop. This is the rig the ~2.5 m target is actually
+ * about; the vertical 'roll' drop above can only ever measure ~0 m of
+ * forward travel (a symmetric drop carries zero horizontal momentum).
+ */
+export function rampRollRun(variant: CarVariant): RunResult {
+  return runScenario({
+    track: buildRollTrack(),
+    variant,
+    coef: ROLL_COEF,
+    timeout: 30,
+    scenario: 'ramp',
   });
 }
 
