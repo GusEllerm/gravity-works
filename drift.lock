@@ -92,18 +92,28 @@ sig = "20dbcfc36e4d734a"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
+target = "src/camera/run-camera.ts"
+sig = "710213edb443a6b7"
+
+[[bindings]]
+doc = "docs/vault/Modules/feel.md"
 target = "src/feel/feeltrack.ts"
-sig = "02008942f6f39b83"
+sig = "121df12e586b0b30"
+
+[[bindings]]
+doc = "docs/vault/Modules/feel.md"
+target = "src/feel/kittrack.ts"
+sig = "6d48da4fd47ab5b7"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/feel/run.ts"
-sig = "ccdc65f809b88680"
+sig = "297170c96abdb3d3"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/physics/car.ts"
-sig = "f48178a239bfc8e2"
+sig = "e9755c633be7a34f"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
@@ -112,8 +122,13 @@ sig = "800726337fe0db86"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
+target = "tests/unit/camera.test.ts"
+sig = "1f0f082a7c48449a"
+
+[[bindings]]
+doc = "docs/vault/Modules/feel.md"
 target = "tests/unit/feel.test.ts"
-sig = "110ca750b0e9892a"
+sig = "52bedd80f76869e8"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"

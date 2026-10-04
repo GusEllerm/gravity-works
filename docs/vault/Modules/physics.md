@@ -15,9 +15,13 @@ no DOM — safe under Vitest (node) and `tools/feel.mjs` alike.
   (`SIM_SCALE = 10`, see [[Feel#Physics scale factor]]).
 - `src/physics/car.ts` — `spawnCar(world, variant, pose)` + `carStep()`.
   Variants: `wheelColliders` (a) and `raycastWheels` (b). Collision groups
-  are explicit and load-bearing (stage-2 fix): track `0x0001_ffff`, chassis
+  are explicit and load-bearing (stage-2 fixes): track `0x0001_fffd`, chassis
   `0x0002_fffd`, wheels `0x0004_fff9` — wheels hit the track for real, never
-  their own chassis; the track no longer uses the default all-ones group
+  their own chassis, and the TRACK filter excludes the chassis bit so the
+  raycast car never physically touches it either (a ray-only body by
+  construction; leaving the chassis in made hull contacts silently carry the
+  car through loop chords — "hoovering"); the track no longer uses the
+  default all-ones group
   because it matched the suspension rays' wheel-exclusion predicate and was
   silently filtered out of every variant-a support ray (the car fell onto
   its chassis box — see Engine gotchas).
@@ -31,6 +35,12 @@ contact normal**, computed from `castRayAndGetNormal` at four mounts
 (`supportStep`). Pushing along the normal, not chassis-up, is load-bearing:
 a pitch-tilted support force creates slope drag that exactly cancels gravity
 and stalls the car on any incline (found by measurement, not theory).
+Stage 2 adds three more channels for the kit track: U-channel rail contact
+(per-mount feeler rays at lip-band height — the steering of record), an
+anti-roll torque about the chassis forward axis (rolled mass is the whole
+chassis, so force-couple bars are ill-conditioned on slopes), and a
+friction-circle-budgeted self-aligning axle torque; see [[feel]] stage-2
+notes.
 
 - **Variant b (raycastWheels)** — chassis-only body; the four rays are the
   wheels. Winner: rolls true down the drop (peak 7.25 m/s world ≈ free-fall

@@ -23,3 +23,58 @@ Guarded by `tests/unit/feel.test.ts` (run-twice determinism, roll smoke, scenari
 ## Depends on / used by
 
 Depends on `src/physics` only. Used by `tools/feel.mjs`, `tests/unit/feel.test.ts`, and the Feel Engineer's tuning loop; stage 2 replaces the provisional track here.
+
+## Stage 2 — the kit track, first blood (2026-10-04)
+
+The provisional track is gone from the feel rigs. `src/feel/feeltrack.ts`
+builds the feel track as a `PieceDef` **chain** through
+`src/track/desugar.ts`, and `src/feel/kittrack.ts` (`KitRig`) owns the
+world: one **merged** static collider per piece (a mesh *union*, never a
+family of overlapping boxes — a compound is an island farm for the CCD
+raycasts), collision-group bit discipline, an arc-indexed centreline for
+metrics, and the uniform-arc **camera rail**.
+
+Measured on this geometry (sim constants of the day: `suspC` 550,
+`RAIL_K` 30000 @ `RAIL_SLACK` 3.5 mm, `ALIGN_GRIP` 0.15, `ROLL_COEF` 0.12):
+
+| metric | raycast variant | wheel-collider variant |
+|---|---|---|
+| roll from 0.3 m drop-ramp (§7.1) | **2.65 m** — target 2.5 ±10% ✓ | 2.65 m ✓ |
+| feel-track completion | **completes, 3.07 s** drop→loop→gap→landing→cup | DNF (see findings) |
+| min loop height / radius, R = 0.03 | **1.41 R** | **2.85 R** |
+| peak speed | 1.94 m/s | — (DNF) |
+
+Findings that cost real debugging and must not be re-learned:
+
+- **The chassis is physically inert against the track.** The raycast car may
+  only touch the deck with its four wheel colliders; while `TRACK_GROUP`'s
+  filter mask included the chassis bit, the hull-vs-chassis contacts were
+  silently carrying the car through loop chords and ramps ("hoovering") and
+  every suspension number measured a lie. `0x0001_fffd` is the load-bearing
+  constant of this module.
+- **Channel rails steer; tyre scrub doesn't.** A feeler ray per wheel mount
+  at the **lip mid-band height** (0.020 m — one at deck level reaches
+  nothing, the deck side faces sit *below* the lips) applies a progressive
+  spring + fraction dashpot along the wall normal, with outward-velocity
+  damping, and a friction-circle-budgeted self-aligning axle torque. Tuning
+  the band height was worth more than two hours of controller work.
+- **Bump stops need a speed gate.** The loop is a 19-step chord staircase
+  (3 mm risers); a full-stop catcher firing on every gentle chord climb
+  dumps forward KE inelastically and stalls the car mid-loop. The stop now
+  claims the contact only for fast impacts (impact speed > 6.6 sim) or deep
+  compression; the suspension spring alone carries slow sustained climbs.
+- **Banked yaw arcs are the open boundary.** Mid-run yawed arcs (bank/curve
+  at 1–1.5 m/s) defeat every pure-raycast lateral model tried — tyre scrub,
+  caster trail, weathervane, wall springs — by ploughing or ring-roll. The
+  feel track therefore builds the 9° bank + mirrored counter-curve as the
+  post-cup run-out (built, colliding, railable; the timed run ends at the
+  cup), and crossing banked arcs is the acceptance question for the
+  wheel-collider variant, whose tyres physically touch the lips.
+- **Layout**: `ramp → straight → loop → gapLip → landing → finishCup →
+  bank → curve`, drop 0.45 m (a 0.3 m drop cannot feed both the loop
+  gate and the gap jump; the §7.1 roll rig keeps its canonical 0.3 m).
+
+`src/camera/run-camera.ts` is the §7.3 run camera: pure class over the rail,
+0.4 s speed-scaled lead, 150 ms positional lag, ~350 ms rotational lag aimed
+at the *lead* frame — the turn is begun before the eye arrives. Every filter
+is the step-independent exponential form; guarded by `tests/unit/camera.test.ts`.

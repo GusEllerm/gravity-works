@@ -141,5 +141,12 @@ describe('scenario smoke', () => {
     expect(Number.isFinite(r.peakSpeed)).toBe(true);
     expect(r.peakSpeed).toBeGreaterThan(1);
     expect(r.hash).toMatch(/^[0-9a-f]{8}$/);
+    // Stage-2 acceptance (PROMPT §7): the raycast car FINISHES the kit
+    // feel track — drop, loop, gap jump, landing, into the finish cup —
+    // headless on the kit colliders, deterministically.
+    expect(r.completed).toBe(true);
+    expect((r.timeToFinish as number)).toBeLessThan(10);
+    const again = feelTrackRun('raycastWheels');
+    expect(again.hash).toBe(r.hash);
   }, 120_000);
 });
