@@ -116,9 +116,27 @@ export const CAR = {
  *  entry-loss finding that pinned the honest threshold). Off costs one
  *  boolean test per impulse. */
 export const WORK: Record<string, number> & { on?: boolean } = {};
-function work(name: string, imp: Vec, vel: Vec): void {
-  if (!WORK.on) return;
-  WORK[name] = (WORK[name] ?? 0) + (imp.x * vel.x + imp.y * vel.y + imp.z * vel.z);
+function addWork(name: string, dke: number): void {
+  if (WORK.on) WORK[name] = (WORK[name] ?? 0) + dke;
+}
+
+/** Exact KE delta (sim J) of a linear impulse of signed magnitude `j` along
+ *  a line whose body-point velocity along that line is `vn` and whose
+ *  effective mass along it is `mEff`: j*vn + j^2/(2 mEff). KE is quadratic,
+ *  so summing these in application order over a step equals that step's KE
+ *  change from those impulses EXACTLY — which is what makes the energy
+ *  audit's residual the solver's own work and nothing else. */
+function pointDke(j: number, vn: number, mEff: number): number {
+  return j * vn + (j * j) / (2 * mEff);
+}
+
+/** Exact KE delta of a torque impulse on a body with principal inertias I
+ *  (chassis frame): t·w + (1/2) t·Iw^-1 t. */
+function torqueDke(chassis: RAPIER.RigidBody, quat: Quat, I: Vec, t: Vec): number {
+  const w = chassis.angvel();
+  const tL = qrot({ w: quat.w, x: -quat.x, y: -quat.y, z: -quat.z }, t);
+  const accL = v(tL.x / I.x, tL.y / I.y, tL.z / I.z);
+  return vdot(t, w) + 0.5 * vdot(t, qrot(quat, accL));
 }
 
 export interface Pose {
@@ -379,12 +397,26 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
       // model dropped these hits wholesale ("seam/edge hits are not
       // support") — fine on flat ground, fatal inside a loop where it
       // starves the orbit of centripetal load and denies the aligning
-      // torque. Push/pull only, NO velocity term: the velocity term on these
-      // hits is the riser plough (it cancels the car's forward speed at
-      // every chord face), and an undamped *explicit* spring here is a
-      // catapult, so the implicit factor stays in.
-      const jg = alignImpulse(mN, CAR.suspK, travel);
-      { const imp = vscale(n0, jg); work('guide', imp, v3); car.chassis.applyImpulseAtPoint(imp, attach, true); }
+      // torque. The pre-audit model solved them as a VELOCITY-FREE position
+      // projection, and the per-step energy audit (node tools/feel.mjs
+      // audit) named that as THE injection: at ring entry the ray reads
+      // the corner between the ramp run-out and the first rising chord at
+      // toi ~ 0.03 with a 59°-tilted normal, so "compression" = 0.13 is a
+      // GEOMETRY READING, NOT PENETRATION — and a projection with no
+      // velocity feedback spends k·u·dt as pure new velocity, HALF OF IT
+      // ALONG THE TRACK. Measured: ONE step of it, +1.03 J/kg — the whole
+      // ~1 J/kg the threshold was short by. The honest contact is a step
+      // BUMP: the same implicit strut spring, but its position term capped
+      // at the rate the car actually CLOSES the geometry (reclaiming 14 cm
+      // in one step is a 15 m/s shove — a wall, and the audit's exit-
+      // junction slam at the other end of the ring). The cap makes the
+      // bump inelastic and bounded by the KE present, which also de-
+      // phases the bounce lottery at the first chord: the bump now costs
+      // the lap a fraction of a J/kg wherever it happens, instead of
+      // paying or fining the car ~1 J/kg depending on which seam it hits.
+      const vClose = Math.max(0, -vdot(v3, n0));
+      const jg = strutImpulse(mN, Math.min(travel, FIXED_DT * vClose), vdot(v3, n0));
+      { addWork('guide', pointDke(jg, vdot(v3, n0), mN)); car.chassis.applyImpulseAtPoint(vscale(n0, jg), attach, true); }
       springForce += Math.abs(jg) / FIXED_DT;
       grounded = true;
       deckN = vadd(deckN, n0);
@@ -397,20 +429,28 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
     sideSum[side] += vN;
     sideN[side] = n0;
     sidePt[side] = attach;
-    // DAMPER reads the STRUT EXTENSION RATE (velocity along the ray axis),
-    // never the contact-normal velocity. Along the normal it reads the car's
-    // own orbital motion wherever the deck curves (v*sin(turn angle)) and the
-    // fraction-velocity cancellation then brakes the suspension against
-    // steady cornering — measured: violent loop pumping that throws the car
-    // off the deck past ph ~250 at any energy above threshold. Along the
-    // axis, a car tracking the deck has ~zero extension rate anywhere:
-    // straights, valleys, ramps, loops. Implicit fraction: c*dt/(m+c*dt)
-    // cannot overshoot 1, so a stiff strut cannot overturn itself.
-    const mA = mountMass(car.chassis.mass(), quat, pos, attach, down);
-    const relA = vdot(v3, down);
-    { const imp = vscale(down, -relA * mA * (CAR.suspC * FIXED_DT) / (mA + CAR.suspC * FIXED_DT)); work('damp', imp, v3); car.chassis.applyImpulseAtPoint(imp, attach, true); }
+    // DAMPER: force and rate on the SAME LINE — the contact normal — reading
+    // the velocity conjugate to the spring's own coordinate (the ray's toi).
+    // The law is then a pure damper on one coordinate and its work is
+    // identically -c(v·n)^2·frac <= 0: a car riding the deck has v·n ~ 0
+    // (velocity along the deck tangent) so it is silent on straights,
+    // valleys, ramps and loops — the claim the old axis-reading note made,
+    // now true BY CONSTRUCTION instead of only when attitude already
+    // matched the deck. Wherever attitude LAGGED (ring entry, every
+    // transition) the axis reading v·down mistook orbital speed for
+    // extension rate and braked the car through the shock; the wishbone
+    // torque below then paid attitude back, and the pair ran as a pump-and-
+    // burn loop — measured audit flows of +1.9 J/kg in against -3.2 J/kg
+    // burned per lap AT threshold, with the car's translational energy as
+    // the fuel. (Reading the extension rate v·n/(n·down) but pushing along
+    // the axis was also tried: injective through its cross terms —
+    // conjugacy needs force and rate collinear, which is the normal.)
+    // Implicit fraction: c*dt/(m+c*dt) cannot overshoot 1.
+    const mA = mountMass(car.chassis.mass(), quat, pos, attach, n0);
+    const jd = -vN * mA * (CAR.suspC * FIXED_DT) / (mA + CAR.suspC * FIXED_DT);
+    { addWork('damp', pointDke(jd, vN, mA)); car.chassis.applyImpulseAtPoint(vscale(n0, jd), attach, true); }
     const js = strutImpulse(mN, travel, vN);
-    { const imp = vscale(n0, js); work('strut', imp, v3); car.chassis.applyImpulseAtPoint(imp, attach, true); }
+    { addWork('strut', pointDke(js, vN, mN)); car.chassis.applyImpulseAtPoint(vscale(n0, js), attach, true); }
     normImpulse += Math.abs(js);
     springForce += Math.abs(js) / FIXED_DT;
     deckN = vadd(deckN, n0);
@@ -454,11 +494,19 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
           const railN = vscale(outD, -1);
           const mWall = mountMass(car.chassis.mass(), quat, pos, pc, outD);
           const dFrac = Math.min(0.5, (CAR.railC * FIXED_DT) / mWall);
-          if (vOut > 0) car.chassis.applyImpulseAtPoint(vscale(railN, vOut * dFrac * mWall), pc, true);
+          if (vOut > 0) {
+            const jw = vOut * dFrac * mWall; // along railN = -outD
+            { addWork('rail', pointDke(jw, -vOut, mWall)); car.chassis.applyImpulseAtPoint(vscale(railN, jw), pc, true); }
+          }
           // Compliant wall: implicit align spring (no velocity term), so a
           // curvature junction sags the wall a little and ramps instead of
           // braking the car dead (see `alignImpulse`).
-          car.chassis.applyImpulseAtPoint(vscale(railN, alignImpulse(mWall, CAR.railK, pen)), pc, true);
+          {
+            const jk = alignImpulse(mWall, CAR.railK, pen);
+            const vc2 = car.chassis.velocityAtPoint(pc);
+            addWork('rail', pointDke(jk, -(vc2.x * outD.x + vc2.y * outD.y + vc2.z * outD.z), mWall));
+            car.chassis.applyImpulseAtPoint(vscale(railN, jk), pc, true);
+          }
         }
       }
     }
@@ -480,7 +528,19 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
     const nBar = vnorm(deckN);
     const upC = qrot(quat, v(0, 1, 0));
     const err = vcross(upC, nBar); // axis * sin(error)
-    const raw = vscale(vcross(car.deckPrev, nBar), 2 / FIXED_DT); // raw frame spin
+    const raw = vscale(vcross(car.deckPrev, nBar), 1.5 / FIXED_DT); // raw frame spin, with lead
+    // The deck frame's TRUE rate (no lead). The rate side of the
+    // correction below converges toward the LEAD target wDeck — which the
+    // pre-audit law set at TWICE the deck rate to hide its own lag. That
+    // factor 2 reads as a clean lap on the loop rig's pitched run-in but
+    // from a level entry (the feel track's ring bottom) it spins the
+    // chassis to twice the ring rate, every riser then met is a ~1 J/kg
+    // slam, and the rotor energy is repaid to the solver as heat. A true-
+    // rate damper across the same authority removes exactly that rotor
+    // mode (it is silent when the car tracks the deck) and lets the lead
+    // come down from 2 to an honest 1.5 — the compliance lead a soft
+    // wishbone legitimately needs to track a turning frame.
+    const rawTrue = vscale(vcross(car.deckPrev, nBar), 1 / FIXED_DT);
     // Wishbones are not perfect joints: the estimate (and the correction)
     // runs through a first-order lag, because the collider chord staircase
     // rotates the raw normal in 10-deg spikes and an unfiltered wWant
@@ -504,7 +564,10 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
     const mass = car.chassis.mass();
     // box collider cuboid(halfL, halfH, halfW): principal inertias
     const Ivec = principalInertias(mass);
-    const dwW = vsub(vadd(wDeck, pTerm), wc);
+    // 0.15/step toward the true deck rate: the rotor damper of the note
+    // above; work-negative whenever the car over-rotates, silent when it
+    // tracks.
+    const dwW = vadd(vsub(vadd(wDeck, pTerm), wc), vscale(vsub(rawTrue, wc), 0.15));
     const rq = { w: quat.w, x: quat.x, y: quat.y, z: quat.z };
     const inv = { w: rq.w, x: -rq.x, y: -rq.y, z: -rq.z };
     const dwL = qrot(inv, dwW);
@@ -517,7 +580,7 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
     const budget = springForce * FIXED_DT * CAR.halfL;
     const jm = vlen(j);
     if (jm > budget) j = vscale(j, budget / jm);
-    if (jm > 1e-9) car.chassis.applyTorqueImpulse(j, true);
+    if (jm > 1e-9) { addWork('wishbone', torqueDke(car.chassis, rq, Ivec, j)); car.chassis.applyTorqueImpulse(j, true); }
     car.deckPrev = nBar;
     car.deckPrevW = wDeck;
   }
@@ -538,7 +601,12 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
     const j = Math.min(Math.abs(rollRate) * Ix * CAR.rollCut, budget);
     if (j > 1e-9) {
       const fwd = qrot(quat, v(1, 0, 0));
-      car.chassis.applyTorqueImpulse(vscale(fwd, -Math.sign(rollRate) * j), true);
+      const jt = vscale(fwd, -Math.sign(rollRate) * j);
+      { addWork('antiroll', torqueDke(car.chassis, quat, v(
+        (car.chassis.mass() / 3) * (CAR.halfH * CAR.halfH + CAR.halfW * CAR.halfW),
+        (car.chassis.mass() / 3) * (CAR.halfL * CAR.halfL + CAR.halfW * CAR.halfW),
+        (car.chassis.mass() / 3) * (CAR.halfL * CAR.halfL + CAR.halfH * CAR.halfH),
+      ), jt)); car.chassis.applyTorqueImpulse(jt, true); }
     }
   }
   // Axle-scrub self-aligning torque. A rigid-axle car pushed from behind
@@ -570,7 +638,14 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
           const budget = CAR.alignGrip * normImpulse * CAR.wheelX;
           const j = Iy * (wantW - wUp);
           const jm = Math.min(Math.abs(j), budget);
-          if (jm > 1e-9) car.chassis.applyTorqueImpulse(vscale(up, Math.sign(j) * jm), true);
+          if (jm > 1e-9) {
+            const jt = vscale(up, Math.sign(j) * jm);
+            { const m = car.chassis.mass(); addWork('scrub', torqueDke(car.chassis, quat, v(
+              (m / 3) * (CAR.halfH * CAR.halfH + CAR.halfW * CAR.halfW),
+              (m / 3) * (CAR.halfL * CAR.halfL + CAR.halfW * CAR.halfW),
+              (m / 3) * (CAR.halfL * CAR.halfL + CAR.halfH * CAR.halfH),
+            ), jt)); car.chassis.applyTorqueImpulse(jt, true); }
+          }
         }
       }
     }
@@ -659,12 +734,24 @@ function jointedStep(world: RAPIER.World, car: Car): WheelSupport {
     // which is the thing being compared.
     const fwdAxis = qrot(quat, v(1, 0, 0));
     const axleAxis = qrot(quat, v(0, 0, 1));
-    wheel.setAngvel(vscale(axleAxis, -vdot(lv, fwdAxis) / CAR.wheelR), true);
+    const spinWant = vscale(axleAxis, -vdot(lv, fwdAxis) / CAR.wheelR);
+    // Audit book-keeping (WORK.on only): the spin reset is KINEMATIC, so its
+    // KE delta is whatever it is — a cylinder's axial inertia is a close
+    // enough moment for the ledger (the off-axle components this zeroes are
+    // solver-born and land in the audit's residual otherwise).
+    if (WORK.on) {
+      const aw0 = wheel.angvel();
+      const Iw = 0.5 * mw * CAR.wheelR * CAR.wheelR;
+      addWork('spin', 0.5 * Iw * (vlen(spinWant) ** 2 - vlen(aw0) ** 2));
+    }
+    wheel.setAngvel(spinWant, true);
     const imp = vadd(
       vscale(inPlane, mw * 0.9), // velocity match: gain < 1 for stability
       vscale(up, (-axial * 1400 - axialV * 60) * mw * FIXED_DT),
     );
-    if (vlen(imp) < mw * 400 * FIXED_DT) wheel.applyImpulse(imp, true);
+    if (vlen(imp) < mw * 400 * FIXED_DT) {
+      { addWork('axle', vdot(imp, lv) + vdot(imp, imp) / (2 * mw)); wheel.applyImpulse(imp, true); }
+    }
   }
   return { grounded: support.grounded, force: support.force };
 }
@@ -682,7 +769,7 @@ export function applyRollingResistance(car: Car, grounded: boolean, coeff: numbe
   const l = Math.sqrt(vdot(hv, hv));
   if (l < 0.05) return;
   const f = car.chassis.mass() * coeff * G_SIM * FIXED_DT;
-  { const imp = vscale(hv, -f / l); work('roll', imp, v(lv.x, lv.y, lv.z)); car.chassis.applyImpulse(imp, true); }
+  { addWork('rr', -f * l + (f * f) / (2 * car.chassis.mass())); car.chassis.applyImpulse(vscale(hv, -f / l), true); }
 }
 
 /** World-space speed of the chassis (sim units). */

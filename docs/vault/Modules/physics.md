@@ -166,3 +166,31 @@ comparison is now honest on both sides: variant a has genuine wheel
 colliders and loses ~31 % of its roll to chord-slab plough, exactly as
 predicted from the joint-era probes. Recommend raycastWheels as the stage-2
 base; re-run the bake-off on track-kit colliders once they exist.
+
+## Solver energy honesty (stage-2 audit, 2026-10-06)
+
+`node tools/feel.mjs audit [hR] [arc0 arc1]` prints a per-step ledger — total
+specific energy, per-contact-site work, and the unexplained remainder. Use it
+before believing any lap. Three laws it enforced into `src/physics/car.ts`:
+
+1. **Every support impulse needs its velocity term.** A position projection
+   (`k·u` into one step, no velocity feedback) is a pure energy source when
+   `u` is a geometry reading rather than a penetration; the ring-entry guide
+   contact minted +1.03 J/kg in a single step this way and the threshold
+   rode on it. The guide branch is now the aligned-path implicit spring
+   with its push-out capped at the closing rate — an inelastic bump whose
+   work is bounded by the KE actually present.
+2. **Damper force and damper rate must be collinear.** Reading the
+   extension rate along one axis while pushing along another charges every
+   attitude lag into "suspension heat" and lets a second element pump it
+   back — the audit saw damper −3.2 / wishbone +1.9 J/kg ringing per lap
+   through the ring chords. Both are work-conjugate now.
+3. **Rate targets may lead the deck, never double it.** The deck-alignment
+   law's pre-audit `2/dt` factor stored 23 J of chassis rotor against a
+   1.6 J/kg lap budget; lead is 1.5 with a true-rate damper killing the
+   over-rotation mode. A soft wishbone may need lead — a stiff one would
+   not; measure before either multiplier ships.
+
+The instrumented sites (`WORK`, `addWork`, `pointDke`/`torqueDke` in
+`car.ts`) are zero-cost unless `WORK.on`; keep new impulse sites registered
+there so the audit stays exhaustive rather than anecdotal.

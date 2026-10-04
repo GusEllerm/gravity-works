@@ -41,17 +41,26 @@ the loop-gate audit and the SIM_SCALE velocity-mapping fix:
 
 | metric | raycast variant | wheel-collider variant |
 |---|---|---|
-| roll from 0.3 m drop-ramp (§7.1) | **2.48 m** — target 2.5 m MET | 2.48 m ✓ |
-| feel-track completion | **completes, 3.21 s** (live replay 2.86 s) | 3.21 s ✓ |
-| min loop height / radius, honest gate | **2.01 R** on the loop rig, 2.45 R with the shipped μ spent across the run-in; ceiling above ~6 R | 2.01 R ✓ (identical) |
-| apex speed / floor | 1.47 / 0.99 m/s (1.49×) | same ✓ |
-| peak speed | 2.28 m/s | 2.28 m/s ✓ |
+| roll from 0.3 m drop-ramp (§7.1) | **2.47 m** — target 2.5 m MET | 2.47 m ✓ |
+| feel-track completion | **completes, 3.31 s** (world replay finishes 3.01 s) | 3.31 s ✓ |
+| min loop height / radius, honest gate | **2.4 R** on the loop rig, 2.51 R with the shipped μ spent across the run-in; no solver-made ceiling — the audited car holds the ring through 7 R | 2.4 R ✓ (identical) |
+| apex speed / floor | 1.08 / 0.99 m/s (1.09×) | same ✓ |
+| peak speed | 3.00 m/s | 3.00 m/s ✓ |
+| landing impulse across the gap jump | **0.061 N·s** after a real ~0.2 s flight | same ✓ |
 
-The 2.01 R is BELOW the [2.25, 2.75] R target and the reason is measured, not
-assumed: released at 2.0 R (0.20 m) the car reaches an apex at the same height
-and still carries 1.55 m/s — 2.97 J/kg of specific energy against the 1.96 J/kg
-the drop can pay for. The gate proves the right things; the solver is paying for
-part of the lap. See [[2026-10-05 Stage 2 - loop geometry fix]].
+The 2026-10-06 energy audit ("node tools/feel.mjs audit [hR] [arc0 arc1]")
+closed the injection this table used to carry an apology for. The mechanism,
+named with numbers: the ring-entry contact is UNALIGNED (the ray reads the
+corner between run-out and first rising chord at toi ~ 0.03 with a 59°-tilted
+normal), and the old guide branch solved that geometry reading as a velocity-
+free position projection — k·u·dt spent as pure new velocity, half of it along
+the track. ONE step of it measured **+1.03 J/kg**, which is the whole ~1 J/kg
+the threshold was short by. Three solver changes and one rebalance followed;
+the threshold is now what the drop honestly pays for (2.4–2.5 R vs theory 2.5),
+and no single step anywhere injects more than 0.1 J/kg. See
+[[2026-10-06 Stage 2 - solver energy audit]] for the mechanism-by-mechanism
+story; the older [[2026-10-05 Stage 2 - loop geometry fix]] remains accurate
+about the geometry and the scale-mapping fix.
 
 The 2026-10-04 table's numbers (2.65 m roll, 1.41 R / 2.85 R loop
 thresholds) were measured through two lies: `toWorldSpeed` divided by
@@ -157,20 +166,70 @@ Findings that cost real debugging and must not be re-learned:
   post-cup run-out (built, colliding, railable; the timed run ends at the
   cup), and crossing banked arcs is the acceptance question for the
   wheel-collider variant, whose tyres physically touch the lips.
-- **Layout**: `ramp → straight → loop → gapLip → landing → finishCup →
-  bank → curve`, drop 0.45 m (a 0.3 m drop cannot feed both the loop
-  gate and the gap jump; the §7.1 roll rig keeps its canonical 0.3 m).
+- **Layout**: `ramp → straight → loop → gapLip → drop → landing → finishCup →
+  bank → curve`, drop 0.52 m. The kit `drop` piece between lip and landing is
+  the gap's CATCH: its empty span is the flight, its 40° descending ramp is
+  the gap floor, and its exit socket puts the landing 1.5 m below the deck —
+  a chain-connected `landing` alone can only sit AT lip height, so the car
+  rode the landing face instead of flying to it and the landing impulse could
+  never measure (see the metric bullet below). The 0.52 m drop is an honest
+  rebalance, not a nerf: until the audit closed the ring-entry injection the
+  CATAPULT was paying for the lap (the +1 J/kg above); with the honest solver
+  the drop has to pay for it, and 0.45 m no longer feeds both the loop gate
+  and the gap jump. It is also deliberately the height where BOTH driving
+  lines complete — the harness line and the world/replay line, whose collider
+  reification route runs ~0.2 s faster phase through the ring; at 0.50 m the
+  game line stalls in the ring corner, at 0.54 m the harness line DNFs. That
+  two-line window is the honest state of the seam, and it is narrow.
+- **A velocity-free position projection is an energy source, full stop.**
+  The guide-branch `alignImpulse` solved `k·u` into a one-step position
+  correction with no velocity feedback; wherever `u` was a GEOMETRY reading
+  (a tilted face inside ray range) it minted KE at the rate k²·u²·dt²/2m —
+  +1.03 J/kg in the single ring-entry step the whole threshold hinged on.
+  The fix is not a smaller gain: the guide contact is now the same implicit
+  strut spring as the aligned path with its push-out CAPPED at the wheel's
+  closing rate (inelastic bump, bounded by the KE present), and the audit
+  column for `guide` went from +1.45 J/kg to −1.38 over a full run.
+- **A damper may only damp its own coordinate.** The strut damper read the
+  extension rate along the chassis `down` axis while pushing along the
+  contact normal; anywhere attitude lagged the deck on a rising chord that
+  cross-reading charged orbital speed into "suspension heat" (−3.2 J/kg/lap)
+  while the wishbone pumped +1.9 back — a pump-and-burn loop the per-step
+  audit saw as damp/strut columns ringing 5× per lap. Force and rate on the
+  SAME LINE (the normal) makes the work identically ≤ 0; the lap got slower
+  and the car faster.
+- **The wishbone's `2/dt` rate trick was a rotor waiting to misfire.** It
+  hid the law's tracking lag on the loop rig's pitched run-in; from a LEVEL
+  entry (the feel track's ring bottom) it spun the chassis to twice the
+  deck rate — a 23 J rotor that every riser then billed at ~1 J/kg. Lead is
+  now 1.5 (the compliance lead a soft link legitimately needs) with a true-
+  rate damper beside it that removes exactly the over-rotation mode and is
+  silent when the car tracks.
+- **The landing-impulse metric read zero for three separate reasons.**
+  (1) its airborne window compared the wheel's WORLD X to an ARC length —
+  never true once a ring shared the track; (2) it demanded a flight streak
+  on the step the car TOUCHED DOWN, where the streak had just reset — a step
+  that cannot exist; (3) the landing deck sat ABOVE the lip's ballistic arc,
+  so there was no flight to measure. Fixed in this order: gap-start x from
+  the rig pose, a running max over the streak, and the `drop` catch piece.
+  It now reports 0.061 N·s off a real ~0.2 s flight, and `expect(
+  landingImpulse).toBeGreaterThan(0)` guards all three relapses.
+- **Harness and game drive different lines.** `simulate()` and `World` build
+  the same track two ways (kit slab colliders vs reified compound hull) and
+  the trajectories part by ~0.2 s of phase by the first ramp run-out. Before
+  the audit this was invisible — the injection completed laps from any
+  phase. Afterwards the phase became the metric, and the feel-drop constant
+  is where that seam is paid for (Layout bullet). If a future retune makes
+  one route DNF while the other finishes, check THIS before suspecting the
+  solver.
 
 `src/camera/run-camera.ts` is the §7.3 run camera: pure class over the rail,
 0.4 s speed-scaled lead, 150 ms positional lag, ~350 ms rotational lag aimed
 at the *lead* frame — the turn is begun before the eye arrives. Every filter
-<<<<<<< HEAD
 is the step-independent exponential form; guarded by `tests/unit/camera.test.ts`,
 which now pins the straight-line drift regression on the REAL kit rig
 (continuity + arc-faithfulness of `KitRig.railPointAt`), not just the
 analytic rail.
-=======
-is the step-independent exponential form; guarded by `tests/unit/camera.test.ts`.
 
 ### Cross-reference (systems engineer, 2026-10-05)
 
@@ -180,4 +239,3 @@ instead of duplicating geometry, so retuning a constant here moves the
 level, its replay hash and the share links automatically;
 `tests/unit/feeltrack-level.test.ts` asserts the two routes reify to
 identical splines and collider hulls.
->>>>>>> origin/stage2-level

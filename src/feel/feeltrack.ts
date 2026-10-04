@@ -40,7 +40,7 @@ export const DROP_BLEND = 0.08;
  *  (> 1.21 m/s at this radius) AND the 9 cm gap jump after the loop climb,
  *  so the feel track drops 0.45 m. (The §7.1 roll-metric rig keeps its
  *  canonical 0.3 m.) */
-export const FEEL_DROP_HEIGHT = 0.45;
+export const FEEL_DROP_HEIGHT = 0.52;
 /**
  * Loop radius on the feel track, chosen by the LOOP GEOMETRY RULE
  * (docs/vault/Concepts/Feel.md §Loop geometry), not by taste:
@@ -59,7 +59,7 @@ export const LOOP_RADIUS = 0.10;
 /** Lead straights inside the loop piece. */
 export const LOOP_LEAD = 0.03;
 /** Gap-lip parameters (the empty arc IS the gap — Track Kit decision). */
-export const LIP_LEN = 0.1;
+export const LIP_LEN = 0.02;
 export const LIP_BLEND = 0.05;
 export const LIP_RISE_BLEND = 0.05;
 /** Release point inside the first blend arc, as a fraction of the blend. */
@@ -90,7 +90,7 @@ export const ROLL_FLAT_LENGTH = 5;
  *  at the socket but yaw does not — pieces.ts design note), so the mirrored
  *  `curve` arc beside it is required to bring the track back straight. */
 export const FEEL_TRACK_KINDS: readonly PieceKind[] = [
-  'ramp', 'straight', 'loop', 'gapLip', 'landing', 'finishCup', 'bank', 'curve',
+  'ramp', 'straight', 'loop', 'gapLip', 'drop', 'landing', 'finishCup', 'bank', 'curve',
 ];
 
 export const FEEL_PARAMS: Record<string, PieceParams> = {
@@ -100,12 +100,13 @@ export const FEEL_PARAMS: Record<string, PieceParams> = {
   curve: { radius: 1.8, angle: -30 },
   loop: { radius: LOOP_RADIUS, lead: LOOP_LEAD },
   gapLip: { length: LIP_LEN, angle: 10, blend: LIP_RISE_BLEND },
+  drop: { height: 0.15, angle: 40, radius: 0.02, lead: 0.01 },
   landing: { level: 0.18, angle: 12, blend: 0.06 },
   finishCup: { length: 0.3 },
 };
 
 /** Piece indices in the feel chain. */
-export const FEEL_INDEX = { ramp: 0, straight: 1, loop: 2, gapLip: 3, landing: 4, finishCup: 5, bank: 6, curve: 7 } as const;
+export const FEEL_INDEX = { ramp: 0, straight: 1, loop: 2, gapLip: 3, drop: 4, landing: 5, finishCup: 6, bank: 7, curve: 8 } as const;
 
 /** The permanent feel track as a rig (build + colliders + arc queries). */
 export function feelTrackRig(): KitRig {

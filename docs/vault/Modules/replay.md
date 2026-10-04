@@ -15,7 +15,7 @@ The browser side of a replay is `src/boot.ts`'s shared-run page: `parseShareUrl`
 
 ## Measured
 
-Node and the built Chromium page produce the same hash for the real kit feel track (`074b1ef6` seen from both sides; run finished in 239 steps / 1.99 s) — same-machine and same-engine verification holds with the shipped rapier3d-compat build. (Stage-2 placeholder-era number `77b6cfc3` retired with the placeholder.) The cross-platform claim is still open ([[Home]] Deferred; QA owns the stage gate).
+Node and the built Chromium page produce the same hash for the real kit feel track — same-machine, same-engine verification holds with the shipped rapier3d-compat build (feel-audit retune 2026-10-06: `099403c7` / 361 steps from both sides, page verdict `verified`; earlier quoted runs `9decb4fb`/343 and `074b1ef6`/239 steps belonged to pre-retune constants and are retired). The cross-platform claim (different CPU/OS) is still open ([[Home]] Deferred; QA owns the stage-3 gate).
 
 ## Guarded by
 

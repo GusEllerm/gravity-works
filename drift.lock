@@ -98,7 +98,7 @@ sig = "710213edb443a6b7"
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/feel/feeltrack.ts"
-sig = "8869917adf68a79e"
+sig = "0c1db472c0b39722"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
@@ -108,12 +108,12 @@ sig = "2cf8de387514d7a1"
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/feel/run.ts"
-sig = "a26868cc240af742"
+sig = "ad2cf0710f208279"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/physics/car.ts"
-sig = "d8b4d9ab91970d2d"
+sig = "d1571e66abdd352e"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
@@ -133,7 +133,7 @@ sig = "e8778d9e1f60e91d"
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "tests/unit/feel.test.ts"
-sig = "5eed1dd94474e153"
+sig = "bd1657d5c790372c"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
@@ -143,12 +143,12 @@ sig = "76aa13d75bc81d94"
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "tools/feel.mjs"
-sig = "c3232287ae5426cc"
+sig = "cb0ea186f11d7490"
 
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
 target = "src/physics/car.ts"
-sig = "d8b4d9ab91970d2d"
+sig = "d1571e66abdd352e"
 
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
@@ -158,7 +158,7 @@ sig = "dac9bac5b8dc9d53"
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
 target = "tools/feel.mjs"
-sig = "c3232287ae5426cc"
+sig = "cb0ea186f11d7490"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
@@ -223,12 +223,12 @@ sig = "358c8994ef168677"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "tests/e2e/replay.spec.ts"
-sig = "7c1bfa6b96e6988b"
+sig = "3d3537c9c8b3f35a"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "tests/unit/replay.test.ts"
-sig = "23be0adcf3c58b41"
+sig = "c55f143b9eaa05bc"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
@@ -362,38 +362,58 @@ sig = "13541e8c9a1518a7"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
+target = "docs/vault/Modules/replay.md"
+sig = "83468ac9032fcf27"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
 target = "src/boot.ts"
 sig = "eb6213d912d3dac9"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
+target = "src/feel/feeltrack.ts"
+sig = "0c1db472c0b39722"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "src/feel/kittrack.ts"
+sig = "2cf8de387514d7a1"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
 target = "src/physics/car.ts"
-sig = "1444993cbf33ab2b"
+sig = "d1571e66abdd352e"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/level.ts"
-sig = "4868f552e38e4e2b"
+sig = "19d3e70488480f5e"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/levels/feeltrack.level.ts"
-sig = "d3e7a146684de9c8"
+sig = "6d1c5dedc854bcbf"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/world.ts"
-sig = "6eb92fe820ac4d94"
+sig = "64ca84cc3e5099a1"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "tests/unit/feeltrack-level.test.ts"
+sig = "76aa13d75bc81d94"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/replay.test.ts"
-sig = "23be0adcf3c58b41"
+sig = "c55f143b9eaa05bc"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/world.test.ts"
-sig = "3eb6eaf704a9ecab"
+sig = "8917cdf1c38db74e"
 
 [[bindings]]
 doc = "docs/vault/Reference/Canonical Cameras.md"

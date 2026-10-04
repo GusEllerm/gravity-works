@@ -195,6 +195,8 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
   let finished = false;
   let exitPassed = false;
   let touchdownX: { x: number; y: number; z: number } | null = null;
+  let gapStartX: number | null = null;
+  let airStepsMax = 0;
   let distance = 0;
   // Honest loop-state machine (see the gate constants above): the apex must
   // be HELD (inverted + deck loaded + above the speed floor) before any arc
@@ -278,9 +280,27 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
     // landing impulse after the gap: biggest positive vy jump while airborne
     if (opts.gapAt !== undefined) {
       const vy = carVel(car).y;
-      const airborne = !support.grounded && ref.x / S > opts.gapAt - 0.1;
+      // The window used to compare the wheel's WORLD X against an ARC
+      // length (`gapAt`): true on the loop rig, whose arc runs nearly
+      // along x, and never on the feel track, where the ring and the
+      // bank eat the difference - the airborne window never opened, and
+      // the landing impulse read a flat zero even when the car flew the
+      // whole gap. The arc projection is the honest coordinate.
+      // (The earlier fix compared WORLD X to an ARC length - never true
+      // on the feel track. The arc projection itself cannot be used
+      // either: mid-flight the nearest-rail search flips between the
+      // catch slope and the ring behind it, which is the documented
+      // jumpiness. What IS stable: the x of the gap's start pose.)
+      if (gapStartX === null) gapStartX = rig.poseAt(opts.gapAt).p.x / S;
+      const airborne = !support.grounded && ref.x / S > gapStartX - 0.05;
       airborneSteps = airborne ? airborneSteps + 1 : 0;
-      if (airborneSteps > 12 && vy - prevVy > 0.3) {
+      // The step the car TOUCHES DOWN is by definition not airborne, and
+      // the vy jump happens exactly on that step - gating on the CURRENT
+      // airborne streak asks for a step that cannot exist and the metric
+      // read zero forever ("gap too small to measure"). The streak has to
+      // be the flight BEFORE the jump: a running max over the window.
+      if (airborneSteps > airStepsMax) airStepsMax = airborneSteps;
+      if (airStepsMax > 12 && vy - prevVy > 0.3) {
         const j = car.chassis.mass() * (vy - prevVy);
         if (j > landImpulse) landImpulse = j;
       }
