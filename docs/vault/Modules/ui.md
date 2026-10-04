@@ -15,7 +15,7 @@ Placement model: the track is a socket graph. `targets()` lists open sockets (un
 
 ## Guarded by
 
-`tests/e2e/builder.spec.ts` (13 tray buttons, hover→ghost, place/remove move the counter, rotate reports `seated`/`snapped`, zero console errors). Budget overflow refuses placement; keyboard focus rings are stage 6, roles/labels are already real.
+`tests/e2e/builder.spec.ts` (13 tray buttons, hover→ghost, place/remove move the counter, rotate reports `seated`/`snapped`, zero console errors). The expected piece counts in that spec are DERIVED — `FEEL_TRACK_KINDS.length` and `FEELTRACK.budget` — not hand-mirrored, so adding a piece to the feel chain can no longer leave the e2e stale (stage-2 review blocker: a hardcoded `8 / 16` broke CI when the chain grew to 9). Budget overflow refuses placement; keyboard focus rings are stage 6, roles/labels are already real.
 
 ## Depends on / used by
 

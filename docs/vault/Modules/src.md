@@ -12,7 +12,7 @@ tags: [module]
 
 ## How it works
 
-No router, no framework (per the brief's "small entity model, not a framework"). The fixed step lives in physics (`World.step`); the frame loop only decides *how many* fixed steps the elapsed time pays for (capped, so a background tab cannot fast-forward a run). Pure bits of the shell (`runStatusLine`) are unit-guarded by `tests/unit/boot.test.ts`; the DOM/canvas half by `tests/e2e/smoke.spec.ts`, `tests/e2e/builder.spec.ts` and the share-verified e2e.
+No router, no framework (per the brief's "small entity model, not a framework"). The fixed step lives in physics (`World.step`); the frame loop only decides *how many* fixed steps the elapsed time pays for (capped, so a background tab cannot fast-forward a run). Pure bits of the shell (`runStatusLine`) are unit-guarded by `tests/unit/boot.test.ts`; the DOM/canvas half by `tests/e2e/smoke.spec.ts`, `tests/e2e/builder.spec.ts` (whose expected piece counts import the level data — `FEEL_TRACK_KINDS.length`, `FEELTRACK.budget` — instead of mirroring it) and the share-verified e2e.
 
 ## Depends on / used by
 

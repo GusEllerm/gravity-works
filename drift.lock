@@ -283,7 +283,7 @@ sig = "777f9bdbd60fe546"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/builder.spec.ts"
-sig = "13541e8c9a1518a7"
+sig = "6c8fdecd2fdc7243"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -358,7 +358,7 @@ sig = "315df5f7e3656d5a"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/builder.spec.ts"
-sig = "13541e8c9a1518a7"
+sig = "6c8fdecd2fdc7243"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
