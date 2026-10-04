@@ -18,7 +18,7 @@ sig = "9f4bce417acc7d9b"
 [[bindings]]
 doc = "docs/vault/Concepts/Art Bible.md"
 target = "src/render/materials.ts"
-sig = "31477df388547628"
+sig = "76615bb4918de935"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Feel.md"
@@ -232,23 +232,43 @@ sig = "0b8956e4fdc50db2"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
+target = "src/render/film.ts"
+sig = "623ce0868e6be232"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
 target = "src/render/geometry.ts"
 sig = "0e4e78212a50e506"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
+target = "src/render/lighting.ts"
+sig = "dcf9e754713fcf1a"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
 target = "src/render/materials.ts"
-sig = "31477df388547628"
+sig = "76615bb4918de935"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
 target = "src/render/tokens.ts"
-sig = "bbb6841e7a5ab509"
+sig = "23049e685bb54f7b"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
 target = "src/render/toon-material.ts"
-sig = "f0028d5fa0212c4f"
+sig = "54aacc37a60bca81"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "tests/unit/render-materials.test.ts"
+sig = "7b31151e38510ae3"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "tests/unit/render-post.test.ts"
+sig = "35a2037b0e32333f"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"

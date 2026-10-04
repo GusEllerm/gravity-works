@@ -4,6 +4,7 @@
 // shadow tint) comes from tokens so classes cannot drift per set.
 
 import type * as THREE from 'three'
+import { shiftHex } from './tokens.ts'
 import type { SetTokens } from './tokens.ts'
 import { ToonMaterial, type ToonMaterialParams } from './toon-material.ts'
 
@@ -16,19 +17,27 @@ export type MaterialClass =
   | 'glass'
   | 'liquid'
 
+/**
+ * Grain is restricted to painted-wood and toy-treated surfaces (2026-10-04
+ * backlog: speckle on ceramic reads as lens dirt). `wood` marks the one class
+ * whose own grain is inherent; everywhere else a grain amount survives only
+ * if the surface also carries the toy treatment.
+ */
 function fromClass(
   tokens: SetTokens,
   color: THREE.ColorRepresentation,
   tuning: ToonMaterialParams,
   overrides?: Partial<ToonMaterialParams>,
+  wood = false,
 ): ToonMaterial {
+  const merged: ToonMaterialParams = { ...tuning, ...overrides }
+  if ((merged.grain ?? 0) > 0 && !wood && (merged.toy ?? 0) <= 0) merged.grain = 0
   return new ToonMaterial({
     color,
     shadowTint: tokens.shadowTint,
     fillHigh: tokens.fillHigh,
     fillLow: tokens.fillLow,
-    ...tuning,
-    ...overrides,
+    ...merged,
   })
 }
 
@@ -84,9 +93,27 @@ export function paintedWood(
       specular: { size: 0.22, strength: 0.18 },
       rim: { strength: 0.1, size: 0.6 },
       grain: 0.6,
+      // grainScale is the per-surface-frequency dial: pass a value under 1
+      // for big surfaces (floors, walls — long low streaks), over 1 for
+      // small props (fine grain). 2026-10-04 backlog item 1.
+      grainScale: 1,
     },
     overrides,
+    true,
   )
+}
+
+/**
+ * Saturation lift for ceramic glaze (2026-10-04 backlog): the stage-1 tile-B
+ * bowl read chalky through the gold key. +10 % saturation (with a hair of
+ * lightness) puts the glaze back without leaving the class tuning. The
+ * interior glaze itself rides the 2026-10-04 backface-normal fix — a
+ * DoubleSide lathe form now shades its inner wall by its true facing.
+ */
+const CERAMIC_SATURATION_LIFT = 0.1
+
+export function ceramicSaturationLift(hex: string): string {
+  return shiftHex(hex, 0, CERAMIC_SATURATION_LIFT, 0.012)
 }
 
 /** Broad soft specular, warm rim. Bowls, mugs, sinks. */
@@ -95,9 +122,10 @@ export function ceramic(
   color: THREE.ColorRepresentation,
   overrides?: Partial<ToonMaterialParams>,
 ): ToonMaterial {
+  const lifted = typeof color === 'string' && color.startsWith('#') ? ceramicSaturationLift(color) : color
   return fromClass(
     tokens,
-    color,
+    lifted,
     {
       ramp: { steps: [0.64, 1.0], thresholds: [0.32], softness: 0.08 },
       specular: { size: 0.45, strength: 0.55 },

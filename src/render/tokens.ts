@@ -116,6 +116,21 @@ export function lighten(hex: string, amount: number): string {
   return shiftHex(hex, 0, -amount * 0.35, amount)
 }
 
+/**
+ * Warm-brown lightness floor for tyres and other contact parts
+ * (2026-10-04 backlog): `#4A3527` rubber goes near-black through the kitchen
+ * grade, which reads as a hole in the silhouette. Contact tones are raised to
+ * at least this HSL lightness — still brown, still reads as rubber, but the
+ * wheel keeps a readable edge. Pure hex math; deterministic.
+ */
+export const CONTACT_LIGHTNESS_FLOOR = 0.3
+
+/** Raise a color's HSL lightness to `minLightness` without touching hue/sat. */
+export function clampLightness(hex: string, minLightness: number = CONTACT_LIGHTNESS_FLOOR): string {
+  const [h, s, l] = rgbToHsl(...hexToRgb(hex))
+  return rgbToHex(...hslToRgb(h, s, Math.max(l, minLightness)))
+}
+
 export function darken(hex: string, amount: number): string {
   return shiftHex(hex, 0, amount * 0.15, -amount)
 }

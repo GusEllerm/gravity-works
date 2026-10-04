@@ -23,6 +23,7 @@ const vertexShader = /* glsl */ `
 varying vec3 vNormal;
 varying vec3 vViewPosition;
 varying vec3 vModelPos;
+varying vec3 vWorldPos;
 
 void main() {
 	#include <beginnormal_vertex>
@@ -30,6 +31,7 @@ void main() {
 	vNormal = normalize( transformedNormal );
 
 	#include <begin_vertex>
+	vWorldPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;
 	#include <project_vertex>
 	vViewPosition = - mvPosition.xyz;
 	vModelPos = position;
@@ -68,10 +70,13 @@ uniform float uRimStrength;
 uniform float uRimSize;
 uniform float uToy;
 uniform float uGrain;
+uniform float uGrainScale;
 uniform float uLiquid;
 uniform float uTime;
 uniform float uDiffuseStrength;
 uniform float uKeyLength;
+uniform float uFillStrength;
+uniform float uShadowDither;
 uniform float opacity;
 
 struct ToonSurface {
@@ -100,13 +105,16 @@ float vnoise(vec2 p) {
 	return mix( mix( a, b, u.x ), mix( c, d, u.x ), u.y );
 }
 
-// faint painted-wood grain: value noise stretched along one axis, scene units = meters
-float grainWave( vec3 p ) {
+// faint painted-wood grain: value noise stretched along one axis, scene units
+// = meters. uGrainScale is the per-surface frequency (2026-10-04 backlog:
+// grain frequency belongs to the surface size — a big floor takes long low
+// streaks, a book cover takes fine ones; default 1 keeps stage-1 looks).
+float grainWave( vec3 p, float s ) {
 	// wrap far from the origin: the hash lattice loses precision at large
 	// coordinates, which would bloom into 10 cm waves on the big ground disc
 	vec3 q = mod( p + vec3( 32.0 ), vec3( 64.0 ) ) - vec3( 32.0 );
-	float t = vnoise( vec2( q.z * 260.0, q.x * 12.0 + q.y * 3.0 ) );
-	return vnoise( vec2( t * 3.0 + q.z * 110.0, q.x * 8.0 ) );
+	float t = vnoise( vec2( q.z * 260.0 * s, q.x * 12.0 * s + q.y * 3.0 * s ) );
+	return vnoise( vec2( t * 3.0 + q.z * 110.0 * s, q.x * 8.0 * s ) );
 }
 
 void RE_Direct_Toon(
@@ -129,6 +137,19 @@ void RE_Direct_Toon(
 	// "in shadow" from "unlit angle". Fully shadowed points swap the light for
 	// the set's shadow tint at reduced strength, so shadows tint, never blacken.
 	float att = clamp( length( directLight.color ) / max( uKeyLength, 0.0001 ), 0.0, 1.0 );
+	// Shadow-dither budget (2026-10-04 backlog). Three's PCF rotates a 5-tap
+	// Vogel disc by per-pixel interleaved gradient noise, so a partial-coverage
+	// fragment reports an attenuation in {0.2 .. 0.8} that re-rolls every
+	// pixel — the same failure mode that sank the painterly ramp, now speckling
+	// shadow edges at grazing angles. The budget caps how much of that
+	// per-pixel dither survives: at 0 partial coverage resolves by a hard call
+	// biased with a slow world-space weave (~2 mm cells, so the boundary sits
+	// in world space and reads as a soft edge, never as a pixel chessboard);
+	// at 1 the raw IGN dither is back. Default 0.35 keeps a breath of texture.
+	vec3 weaveW = mod( vWorldPos + vec3( 32.0 ), vec3( 64.0 ) ) - vec3( 32.0 );
+	float weave = hash21( floor( weaveW.xz * 450.0 ) ) - 0.5;
+	float hard = step( 0.5 + weave * 0.5, att );
+	att = mix( hard, att, uShadowDither );
 	vec3 effective = mix( material.shadowTint * uKeyLength * 0.4, directLight.color, att );
 
 	vec3 halfVec = normalize( directLight.direction + geometryViewDir );
@@ -163,7 +184,7 @@ void main() {
 
 	vec3 baseColor = uBase;
 	if ( uGrain > 0.0 ) {
-		baseColor *= mix( vec3( 1.0 ), vec3( 0.80 ) + vec3( 0.34 ) * grainWave( vModelPos ), uGrain );
+		baseColor *= mix( vec3( 1.0 ), vec3( 0.80 ) + vec3( 0.34 ) * grainWave( vModelPos, uGrainScale ), uGrain );
 	}
 	if ( uToy > 0.0 ) {
 		// dip-painted toy treatment: faint brightening above, faint sinking below
@@ -182,9 +203,12 @@ void main() {
 
 	#include <lights_fragment_begin>
 
-	// two-band directional fill replaces ambient: tinted toward the set's hue,
-	// kept low so the key light does the modeling
-	vec3 fill = mix( uFillLow, uFillHigh, upness ) * 0.25;
+	// two-band directional fill replaces ambient: tinted toward the set's hue
+	// (and its accent, via the lighting rig), scaled by uFillStrength so the
+	// fill gain is a material parameter, not a shader constant (2026-10-04
+	// backlog: the fill must be able to reach the set accent). The 0.25
+	// default keeps every pre-stage-3 render byte-identical.
+	vec3 fill = mix( uFillLow, uFillHigh, upness ) * uFillStrength;
 
 	float ndv = clamp( dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 );
 	float rim = pow( 1.0 - ndv, mix( 5.5, 1.8, uRimSize ) ) * uRimStrength;
@@ -238,10 +262,16 @@ export interface ToonMaterialParams {
   toy?: number
   /** Painted-wood grain amount, 0..1. */
   grain?: number
+  /** Grain frequency multiplier — lower = longer streaks for bigger surfaces. */
+  grainScale?: number
   /** Liquid normal wobble amount (uTime-driven). */
   liquid?: number
   /** Scales diffuse response (glass lets light through). */
   diffuseStrength?: number
+  /** Two-band fill gain; default 0.25 (the pre-stage-3 constant). */
+  fillStrength?: number
+  /** Shadow-dither budget 0..1 (see the shader note); default 0.35. */
+  shadowDither?: number
   opacity?: number
   transparent?: boolean
 }
@@ -282,6 +312,9 @@ export class ToonMaterial extends THREE.ShaderMaterial {
         uRimSize: { value: params.rim?.size ?? 0.45 },
         uToy: { value: params.toy ?? 0 },
         uGrain: { value: params.grain ?? 0 },
+        uGrainScale: { value: params.grainScale ?? 1 },
+        uFillStrength: { value: params.fillStrength ?? 0.25 },
+        uShadowDither: { value: params.shadowDither ?? 0.35 },
         uLiquid: { value: params.liquid ?? 0 },
         uTime: { value: 0 },
         uDiffuseStrength: { value: params.diffuseStrength ?? 1 },
