@@ -18,12 +18,12 @@ tags: [module]
 
 ## How it works
 
-Lighting contract: there is no `AmbientLight` anywhere — fill is the two-band `uFillLow`/`uFillHigh` sampled by world-up (rubric forbids uniform ambient). Shadow attenuation arrives folded into `directLight.color` by the Three chunk; the shader recovers it against `uKeyLength` (set once per scene via `ToonMaterial.setKeyLight()`) so fully-shadowed faces swap in the set's `shadowTint` at 40% key strength instead of collapsing to ambient black. The specular mask is a half-vector threshold on `specSize` clamped against a hot key (`min(color, 1)`) so highlights cannot blow to white.
+Lighting contract: there is no `AmbientLight` anywhere — fill is the two-band `uFillLow`/`uFillHigh` sampled by world-up (rubric forbids uniform ambient). Shadow attenuation arrives folded into `directLight.color` by the Three chunk; the shader recovers it against `uKeyLength` (set once per scene via `ToonMaterial.setKeyLight()`) so fully-shadowed faces swap in the set's `shadowTint` at 40% key strength instead of collapsing to ambient black. The specular mask is a half-vector threshold on `specSize` clamped against a hot key (`min(color, 1)`) so highlights cannot blow to white. Backfacing fragments flip the interpolated normal by `gl_FrontFacing` (matching Three's `normal_fragment_begin`), which is what lets a two-sided lathe form — a cereal bowl — shade its inner wall by its true facing instead of sticking in the darkest band.
 
 Scene units are meters at real scale (a 1:64 car is ~0.07 m).
 
-Guarded by `tests/unit/tokens.test.ts` (golden kitchen derivation, hex math). Rendered evidence: `docs/explorations/materials/ramp-a.png` (hard cel), `ramp-b.png` (three hard steps), `ramp-c.png` (painterly) from the stage-1 exploration.
+Guarded by `tests/unit/tokens.test.ts` (golden kitchen derivation, hex math). Rendered evidence: docs/explorations/materials/ramp-a.png (hard cel), ramp-b.png (three hard steps), ramp-c.png (painterly) from the stage-1 exploration. Binary renders are intentionally not named in backticks: the drift binder treats a mention as a file anchor and the text-diff checker cannot read binaries.
 
 ## Depends on / used by
 
-Depends on `three` only. Used by `src/dev/scenes/material-ramp.ts` (exploration scenes) and, from stage 3, the set directories. The frame budget (draw calls, tris, post cost) will also live here.
+Depends on `three` only. Used by `src/dev/scenes/material-ramp.ts` and `src/dev/scenes/kitchen-c.ts` (exploration scenes) and, from stage 3, the set directories. The frame budget (draw calls, tris, post cost) will also live here.

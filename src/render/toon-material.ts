@@ -145,7 +145,10 @@ void RE_Direct_Toon(
 #define RE_Direct RE_Direct_Toon
 
 void main() {
-	vec3 normal = normalize( vNormal );
+	// Backface flip matching Three's normal_fragment_begin: two-sided lathe
+	// forms (cereal bowls!) must shade their inner wall by its true facing,
+	// not sit stuck in the darkest ramp band with an inverted fill gradient.
+	vec3 normal = normalize( vNormal ) * ( gl_FrontFacing ? 1.0 : - 1.0 );
 
 	if ( uLiquid > 0.0 ) {
 		// animated surface wobble; deterministic while uTime stays fixed

@@ -42,6 +42,11 @@ sig = "20dbcfc36e4d734a"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
+target = "src/dev/scenes/material-ramp.ts"
+sig = "0b8956e4fdc50db2"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
 target = "src/render/geometry.ts"
 sig = "0e4e78212a50e506"
 
@@ -58,7 +63,7 @@ sig = "bbb6841e7a5ab509"
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
 target = "src/render/toon-material.ts"
-sig = "8ab5d15dededb1a1"
+sig = "f0028d5fa0212c4f"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
