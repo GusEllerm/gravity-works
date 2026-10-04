@@ -18,25 +18,44 @@ All authoring in **world metres** at 1:64 visual scale. Physics converts to sim 
 
 ```
 TrackSpline            src/track/spline.ts
-  sample(t: number):   { pos, tangent, up, banking }        # t in [0,1]
+  sample(t: number):   { pos, tangent, up, banking, solid }  # t in [0,1]; solid=false inside a gap
   length: number                                           # metres
+  stations: number; stationTs(): number[]; stationFrames(): TrackFrame[]
+                                                          # the shared sample set (invariant 1)
+  transformed(m: Mat4): TrackSpline                         # piece-local -> world, keeps samples analytic
   toMesh(o): BufferGeometry                                # sweep of CrossSection
-  toColliderDescs(RAPIER): ColliderDesc[]                  # convexs; smooth rolling deck
+  toColliderDescs(RAPIER, o): ColliderDesc[]                # convexs; smooth rolling deck
   railPoints(n): Vec3[]                                    # wheel-height centreline for the run camera
 
 CrossSection           src/track/cross-section.ts           # the U channel + rail lips; one for all pieces
+                                                          # stored as convex parts so each ring pair hulls
 
 PieceDef               src/track/pieces.ts
-  { kind, params, spline(params): TrackSpline, sockets(params): [SocketIn, SocketOut] }
+  { kind, params, spline(params): TrackSpline, sockets(params): [SocketIn, SocketOut],
+    extraGeometries(params): BufferGeometry[] }              # housings / spring / cup bowl
   kinds: straight | curve | bigCurve | sbend | bank | loop | drop | ramp | gapLip | landing
          | booster | springLauncher | finishCup
+  booster/springLauncher also carry `power` and `applyImpulse(body, power, dir?)`:
+    power is a velocity increment (Δv), so kit code never converts masses or units
+  finishCup carries `captureVolume(params): { center, radius }`
 
 Socket                 { pos, tangent, up }                 # a PieceDef endpoint; props may expose extras
+                                                          # tangent = direction of travel, so a mated pair
+                                                          # is parallel; banking is 0 at every socket
 
 PlacedPiece            { def: kind, params, transform: Mat4, seq }
 Build                  { levelId, pieces: PlacedPiece[], seed }   # share payload core; canonical order = seq
 
 Snapping               src/track/snap.ts                    # socket↔socket within tolerance; pure, tested
+  snapSocket(a, b): Mat4 | null                             # the gate (tolerances are constants)
+  fitSocket(target, source): Mat4                           # exact seating, no tolerance: builder placement
+  canonicalBuild(order): PlacedPiece[]                       # stable seq order, never mutates
+
+Build tools            src/track/build.ts
+  reify(build): { splines, pieces }                         # canonical order, transforms applied
+  chain(kinds, opts): Build                                 # end-to-end placement, pure
+  serialize / deserialize                                   # canonical JSON (keys sorted, no whitespace)
+  rigFingerprint(build): string                             # FNV-1a of reified samples (NaN poisons)
 
 World                  src/world/world.ts
   constructor(level, build, opts)   # owns scene+physics+track graph
@@ -51,6 +70,18 @@ World                  src/world/world.ts
 2. A loop piece of radius r in a build reified from a `Build` reproduces the analytic loop within the tessellation epsilon; the loop-threshold physics test runs on kit geometry, not slabs.
 3. `Build` serialises losslessly (JSON round-trip → same hash).
 4. Snapping is a pure function; a build is reproducible from (level, build, seed) alone — no hidden world state.
+
+> [!note] Elaborated by the implementation (2026-10-04, systems engineer)
+> Four things the interface sketch left open, now fixed by the code — see
+> [[Modules/track]] for the reasoning and `Sessions/2026-10-04 Stage 2 - track kit.md`:
+> a `sample()` also reports whether the point is over solid track (gaps are part
+> of a piece, so `drop` and `gapLip` can carry their own empty space);
+> `toColliderDescs` takes a length `scale` at build time, which is how the kit
+> stays unit-blind while physics still gets sim-space convexs; a collider
+> "segment" is the convex hull of *consecutive* rings, merged across rings that
+> are collinear — that merging is what "deck quads large and few" means, and a
+> straight 2 m deck becomes a handful of hulls rather than a seam per station;
+> and `PieceDef.applyImpulse` expresses a launcher's `power` as a Δv.
 
 ## Stage-2 acceptance hooks
 

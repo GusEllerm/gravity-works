@@ -72,6 +72,11 @@ sig = "0b8956e4fdc50db2"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
+target = "src/dev/scenes/trackkit.ts"
+sig = "4fe23bf6f5ca2b6b"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
 target = "src/main.ts"
 sig = "777f9bdbd60fe546"
 
@@ -178,7 +183,7 @@ sig = "f0028d5fa0212c4f"
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
 target = "tests/unit/tokens.test.ts"
-sig = "a6a5c4de984ede79"
+sig = "0f065f90d47289b6"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -204,6 +209,56 @@ sig = "3dc33ac21de385ff"
 doc = "docs/vault/Modules/src.md"
 target = "tests/unit/boot.test.ts"
 sig = "f895f1e0ad7fd8c9"
+
+[[bindings]]
+doc = "docs/vault/Modules/track.md"
+target = "src/dev/scenes/trackkit.ts"
+sig = "4fe23bf6f5ca2b6b"
+
+[[bindings]]
+doc = "docs/vault/Modules/track.md"
+target = "src/physics/sim.ts"
+sig = "800726337fe0db86"
+
+[[bindings]]
+doc = "docs/vault/Modules/track.md"
+target = "src/track/build.ts"
+sig = "f8885ffd9d600d4d"
+
+[[bindings]]
+doc = "docs/vault/Modules/track.md"
+target = "src/track/cross-section.ts"
+sig = "8f79e5fc5faffae7"
+
+[[bindings]]
+doc = "docs/vault/Modules/track.md"
+target = "src/track/pieces.ts"
+sig = "fcc01794047fa90a"
+
+[[bindings]]
+doc = "docs/vault/Modules/track.md"
+target = "src/track/snap.ts"
+sig = "92cf24ddcf9e37f8"
+
+[[bindings]]
+doc = "docs/vault/Modules/track.md"
+target = "src/track/socket.ts"
+sig = "e83f876461cb13e5"
+
+[[bindings]]
+doc = "docs/vault/Modules/track.md"
+target = "src/track/spline.ts"
+sig = "94a2ee27e5931879"
+
+[[bindings]]
+doc = "docs/vault/Modules/track.md"
+target = "tests/unit/track-rolling.test.ts"
+sig = "c1d72905e8feea04"
+
+[[bindings]]
+doc = "docs/vault/Modules/track.md"
+target = "tests/unit/track.test.ts"
+sig = "70230c6497753041"
 
 [[bindings]]
 doc = "docs/vault/Reference/Canonical Cameras.md"

@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest'
-import { cssVars, GLOBAL_TOKENS, mixHex, SET_TOKENS, shiftHex } from '../../src/render/tokens.ts'
+import { cssVars, GLOBAL_TOKENS, hexToRgb, lighten, darken, mixHex, SET_TOKENS, shiftHex } from '../../src/render/tokens.ts'
 
 test('every set derives the full token shape and the constant orange track', () => {
   for (const [id, t] of Object.entries(SET_TOKENS)) {
@@ -25,8 +25,31 @@ test('derivation is stable: golden kitchen values and repeat-call equality', () 
     background: '#fcf4e8',
     track: '#FF7A1A',
   })
-  expect(SET_TOKENS.kitchen).toEqual(SET_TOKENS.kitchen)
-  expect(cssVars('kitchen')).toEqual(cssVars('kitchen'))
+  // Repeat calls must agree *and* be independent objects: a shared mutable
+  // return value would let one set's CSS leak into another's.
+  const first = cssVars('kitchen')
+  const second = cssVars('kitchen')
+  expect(second).toEqual(first)
+  expect(second).not.toBe(first)
+  // The "CSS and the material system cannot drift" promise, stated as a fact
+  // instead of as a tautology: exactly one custom property per material-facing
+  // token, same values, no extras and none missing.
+  const materialTokens = Object.entries(SET_TOKENS.kitchen).filter(([key]) => key !== 'name')
+  expect(Object.keys(first)).toHaveLength(materialTokens.length)
+  expect(Object.values(first).sort()).toEqual(materialTokens.map(([, value]) => value).sort())
+  // Derived fields must actually be derived — five distinct surfaces, not one
+  // colour copied around.
+  expect(new Set(materialTokens.map(([, value]) => value)).size).toBe(materialTokens.length)
+  // The pure colour math has endpoints and a symmetry to honour.
+  expect(mixHex('#000000', '#ffffff', 0)).toBe('#000000')
+  expect(mixHex('#000000', '#ffffff', 1)).toBe('#ffffff')
+  expect(mixHex('#e0a040', '#202020', 0.25)).toBe(mixHex('#202020', '#e0a040', 0.75))
+  // A hue shift of a third of the wheel moves the colour; lightness helpers are
+  // monotonic in the channel they claim to move.
+  expect(shiftHex('#123456', 1 / 3, 0, 0)).not.toBe(shiftHex('#123456', 0, 0, 0))
+  const brightest = (hex: string): number => Math.max(...hexToRgb(hex))
+  expect(brightest(lighten('#EFAF4B', 0.2))).toBeGreaterThan(brightest('#EFAF4B'))
+  expect(brightest(darken('#EFAF4B', 0.2))).toBeLessThan(brightest('#EFAF4B'))
 })
 
 test('color helpers round-trip and mix deterministically', () => {

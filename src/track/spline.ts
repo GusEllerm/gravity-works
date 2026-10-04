@@ -117,7 +117,6 @@ interface Compiled {
 }
 
 const _q = new THREE.Quaternion();
-const _v = new THREE.Vector3();
 const _t = new THREE.Vector3();
 
 export class TrackSpline {
@@ -156,16 +155,16 @@ export class TrackSpline {
           .addScaledVector(axis, along * len)
           .addScaledVector(perp, Math.sin(th) / omega)
           .addScaledVector(new THREE.Vector3().crossVectors(axis, tangent), (1 - Math.cos(th)) / omega);
-        quat = new THREE.Quaternion().setFromAxisAngle(axis, omega * len).multiply(quat);
       } else {
         next = pos.clone().addScaledVector(tangent, len);
       }
       const bank0 = spec.bankFrom ?? 0;
+      const quat0 = quat;
       compiled.push({
         start: s,
         length: len,
         pos0: pos,
-        quat0: quat,
+        quat0,
         axis,
         omega,
         bank0,
@@ -174,6 +173,9 @@ export class TrackSpline {
       });
       s += len;
       pos = next;
+      // the frame for the NEXT segment: carried by the same rotation that
+      // carried the tangent, which is what parallel transport means here.
+      if (omega > 1e-12) quat = new THREE.Quaternion().setFromAxisAngle(axis, omega * len).multiply(quat);
     }
     if (compiled.length === 0) throw new Error('TrackSpline: needs at least one segment');
     this.segs = compiled;
@@ -305,8 +307,9 @@ export class TrackSpline {
    */
   toColliderDescs(rapier: RapierColliderFactory, options: ColliderBuildOptions = {}): ColliderDescLike[] {
     const cs = options.profile ?? U_CHANNEL;
-    const rings = sectionRings(cs, this.stationFrames(), options.scale ?? 1);
-    const runs = this.colliderRuns(this.stationFrames());
+    const frames = this.stationFrames();
+    const rings = sectionRings(cs, frames, options.scale ?? 1);
+    const runs = this.colliderRuns(frames);
     const descs: ColliderDescLike[] = [];
     const dropped: string[] = [];
     for (let part = 0; part < cs.parts.length; part++) {
@@ -427,8 +430,8 @@ function emitTube(
     out.push(p.x, p.y, p.z);
   };
   for (let r = run.start; r < run.end; r++) {
-    const ringA = rings[r]!;
-    const ringB = rings[r + 1]!;
+    const ringA = rings[r]![part]!;
+    const ringB = rings[r + 1]![part]!;
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
       // side quad, wound so its normal points away from the part's interior
@@ -443,7 +446,7 @@ function emitTube(
   // end caps: convex polygon, fan from vertex 0; the entry cap is wound the
   // other way so both caps face outward along -t / +t
   for (const r of [run.start, run.end]) {
-    const ring = rings[r]!;
+    const ring = rings[r]![part]!;
     const flip = r === run.end;
     for (let i = 1; i < n - 1; i++) {
       push(ring[0]!);

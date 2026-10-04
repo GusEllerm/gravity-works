@@ -16,4 +16,4 @@ One DOM query, one function call — no router, no framework (per the brief's "s
 
 ## Depends on / used by
 
-Depends on nothing. Used by `index.html` only. Future modules (`src/world`, `src/track`, `src/ui`, `src/sets/*`) will be created stage by stage, each with its own note here. Created so far: `src/render`, `src/dev`, `src/physics`, `src/feel`.
+Depends on nothing. Used by `index.html` only. Future modules (`src/world`, `src/track`, `src/ui`, `src/sets/*`) will be created stage by stage, each with its own note here. Created so far: `src/render`, `src/dev`, `src/physics`, `src/feel`, `src/track`.

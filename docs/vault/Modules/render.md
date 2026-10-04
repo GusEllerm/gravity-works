@@ -22,7 +22,7 @@ Lighting contract: there is no `AmbientLight` anywhere — fill is the two-band 
 
 Scene units are meters at real scale (a 1:64 car is ~0.07 m).
 
-Guarded by `tests/unit/tokens.test.ts` (golden kitchen derivation, hex math). Rendered evidence: docs/explorations/materials/ramp-a.png (hard cel), ramp-b.png (three hard steps), ramp-c.png (painterly) from the stage-1 exploration. Binary renders are intentionally not named in backticks: the drift binder treats a mention as a file anchor and the text-diff checker cannot read binaries.
+Guarded by `tests/unit/tokens.test.ts` (golden kitchen derivation; hex-math endpoints and symmetry; `cssVars()` held to a one-variable-per-token drift guard against the token object; lightness helpers checked monotonic rather than self-equal — the stage-1 tautologies were removed at stage 2). Rendered evidence: docs/explorations/materials/ramp-a.png (hard cel), ramp-b.png (three hard steps), ramp-c.png (painterly) from the stage-1 exploration. Binary renders are intentionally not named in backticks: the drift binder treats a mention as a file anchor and the text-diff checker cannot read binaries.
 
 ## Depends on / used by
 
