@@ -6,6 +6,38 @@ livedocs: snapshot
 
 Dated entries tagged `[agent decision]`. Newest first.
 
+## 2026-10-06 — Hazard grip acts on the friction channels the solver HAS, and the lateral-slip claim is stated as measured `[agent decision]` `[feel engineer]`
+
+Ask #2a (the wet patch's "halves grip") could be wired three ways: a live
+per-region collider-friction edit, a per-piece `friction` param, or a
+per-wheel-contact grip query. Chose the contact query
+(`GripField`/`WheelSupport`): it is per-WHEEL (the brief's word), it is
+trivially hash-neutral (uniform grip is bit-identical — not approximately,
+`x * 1 === x`), and live friction edits on merged hulls would
+re-tune-requiring everywhere. Consumers: rolling-resistance magnitude
+(mean grip — the kit's RR law IS an effective μ, so wet plastic is LOW
+DRAG and the patch reads faster: L04 ground 2.350 → 2.292 s), the per-wheel
+drag SHARING (a straddled patch yaws the car toward the dry side — the
+honest lateral effect: slip 2.38° → 3.98°), the self-aligning budget, and
+variant a's live tyre μ. Rejected: inventing a per-mount lateral scrub
+force to make "slides wide" real — that is exactly the lateral-model family
+the loop work rejected ([[Modules/physics]]), and on a U-channel the rails
+make it moot anyway (kinematic constraint: the wall carries lateral demand
+grip-independently). The design failure the level card wanted ("sliding
+wide") therefore stays gated behind ask #1 (drivable yaw), stated in
+[[Modules/hazards]] rather than faked in a test.
+
+## 2026-10-06 — KITCHEN 04's wet patch re-centred onto the ground line's deck `[agent decision]` `[feel engineer]` (placement fix; flagged for LD review)
+
+With the zone hook live, the authored centre (the PAR rig's landing level
+run) put the patch ON the par line's own deck — bit-diverging the par
+replay and breaking the file's own "grip-independent par" contract within
+the same file. Measured both ways; moved the centre to the GROUND build's
+straight seam (the decked sink's middle), which is what the level's prose
+always described. Alternatives: leave it (par grip-independence becomes
+false in fact, not just in prose) or move the ground line (bigger LD
+diff). One function, comments updated, both lines' claims now measured.
+
 ## 2026-10-06 — Kitchen rungs with an undrivable yaw half ship as done-but-BLOCKED-rung, not blocked levels `[agent decision]` `[level designer]`
 
 L02 (curve choice) and L03 (bowl bank line) were specced around mid-run yaw geometry, and no yaw piece is drivable by either shipped car at any swept radius/speed/bank (probe table in `Sessions/2026-10-06 Stage 3 - level ladder`). Options: mark the levels BLOCKED (starves stage 3 of content and hides the one-line fix), or fake drivability with a par build that fails (forbidden by the playability gate). Chose: ship both levels with par lines that finish (proved headless), keep the yaw geometry as fixture run-out past the cup (the feel track's own precedent), and mark the RUNG BLOCKED with a one-paragraph piece request (`Concepts/Levels` ask #1). Alternatives rejected: par builds containing the yaw piece (test-red = ship-red, and it would be honest only by being useless), and a steering hack inside the level files (physics is not the level designer's file).

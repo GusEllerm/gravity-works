@@ -102,7 +102,7 @@ describe('kitchen ladder — the choices and the trade-off are real', () => {
     expect(par.time).toBeLessThan(arc.time);
   }, 30_000);
 
-  test('L04: the ground line through the wet patch also finishes (dry, today)', async () => {
+  test('L04: the ground line through the wet patch also finishes (wet — the zone hook is live, see Modules/hazards)', async () => {
     const ground = await replayRun(KITCHEN04, kitchen04GroundBuild());
     expect(ground.status).toBe('finished');
   }, 30_000);

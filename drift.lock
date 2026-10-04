@@ -28,12 +28,17 @@ sig = "09c7f3eef715d605"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "docs/vault/Modules/feel.md"
-sig = "ccfbe66271494028"
+sig = "374751eafd291ee4"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/replay/replay.ts"
 sig = "358c8994ef168677"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Levels.md"
+target = "src/world/hazards.ts"
+sig = "c574d75a051da4fc"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -53,7 +58,7 @@ sig = "dde4698d91a1234c"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "tests/unit/kitchen-levels.test.ts"
-sig = "aba95ef42e6aa53d"
+sig = "bd7f07f5e846d4a4"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -183,12 +188,12 @@ sig = "4f428e09ac0f3887"
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/feel/run.ts"
-sig = "9b76427e85ace069"
+sig = "8fedc4281132602b"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/physics/car.ts"
-sig = "a075ca404a95bcab"
+sig = "371ef988b99714db"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
@@ -231,9 +236,34 @@ target = "tools/feel.mjs"
 sig = "4c45526e4182ba0a"
 
 [[bindings]]
+doc = "docs/vault/Modules/hazards.md"
+target = "src/feel/run.ts"
+sig = "8fedc4281132602b"
+
+[[bindings]]
+doc = "docs/vault/Modules/hazards.md"
+target = "src/physics/car.ts"
+sig = "371ef988b99714db"
+
+[[bindings]]
+doc = "docs/vault/Modules/hazards.md"
+target = "src/world/hazards.ts"
+sig = "c574d75a051da4fc"
+
+[[bindings]]
+doc = "docs/vault/Modules/hazards.md"
+target = "src/world/world.ts"
+sig = "2106de1891a550d2"
+
+[[bindings]]
+doc = "docs/vault/Modules/hazards.md"
+target = "tests/unit/hazards.test.ts"
+sig = "be1d9f07e84f7b87"
+
+[[bindings]]
 doc = "docs/vault/Modules/physics.md"
 target = "src/physics/car.ts"
-sig = "a075ca404a95bcab"
+sig = "371ef988b99714db"
 
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
@@ -458,7 +488,7 @@ sig = "94a2ee27e5931879"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "src/world/world.ts"
-sig = "dd0a82cd8dfb59fb"
+sig = "2106de1891a550d2"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -508,12 +538,17 @@ sig = "4f428e09ac0f3887"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/physics/car.ts"
-sig = "a075ca404a95bcab"
+sig = "371ef988b99714db"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/track/material.ts"
 sig = "c4f0e21791027cfa"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "src/world/hazards.ts"
+sig = "c574d75a051da4fc"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -528,7 +563,7 @@ sig = "fb06ede3e0b45cba"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/world.ts"
-sig = "dd0a82cd8dfb59fb"
+sig = "2106de1891a550d2"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -573,7 +608,7 @@ sig = "fb06ede3e0b45cba"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "tests/unit/kitchen-levels.test.ts"
-sig = "aba95ef42e6aa53d"
+sig = "bd7f07f5e846d4a4"
 
 [[bindings]]
 doc = "docs/vault/Reference/Performance Baselines.md"

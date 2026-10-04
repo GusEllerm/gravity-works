@@ -84,15 +84,20 @@ steering lands; that half of the rung is BLOCKED.
 **KITCHEN 04 — The Tap** (`kitchen04.level.ts`). Teaches: the hazard enters;
 affordance (the tap dripping, upstream, visibly) before hazard (its splash
 halves grip on the patch below the sink's far rim). The wet patch is
-`hazards` DATA (see convention below): centre on the landing's level run,
-`gripFactor: 0.5`, source `tap`. Two lines: the par line FLIES the sink
-(`gapLip` → `drop` → `landing`, then past the patch — grip-independent, so
-it provably finishes TODAY, 2.45 s), and the ground line decks straight over
-the sink with the two loose `straight`s and drives THROUGH the patch (it
-finishes today too, 2.35 s — dry). Once the zone hook exists (ask #2), the
-ground line becomes the speed-management question the brief intends. Common
-failure today: none; intended failure then: sliding wide on the wet. Par is
-the par because it is the line that does not care about the water.
+`hazards` DATA (see convention below): centre on the ground build's decked-
+sink seam, `gripFactor: 0.5`, source `tap`. Two lines, both measured with
+the live zone hook (stage 3): the par line FLIES the sink (`gapLip` →
+`drop` → `landing`, then past the patch — grip-independent to the BIT,
+2.45 s, hash unchanged by the zone), and the ground line decks straight over
+the sink with the two loose `straight`s and drives THROUGH the patch — its
+hash diverges and it finishes 0.06 s FASTER (2.350 s dry → 2.292 s wet):
+the honest in-channel manifestation of "halves grip" on a straight is
+LOW DRAG, the speed-management question the brief intends. The failure the
+card wanted — sliding wide — is a channel-kinematics NO on a straight (the
+rail carries lateral demand grip-independently; [[Modules/hazards]]);
+the measurable lateral signature is the straddled-patch-edge yaw
+(slip 2.38° → 3.98°, dry → wet). Par is the par because it is the line that
+does not care about the water.
 
 **KITCHEN 05 — Sunday Run** (`kitchen05.level.ts`). Teaches: everything,
 with a budget that cannot buy two solutions. Tray: 2 `gapLip`, 2 `drop`,
@@ -129,9 +134,19 @@ patch it creates is hazard data, not geometry.
 
 **Hazards as data.** A `WetPatch` hazard (declared in
 `kitchen01.level.ts`) is `{ center, radius, gripFactor, source }` in world
-metres. `World` does not read zones yet; the field is the hook request
-(ask #2) and the design contract meanwhile is: a level's PAR line must be
-grip-independent (KITCHEN 04 flies the patch), so parBuilds stay provable.
+metres. **Since stage 3 the `World` DOES read zones** — ask #2a was built
+as the per-contact grip hook (`src/world/hazards.ts` normalises the
+`WetPatch` to a cuboid `HazardZone`, and `carStep` samples it at every
+wheel contact: see [[Modules/hazards]]). The design contract holds and is
+now measured, not assumed: a level's PAR line must be grip-independent,
+and KITCHEN 04's par replays BIT-IDENTICAL with the live zone (its line
+flies the patch), while its ground line's hash DIVERGES (it drives
+through). One placement correction shipped with the hook: `wetPatch()`
+now centres the patch on the ground build's straight seam (the decked
+sink's middle) — the earlier centre, taken from the PAR rig's landing run,
+sat on the par line's own deck and quietly broke the par's
+grip-independence promise the moment the hook existed. Flagged for LD
+review.
 
 ## Piece requests / asks (one paragraph each)
 
@@ -152,11 +167,12 @@ lateral force the car cannot ask its wheels for.
 
 **Ask #2 — zone hook for hazards + level-owned finish socket.** Two narrow
 `World` requests from the hazard and tutorial levels: (a) a per-region deck
-grip multiplier KITCHEN 04's `wetPatch` can ride on (one collider-material
-region hook, or a per-piece `friction` param read by `reify`) — today the
-field is art-visible only; (b) `Level.finishSocket` so the cup is the
-LEVEL's world-fixed point a player must BUILD TO, instead of a `finishCup`
-piece chained at the end of whatever build is being replayed. (b) is why the
+grip multiplier KITCHEN 04's `wetPatch` can ride on — **DELIVERED stage 3**
+as a per-wheel-contact grip field (`src/world/hazards.ts` +
+`WheelSupport`/`GripField` in the car; see [[Modules/hazards]]); (b)
+`Level.finishSocket` so the cup is the LEVEL's world-fixed point a player
+must BUILD TO, instead of a `finishCup` piece chained at the end of
+whatever build is being replayed — **open** (Systems Engineer). (b) is why the
 kitchen levels' wrong-order experiments all "finish" over small gaps: a
 chained cup makes reachability free, so only physics failure — never routing
 failure — can occur. Neither blocks today's par builds; both are needed for

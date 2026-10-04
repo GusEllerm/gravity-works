@@ -17,8 +17,16 @@ no DOM — safe under Vitest (node) and `tools/feel.mjs` alike.
   impulse x S^4; `toWorldSpeed` divides by S — an earlier `sqrt(S)` version
   inflated every reported speed 3.16x and poisoned every speed-domain
   tuning (ROLL_COEF, the loop apex floor); see the 2026-10-05 session note.
-- `src/physics/car.ts` — `spawnCar(world, variant, pose)` + `carStep()`.
-  Variants: `wheelColliders` (a) and `raycastWheels` (b). Also exports
+- `src/physics/car.ts` — `spawnCar(world, variant, pose)` + `carStep(world,
+  car, gripAt?)`. The optional `gripAt` is the per-wheel-contact HAZARD
+  hook (`GripField`, sim-space): sampled at each aligned wheel contact into
+  `WheelSupport.gripPerWheel` / `.grip` / `.contactPerWheel` (plus the
+  read-only `slipPerWheel` lateral-slip angles), consumed by the
+  self-aligning budget, by `applyRollingResistance`’s per-wheel shares
+  (magnitude at the mean grip + yaw at the deviations), and — variant a
+  only — by the live tyre friction. Uniform grip is bit-identical to the
+  no-hook solver; see [[hazards]] for the measured consumers and the
+  hash-neutrality discipline. Variants: `wheelColliders` (a) and `raycastWheels` (b). Also exports
   `__ABLATE` — the TEST-ONLY crutch switchboard read by
   `tests/unit/ablation.test.ts` and nothing else (defaults = shipped config,
   reading an untouched switch changes no float; see §Crutch ablation below).
