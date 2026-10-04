@@ -39,6 +39,7 @@ import {
   spawnCar,
   type Car,
   type CarVariant,
+  type GripField,
 } from '../physics/car.ts';
 import {
   DROP_HEIGHT,
@@ -70,6 +71,13 @@ export interface RunResult {
    */
   witnesses: { apexContact: boolean; apexFloor: boolean; exit: boolean };
   hash: string;
+  /** Sum of max-|wheel-slip-angle| (rad) over the run, and the sample
+   *  count (steps with deck contact and > ~1 m/s world — AT SPEED, where
+   *  "travel direction" means anything; below it the angle is suspension
+   *  jitter). `slipAngleSum / slipSamples` is the run's mean LATERAL SLIP;
+   *  the hazard test proves a wet patch raises it. */
+  slipAngleSum: number;
+  slipSamples: number;
 }
 
 /** World metres of deck the free-drop rig drops onto, down-deck of release. */
@@ -171,6 +179,10 @@ export interface SimOpts {
    * orbiting car kept advancing `arc`. Position is not fooled.
    */
   exitX?: number;
+  /** Per-wheel-contact deck-grip field (SIM-space; hazard zones). Omitted
+   *  or all-1 = bit-identical to the dry solver — see `WheelSupport.grip`
+   *  in `src/physics/car.ts`. */
+  gripAt?: GripField;
 }
 
 /**
@@ -190,6 +202,8 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
   let hash = 0x811c9dc5 >>> 0;
   let peak = 0;
   let landImpulse = 0;
+  let slipSum = 0;
+  let slipSamples = 0;
   let prevVy = 0;
   let airborneSteps = 0;
   let stoppedSteps = 0;
@@ -222,14 +236,26 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
   // the loop rig witnessed fine).
 
   for (let step = 0; step < maxSteps; step++) {
-    const support = carStep(world, car);
-    applyRollingResistance(car, support.grounded, opts.coef);
+    const support = carStep(world, car, opts.gripAt);
+    applyRollingResistance(car, support.grounded, opts.coef, support);
     stepWorld(world);
     if (step % HASH_INTERVAL === 0) hash = hashBodies(bodies, hash);
 
     const speed = carSpeed(car);
     if (speed > peak) peak = speed;
     const fwdSpeed = Math.abs(car.chassis.linvel().x);
+    if (support.grounded && speed > 10) {
+      // Lateral slip telemetry AT SPEED (> ~1 m/s world): below it the
+      // angle is suspension jitter, not slip (the 0.2 m/s weathervane gate
+      // is for torque, not for a telemetry mean). Pure read.
+      slipSum += Math.max(
+        Math.abs(support.slipPerWheel[0]!),
+        Math.abs(support.slipPerWheel[1]!),
+        Math.abs(support.slipPerWheel[2]!),
+        Math.abs(support.slipPerWheel[3]!),
+      );
+      slipSamples += 1;
+    }
 
     const ref = wheelRef(car);
     if (touchdownX === null && support.grounded) {
@@ -327,6 +353,8 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
             apexFloor: apexSpeedMin !== null && apexSpeedMin >= apexMinSim,
             exit: false,
           },
+          slipAngleSum: slipSum,
+          slipSamples,
           peakSpeed: toWorldSpeed(peak),
           apexSpeed: apexSpeedMin === null ? null : toWorldSpeed(apexSpeedMin),
           apexMin: Math.sqrt(G_WORLD * (opts.apexRadius ?? LOOP_RADIUS)),
@@ -368,6 +396,8 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
   return {
     completed: finished || exitPassed,
     timeToFinish: null,
+    slipAngleSum: slipSum,
+    slipSamples,
     peakSpeed: toWorldSpeed(peak),
     apexSpeed: apexSpeedMin === null ? null : toWorldSpeed(apexSpeedMin),
     apexMin: Math.sqrt(G_WORLD * (opts.apexRadius ?? LOOP_RADIUS)),

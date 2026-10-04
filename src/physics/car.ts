@@ -282,14 +282,48 @@ export interface WheelSupport {
    *  The loop gate uses it to prove the deck is LOADED, not merely in ray
    *  range — a flying car's rays hit the deck too. */
   force: number;
+  /** Mean DECK GRIP multiplier over this step's wheel contacts (1 = dry).
+   *  `gripAt` samples a hazard field (see `src/world/hazards.ts`) at each
+   *  aligned contact point; a wheel in a wet patch contributes that zone's
+   *  `frictionFactor`, so a car straddling a zone edge gets the linear
+   *  blend of its wheels' factors. The friction-circle-budgeted deck
+   *  forces (the axle-scrub self-aligning torque) and the rolling-
+   *  resistance impulse are the consumers. With no zones — or a car fully
+   *  outside them — every factor is exactly 1 and every product through
+   *  this field is bit-identical to the dry solver (`x * 1 === x`): that
+   *  is what keeps hazard code hash-neutral on hazard-free levels, which
+   *  `tests/unit/hazards.test.ts` pins. */
+  grip: number;
+  /** Per-mount deck grip (index = mount order of `Car.attach`): the
+   *  `gripAt` factor sampled at THAT wheel's contact point this step; 1
+   *  for a wheel out of contact or outside every zone. Consumers: the
+   *  aggregate `grip` average, variant a's live tyre friction, and the
+   *  juice hooks (`src/juice`). */
+  gripPerWheel: readonly number[];
+  /** Per-mount deck-contact flag (aligned wheel-deck contact this step):
+   *  the denominator of `grip` and the set of wheels the rolling-share
+   *  yaw term may act on. */
+  contactPerWheel: readonly boolean[];
+  /** Per-mount LATERAL SLIP ANGLE (rad, signed): the angle between the
+   *  wheel's travelling direction and its rolling direction in the
+   *  chassis frame, from the body-frame velocity AT the mount; 0 for a
+   *  wheel not in deck contact. Pure read — no force law consumes it, it
+   *  exists so the squeal hook and the hazard tests carry numbers, not
+   *  magic. */
+  slipPerWheel: readonly number[];
 }
+
+/** Per-contact deck-grip query in SIM-space metres (the car module is
+ *  unit-blind like every other force law here). `src/world/hazards.ts`
+ *  owns the world-space field; callers adapt the units. */
+export type GripField = (contactSimPos: Vec) => number;
 
 /** Per-step update. Both variants apply spring/damper forces — jointed
  *  bodies were dropped entirely (see `jointedStep` below); the a/b labels
  *  here are historical and mean nothing. */
-export function carStep(world: RAPIER.World, car: Car): WheelSupport {
-  if (car.variant === 'raycastWheels') return supportStep(world, car);
-  return jointedStep(world, car);
+export function carStep(world: RAPIER.World, car: Car, gripAt?: GripField): WheelSupport {
+  if (car.variant === 'raycastWheels') return supportStep(world, car, gripAt);
+  return jointedStep(world, car, gripAt);
 }
 
 function chassisFrame(car: Car): { pos: Vec; quat: Quat; up: Vec } {
@@ -362,7 +396,7 @@ function alignImpulse(mEff: number, k: number, u: number): number {
 }
 
 /** Shared chassis support: contact-normal spring+damper at each mount. */
-function supportStep(world: RAPIER.World, car: Car): WheelSupport {
+function supportStep(world: RAPIER.World, car: Car, gripAt?: GripField): WheelSupport {
   const { pos, quat } = chassisFrame(car);
   let grounded = false;
   let normImpulse = 0;
@@ -378,6 +412,15 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
   // running deck-frame estimate for the alignment torque above
   let deckN = v(0, 0, 0);
   let deckHits = 0;
+  // Deck-grip bookkeeping (see `WheelSupport.grip`): sum/count of the
+  // frictionFactor at THIS step's aligned wheel contacts; stays 1 while no
+  // zone is touched (dry is the exact no-op, not an approximation).
+  let gripSum = 0;
+  let gripCount = 0;
+  const gripW = [1, 1, 1, 1];
+  const slipW = [0, 0, 0, 0];
+  const contactW = [false, false, false, false];
+  const quatInv = { w: quat.w, x: -quat.x, y: -quat.y, z: -quat.z };
   for (let k = 0; k < car.attach.length; k++) {
     const aLocal = car.attach[k]!;
     const attach = vadd(pos, qrot(quat, aLocal));
@@ -491,6 +534,19 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
     // The wall FORCE is applied once per side at the centre of mass after
     // the mount loop — see the note there.
     const contact = vadd(attach, vscale(down, toi));
+    contactW[k] = true;
+    if (gripAt) {
+      const gK = gripAt(contact);
+      gripW[k] = gK;
+      gripSum += gK;
+      gripCount += 1;
+    }
+    // Lateral slip angle AT THE CONTACT PATCH (body-frame velocity at the
+    // mount: z = lateral, x = rolling direction). Read-only telemetry.
+    {
+      const vBody = qrot(quatInv, v3);
+      slipW[k] = Math.atan2(vBody.z, vBody.x);
+    }
     const bandP = vadd(contact, vscale(n0, CAR.railBand));
     const latC = qrot(quat, v(0, 0, aLocal.z >= 0 ? 1 : -1));
     const out0 = vsub(latC, vscale(n0, vdot(latC, n0)));
@@ -646,6 +702,9 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
   // Model it: drive the chassis heading toward the (horizontal) velocity,
   // about the chassis up axis, budgeted by the friction circle like any
   // other tyre force.
+  // Mean grip of this step's wheel contacts (exactly 1.0 when dry: a sum
+  // of integer-counted 1s divided by its own count is exact in IEEE754).
+  const gripAvg = gripCount > 0 ? gripSum / gripCount : 1;
   if (grounded) {
     const lvv = car.chassis.linvel();
     const hSp = Math.sqrt(lvv.x * lvv.x + lvv.z * lvv.z);
@@ -663,7 +722,10 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
           const wUp = av.x * up.x + av.y * up.y + av.z * up.z;
           const wantW = Math.min(Math.max(-dpsi * 6, -5), 5);
           const Iy = (car.chassis.mass() / 12) * (4 * CAR.halfL * CAR.halfL + 4 * CAR.halfW * CAR.halfW);
-          const budget = CAR.alignGrip * normImpulse * CAR.wheelX;
+          // Friction circle: the weathervane torque is a TYRE force, so a
+          // wet zone's gripFactor scales its budget (dry gripAvg === 1 ===
+          // bit-identical to the pre-hazard solver).
+          const budget = CAR.alignGrip * normImpulse * CAR.wheelX * gripAvg;
           const j = Iy * (wantW - wUp);
           const jm = Math.min(Math.abs(j), budget);
           if (jm > 1e-9) {
@@ -678,7 +740,7 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
       }
     }
   }
-  return { grounded, force: springForce };
+  return { grounded, force: springForce, grip: gripAvg, gripPerWheel: gripW, slipPerWheel: slipW, contactPerWheel: contactW };
 }
 
 /**
@@ -702,8 +764,22 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
  * of the hand-slabbed track, not of the wheel model — the stage-2 track
  * kit's stitched convex colliders exist to remove it.
  */
-function jointedStep(world: RAPIER.World, car: Car): WheelSupport {
-  const support = supportStep(world, car);
+function jointedStep(world: RAPIER.World, car: Car, gripAt?: GripField): WheelSupport {
+  const support = supportStep(world, car, gripAt);
+  if (gripAt) {
+    // Variant a has REAL tyre-deck friction — the honest per-contact hazard
+    // hook is to scale the collider friction of exactly the wheels whose
+    // contact sits in a zone. Not bit-identical by construction (the solver
+    // sees a different material), which is the POINT: a wet wheel's mu
+    // halves. Rapier's default combine rule averages wheel×deck friction,
+    // so the effective patch mu falls with the wheel's side of the pair.
+    for (let k = 0; k < car.wheels.length; k++) {
+      const gK = support.gripPerWheel[k]!;
+      const col = car.wheels[k]!.collider(0);
+      const want = CAR.wheelFriction * gK;
+      if (col && Math.abs(col.friction() - want) > 1e-12) col.setFriction(want);
+    }
+  }
   const { pos, quat } = chassisFrame(car);
   for (let k = 0; k < 4; k++) {
     const wheel = car.wheels[k];
@@ -781,7 +857,14 @@ function jointedStep(world: RAPIER.World, car: Car): WheelSupport {
       { addWork('axle', vdot(imp, lv) + vdot(imp, imp) / (2 * mw)); wheel.applyImpulse(imp, true); }
     }
   }
-  return { grounded: support.grounded, force: support.force };
+  return {
+    grounded: support.grounded,
+    force: support.force,
+    grip: support.grip,
+    gripPerWheel: support.gripPerWheel,
+    slipPerWheel: support.slipPerWheel,
+    contactPerWheel: support.contactPerWheel,
+  };
 }
 
 /**
@@ -790,14 +873,56 @@ function jointedStep(world: RAPIER.World, car: Car): WheelSupport {
  * the horizontal velocity while grounded: F = -m * coeff * g_sim * vhat.
  * Tuned so a 30 cm drop on flat track rolls ~2.5 m in WORLD units.
  */
-export function applyRollingResistance(car: Car, grounded: boolean, coeff: number): void {
+export function applyRollingResistance(
+  car: Car,
+  grounded: boolean,
+  coeff: number,
+  grip?: { grip: number; gripPerWheel: readonly number[]; contactPerWheel?: readonly boolean[] },
+): void {
   if (!grounded || coeff <= 0) return;
   const lv = car.chassis.linvel();
   const hv = v(lv.x, 0, lv.z);
   const l = Math.sqrt(vdot(hv, hv));
   if (l < 0.05) return;
-  const f = car.chassis.mass() * coeff * G_SIM * FIXED_DT;
+  const f = car.chassis.mass() * coeff * G_SIM * FIXED_DT * (grip ? grip.grip : 1);
   { addWork('rr', -f * l + (f * f) / (2 * car.chassis.mass())); car.chassis.applyImpulse(vscale(hv, -f / l), true); }
+  // PER-WHEEL friction, honestly split: each wheel's SHARE of the drag is
+  // scaled by the grip at ITS OWN contact (`gripPerWheel`), so a car
+  // straddling a wet-patch edge drags more on the dry side — the same
+  // tank-steering yaw a real toy gets crossing a slick line. The main
+  // impulse above already carries the mean-grip magnitude, so this term
+  // adds ONLY the yaw moment of the deviations, about the chassis up
+  // axis. Uniform grip (the ONLY state a hazard-free run ever has) makes
+  // every deviation exactly zero and the guard skips — dry stays
+  // bit-identical.
+  if (grip) {
+    const mean = grip.grip;
+    const share = (car.chassis.mass() / 4) * coeff * G_SIM * FIXED_DT;
+    const q = car.chassis.rotation();
+    const quatR = { w: q.w, x: q.x, y: q.y, z: q.z };
+    let tau = v(0, 0, 0);
+    let any = false;
+    for (let k = 0; k < 4; k++) {
+      if (grip.contactPerWheel && !grip.contactPerWheel[k]) continue; // no patch, no share
+      const dg = grip.gripPerWheel[k]! - mean;
+      if (dg === 0) continue;
+      any = true;
+      const r = qrot(quatR, car.attach[k]!);
+      tau = vadd(tau, vcross(r, vscale(hv, (-share * dg) / l)));
+    }
+    if (any) {
+      // YAW component only: the pitch/roll parts of a per-wheel drag offset
+      // belong to the suspension attitude laws, not to this one.
+      const up = qrot(quatR, v(0, 1, 0));
+      const j = vscale(up, vdot(up, tau));
+      const j2 = vdot(j, j);
+      if (j2 > 0) {
+        const Iy = (car.chassis.mass() / 12) * (4 * CAR.halfL * CAR.halfL + 4 * CAR.halfW * CAR.halfW);
+        const wv = car.chassis.angvel();
+        { addWork('rrYaw', vdot(j, wv) + (0.5 * j2) / Iy); car.chassis.applyTorqueImpulse(j, true); }
+      }
+    }
+  }
 }
 
 /** World-space speed of the chassis (sim units). */

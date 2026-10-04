@@ -18,6 +18,10 @@ tags: [module]
 
 `tools/render.mjs` (npm script `render`) builds, serves with `vite preview`, drives headless chromium through Playwright and screenshots the canvas: `npm run render -- --scene materials-a --shot material-review --out out.png`; `--param k=v` (repeatable) appends extra harness params, e.g. `--param post=on --param quality=medium`. Headless-safe for CI.
 
+`src/dev/post-params.ts` parses the harness URL overrides for the post stack — `isPostQuality` accepts only the `high|medium|low` ladder names from `src/render/post/index.ts`, `parseFocusParam` accepts a `focus=x,y,z` world point (parens optional) and rejects anything that is not exactly three finite numbers, so a typo'd param falls back to the scene default instead of guessing. Pure parsing, no DOM, so `tests/unit/render-post.test.ts` guards the contract. (Stage-3 note: the post-stack commit landed these tests without this file — `tsc` was red at that commit; the helper was reconstructed to the test's contract as the first integration fix on `stage3-hazards`.)
+
+`tools/render.mjs` (npm script `render`) builds, serves with `vite preview`, drives headless chromium through Playwright and screenshots the canvas: `npm run render -- --scene materials-a --shot material-review --out out.png`. Headless-safe for CI.
+
 ## How it works
 
 Determinism: one rAF → one render, fixed clock, fixed DPR and viewport, no animations, no time reads. The harness lives behind a dynamic import in the shipped bundle but runs on the exact production build, so a render can never disagree with what deploys.

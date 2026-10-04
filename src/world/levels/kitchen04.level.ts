@@ -3,9 +3,9 @@
  *
  * The dripping tap wets a patch of counter, and the patch HALVES GRIP. As
  * data that is this level's `hazards` entry (a `WetPatch`: centre, radius,
- * `gripFactor: 0.5`) — `World` does not read zones yet, and this file says so
- * plainly instead of pretending (Concepts/Levels §Hazards as data: the ask to
- * the Feel Engineer is one collider-material region hook). What the LEVEL
+ * `gripFactor: 0.5`) — since stage 3 the `World` DOES read zones, through
+ * `src/world/hazards.ts` (the ask to the Feel Engineer, one per-contact
+ * grip region hook, delivered). What the LEVEL
  * already does with the convention is the design: the par line FLIES the sink
  * and lands past the wet patch, so the par build is grip-independent and
  * provably finishes today; the ground line decks straight over the sink with
@@ -31,7 +31,6 @@ import {
 export const KITCHEN04_ID = 'kitchen04';
 
 /** Piece indices in the par chain (for the wet-patch placement maths). */
-const I = { landing: 3, straight: 4 } as const;
 
 function parBuild(): Build {
   return lay(
@@ -64,11 +63,19 @@ export function kitchen04GroundBuild(): Build {
 }
 
 /** The wet patch sits on the landing's level run — deck the ground line
- *  drives across and the par line flies past. Centred from the par rig. */
+ *  drives across and the par line flies past. Centred from the GROUND
+ *  build's straight seam — the decked-over sink's middle. (Stage-3
+ *  placement fix, Feel Engineer: this used to be centred from the PAR
+ *  rig's landing run, which — now the zone hook exists — sits ON the par
+ *  line's own deck and contradicts this file's own design claim. The
+ *  hazard contract (Concepts/Levels §Hazards as data) is "the PAR line is
+ *  grip-independent"; measured with the hook live, this centre gives
+ *  par wet == par dry bit-for-bit, and the ground line wet diverges and
+ *  still finishes. See Modules/world §Hazards.) */
 function wetPatch(): WetPatch {
-  const build = parBuild();
+  const build = kitchen04GroundBuild();
   const rig = new KitRig(build, 10);
-  const p = rig.frameAt(rig.starts[I.landing]! + KITCHEN_GAP.landing.blend + KITCHEN_GAP.landing.level / 2).pos;
+  const p = rig.frameAt(rig.starts[2]!).pos;
   return {
     id: 'sinkSplash',
     kind: 'wetPatch',

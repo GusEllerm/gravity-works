@@ -45,9 +45,11 @@ import {
   type Car,
   type CarVariant,
   type Pose,
+  type WheelSupport,
 } from '../physics/car.ts';
 import { reify, type Build, type PlacedPiece } from '../track/build.ts';
 import { ROLL_COEF } from '../feel/run.ts';
+import { HazardField } from './hazards.ts';
 import { PIECES, type PieceDef } from '../track/pieces.ts';
 import { TRACK_FRICTION } from '../track/material.ts';
 import { transformSocket } from '../track/socket.ts';
@@ -112,7 +114,16 @@ export interface WorldState {
     quat: Quat;
     /** m/s world. */
     speed: number;
+    /** World m/s — the juice hooks' derivation input (landing vy for the
+     *  squash, forward projection for the hazard tell's lead time). */
+    velocity: Vec;
     grounded: boolean;
+    /** Mean deck grip over the last step's wheel contacts (1 = dry; the
+     *  hazard tell's numeric companion — see `src/world/hazards.ts`). */
+    grip: number;
+    /** Largest |lateral slip angle| (rad) across the wheels last step
+     *  (the squeal hook's number; 0 while no wheel is in deck contact). */
+    slip: number;
   };
 }
 
@@ -194,6 +205,11 @@ export class World {
   private readonly stallLimit: number;
   private readonly launchSpeed: number;
   private readonly variant: CarVariant;
+  /** The level's hazard zones (empty for hazard-free levels — the common
+   *  case, and the hash-identical case: no callback is even passed to
+   *  `carStep` then). */
+  private readonly hazards: HazardField;
+  private readonly gripAt?: (contactSimPos: Vec) => number;
 
   private hashValue: number;
   private steps: number;
@@ -257,6 +273,13 @@ export class World {
     }
     this.cup = cup;
     this.floorY = lowest - 0.75;
+
+    // Hazard zones are level data (Concepts/Levels §Hazards as data, ask
+    // #2a): a world-space grip field the car samples per wheel contact.
+    this.hazards = HazardField.fromLevel(level);
+    if (this.hazards.zones.length > 0) {
+      this.gripAt = (p) => this.hazards.factorAt({ x: p.x / SIM_SCALE, y: p.y / SIM_SCALE, z: p.z / SIM_SCALE });
+    }
 
     if (options.visuals ?? true) {
       this.scene = new THREE.Scene();
@@ -335,9 +358,11 @@ export class World {
       }
     }
 
-    // car forces: suspension support, then the one tuned loss term
-    const support = carStep(this.sim, this.car);
-    applyRollingResistance(this.car, support.grounded, this.rollCoef);
+    // car forces: suspension support, then the one tuned loss term.
+    // `support.grip` is the mean hazard grip over the wheel contacts (1 =
+    // dry, exactly, so a hazard-free level rolls bit-for-bit as before).
+    const support = carStep(this.sim, this.car, this.gripAt);
+    applyRollingResistance(this.car, support.grounded, this.rollCoef, support);
 
     // physics
     stepWorld(this.sim);
@@ -347,7 +372,7 @@ export class World {
     if (this.steps % HASH_INTERVAL === 0) this.hashValue = hashBodies(this.hashedBodies, this.hashValue);
     this.observe(support.grounded);
     this.prev = this.current;
-    this.current = this.snapshot(support.grounded);
+    this.current = this.snapshot(support.grounded, support);
   }
 
   /** The latest interpolable snapshot. */
@@ -440,9 +465,10 @@ export class World {
     return v(t.x / SIM_SCALE, t.y / SIM_SCALE, t.z / SIM_SCALE);
   }
 
-  private snapshot(grounded = false): WorldState {
+  private snapshot(grounded = false, support?: WheelSupport): WorldState {
     const t = this.car.chassis.translation();
     const r = this.car.chassis.rotation();
+    const lv = this.car.chassis.linvel();
     return {
       step: this.steps,
       time: this.steps * FIXED_DT,
@@ -451,7 +477,10 @@ export class World {
         pos: v(t.x / SIM_SCALE, t.y / SIM_SCALE, t.z / SIM_SCALE),
         quat: { w: r.w, x: r.x, y: r.y, z: r.z },
         speed: carSpeed(this.car) / SIM_SCALE,
+        velocity: v(lv.x / SIM_SCALE, lv.y / SIM_SCALE, lv.z / SIM_SCALE),
         grounded,
+        grip: support?.grip ?? 1,
+        slip: support ? Math.max(...support.slipPerWheel.map(Math.abs)) : 0,
       },
     };
   }

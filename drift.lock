@@ -1,34 +1,9 @@
 version = 1
 
 [[bindings]]
-doc = "docs/vault/Concepts/Art Bible.md"
-target = "docs/explorations/cars/hero-a.png"
-sig = "1a757ddc3c2831a1"
-
-[[bindings]]
-doc = "docs/vault/Concepts/Art Bible.md"
-target = "src/dev/scenes/cars.ts"
-sig = "482eff61dd1440fc"
-
-[[bindings]]
-doc = "docs/vault/Concepts/Art Bible.md"
-target = "src/dev/scenes/kitchen-b.ts"
-sig = "9f4bce417acc7d9b"
-
-[[bindings]]
-doc = "docs/vault/Concepts/Art Bible.md"
-target = "src/render/materials.ts"
-sig = "76615bb4918de935"
-
-[[bindings]]
-doc = "docs/vault/Concepts/Feel.md"
-target = "src/physics/sim.ts"
-sig = "09c7f3eef715d605"
-
-[[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "docs/vault/Modules/feel.md"
-sig = "ccfbe66271494028"
+sig = "e4e17cd7588ac713"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -39,6 +14,11 @@ sig = "c1d2af0be000e3d8"
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/replay/replay.ts"
 sig = "358c8994ef168677"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Levels.md"
+target = "src/world/hazards.ts"
+sig = "c574d75a051da4fc"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -63,37 +43,7 @@ sig = "c8117bf73c6d5eb3"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "tests/unit/kitchen-levels.test.ts"
-sig = "aba95ef42e6aa53d"
-
-[[bindings]]
-doc = "docs/vault/Home.md"
-target = "src/boot.ts"
-sig = "eb6213d912d3dac9"
-
-[[bindings]]
-doc = "docs/vault/Modules/camera.md"
-target = "src/boot.ts"
-sig = "c766c6cd0e8c6917"
-
-[[bindings]]
-doc = "docs/vault/Modules/camera.md"
-target = "src/camera/run-camera.ts"
-sig = "710213edb443a6b7"
-
-[[bindings]]
-doc = "docs/vault/Modules/camera.md"
-target = "src/feel/kittrack.ts"
-sig = "4f428e09ac0f3887"
-
-[[bindings]]
-doc = "docs/vault/Modules/camera.md"
-target = "src/track/spline.ts"
-sig = "94a2ee27e5931879"
-
-[[bindings]]
-doc = "docs/vault/Modules/camera.md"
-target = "tests/unit/camera.test.ts"
-sig = "e8778d9e1f60e91d"
+sig = "bd7f07f5e846d4a4"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -108,7 +58,7 @@ sig = "120e535ceaaff91b"
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
 target = "src/dev/post-params.ts"
-sig = "e33ff83e96cad309"
+sig = "e8d58c6ce45588bf"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -162,223 +112,23 @@ sig = "777f9bdbd60fe546"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
+target = "src/render/post/index.ts"
+sig = "4a469790ac8350aa"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
 target = "tests/e2e/harness.spec.ts"
 sig = "5bb422cad39806e7"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
-target = "tools/render.mjs"
-sig = "5455fbef64c07ef3"
-
-[[bindings]]
-doc = "docs/vault/Modules/feel.md"
-target = "src/camera/run-camera.ts"
-sig = "710213edb443a6b7"
-
-[[bindings]]
-doc = "docs/vault/Modules/feel.md"
-target = "src/feel/feeltrack.ts"
-sig = "cbba72af04a17c24"
-
-[[bindings]]
-doc = "docs/vault/Modules/feel.md"
-target = "src/feel/kittrack.ts"
-sig = "4f428e09ac0f3887"
-
-[[bindings]]
-doc = "docs/vault/Modules/feel.md"
-target = "src/feel/run.ts"
-sig = "9b76427e85ace069"
-
-[[bindings]]
-doc = "docs/vault/Modules/feel.md"
-target = "src/physics/car.ts"
-sig = "a075ca404a95bcab"
-
-[[bindings]]
-doc = "docs/vault/Modules/feel.md"
-target = "src/physics/sim.ts"
-sig = "09c7f3eef715d605"
-
-[[bindings]]
-doc = "docs/vault/Modules/feel.md"
-target = "src/track/material.ts"
-sig = "c4f0e21791027cfa"
-
-[[bindings]]
-doc = "docs/vault/Modules/feel.md"
-target = "src/world/levels/feeltrack.level.ts"
-sig = "fb06ede3e0b45cba"
-
-[[bindings]]
-doc = "docs/vault/Modules/feel.md"
-target = "tests/unit/ablation.test.ts"
-sig = "0606c89252f3a2d3"
-
-[[bindings]]
-doc = "docs/vault/Modules/feel.md"
-target = "tests/unit/camera.test.ts"
-sig = "e8778d9e1f60e91d"
-
-[[bindings]]
-doc = "docs/vault/Modules/feel.md"
-target = "tests/unit/feel.test.ts"
-sig = "6e0897db4a305a81"
-
-[[bindings]]
-doc = "docs/vault/Modules/feel.md"
-target = "tests/unit/feeltrack-level.test.ts"
-sig = "76aa13d75bc81d94"
-
-[[bindings]]
-doc = "docs/vault/Modules/feel.md"
-target = "tools/feel.mjs"
-sig = "4c45526e4182ba0a"
-
-[[bindings]]
-doc = "docs/vault/Modules/physics.md"
-target = "src/physics/car.ts"
-sig = "a075ca404a95bcab"
-
-[[bindings]]
-doc = "docs/vault/Modules/physics.md"
-target = "src/physics/sim.ts"
-sig = "09c7f3eef715d605"
-
-[[bindings]]
-doc = "docs/vault/Modules/physics.md"
-target = "tests/unit/ablation.test.ts"
-sig = "0606c89252f3a2d3"
-
-[[bindings]]
-doc = "docs/vault/Modules/physics.md"
-target = "tools/feel.mjs"
-sig = "4c45526e4182ba0a"
-
-[[bindings]]
-doc = "docs/vault/Modules/render.md"
-target = "src/dev/scenes/cars.ts"
-sig = "482eff61dd1440fc"
-
-[[bindings]]
-doc = "docs/vault/Modules/render.md"
-target = "src/dev/scenes/kitchen-a.ts"
-sig = "b3ffed4b20b94135"
-
-[[bindings]]
-doc = "docs/vault/Modules/render.md"
-target = "src/dev/scenes/kitchen-b.ts"
-sig = "9f4bce417acc7d9b"
-
-[[bindings]]
-doc = "docs/vault/Modules/render.md"
-target = "src/dev/scenes/kitchen-c.ts"
-sig = "6076250d77860d77"
-
-[[bindings]]
-doc = "docs/vault/Modules/render.md"
-target = "src/dev/scenes/material-ramp.ts"
-sig = "0b8956e4fdc50db2"
-
-[[bindings]]
-doc = "docs/vault/Modules/render.md"
-target = "src/render/film.ts"
-sig = "2eb775c4288f5c26"
-
-[[bindings]]
-doc = "docs/vault/Modules/render.md"
-target = "src/render/geometry.ts"
-sig = "0e4e78212a50e506"
-
-[[bindings]]
-doc = "docs/vault/Modules/render.md"
-target = "src/render/lighting.ts"
-sig = "0f44d434a7edb272"
-
-[[bindings]]
-doc = "docs/vault/Modules/render.md"
-target = "src/render/materials.ts"
-sig = "76615bb4918de935"
-
-[[bindings]]
-doc = "docs/vault/Modules/render.md"
-target = "src/render/tokens.ts"
-sig = "23049e685bb54f7b"
-
-[[bindings]]
-doc = "docs/vault/Modules/render.md"
-target = "src/render/toon-material.ts"
-sig = "70ac714cea9ffc13"
-
-[[bindings]]
-doc = "docs/vault/Modules/render.md"
-target = "tests/unit/render-materials.test.ts"
-sig = "7b31151e38510ae3"
-
-[[bindings]]
-doc = "docs/vault/Modules/render.md"
 target = "tests/unit/render-post.test.ts"
 sig = "f88a45cfb6aaf777"
 
 [[bindings]]
-doc = "docs/vault/Modules/render.md"
-target = "tests/unit/tokens.test.ts"
-sig = "0f065f90d47289b6"
-
-[[bindings]]
-doc = "docs/vault/Modules/replay.md"
-target = "src/boot.ts"
-sig = "94b6a778e5e3a9ad"
-
-[[bindings]]
-doc = "docs/vault/Modules/replay.md"
-target = "src/replay/replay.ts"
-sig = "358c8994ef168677"
-
-[[bindings]]
-doc = "docs/vault/Modules/replay.md"
-target = "tests/e2e/replay.spec.ts"
-sig = "3d3537c9c8b3f35a"
-
-[[bindings]]
-doc = "docs/vault/Modules/replay.md"
-target = "tests/unit/replay.test.ts"
-sig = "c55f143b9eaa05bc"
-
-[[bindings]]
-doc = "docs/vault/Modules/save.md"
-target = "src/boot.ts"
-sig = "94b6a778e5e3a9ad"
-
-[[bindings]]
-doc = "docs/vault/Modules/save.md"
-target = "src/save/save.ts"
-sig = "db2fa327595baa14"
-
-[[bindings]]
-doc = "docs/vault/Modules/save.md"
-target = "tests/unit/save.test.ts"
-sig = "a95cd4732e132a95"
-
-[[bindings]]
-doc = "docs/vault/Modules/share.md"
-target = "src/boot.ts"
-sig = "94b6a778e5e3a9ad"
-
-[[bindings]]
-doc = "docs/vault/Modules/share.md"
-target = "src/share/share.ts"
-sig = "fc117b5b67ee7421"
-
-[[bindings]]
-doc = "docs/vault/Modules/share.md"
-target = "tests/e2e/replay.spec.ts"
-sig = "3d3537c9c8b3f35a"
-
-[[bindings]]
-doc = "docs/vault/Modules/share.md"
-target = "tests/unit/share.test.ts"
-sig = "4027748e1e9f62a9"
+doc = "docs/vault/Modules/dev.md"
+target = "tools/render.mjs"
+sig = "5455fbef64c07ef3"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -436,94 +186,19 @@ target = "tests/unit/boot.test.ts"
 sig = "7dbf9bb0d7da5a40"
 
 [[bindings]]
-doc = "docs/vault/Modules/track.md"
-target = "src/dev/scenes/trackkit.ts"
-sig = "4fe23bf6f5ca2b6b"
-
-[[bindings]]
-doc = "docs/vault/Modules/track.md"
-target = "src/feel/kittrack.ts"
-sig = "4f428e09ac0f3887"
-
-[[bindings]]
-doc = "docs/vault/Modules/track.md"
-target = "src/physics/sim.ts"
-sig = "800726337fe0db86"
-
-[[bindings]]
-doc = "docs/vault/Modules/track.md"
-target = "src/track/build.ts"
-sig = "f8885ffd9d600d4d"
-
-[[bindings]]
-doc = "docs/vault/Modules/track.md"
-target = "src/track/cross-section.ts"
-sig = "8f79e5fc5faffae7"
-
-[[bindings]]
-doc = "docs/vault/Modules/track.md"
-target = "src/track/material.ts"
-sig = "c4f0e21791027cfa"
-
-[[bindings]]
-doc = "docs/vault/Modules/track.md"
-target = "src/track/pieces.ts"
-sig = "94460e820e031546"
-
-[[bindings]]
-doc = "docs/vault/Modules/track.md"
-target = "src/track/snap.ts"
-sig = "92cf24ddcf9e37f8"
-
-[[bindings]]
-doc = "docs/vault/Modules/track.md"
-target = "src/track/socket.ts"
-sig = "e83f876461cb13e5"
-
-[[bindings]]
-doc = "docs/vault/Modules/track.md"
-target = "src/track/spline.ts"
-sig = "94a2ee27e5931879"
-
-[[bindings]]
-doc = "docs/vault/Modules/track.md"
-target = "src/world/world.ts"
-sig = "dd0a82cd8dfb59fb"
-
-[[bindings]]
-doc = "docs/vault/Modules/track.md"
-target = "tests/unit/track-rolling.test.ts"
-sig = "39bbfa56d8e2a4d0"
-
-[[bindings]]
-doc = "docs/vault/Modules/track.md"
-target = "tests/unit/track.test.ts"
-sig = "4e0fc998b5b96411"
-
-[[bindings]]
-doc = "docs/vault/Modules/ui.md"
-target = "src/boot.ts"
-sig = "94b6a778e5e3a9ad"
-
-[[bindings]]
-doc = "docs/vault/Modules/ui.md"
-target = "src/ui/builder.ts"
-sig = "315df5f7e3656d5a"
-
-[[bindings]]
-doc = "docs/vault/Modules/ui.md"
-target = "tests/e2e/builder.spec.ts"
-sig = "6c8fdecd2fdc7243"
-
-[[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "docs/vault/Modules/replay.md"
-sig = "83468ac9032fcf27"
+sig = "2dc0fc06f1637093"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "scripts/gen-pars.mjs"
+sig = "c1d2af0be000e3d8"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/boot.ts"
-sig = "94b6a778e5e3a9ad"
+sig = "c766c6cd0e8c6917"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -533,12 +208,12 @@ sig = "cbba72af04a17c24"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/feel/kittrack.ts"
-sig = "4f428e09ac0f3887"
+sig = "23d6349a19a9619e"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/physics/car.ts"
-sig = "a075ca404a95bcab"
+sig = "371ef988b99714db"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -547,8 +222,13 @@ sig = "c4f0e21791027cfa"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
+target = "src/world/hazards.ts"
+sig = "c574d75a051da4fc"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
 target = "src/world/level.ts"
-sig = "19d3e70488480f5e"
+sig = "d9b324167989351e"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -557,8 +237,18 @@ sig = "fb06ede3e0b45cba"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
+target = "src/world/pars.json"
+sig = "c8117bf73c6d5eb3"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "src/world/stars.ts"
+sig = "6178c7e423d10226"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
 target = "src/world/world.ts"
-sig = "dd0a82cd8dfb59fb"
+sig = "d2bf3182aeb37c64"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -567,45 +257,20 @@ sig = "76aa13d75bc81d94"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
+target = "tests/unit/juice.test.ts"
+sig = "77db69ce72487675"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
 target = "tests/unit/replay.test.ts"
 sig = "c55f143b9eaa05bc"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
+target = "tests/unit/stars.test.ts"
+sig = "b50f641ba3dc6dc1"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
 target = "tests/unit/world.test.ts"
 sig = "8917cdf1c38db74e"
-
-[[bindings]]
-doc = "docs/vault/Reference/Canonical Cameras.md"
-target = "src/dev/cameras.ts"
-sig = "9512fc975c9378c7"
-
-[[bindings]]
-doc = "docs/vault/Reference/Level Ladder.md"
-target = "src/boot.ts"
-sig = "c766c6cd0e8c6917"
-
-[[bindings]]
-doc = "docs/vault/Reference/Level Ladder.md"
-target = "src/feel/feeltrack.ts"
-sig = "cbba72af04a17c24"
-
-[[bindings]]
-doc = "docs/vault/Reference/Level Ladder.md"
-target = "src/replay/replay.ts"
-sig = "358c8994ef168677"
-
-[[bindings]]
-doc = "docs/vault/Reference/Level Ladder.md"
-target = "src/world/levels/feeltrack.level.ts"
-sig = "fb06ede3e0b45cba"
-
-[[bindings]]
-doc = "docs/vault/Reference/Level Ladder.md"
-target = "tests/unit/kitchen-levels.test.ts"
-sig = "aba95ef42e6aa53d"
-
-[[bindings]]
-doc = "docs/vault/Reference/Performance Baselines.md"
-target = "tests/e2e/perf.spec.ts"
-sig = "3ca50b308a93f143"

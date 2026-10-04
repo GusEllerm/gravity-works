@@ -12,7 +12,7 @@ tags: [module]
 
 `src/feel/kittrack.ts` — `KitRig` — turns a `Build` into a headless world: one merged collider per piece, the arc-indexed centreline (`railPointAt` / `frameAt` / `poseAt` — also the run camera's source, see [[camera]]) and the collision-group discipline explained below.
 
-`src/feel/run.ts` runs those rigs headless — no rendering, no DOM — so it behaves identically under Vitest (node), `tools/feel.mjs` and later the browser: `simulate(rig, opts)` steps the fixed 120 Hz world with one car and returns a `RunResult` (time to finish, peak speed, apex speed vs theoretical minimum, landing impulse, roll distance, FNV-1a state hash); `feelTrackRun(variant)`, `rollRun(variant)`, `rampRollRun(variant)`, `loopTry(variant, radius, height, coef)`, `loopThreshold(variant, radius, opts)` (true bracketed bisection) and `loopGateWings` (probes the bracket wings every run) are the canned measurements. Rolling resistance is the constant `ROLL_COEF = 0.12` (the stage-1 `setRollCoef` setter was dead code and is gone; retuned for the kit track — it had been tuned against the broken stage-1 rig).
+`src/feel/run.ts` runs those rigs headless — no rendering, no DOM — so it behaves identically under Vitest (node), `tools/feel.mjs` and later the browser: `simulate(rig, opts)` steps the fixed 120 Hz world with one car and returns a `RunResult` (time to finish, peak speed, apex speed vs theoretical minimum, landing impulse, roll distance, FNV-1a state hash, and — since stage 3 — the mean-lateral-slip pair `slipAngleSum`/`slipSamples`, sampled only AT SPEED (> ~1 m/s world), which is the hazard tests' measuring instrument); `feelTrackRun(variant)`, `rollRun(variant)`, `rampRollRun(variant)`, `loopTry(variant, radius, height, coef)`, `loopThreshold(variant, radius, opts)` (true bracketed bisection) and `loopGateWings` (probes the bracket wings every run) are the canned measurements. `SimOpts.gripAt` is the hazard hook (a sim-space per-contact grip field, see [[hazards]]); omitted or all-1 it is bit-identical to the dry solver — the shipped harness hashes prove it. Rolling resistance is the constant `ROLL_COEF = 0.12` (the stage-1 `setRollCoef` setter was dead code and is gone; retuned for the kit track — it had been tuned against the broken stage-1 rig).
 
 `tools/feel.mjs` (npm script `feel`) runs both car variants from `src/physics/car.ts` through all the measurements and prints the comparison table, including a determinism check (same run twice → equal hashes); `node tools/feel.mjs audit [hR] [arc0 arc1]` prints the per-step energy ledger described in [[physics]] §Solver energy honesty.
 
@@ -47,7 +47,7 @@ the loop-gate audit and the SIM_SCALE velocity-mapping fix:
 |---|---|---|
 | roll from 0.3 m drop-ramp (§7.1) | **2.47 m** — target 2.5 m MET | 2.47 m ✓ |
 | feel-track completion | **completes, 3.31 s** (world replay finishes 3.01 s) | 3.31 s ✓ |
-| min loop height / radius, honest gate | **2.30 R** — bracketed bisect on the friction-aware loop rig at shipped `ROLL_COEF`, band [2.25, 2.75] R asserted (`LOOP_BAND_OVER_R`); no solver-made ceiling — the audited car holds the ring through 7 R | 2.30 R ✓ (identical) |
+| min loop height / radius, honest gate | **2.30 R** — bracketed bisect on the friction-aware loop rig at shipped `ROLL_COEF`, band [2.25, 2.75] R asserted (`LOOP_BAND_OVER_R`); no solver-made ceiling — the audited car holds the ring through 7 R; the window's two ends (floor physical, no top — the droop tether is the modelled up-stop) are documented in [[physics]] §speed window | 2.30 R ✓ (identical) |
 | apex speed / floor | 1.08 / 0.99 m/s (1.09×) | same ✓ |
 | peak speed | 3.00 m/s | 3.00 m/s ✓ |
 | landing impulse across the gap jump | **0.061 N·s** after a real ~0.2 s flight | same ✓ |
@@ -197,8 +197,13 @@ Findings that cost real debugging and must not be re-learned:
   (5 mm stick-slip → visible drift on straights) and the cache rescaled
   arc by the requested-vs-true spacing ratio (a drift GROWING along the
   track, ~40% near the feel track’s x = −1). `rail()` now reports TRUE
-  spacing, `railPointAt` interpolates, and `nearestArcInfo` returns the
-  distance so the gate can refuse to trust the projection it computes.
+  spacing, `nearestArcInfo` returns the distance so the gate can refuse to
+  trust the projection it computes — and since stage 3 `railPointAt`
+  evaluates `frameAt(s) + up · RAIL_WHEEL_HEIGHT` DIRECTLY (the linear
+  cache interpolation that replaced the snap still cut the curvature
+  corner at every piece seam — measured 1.8 mm off the frame path AT
+  seams, 10× the smooth stretch; the socket seams are exactly where a run
+  camera shows a velocity hitch). See [[camera]] §Seams.
 - **Banked yaw arcs are the open boundary.** Mid-run yawed arcs (bank/curve
   at 1–1.5 m/s) defeat every pure-raycast lateral model tried — tyre scrub,
   caster trail, weathervane, wall springs — by ploughing or ring-roll. The
@@ -267,9 +272,11 @@ Findings that cost real debugging and must not be re-learned:
 0.4 s speed-scaled lead, 150 ms positional lag, ~350 ms rotational lag aimed
 at the *lead* frame — the turn is begun before the eye arrives. Every filter
 is the step-independent exponential form; guarded by `tests/unit/camera.test.ts`,
-which now pins the straight-line drift regression on the REAL kit rig
-(continuity + arc-faithfulness of `KitRig.railPointAt`), not just the
-analytic rail.
+which pins the straight-line drift regression AND the piece-seam continuity
+probe on the REAL kit rig, and now measures the §7.3 lead gap and the 63 %
+step response on the loop rig's real 4 m run-out rail — not just the
+analytic rail. Stage 3's residual-seam-snap fix lives in `KitRig.railPointAt`
+(evaluate `frameAt` directly; see [[camera]] §Seams).
 
 ### Cross-reference (systems engineer, 2026-10-05)
 

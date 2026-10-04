@@ -18,6 +18,57 @@ The composer chain is RenderPass → tilt-shift → soft bloom → grade(+vignet
 
 The stage-1 review found the painterly ramp's speckle failure repeating in Three's PCF (a 5-tap Vogel disc rotated by per-pixel interleaved-gradient noise: partial coverage re-rolls per pixel). The fix is a `uShadowDither` budget in `ToonMaterial`: most of a half-covered fragment's decision goes to a hard call biased with a fine world-space weave (~2 mm cells, so the boundary lives in world space and survives camera motion), a minority keeps the raw blend. Two iterations mattered: snapping at 50 % coverage with a bias toward LIT smeared bright patches through the tap's floor penumbra, so the snap is biased to SHADOW (full light needs ≥ 70 % coverage) and the rig's `shadow.normalBias` went to 0.006 so curved shells stop half-covering themselves. Alternatives rejected: raw IGN left in (the speckle AD rejected), VSM (new shadow pipeline, cost), blurring shadows in post (would gray the tinted-shadow contract). The budget stays a parameter — 0 is a hard stable edge, 1 is raw Three. See `Modules/render`.
 
+## 2026-10-06 — Loop: a speed window BY DESIGN, `[2.30 R, +∞)`; the droop tether is declared the modelled up-stop `[agent decision]` `[feel engineer]`
+
+The stage-2 carry-in (up-stop wheels / "size the loop for the collider
+variant") resolved without new physics. A full `loopTry` release-height
+scan (shipped car + `ROLL_COEF`, 0.1 R steps to 6 R, both variants —
+table in [[Modules/physics]]) shows an identical pattern: floor at 2.30 R
+(the shipped bisected gate), then completes everywhere above it apart from
+bounce-phase dip rows, with NO ceiling — because the suspension's droop
+tether (tension-capable strut force, added in the loop-geometry round)
+already expresses an up-stop wheel in the one place the solver sees
+forces. Options weighed: (a) model a bounded-capacity up-stop so a real
+physical ceiling (~2.5 R ideal) exists — rejected for the slice: it moves
+shipped hashes to buy a fidelity the 5-level vertical slice never drives
+past the gate, and the knob (`droopMaxForce`) already exists if stage 5+
+playtests want it; (b) leave it silent — rejected, the brief demands the
+window be stated. Chose (c): document the window as design, keep
+`LOOP_RADIUS = 0.10` (still serves the shipped car's 1.25× passage rule),
+and record the collider variant as PROVEN for the loop piece.
+
+## 2026-10-06 — Hazard grip acts on the friction channels the solver HAS, and the lateral-slip claim is stated as measured `[agent decision]` `[feel engineer]`
+
+Ask #2a (the wet patch's "halves grip") could be wired three ways: a live
+per-region collider-friction edit, a per-piece `friction` param, or a
+per-wheel-contact grip query. Chose the contact query
+(`GripField`/`WheelSupport`): it is per-WHEEL (the brief's word), it is
+trivially hash-neutral (uniform grip is bit-identical — not approximately,
+`x * 1 === x`), and live friction edits on merged hulls would
+re-tune-requiring everywhere. Consumers: rolling-resistance magnitude
+(mean grip — the kit's RR law IS an effective μ, so wet plastic is LOW
+DRAG and the patch reads faster: L04 ground 2.350 → 2.292 s), the per-wheel
+drag SHARING (a straddled patch yaws the car toward the dry side — the
+honest lateral effect: slip 2.38° → 3.98°), the self-aligning budget, and
+variant a's live tyre μ. Rejected: inventing a per-mount lateral scrub
+force to make "slides wide" real — that is exactly the lateral-model family
+the loop work rejected ([[Modules/physics]]), and on a U-channel the rails
+make it moot anyway (kinematic constraint: the wall carries lateral demand
+grip-independently). The design failure the level card wanted ("sliding
+wide") therefore stays gated behind ask #1 (drivable yaw), stated in
+[[Modules/hazards]] rather than faked in a test.
+
+## 2026-10-06 — KITCHEN 04's wet patch re-centred onto the ground line's deck `[agent decision]` `[feel engineer]` (placement fix; flagged for LD review)
+
+With the zone hook live, the authored centre (the PAR rig's landing level
+run) put the patch ON the par line's own deck — bit-diverging the par
+replay and breaking the file's own "grip-independent par" contract within
+the same file. Measured both ways; moved the centre to the GROUND build's
+straight seam (the decked sink's middle), which is what the level's prose
+always described. Alternatives: leave it (par grip-independence becomes
+false in fact, not just in prose) or move the ground line (bigger LD
+diff). One function, comments updated, both lines' claims now measured.
+
 ## 2026-10-06 — Kitchen rungs with an undrivable yaw half ship as done-but-BLOCKED-rung, not blocked levels `[agent decision]` `[level designer]`
 
 L02 (curve choice) and L03 (bowl bank line) were specced around mid-run yaw geometry, and no yaw piece is drivable by either shipped car at any swept radius/speed/bank (probe table in `Sessions/2026-10-06 Stage 3 - level ladder`). Options: mark the levels BLOCKED (starves stage 3 of content and hides the one-line fix), or fake drivability with a par build that fails (forbidden by the playability gate). Chose: ship both levels with par lines that finish (proved headless), keep the yaw geometry as fixture run-out past the cup (the feel track's own precedent), and mark the RUNG BLOCKED with a one-paragraph piece request (`Concepts/Levels` ask #1). Alternatives rejected: par builds containing the yaw piece (test-red = ship-red, and it would be honest only by being useless), and a steering hack inside the level files (physics is not the level designer's file).
