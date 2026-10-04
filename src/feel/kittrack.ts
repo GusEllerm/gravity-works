@@ -170,16 +170,21 @@ export class KitRig {
     return { arc: (bestI + bestT) * h, dist: Math.sqrt(bestD2) };
   }
 
-  /** Rail point at world-arc `s` — LINEARLY INTERPOLATED between the true-
-   *  spacing samples. Snapping to the nearest sample (the old round()) made
-   *  the camera position stick-slip by up to half a sample on straights and
-   *  put it at arc round(s/h)*h_true != s wherever h did not divide the
-   *  build length — the arc-length re-projection drift of the run camera. */
-  railPointAt(s: number, spacing = 0.01): THREE.Vector3 {
-    const { points, spacing: h } = this.rail(spacing);
-    const u = THREE.MathUtils.clamp(s / h, 0, points.length - 1);
-    const i = Math.min(Math.floor(u), points.length - 2);
-    return points[i]!.clone().lerp(points[i + 1]!, u - i);
+  /** Rail point at world-arc `s` — computed from `frameAt(s)` DIRECTLY.
+   *  History: v1 snapped to the nearest sample (stick-slip), v2 interpolated
+   *  the cache linearly (fixed the straight-line drift but left a RESIDUAL
+   *  SNAP AT PIECE SEAMS: the chord between cached 1 cm samples cut the
+   *  corner at every curvature discontinuity — measured up to 1.8 mm off
+   *  the frame-derived path AT seams on the feel track, ~10× the smooth
+   *  stretch, and the derivative kink reads as a camera velocity hitch.
+   *  The direct evaluation is arc-faithful BY CONSTRUCTION (it is the same
+   *  function the metrics and the camera target use), continuous across
+   *  sockets (fitSocket makes the splines C0 and the tangents agree), and
+   *  costs one spline lookup per call — the cache stays where it is needed
+   *  for the O(n) projection scan in nearestArcInfo. */
+  railPointAt(s: number): THREE.Vector3 {
+    const f = this.frameAt(s);
+    return f.pos.clone().addScaledVector(f.up, RAIL_WHEEL_HEIGHT);
   }
 }
 

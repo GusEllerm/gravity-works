@@ -197,8 +197,13 @@ Findings that cost real debugging and must not be re-learned:
   (5 mm stick-slip → visible drift on straights) and the cache rescaled
   arc by the requested-vs-true spacing ratio (a drift GROWING along the
   track, ~40% near the feel track’s x = −1). `rail()` now reports TRUE
-  spacing, `railPointAt` interpolates, and `nearestArcInfo` returns the
-  distance so the gate can refuse to trust the projection it computes.
+  spacing, `nearestArcInfo` returns the distance so the gate can refuse to
+  trust the projection it computes — and since stage 3 `railPointAt`
+  evaluates `frameAt(s) + up · RAIL_WHEEL_HEIGHT` DIRECTLY (the linear
+  cache interpolation that replaced the snap still cut the curvature
+  corner at every piece seam — measured 1.8 mm off the frame path AT
+  seams, 10× the smooth stretch; the socket seams are exactly where a run
+  camera shows a velocity hitch). See [[camera]] §Seams.
 - **Banked yaw arcs are the open boundary.** Mid-run yawed arcs (bank/curve
   at 1–1.5 m/s) defeat every pure-raycast lateral model tried — tyre scrub,
   caster trail, weathervane, wall springs — by ploughing or ring-roll. The
@@ -267,9 +272,11 @@ Findings that cost real debugging and must not be re-learned:
 0.4 s speed-scaled lead, 150 ms positional lag, ~350 ms rotational lag aimed
 at the *lead* frame — the turn is begun before the eye arrives. Every filter
 is the step-independent exponential form; guarded by `tests/unit/camera.test.ts`,
-which now pins the straight-line drift regression on the REAL kit rig
-(continuity + arc-faithfulness of `KitRig.railPointAt`), not just the
-analytic rail.
+which pins the straight-line drift regression AND the piece-seam continuity
+probe on the REAL kit rig, and now measures the §7.3 lead gap and the 63 %
+step response on the loop rig's real 4 m run-out rail — not just the
+analytic rail. Stage 3's residual-seam-snap fix lives in `KitRig.railPointAt`
+(evaluate `frameAt` directly; see [[camera]] §Seams).
 
 ### Cross-reference (systems engineer, 2026-10-05)
 

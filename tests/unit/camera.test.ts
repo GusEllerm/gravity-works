@@ -8,7 +8,9 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { RunCamera, RUN_CAMERA } from '../../src/camera/run-camera.ts';
 import type { RunCameraSource } from '../../src/camera/run-camera.ts';
-import { feelTrackRig } from '../../src/feel/feeltrack.ts';
+import { feelTrackRig, loopRig, LOOP_RADIUS } from '../../src/feel/feeltrack.ts';
+import { KitRig } from '../../src/feel/kittrack.ts';
+import { KITCHEN04 } from '../../src/world/levels/kitchen04.level.ts';
 import { RAIL_WHEEL_HEIGHT } from '../../src/track/cross-section.ts';
 
 const R = 4; // corner radius of the bend
@@ -121,8 +123,14 @@ describe('KitRig railPointAt (the straight-line camera drift regression)', () =>
   // s to the nearest 1 cm rail sample (5 mm stick-slip per sample step)
   // and the sample cache rescaled arc by the requested-vs-true spacing
   // ratio (a systematic drift growing along the track, ~40% of the arc
-  // near x = -1 on the feel track). Both are fixed in KitRig.rail();
-  // these are the regression tests on the REAL kit rig, which the
+  // near x = -1 on the feel track). v2 (linear cache interpolation) fixed
+  // the drift but left a RESIDUAL SNAP AT PIECE SEAMS — the cache chord
+  // cuts every curvature discontinuity at a socket (measured on this rig:
+  // 1.8 mm off the frame-derived path AT seams, 10x the smooth stretch, a
+  // kink in the derivative = a velocity hitch). v3 evaluates
+  // frameAt(s) + up * RAIL_WHEEL_HEIGHT directly — arc-faithful by
+  // construction; the cache stays for the projection scan only.
+  // These are the regression tests on the REAL kit rig, which the
   // analytic rail above cannot express.
   const rig = feelTrackRig();
 
@@ -146,18 +154,80 @@ describe('KitRig railPointAt (the straight-line camera drift regression)', () =>
     expect(worstJump).toBeLessThan(step * 0.5);      // no stick or slip
   });
 
-  it('railPointAt(s) agrees with frameAt(s) everywhere on the straight', () => {
-    // the spacing-ratio drift made railPointAt lag frameAt by a growing
-    // arc fraction; they must now agree well under a millimetre
+  it('railPointAt(s) IS frameAt(s) + up * RAIL_WHEEL_HEIGHT everywhere', () => {
+    // the v3 identity, probed along the run-out (v1's cache lagged
+    // frameAt by a growing arc fraction; v2 by up to 1.8 mm at seams)
     const s0 = rig.length - 1.5;
     for (let s = s0; s < rig.length - 0.3; s += 0.0137) {
       const f = rig.frameAt(s);
       const p = rig.railPointAt(s);
       const expectY = f.pos.y + RAIL_WHEEL_HEIGHT * f.up.y;
       const expectX = f.pos.x + RAIL_WHEEL_HEIGHT * f.up.x;
-      expect(Math.abs(p.x - expectX)).toBeLessThan(5e-4);
-      expect(Math.abs(p.y - expectY)).toBeLessThan(5e-4);
+      expect(Math.abs(p.x - expectX)).toBeLessThan(1e-12);
+      expect(Math.abs(p.y - expectY)).toBeLessThan(1e-12);
     }
+  });
+});
+
+describe('rail continuity across PIECE SEAMS (the residual snap, stage 3)', () => {
+  // Every socket seam of the two real builds, probed either side at 1 um:
+  // C0 (the gap across the seam is just the arc between the probes) and
+  // C1 (no tangent step — the kink the cache chord used to concentrate at
+  // every seam). Measured floors: gap 2.1 um at 1 um probes, tangent jump
+  // 0.0005 deg.
+  const rigs: readonly [string, KitRig][] = [
+    ['feeltrack', feelTrackRig()],
+    ['kitchen04-par', new KitRig(KITCHEN04.parBuild(), 10)],
+  ];
+  for (const [name, kitRig] of rigs) {
+    it(`${name}: position continuous and tangent C1 across every socket`, () => {
+      const e = 1e-6;
+      for (const s of kitRig.starts.slice(1)) {
+        const gap = kitRig.railPointAt(s + e).distanceTo(kitRig.railPointAt(s - e));
+        expect(gap).toBeLessThanOrEqual(2.5 * e);
+        const ta = kitRig.frameAt(s - e).tangent.clone().normalize();
+        const tb = kitRig.frameAt(s + e).tangent.clone().normalize();
+        const ang = (Math.acos(Math.min(1, Math.max(-1, ta.dot(tb)))) * 180) / Math.PI;
+        expect(ang).toBeLessThan(0.01);
+        const ua = kitRig.frameAt(s - e).up;
+        const ub = kitRig.frameAt(s + e).up;
+        const aup = (Math.acos(Math.min(1, Math.max(-1, ua.dot(ub)))) * 180) / Math.PI;
+        expect(aup).toBeLessThan(0.01);
+      }
+    });
+  }
+});
+
+describe('§7.3 lead/lag measured on a REAL kit rail (loop-rig run-out)', () => {
+  // The analytic-rail tests pin the filter constants; this drives RunCamera
+  // over loopRig's 4 m kit run-out — a real KitRig source with real spline
+  // frames — and measures the settled lead gap and the 63 % step response
+  // on the geometry cars actually run.
+  const rig = loopRig(2.4 * LOOP_RADIUS, LOOP_RADIUS);
+  const flat0 = rig.marks.loopEnd! + 0.6; // on the run-out straight
+
+  it('settles v * (LEAD_TIME - POS_LAG) ahead of a constant-speed car', () => {
+    const cam = new RunCamera(rig, flat0);
+    const v = 2;
+    const t0 = (flat0 + 0.2) / v;
+    for (let i = 0; i < 300; i++) cam.update(DT, Math.min(v * ((i + 1) * DT + t0), rig.length - 0.5), v);
+    const carArc = Math.min(v * (300 * DT + t0), rig.length - 0.5);
+    expect(cam.railArc - carArc).toBeCloseTo(v * (RUN_CAMERA.LEAD_TIME - RUN_CAMERA.POS_LAG), 2);
+  });
+
+  it('step response crosses 63 % at tau = POS_LAG on the real rail', () => {
+    const cam = new RunCamera(rig, flat0);
+    const before = cam.railArc;
+    let crossed = -1;
+    for (let i = 0; i < 120; i++) {
+      cam.update(DT, flat0 + 1, 0);
+      if (crossed < 0 && cam.railArc - before > 1 - Math.exp(-1)) crossed = (i + 1) * DT;
+    }
+    expect(crossed).toBeGreaterThan(0);
+    // detection quantises to the 120 Hz sample grid: the true crossing
+    // lies in [tau, tau + dt) — assert the bracket, not a rounded decimal
+    expect(crossed).toBeGreaterThanOrEqual(RUN_CAMERA.POS_LAG - DT);
+    expect(crossed).toBeLessThan(RUN_CAMERA.POS_LAG + 2 * DT);
   });
 });
 

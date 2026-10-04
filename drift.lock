@@ -28,7 +28,7 @@ sig = "09c7f3eef715d605"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "docs/vault/Modules/feel.md"
-sig = "374751eafd291ee4"
+sig = "22a9b3298fd1ac3e"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -78,7 +78,7 @@ sig = "710213edb443a6b7"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/feel/kittrack.ts"
-sig = "4f428e09ac0f3887"
+sig = "23d6349a19a9619e"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -88,7 +88,7 @@ sig = "94a2ee27e5931879"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/unit/camera.test.ts"
-sig = "e8778d9e1f60e91d"
+sig = "4b534f858e55f855"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -183,7 +183,7 @@ sig = "cbba72af04a17c24"
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/feel/kittrack.ts"
-sig = "4f428e09ac0f3887"
+sig = "23d6349a19a9619e"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
@@ -218,7 +218,7 @@ sig = "0606c89252f3a2d3"
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "tests/unit/camera.test.ts"
-sig = "e8778d9e1f60e91d"
+sig = "4b534f858e55f855"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
@@ -443,7 +443,7 @@ sig = "4fe23bf6f5ca2b6b"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "src/feel/kittrack.ts"
-sig = "4f428e09ac0f3887"
+sig = "23d6349a19a9619e"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -533,7 +533,7 @@ sig = "cbba72af04a17c24"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/feel/kittrack.ts"
-sig = "4f428e09ac0f3887"
+sig = "23d6349a19a9619e"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"

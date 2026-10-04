@@ -36,8 +36,28 @@ car, and the test asserts that formula rather than a hand-waved gap.
 The §7.3 "camera drifts sideways on straights" bug lived in the SOURCE, not
 the filter: `railPointAt` used to snap `s` to the nearest 1 cm cache sample
 (5 mm stick-slip) and rescale arc by the requested-vs-true spacing ratio (a
-drift growing along the track). `KitRig.rail()` reports TRUE spacing and
-`railPointAt` interpolates — see [[feel]] (rail-projection honesty) and
+drift growing along the track). `KitRig.rail()` reports TRUE spacing (the
+cache now serves only the `nearestArcInfo` projection scan), and — stage 3 —
+`railPointAt` evaluates `frameAt(s) + up · RAIL_WHEEL_HEIGHT` **directly**.
+
+## Seams (stage 3: the residual snap, measured out)
+
+Interpolating the cache linearly fixed the drift but cut every piece
+SOCKET's curvature discontinuity with a 1 cm chord: measured on the feel
+track, `railPointAt` sat up to **1.8 mm off the frame-derived path AT
+seams** (≈10× the smooth stretch, peaking at the gapLip/landing junctions)
+— positionally small, but a kink in the derivative exactly where a run
+camera reads a velocity hitch. Direct evaluation kills it by construction:
+the rail IS `frameAt`, `fitSocket` makes the chain C0 with matching socket
+tangents, so the rail is continuous and C1 across every socket — asserted
+probe-by-probe at 1 µm across all seams of the feel track and the KITCHEN
+04 par build (`tests/unit/camera.test.ts`; measured floors: seam gap 2.1 µm
+at 1 µm probes, tangent/up jump 0.0005°). The §7.3 numbers are now also
+measured end-to-end on a REAL kit rail (the loop rig's 4 m run-out): the
+settled lead gap equals `v·(LEAD_TIME − POS_LAG)` and the step response
+crosses 63 % within one sample of `POS_LAG`.
+
+See [[feel]] (rail-projection honesty) and
 `TrackSpline.railPoints(n, wheelHeight)` for the analytic rail.
 
 ## Integration status (honest)
@@ -53,9 +73,11 @@ not.
 
 `tests/unit/camera.test.ts` — five timing tests on an analytic rail (lead
 distance, step response with tau = 150 ms, rotation lags rotation aimed at the
-lead frame, determinism of the filter over an input sequence) plus the
+lead frame, determinism of the filter over an input sequence), the
 straight-line drift regression on the REAL kit rig (`KitRig.railPointAt`
-continuity + arc-faithfulness), which the analytic rail cannot express.
+continuity + the `frameAt + up·h` identity to 1e-12), the seam-continuity
+probe across every socket of two real builds, and the §7.3 lead/63 %
+measurements on the loop rig's real run-out rail.
 
 ## Depends on / used by
 
