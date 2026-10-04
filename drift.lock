@@ -23,7 +23,7 @@ sig = "31477df388547628"
 [[bindings]]
 doc = "docs/vault/Concepts/Feel.md"
 target = "src/physics/sim.ts"
-sig = "dac9bac5b8dc9d53"
+sig = "09c7f3eef715d605"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -98,32 +98,42 @@ sig = "710213edb443a6b7"
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/feel/feeltrack.ts"
-sig = "0c1db472c0b39722"
+sig = "cbba72af04a17c24"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/feel/kittrack.ts"
-sig = "2cf8de387514d7a1"
+sig = "4f428e09ac0f3887"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/feel/run.ts"
-sig = "ad2cf0710f208279"
+sig = "9b76427e85ace069"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/physics/car.ts"
-sig = "d1571e66abdd352e"
+sig = "a075ca404a95bcab"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/physics/sim.ts"
-sig = "dac9bac5b8dc9d53"
+sig = "09c7f3eef715d605"
+
+[[bindings]]
+doc = "docs/vault/Modules/feel.md"
+target = "src/track/material.ts"
+sig = "c4f0e21791027cfa"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/world/levels/feeltrack.level.ts"
-sig = "6d1c5dedc854bcbf"
+sig = "fb06ede3e0b45cba"
+
+[[bindings]]
+doc = "docs/vault/Modules/feel.md"
+target = "tests/unit/ablation.test.ts"
+sig = "0606c89252f3a2d3"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
@@ -133,7 +143,7 @@ sig = "e8778d9e1f60e91d"
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "tests/unit/feel.test.ts"
-sig = "bd1657d5c790372c"
+sig = "6e0897db4a305a81"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
@@ -143,22 +153,27 @@ sig = "76aa13d75bc81d94"
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "tools/feel.mjs"
-sig = "cb0ea186f11d7490"
+sig = "4c45526e4182ba0a"
 
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
 target = "src/physics/car.ts"
-sig = "d1571e66abdd352e"
+sig = "a075ca404a95bcab"
 
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
 target = "src/physics/sim.ts"
-sig = "dac9bac5b8dc9d53"
+sig = "09c7f3eef715d605"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "tests/unit/ablation.test.ts"
+sig = "0606c89252f3a2d3"
 
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
 target = "tools/feel.mjs"
-sig = "cb0ea186f11d7490"
+sig = "4c45526e4182ba0a"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
@@ -302,6 +317,11 @@ sig = "4fe23bf6f5ca2b6b"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
+target = "src/feel/kittrack.ts"
+sig = "4f428e09ac0f3887"
+
+[[bindings]]
+doc = "docs/vault/Modules/track.md"
 target = "src/physics/sim.ts"
 sig = "800726337fe0db86"
 
@@ -314,6 +334,11 @@ sig = "f8885ffd9d600d4d"
 doc = "docs/vault/Modules/track.md"
 target = "src/track/cross-section.ts"
 sig = "8f79e5fc5faffae7"
+
+[[bindings]]
+doc = "docs/vault/Modules/track.md"
+target = "src/track/material.ts"
+sig = "c4f0e21791027cfa"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -334,6 +359,11 @@ sig = "e83f876461cb13e5"
 doc = "docs/vault/Modules/track.md"
 target = "src/track/spline.ts"
 sig = "94a2ee27e5931879"
+
+[[bindings]]
+doc = "docs/vault/Modules/track.md"
+target = "src/world/world.ts"
+sig = "dd0a82cd8dfb59fb"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -373,17 +403,22 @@ sig = "eb6213d912d3dac9"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/feel/feeltrack.ts"
-sig = "0c1db472c0b39722"
+sig = "cbba72af04a17c24"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/feel/kittrack.ts"
-sig = "2cf8de387514d7a1"
+sig = "4f428e09ac0f3887"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/physics/car.ts"
-sig = "d1571e66abdd352e"
+sig = "a075ca404a95bcab"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "src/track/material.ts"
+sig = "c4f0e21791027cfa"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -393,12 +428,12 @@ sig = "19d3e70488480f5e"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/levels/feeltrack.level.ts"
-sig = "6d1c5dedc854bcbf"
+sig = "fb06ede3e0b45cba"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/world.ts"
-sig = "64ca84cc3e5099a1"
+sig = "dd0a82cd8dfb59fb"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"

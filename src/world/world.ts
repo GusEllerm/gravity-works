@@ -49,12 +49,16 @@ import {
 import { reify, type Build, type PlacedPiece } from '../track/build.ts';
 import { ROLL_COEF } from '../feel/run.ts';
 import { PIECES, type PieceDef } from '../track/pieces.ts';
+import { TRACK_FRICTION } from '../track/material.ts';
 import { transformSocket } from '../track/socket.ts';
 import { GLOBAL_TOKENS } from '../render/tokens.ts';
 import type { Level } from './level.ts';
 
-/** Toy-plastic deck friction; same constant the feel rigs' boxes use. */
-export const TRACK_FRICTION = 0.6;
+/** Toy-plastic deck friction: the SHARED constant from
+ * `src/track/material.ts`, imported above — the game and every feel rig
+ * build their colliders with the same rubber (stage-2 review MAJOR: this
+ * file used to export its own 0.6 beside a comment claiming it matched the
+ * rigs' boxes, which no longer exist). */
 /** Explicit track collision group (bit0 member) — never the default all-ones
  * group, which the suspension rays' wheel-exclusion predicate would match and
  * silently filter the deck out of (see docs/vault/Modules/physics.md gotchas).
@@ -92,7 +96,7 @@ export const LAUNCHER_RADIUS = 0.05;
  * own `marks.start`, so every extra centimetre here moves the GAME's release
  * away from the one the METRICS measure. The feel rigs advance along the
  * RIG's arc, which already puts the car's whole wheelbase on the deck, so the
- * two agree to within this 5 cm of a 2.5 m track. */
+ * two agree to within this 2 cm of a 2.5 m track. */
 export const SPAWN_ADVANCE = 0.02;
 
 export type RunStatus = 'idle' | 'running' | 'finished' | 'fell' | 'stalled' | 'timeout';

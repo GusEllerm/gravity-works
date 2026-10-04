@@ -41,6 +41,14 @@ runs in the builder, the renderer and a headless Node replay.
   surface is at section `y = 0`, so the centreline *is* the surface the wheels
   touch. `sectionRings()` is the single place section geometry becomes world
   geometry.
+- `src/track/material.ts` — `TRACK_FRICTION`, the ONE toy-plastic deck
+  friction, imported by both the game world (`src/world/world.ts`) and the
+  feel rigs (`src/feel/kittrack.ts`). It used to be two exported constants
+  with different values (0.6 / 0.05) and a comment claiming they matched —
+  the stage-2 review's MAJOR; 0.05 is the value every published metric was
+  produced with, and nothing physically contacts the deck differently today
+  (the raycast chassis is filtered out of track contacts), so unifying
+  moved no hash.
 - `src/track/pieces.ts` — `PieceDef`, `PIECES`, `PIECE_KINDS`,
   `pieceSpline`, `pieceSegments`, `pieceGeometries`, `applyImpulse`,
   `captureVolume`, `resolveParams`, `defaultParams`, segment sugar

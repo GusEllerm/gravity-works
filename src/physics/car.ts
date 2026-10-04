@@ -115,6 +115,29 @@ export const CAR = {
  *  (sim J) by mechanism WHILE ENABLED (see the session log 2026-10-05 - the
  *  entry-loss finding that pinned the honest threshold). Off costs one
  *  boolean test per impulse. */
+/**
+ * TEST-ONLY crutch-ablation switches (`tests/unit/ablation.test.ts`). These
+ * exist so "is this crutch load-bearing?" is a MEASUREMENT, not folklore —
+ * the stage-2 review's complexity-debt finding: every physics fix cured a
+ * symptom of the previous one and no test would go red if one were deleted.
+ * Defaults are the shipped configuration; every ablation flips ONE term and
+ * the test restores immediately. Never read by anything but the ablation
+ * matrix — reading a default-valued switch changes no float and no hash.
+ */
+export const __ABLATE = {
+  /** Wishbone compliance lead gain (shipped 1.5; the pre-audit law ran 2
+   *  and paid for the rotor mode with a true-rate damper). */
+  wishboneLead: 1.5,
+  /** True-rate rotor damper across the wishbone authority (shipped on). */
+  rotorDamper: true,
+  /** Conjugate (normal-read, normal-pushed) strut damper law (shipped on);
+   *  false = the naive axis-read law the audit named as pump-and-burn. */
+  conjDamper: true,
+  /** Misalignment sanity gate on alignment steering (shipped on); false =
+   *  steer on the mean normal at ANY misalignment. */
+  misalignGate: true,
+};
+
 export const WORK: Record<string, number> & { on?: boolean } = {};
 function addWork(name: string, dke: number): void {
   if (WORK.on) WORK[name] = (WORK[name] ?? 0) + dke;
@@ -261,7 +284,9 @@ export interface WheelSupport {
   force: number;
 }
 
-/** Per-step update. Variant b applies spring/damper forces; a relies on joints. */
+/** Per-step update. Both variants apply spring/damper forces — jointed
+ *  bodies were dropped entirely (see `jointedStep` below); the a/b labels
+ *  here are historical and mean nothing. */
 export function carStep(world: RAPIER.World, car: Car): WheelSupport {
   if (car.variant === 'raycastWheels') return supportStep(world, car);
   return jointedStep(world, car);
@@ -447,8 +472,10 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
     // conjugacy needs force and rate collinear, which is the normal.)
     // Implicit fraction: c*dt/(m+c*dt) cannot overshoot 1.
     const mA = mountMass(car.chassis.mass(), quat, pos, attach, n0);
-    const jd = -vN * mA * (CAR.suspC * FIXED_DT) / (mA + CAR.suspC * FIXED_DT);
-    { addWork('damp', pointDke(jd, vN, mA)); car.chassis.applyImpulseAtPoint(vscale(n0, jd), attach, true); }
+    const dDir = __ABLATE.conjDamper ? n0 : down;
+    const vD = vdot(v3, dDir);
+    const jd = -vD * mA * (CAR.suspC * FIXED_DT) / (mA + CAR.suspC * FIXED_DT);
+    { addWork('damp', pointDke(jd, vD, mA)); car.chassis.applyImpulseAtPoint(vscale(dDir, jd), attach, true); }
     const js = strutImpulse(mN, travel, vN);
     { addWork('strut', pointDke(js, vN, mN)); car.chassis.applyImpulseAtPoint(vscale(n0, js), attach, true); }
     normImpulse += Math.abs(js);
@@ -480,7 +507,7 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
         const pen = CAR.railSlack - toi2; // > 0 once the wheel side passes the wall
         if (pen > 0) {
           // Progressive channel wall: force ramps with PENETRATION over the
-          // look range, not with the (tiny) clearance — measured教训: a
+          // look range, not with the (tiny) clearance — measured lesson: a
           // spring whose full force lands within the 0.35 mm clearance is
           // either too weak to hold the wheel out of the lip (ploughed 25 mm
           // and fell off the bank's inside) or, when replaced by outright
@@ -528,7 +555,7 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
     const nBar = vnorm(deckN);
     const upC = qrot(quat, v(0, 1, 0));
     const err = vcross(upC, nBar); // axis * sin(error)
-    const raw = vscale(vcross(car.deckPrev, nBar), 1.5 / FIXED_DT); // raw frame spin, with lead
+    const raw = vscale(vcross(car.deckPrev, nBar), __ABLATE.wishboneLead / FIXED_DT); // raw frame spin, with lead
     // The deck frame's TRUE rate (no lead). The rate side of the
     // correction below converges toward the LEAD target wDeck — which the
     // pre-audit law set at TWICE the deck rate to hide its own lag. That
@@ -554,7 +581,7 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
     // treads), and steering on it reverse-rotates the car - measured on
     // the loop's upper rise, where an unclamped alignment REVERSED the
     // pitch mid-climb. Below the gate it is exact.
-    const pTerm = em > 1e-6 && em < 0.85 ? vscale(vnorm(err), Math.min(em, 0.35) * 40) : v(0, 0, 0);
+    const pTerm = em > 1e-6 && (__ABLATE.misalignGate ? em < 0.85 : true) ? vscale(vnorm(err), Math.min(em, 0.35) * 40) : v(0, 0, 0);
     // Tensor-correct authority: this chassis's roll inertia is ~4x smaller
     // than its pitch inertia (flat, wide box), so a scalar-I torque law
     // overdrives ROLL ninefold - measured: the roll mode exploded to
@@ -567,7 +594,8 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
     // 0.15/step toward the true deck rate: the rotor damper of the note
     // above; work-negative whenever the car over-rotates, silent when it
     // tracks.
-    const dwW = vadd(vsub(vadd(wDeck, pTerm), wc), vscale(vsub(rawTrue, wc), 0.15));
+    const rotor = __ABLATE.rotorDamper ? vscale(vsub(rawTrue, wc), 0.15) : v(0, 0, 0);
+    const dwW = vadd(vsub(vadd(wDeck, pTerm), wc), rotor);
     const rq = { w: quat.w, x: quat.x, y: quat.y, z: quat.z };
     const inv = { w: rq.w, x: -rq.x, y: -rq.y, z: -rq.z };
     const dwL = qrot(inv, dwW);

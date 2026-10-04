@@ -13,7 +13,7 @@ Measured 2026-10-05 by QA on: **Apple M5 Pro, 20-core integrated GPU, macOS 26.6
 
 ## Measurements
 
-Scene: **feel track** — the real game shell (`/`, placeholder build = the 8-piece kit feel track, plain materials; the post stack does not exist in stage 2, so "post off" is the shipped page itself). Run relaunched at each terminal status to cover ≥5 s of **simulated** time.
+Scene: **feel track** — the real game shell (`/`, placeholder build = the 9-piece kit feel track, plain materials; the post stack does not exist in stage 2, so "post off" is the shipped page itself). Run relaunched at each terminal status to cover ≥5 s of **simulated** time.
 
 | Scene | Mode | frames | median | p95 | mean | max | fps | sim/wall |
 |---|---|---:|---:|---:|---:|---:|---:|---:|

@@ -42,6 +42,7 @@ import {
 } from '../physics/car.ts';
 import {
   DROP_HEIGHT,
+  LOOP_GATE_BRACKET_OVER_R,
   LOOP_RADIUS,
   feelTrackRig,
   flatRig,
@@ -419,15 +420,23 @@ export function rollRun(variant: CarVariant, opts: { coef?: number } = {}): RunR
  * to the loop-bottom deck) for completing a kit loop of radius `radius`.
  * The rig is the steep loop ramp — the least horizontal run, hence the least
  * rolling-resistance budget, between release and loop.
+ *
+ * The predicate "completes at h" is NOT globally monotone (suspension-phase
+ * dips, documented in `Modules/feel.md`) — a bisection on it is only honest
+ * inside a bracket whose wings are asserted by the caller (or by
+ * `loopGateWings` below). The shipped-friction gate brackets at
+ * `LOOP_GATE_BRACKET_OVER_R`: the completion edge the bisection converges to
+ * is the fail->pass boundary INSIDE the bracket, and the wing probes prove
+ * the bracket spans a real edge rather than a dip artifact.
  */
 export function loopThreshold(
   variant: CarVariant,
   radius: number,
-  opts: { coef?: number; iters?: number } = {},
+  opts: { coef?: number; iters?: number; lo?: number; hi?: number } = {},
 ): { height: number; heightOverR: number } {
   const coef = opts.coef ?? ROLL_COEF;
-  let lo = 1.4 * radius;
-  let hi = 4.5 * radius;
+  let lo = opts.lo ?? 1.4 * radius;
+  let hi = opts.hi ?? 4.5 * radius;
   if (!loopTry(variant, radius, hi, coef)) return { height: NaN, heightOverR: NaN };
   for (let i = 0; i < (opts.iters ?? 11); i++) {
     const mid = (lo + hi) / 2;
@@ -435,6 +444,24 @@ export function loopThreshold(
     else lo = mid;
   }
   return { height: hi, heightOverR: hi / radius };
+}
+
+/**
+ * The wing probes of the shipped-friction gate bracket: the low wing must
+ * FAIL and the high wing must COMPLETE (monotone direction: higher release
+ * -> completes). True iff the bracket spans a real completion edge; the
+ * bisected `loopThreshold` value is only meaningful when this holds.
+ */
+export function loopGateWings(
+  variant: CarVariant,
+  radius: number,
+  opts: { coef?: number } = {},
+): { low: boolean; high: boolean } {
+  const coef = opts.coef ?? ROLL_COEF;
+  return {
+    low: loopTry(variant, radius, LOOP_GATE_BRACKET_OVER_R[0] * radius, coef),
+    high: loopTry(variant, radius, LOOP_GATE_BRACKET_OVER_R[1] * radius, coef),
+  };
 }
 
 export function loopTry(variant: CarVariant, radius: number, height: number, coef: number): boolean {

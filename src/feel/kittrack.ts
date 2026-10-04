@@ -15,12 +15,14 @@ import * as THREE from 'three';
 import { RAPIER } from '../physics/sim.ts';
 import { reify, type Build } from '../track/build.ts';
 import { captureVolume } from '../track/pieces.ts';
+import { TRACK_FRICTION } from '../track/material.ts';
 import { RAIL_WHEEL_HEIGHT } from '../track/cross-section.ts';
 import type { TrackFrame, TrackSpline } from '../track/spline.ts';
 import type { Pose } from '../physics/car.ts';
 
-/** Toy-plastic deck friction (matches the kit's own rolling tests). */
-export const TRACK_FRICTION = 0.05;
+// Deck friction is the shared `src/track/material.ts` constant — imported
+// above, never mirrored here (stage-2 review MAJOR: this file and the game
+// world used to export two different `TRACK_FRICTION`s).
 
 /** Explicit track collision group (see `Modules/physics` gotchas). */
 export const TRACK_GROUP = 0x0001_fffd;

@@ -31,7 +31,8 @@ builds the feel track as a `PieceDef` **chain** through
 `src/track/desugar.ts`, and `src/feel/kittrack.ts` (`KitRig`) owns the
 world: one **merged** static collider per piece (a mesh *union*, never a
 family of overlapping boxes — a compound is an island farm for the CCD
-raycasts), collision-group bit discipline, an arc-indexed centreline for
+raycasts), collision-group bit discipline, deck friction IMPORTED from
+`src/track/material.ts` (one constant with the game world, no mirror), an arc-indexed centreline for
 metrics, and the uniform-arc **camera rail**.
 
 Measured on this geometry (sim constants of the day: `suspK` 12000,
@@ -43,7 +44,7 @@ the loop-gate audit and the SIM_SCALE velocity-mapping fix:
 |---|---|---|
 | roll from 0.3 m drop-ramp (§7.1) | **2.47 m** — target 2.5 m MET | 2.47 m ✓ |
 | feel-track completion | **completes, 3.31 s** (world replay finishes 3.01 s) | 3.31 s ✓ |
-| min loop height / radius, honest gate | **2.4 R** on the loop rig, 2.51 R with the shipped μ spent across the run-in; no solver-made ceiling — the audited car holds the ring through 7 R | 2.4 R ✓ (identical) |
+| min loop height / radius, honest gate | **2.30 R** — bracketed bisect on the friction-aware loop rig at shipped `ROLL_COEF`, band [2.25, 2.75] R asserted (`LOOP_BAND_OVER_R`); no solver-made ceiling — the audited car holds the ring through 7 R | 2.30 R ✓ (identical) |
 | apex speed / floor | 1.08 / 0.99 m/s (1.09×) | same ✓ |
 | peak speed | 3.00 m/s | 3.00 m/s ✓ |
 | landing impulse across the gap jump | **0.061 N·s** after a real ~0.2 s flight | same ✓ |
@@ -56,11 +57,47 @@ normal), and the old guide branch solved that geometry reading as a velocity-
 free position projection — k·u·dt spent as pure new velocity, half of it along
 the track. ONE step of it measured **+1.03 J/kg**, which is the whole ~1 J/kg
 the threshold was short by. Three solver changes and one rebalance followed;
-the threshold is now what the drop honestly pays for (2.4–2.5 R vs theory 2.5),
+the threshold is now what the drop honestly pays for (2.30 R bisected vs theory 2.5),
 and no single step anywhere injects more than 0.1 J/kg. See
 [[2026-10-06 Stage 2 - solver energy audit]] for the mechanism-by-mechanism
 story; the older [[2026-10-05 Stage 2 - loop geometry fix]] remains accurate
 about the geometry and the scale-mapping fix.
+
+### Loop threshold — one canonical rig (2026-10-06, stage-2 fix crew)
+
+The stage-2 review caught THREE numbers for one metric. They had three
+different provenances, and only one was a shipped-car measurement:
+
+| number | what it actually was |
+|---|---|
+| 3.03 R (`loopH` table row) | the same bisect at **coef 0** — a frictionless run-in the shipped car does not have. Never a shipped metric; the row is gone |
+| 2.51 R (`loopHfric` table row) | the shipped predicate bisected over the naive [1.4, 4.5] R bracket with the coefficient **mirrored as a hardcoded 0.117** instead of importing `ROLL_COEF = 0.12`; on the known non-monotone dip structure its landing spot was bracket luck, not a threshold. Row gone, mirror gone |
+| "sits at 2.4 r" (footer prose) | the coarse-grid edge row — one sample, not a bisect |
+
+**Canonical measurement (the only one that counts now):** the friction-aware
+loop rig (`loopRig`, steep release ramp, kit loop at `LOOP_RADIUS`) at the
+shipped `ROLL_COEF = 0.12`; predicate = completion per the apex witnesses
+(inverted + deck loaded + sqrt(gr)·1.02 floor + exit witness); a TRUE
+bisection inside the bracket `LOOP_GATE_BRACKET_OVER_R = [2.2, 2.6] R`,
+whose wings are probed EVERY run by `loopGateWings` — low wing FAILS, high
+wing COMPLETES (monotone direction: higher release → completes). The
+converged value is **2.30 R** on both variants, asserted inside the
+[2.25, 2.75] R band (`LOOP_BAND_OVER_R`, §7.1 = theory 2.5 R ±10%) in
+`tests/unit/feel.test.ts`. The predicate is monotone only IN PRACTICE —
+mid-window dip rows (2.5, 3.0 R fail while 2.4/2.6 pass) are real
+bounce-phase physics; the bracketed wings are what stop a dip from being
+bisected as if it were the threshold.
+
+Stated honestly, two edges of the bracket structure: (1) there is ONE
+isolated completing row BELOW the low wing, at 2.15 R, on both variants —
+the audit at those heights shows the wishbone term doing +0.9 to +1.0 J/kg
+of NET work in that phase window (vs ≤ 0 from 2.5 R up), i.e. that spike
+rides a rotor pump, not the drop's money; it is exactly what the lead/rotor
+ablations in `tests/unit/ablation.test.ts` exist to catch, and it is why
+the bracket floor sits above it and in the theory band rather than hunting
+spikes. (2) the dip rows above the threshold are suspension-phase
+lottery — a dip row proving the gate can say NO above the threshold is
+evidence the gate is honest, not evidence the threshold moved.
 
 The 2026-10-04 table's numbers (2.65 m roll, 1.41 R / 2.85 R loop
 thresholds) were measured through two lies: `toWorldSpeed` divided by

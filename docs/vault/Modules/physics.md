@@ -18,7 +18,11 @@ no DOM — safe under Vitest (node) and `tools/feel.mjs` alike.
   inflated every reported speed 3.16x and poisoned every speed-domain
   tuning (ROLL_COEF, the loop apex floor); see the 2026-10-05 session note.
 - `src/physics/car.ts` — `spawnCar(world, variant, pose)` + `carStep()`.
-  Variants: `wheelColliders` (a) and `raycastWheels` (b). Collision groups
+  Variants: `wheelColliders` (a) and `raycastWheels` (b). Also exports
+  `__ABLATE` — the TEST-ONLY crutch switchboard read by
+  `tests/unit/ablation.test.ts` and nothing else (defaults = shipped config,
+  reading an untouched switch changes no float; see §Crutch ablation below).
+  Collision groups
   are explicit and load-bearing (stage-2 fixes): track `0x0001_fffd`, chassis
   `0x0002_fffd`, wheels `0x0004_fff9` — wheels hit the track for real, never
   their own chassis, and the TRACK filter excludes the chassis bit so the
@@ -194,3 +198,29 @@ before believing any lap. Three laws it enforced into `src/physics/car.ts`:
 The instrumented sites (`WORK`, `addWork`, `pointDke`/`torqueDke` in
 `car.ts`) are zero-cost unless `WORK.on`; keep new impulse sites registered
 there so the audit stays exhaustive rather than anecdotal.
+
+## Crutch ablation matrix (stage-2 fix crew, 2026-10-06)
+
+The stage-2 review's complexity-debt finding: the wishbone/rotor/conjugate/
+gate stack grew fix-on-symptom and **no test would go red if a crutch were
+deleted**. `__ABLATE` in `car.ts` (test-only, exported, env-var-free) lets
+`tests/unit/ablation.test.ts` flip ONE term at a time and re-measure. This
+is the table that turns folklore into evidence; rerun the test and update
+it alongside any tuning change.
+
+| crutch disabled | feel-track finish | loop rig @ 2.4 R | verdict |
+|---|---|---|---|
+| — (shipped) | **3.31 s** (`90d4cd69`) | Y | baseline |
+| wishbone lead 1.5 → 2 | **DNF** | n | **LOAD-BEARING** — the doubled lead stores the rotor mode the damper then burns; every riser becomes a ~1 J/kg slam |
+| rotor damper off | **DNF** | n | **LOAD-BEARING** — without it the lead-1.5 target itself over-rotates; the pair (lead 1.5 + damper) is one mechanism |
+| conjugate damper law → naive axis read | 3.38 s (+0.07 s) | **n** | **LOAD-BEARING on the loop metric** — barely visible on the feel track, but the pump-and-burn (audit: +1.9 / −3.2 J/kg per lap) eats exactly the margin the 2.4 R row runs on |
+| misalignment gate off | bit-identical hash | Y | **INERT on every shipped rig** — the car never exceeds ~49° deck misalignment on the feel track or loop rig; it is stage-3 banked-yaw insurance, not a crutch today |
+
+Reading: the lead/damper pair and the conjugate law are structural —
+deleting either loses the feel track outright or loses the loop threshold.
+The misalignment gate is the one term carrying no measured load today;
+keep it only until stage 3 either gives it a measured story or the
+ablation goes red proving it can go. The audit column of the wishbone
+crutch (positive net work in the sub-2.25 R phase window, see
+[[feel]] §Loop threshold) is the one known place the pair still pumps —
+pinned by the bracket floor, not by faith.

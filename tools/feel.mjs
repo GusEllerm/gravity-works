@@ -21,8 +21,8 @@
 import { initRapier, createWorld, stepWorld, qrot, v, vdot, SIM_SCALE as S, G_SIM } from '../src/physics/sim.ts';
 import { spawnCar, carStep, carSpeed, applyRollingResistance, CAR, WORK } from '../src/physics/car.ts';
 import { loopRig } from '../src/feel/feeltrack.ts';
-import { feelTrackRun, loopThreshold, rampRollRun, rollRun, ROLL_COEF } from '../src/feel/run.ts';
-import { LOOP_RADIUS } from '../src/feel/feeltrack.ts';
+import { feelTrackRun, loopGateWings, loopThreshold, rampRollRun, rollRun, ROLL_COEF } from '../src/feel/run.ts';
+import { LOOP_GATE_BRACKET_OVER_R, LOOP_RADIUS } from '../src/feel/feeltrack.ts';
 
 await initRapier();
 
@@ -91,8 +91,13 @@ for (const variant of variants) {
   const feel2 = feelTrackRun(variant);
   const roll = rollRun(variant);
   const ramp = rampRollRun(variant);
-  const loop = loopThreshold(variant, LOOP_RADIUS, { coef: 0, iters: 10 });
-  const loopFric = loopThreshold(variant, LOOP_RADIUS, { coef: 0.117, iters: 10 });
+  const loop = loopThreshold(variant, LOOP_RADIUS, {
+    coef: ROLL_COEF,
+    iters: 10,
+    lo: LOOP_GATE_BRACKET_OVER_R[0] * LOOP_RADIUS,
+    hi: LOOP_GATE_BRACKET_OVER_R[1] * LOOP_RADIUS,
+  });
+  const wings = loopGateWings(variant, LOOP_RADIUS);
   rows.push({
     variant,
     finish: feel.completed ? `${feel.timeToFinish?.toFixed(2)} s` : 'DNF',
@@ -104,10 +109,9 @@ for (const variant of variants) {
     landing: `${feel.landingImpulse.toFixed(3)} Ns`,
     rollDrop: roll.rollDistance === null ? 'no touchdown' : `${roll.rollDistance.toFixed(2)} m`,
     rollRamp: ramp.rollDistance === null ? 'no touchdown' : `${ramp.rollDistance.toFixed(2)} m`,
-    loopH: Number.isNaN(loop.height) ? 'DNF' : `${loop.height.toFixed(3)} m (${loop.heightOverR.toFixed(2)} r)`,
-    loopHfric: Number.isNaN(loopFric.height)
+    loopGate: Number.isNaN(loop.height)
       ? 'DNF'
-      : `${loopFric.heightOverR.toFixed(2)} r`,
+      : `${loop.heightOverR.toFixed(2)} r [${wings.low ? 'Y' : 'n'}/${wings.high ? 'Y' : 'n'}]`,
     hash: `${feel.hash}${feel2.hash === feel.hash ? ' =repeat' : ' !=repeat!'}`,
   });
 }
@@ -125,20 +129,31 @@ console.log(
     'to stop). Target ~2.5 m: MET (2.47 m) since the SIM_SCALE velocity-mapping\n' +
     'fix - toWorldSpeed divided by sqrt(S) instead of S had tuned mu against an\n' +
     'inflated number; ROLL_COEF 0.12 is the honest constant now.\n' +
-    'loopH = bisected release height on the loop rig under the hardened gate\n' +
-    '(apex inverted + deck loaded + sqrt(gr) speed floor + exit witness).\n' +
-    'The ring is two half-arcs, not a circle - a tangent circle hands the car\n' +
-    'back its own rising entry chords and it orbits the bottom corner forever\n' +
-    '(pieces.ts loopGeometry). Since the 2026-10-06 energy audit (`audit` mode\n' +
-    'above) removed the ring-entry injection - a velocity-free position\n' +
-    'projection spending geometry as +1 J/kg of new velocity - the threshold\n' +
-    'sits at 2.4 r, inside the 2.4-2.6 target, and the window has no solver-\n' +
-    'made CEILING any more: the audited car holds the ring through 7 r (the\n' +
-    'old "flies out above ~6 r" behaviour was the same injection kicking the\n' +
-    'car off the deck at exit; the physical up-stop-wheel ceiling is open).\n' +
-    'Mid-window dips (e.g. 3.0 r) are real bounce-phase losses, stated in\n' +
-    'tests/unit/feel.test.ts. loopHfric is the same wall with the shipped\n' +
-    'Coulomb coefficient spent across the run-in, which is the number the\n' +
-    'game plays with. See Modules/feel.md.',
+    'loopGate = THE canonical loop threshold: bisect of the witness-proven\n' +
+    'completion predicate (apex inverted + deck loaded + sqrt(gr) speed floor\n' +
+    '+ exit witness) on the friction-aware loop rig at the SHIPPED ROLL_COEF,\n' +
+    'inside the bracket LOOP_GATE_BRACKET_OVER_R = [2.2, 2.6] r; the bracket\n' +
+    'shows [low-wing/high-wing] = [n/Y] (lower release fails, higher\n' +
+    'completes) - asserted every run in tests/unit/feel.test.ts, band\n' +
+    '[2.25, 2.75] r via LOOP_BAND_OVER_R. Converged: 2.30 r. The ring is two\n' +
+    'half-arcs, not a circle - a tangent circle hands the car back its own\n' +
+    'rising entry chords and it orbits the bottom corner forever (pieces.ts\n' +
+    'loopGeometry). Since the 2026-10-06 energy audit (`audit` mode above)\n' +
+    'removed the ring-entry injection the threshold sits on the drop\'s own\n' +
+    'money, and the window has no solver-made CEILING: the audited car holds\n' +
+    'the ring through 7 r (the old "flies out above ~6 r" behaviour was the\n' +
+    'same injection kicking the car off the deck at exit; the physical\n' +
+    'up-stop-wheel ceiling is open). Mid-window dips (e.g. 2.5, 3.0 r) are\n' +
+    'real bounce-phase losses, stated in tests/unit/feel.test.ts.\n' +
+    'PROVENANCE of the retired numbers (stage-2 review: three values, one\n' +
+    'metric): the old `loopH` row (3.03 r) bisected the SAME predicate at\n' +
+    'coef 0 - a frictionless run-in the shipped car does not have, never a\n' +
+    'shipped metric; the old `loopHfric` row (2.51 r) bisected the shipped\n' +
+    'predicate over the naive [1.4, 4.5] r bracket WITH coef mirrored as a\n' +
+    'hardcoded 0.117 instead of importing ROLL_COEF = 0.12 - on the known\n' +
+    'non-monotone dip structure its landing spot was bracket luck, not a\n' +
+    'threshold; the footer prose "2.4 r" was the coarse-grid edge row, one\n' +
+    'sample, not a bisect. All three are superseded by `loopGate` above.\n' +
+    'See Modules/feel.md.',
 );
 }

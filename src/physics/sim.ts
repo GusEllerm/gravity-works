@@ -135,17 +135,6 @@ export function addStaticBoxes(
   );
 }
 
-/** Static trimesh collider from builder output (friction = toy plastic). */
-export function addStaticTrimesh(
-  world: RAPIER.World,
-  vertices: Float32Array,
-  indices: Uint32Array,
-  friction = 0.05,
-): RAPIER.Collider {
-  const body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
-  return world.createCollider(RAPIER.ColliderDesc.trimesh(vertices, indices).setFriction(friction), body);
-}
-
 // ---- determinism hashing ---------------------------------------------------
 
 const FNV_PRIME = 0x01000193;

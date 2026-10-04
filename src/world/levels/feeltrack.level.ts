@@ -5,9 +5,10 @@
  * harness desugars in `src/feel/feeltrack.ts` (`feelTrackRig()`), laid out by
  * pure socket math through `chain`/`fitSocket`:
  *
- *   ramp (-12° blend, the 0.45 m drop) -> straight -> loop (threshold radius)
- *   -> gapLip (the empty arc IS the gap) -> landing -> finishCup
- *   -> bank -> curve            (the banked S run-out sits AFTER the cup)
+ *   ramp (-12° blend, the 0.52 m drop) -> straight -> loop (threshold radius)
+ *   -> gapLip (the empty arc IS the gap) -> drop (the gap's catch ramp)
+ *   -> landing -> finishCup -> bank -> curve  (the banked S run-out sits
+ *   AFTER the cup)
  *
  * Nothing is copied: the piece order is `FEEL_TRACK_KINDS` and every
  * parameter comes from `FEEL_PARAMS` (plus `rampLevelForDrop` sizing inside

@@ -2,11 +2,11 @@
  * Feel track v2 — the permanent test level as a track-kit `Build`
  * (docs/vault/Concepts/Feel.md §The feel track; §7.5 of the brief).
  *
- * Chain of kit pieces: 30 cm drop (a solid `ramp` plunged at -30°, so a car
- * at rest starts moving with no launch velocity — the honest "released from
- * a 30 cm drop" of Feel.md) -> short straight -> banked turn -> loop at the
- * threshold radius -> gap lip (the gap is the lip's own empty span) ->
- * landing -> finish cup on its own short straight.
+ * Chain of kit pieces: `FEEL_TRACK_KINDS` below — steep release ramp (the
+ * 0.52 m timed drop) -> short straight -> loop at the threshold radius ->
+ * gap lip (the gap is the lip's own empty span) -> `drop` catch ramp ->
+ * landing -> finish cup -> bank -> curve, the banked S run-out sitting
+ * AFTER the cup (see the `FEEL_TRACK_KINDS` doc for why).
  *
  * This replaces the chord-slab provisional track of stage 1, whose slab
  * stitching produced the false-deceleration findings (see `Modules/feel.md`
@@ -38,8 +38,9 @@ export const DROP_BLEND = 0.08;
 /** Free-fall height of the feel track's drop (world m). The timed run needs
  *  real speed: a 0.3 m drop cannot deliver BOTH the loop-completion gate
  *  (> 1.21 m/s at this radius) AND the 9 cm gap jump after the loop climb,
- *  so the feel track drops 0.45 m. (The §7.1 roll-metric rig keeps its
- *  canonical 0.3 m.) */
+ *  so the feel track drops 0.52 m, rebalanced in the 2026-10-06 energy audit
+ *  so the drop pays for the ring-entry guide bump it rides through. (The §7.1
+ *  roll-metric rig keeps its canonical 0.3 m.) */
 export const FEEL_DROP_HEIGHT = 0.52;
 /**
  * Loop radius on the feel track, chosen by the LOOP GEOMETRY RULE
@@ -52,10 +53,26 @@ export const FEEL_DROP_HEIGHT = 0.52;
  * shorter than the 0.75-sim car, so the car physically could not run inside
  * it — every "completion" at that radius was a ballistic hop through the
  * loop's empty interior. 0.10 is the rule with a 7 % margin (it is also the
- * radius whose measured threshold lands in the §7.1 [2.25, 2.75] R band:
- * see the session log 2026-10-05 loop-geometry entry).
+ * radius whose measured threshold lands in the §7.1 band — see
+ * `LOOP_BAND_OVER_R` and the bisect in `tests/unit/feel.test.ts`).
  */
 export const LOOP_RADIUS = 0.10;
+/**
+ * §7.1 acceptance band on the loop threshold, in multiples of the loop
+ * radius: theory's point-mass minimum is 2.5 r and the line is +/-10 %.
+ * This constant is the band — asserted, not comment-resident (stage-2
+ * review MAJOR: the accept line used to live only in prose).
+ */
+export const LOOP_BAND_OVER_R: readonly [number, number] = [2.25, 2.75];
+/**
+ * Bracket for the shipped-friction threshold bisect (friction-aware loop
+ * rig, `ROLL_COEF`). The wings are asserted every run by `loopGateWings`:
+ * 2.2 r FAILS, 2.6 r COMPLETES (monotone direction: higher release ->
+ * completes). Chosen around the measured edge (~2.3 r) — not around the
+ * mid-window dip rows, which are the suspension-phase lottery the §7.1
+ * note in `Modules/feel.md` documents.
+ */
+export const LOOP_GATE_BRACKET_OVER_R: readonly [number, number] = [2.2, 2.6];
 /** Lead straights inside the loop piece. */
 export const LOOP_LEAD = 0.03;
 /** Gap-lip parameters (the empty arc IS the gap — Track Kit decision). */
@@ -67,13 +84,6 @@ export const RELEASE_FRACTION = 0.9;
 /** Flat run-out of the roll rig (world m — plenty for the ~2.5 m target). */
 export const ROLL_FLAT_LENGTH = 5;
 
-/** The feel track's piece order. The `curve` is required, not decoration:
- *  a kit `bank` ends yawed by its angle (banking flattens at the socket but
- *  yaw does not — pieces.ts design note), so without a return the loop would
- *  seat turned 45° and its circle would lie in a tilted plane. The mirrored
- *  `curve` arc hands the car back to a straight, level line so the loop
- *  keeps a true vertical plane, and the whole layout is a lane-width S
- *  like real Hot Wheels track. */
 /** The feel track's piece order. Every kit piece the §7.5 brief lists, in a
  *  layout a 1:64 car can actually drive: the banked turn and its return come
  *  AFTER the finish cup, Hot-Wheels-style, so the timed run is the drop →

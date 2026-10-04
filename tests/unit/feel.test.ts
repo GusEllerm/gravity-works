@@ -23,18 +23,18 @@
  *   free-drop: wheelColliders 0.00 m | raycastWheels 0.00 m (symmetry)
  *   drop-ramp: wheelColliders 2.49 m | raycastWheels 2.49 m
  *   - the §7.1 target of ~2.5 m is now MET (2.49 m, within 1%).
- *   feel track: raycastWheels COMPLETES (2.92 s) with the cup now requiring
- *         deck contact, not just proximity; wheelColliders DNF unchanged.
- *   loop: the honest gate (inverted + deck-loaded + speed floor AT the
- *         apex) is in place and the 1.41 R ballistic-interior exploit is
- *         CLOSED (see loopGate below); a positive threshold is currently
- *         DNF - no release height completes yet, tracked under the
- *         loop-suspension work item.
+ *   feel track: raycastWheels COMPLETES (3.31 s) with the cup requiring deck
+ *         contact, not just proximity; wheelColliders DNF unchanged.
+ *   loop: the honest gate (inverted + deck-loaded + speed floor AT the apex)
+ *         is in place and the 1.41 R ballistic-interior exploit is CLOSED
+ *         (see the loop-gate describe below); the bisected shipped-friction
+ *         threshold on the friction-aware loop rig is 2.30 R — inside the
+ *         §7.1 band, now ASSERTED via bracketed wings, not prose.
  *   determinism: bit-identical state hashes across repeat runs  PASS
  */
 import { beforeAll, describe, expect, it } from 'vitest';
-import { feelTrackRun, loopThreshold, loopTry, simulate, ROLL_COEF, rampRollRun, rollRun, APEX_UP_MAX, APEX_SPEED_EPS, APEX_FORCE_MIN } from '../../src/feel/run.ts';
-import { LOOP_RADIUS, loopRig } from '../../src/feel/feeltrack.ts';
+import { feelTrackRun, loopGateWings, loopThreshold, loopTry, simulate, ROLL_COEF, rampRollRun, rollRun, APEX_UP_MAX, APEX_SPEED_EPS, APEX_FORCE_MIN } from '../../src/feel/run.ts';
+import { LOOP_BAND_OVER_R, LOOP_GATE_BRACKET_OVER_R, LOOP_RADIUS, loopRig } from '../../src/feel/feeltrack.ts';
 import { initRapier, quant } from '../../src/physics/sim.ts';
 
 beforeAll(async () => {
@@ -45,14 +45,14 @@ beforeAll(async () => {
 const TARGET_ROLL_M = 2.5;
 
 /**
- * Honest measured values on the honest rigs, 2026-10-05 (npm run feel).
- * See the file header for what each rig is and why the free-drop number is
- * zero by symmetry. The drop-ramp numbers now sit ON the §7.1 target; the
- * free-drop pins are launch-artifact tripwires (~0 + 0.2 m creep band),
- * not ceilings on legitimate progress (review finding 6).
+ * Launch-artifact tripwires for the free-drop rig — NOT measurements (the
+ * symmetric rig's honest reading is ~0 m by momentum conservation; see the
+ * file header). Renamed from MEASURED_DROP_ROLL_* at the stage-2 review,
+ * which correctly objected that a 0.0 tripwire band does not deserve the
+ * name MEASURED. The drop-ramp pins below are the measured values.
  */
-const MEASURED_DROP_ROLL_RAYCAST_M = 0.0;
-const MEASURED_DROP_ROLL_WHEEL_M = 0.0;
+const FREE_DROP_LAUNCH_TRIPWIRE_RAYCAST_M = 0.0;
+const FREE_DROP_LAUNCH_TRIPWIRE_WHEEL_M = 0.0;
 const MEASURED_RAMP_ROLL_RAYCAST_M = 2.49;
 const MEASURED_RAMP_ROLL_WHEEL_M = 2.49;
 
@@ -97,7 +97,7 @@ describe('free-drop roll rig (no launch velocity — review finding 1)', () => {
     // velocity ever leaks back into this rig (stage 1 reported 0.61 m of
     // buried creep here), it goes red. No upside-down ceiling on progress:
     // the 2.5 m target is asserted by the drop-ramp rig below.
-    expect(d).toBeLessThan(MEASURED_DROP_ROLL_RAYCAST_M + 0.2);
+    expect(d).toBeLessThan(FREE_DROP_LAUNCH_TRIPWIRE_RAYCAST_M + 0.2);
   }, 120_000);
 
   it('wheel-collider variant: finite travel after touchdown, deterministic', () => {
@@ -105,7 +105,7 @@ describe('free-drop roll rig (no launch velocity — review finding 1)', () => {
     const b = rollRun('wheelColliders');
     expect(a.rollDistance).not.toBeNull();
     expect(Number.isFinite(a.rollDistance as number)).toBe(true);
-    expect(a.rollDistance as number).toBeLessThan(MEASURED_DROP_ROLL_WHEEL_M + 0.2);
+    expect(a.rollDistance as number).toBeLessThan(FREE_DROP_LAUNCH_TRIPWIRE_WHEEL_M + 0.2);
     expect(a.hash).toBe(b.hash);
   }, 120_000);
 });
@@ -176,20 +176,41 @@ describe('loop gate honesty (stage-2 audit)', () => {
   // What the grid measures now, stated plainly (raycast variant; the jointed
   // variant agrees at every height asserted below):
   //
-  //   h/R   2.0  2.2  2.4  2.5  2.6  2.8  3.0  3.5  4.0 ... 7.0
-  //        n    n    Y    n    Y    Y    n    n    Y  ...  Y
+  //   h/R   2.0  2.2  2.3  2.4  2.5  2.6  2.8  3.0  3.5  4.0 ... 7.0
+  //        n    n    Y    Y    n    Y    Y    n    n    Y  ...  Y
   //
-  // The threshold is 2.4 R, inside the 2.4-2.6 band the Feel doc targets.
-  // The mid-window n rows are real and stay stated: at some releases the
-  // first ring chord lands in the wheel's bounce phase where the entry bump
-  // eats the margin (apexContact fires, apexFloor does not). That phase
+  // The bisected threshold (friction-aware loop rig, shipped ROLL_COEF —
+  // the one canonical rig, see Modules/feel.md §Loop threshold) is 2.30 R,
+  // inside the §7.1 band asserted via LOOP_BAND_OVER_R below. The
+  // mid-window n rows are real and stay stated: at some releases the first
+  // ring chord lands in the wheel's bounce phase where the entry bump eats
+  // the margin (apexContact fires, apexFloor does not). That phase
   // sensitivity is chassis-suspension physics, not a scoring artifact - a
   // dip row proves the gate can say NO at a height ABOVE the threshold,
-  // which no energy-gaming solver ever needed to do.
+  // which no energy-gaming solver ever needed to do. Because the predicate
+  // is monotone only IN PRACTICE, the bisection runs inside an explicitly
+  // bracketed window whose wings are probed every run (low wing FAILS, high
+  // wing COMPLETES): the converged value is a completion edge, not a dip
+  // artifact — the stage-2 review's MAJOR was that the old bisect was
+  // checked only for FINITENESS and its bracket spanned the dip structure.
   it('loop threshold is bounded honestly - and its witnesses are real', () => {
     for (const variant of ['raycastWheels', 'wheelColliders'] as const) {
-      const t = loopThreshold(variant, LOOP_RADIUS, { iters: 7 });
-      expect(Number.isFinite(t.heightOverR)).toBe(true);
+      // Bracket wings, probed on the spot (monotone direction: higher
+      // release -> completes). If either wing flips, the bracket is no
+      // longer honest ground for a bisection and this goes red.
+      const wings = loopGateWings(variant, LOOP_RADIUS);
+      expect(wings.low, 'low wing must fail').toBe(false);
+      expect(wings.high, 'high wing must complete').toBe(true);
+      // The true bisection inside the asserted bracket.
+      const t = loopThreshold(variant, LOOP_RADIUS, {
+        lo: LOOP_GATE_BRACKET_OVER_R[0] * LOOP_RADIUS,
+        hi: LOOP_GATE_BRACKET_OVER_R[1] * LOOP_RADIUS,
+        iters: 7,
+      });
+      // THE accept line (§7.1, asserted not prose): the converged, witness-
+      // proven, shipped-friction threshold lands in the [2.25, 2.75] R band.
+      expect(t.heightOverR).toBeGreaterThanOrEqual(LOOP_BAND_OVER_R[0]);
+      expect(t.heightOverR).toBeLessThanOrEqual(LOOP_BAND_OVER_R[1]);
       // Measured edge, both variants: 2.2 R of drop fails, 2.4 R completes.
       expect(loopTry(variant, LOOP_RADIUS, 2.2 * LOOP_RADIUS, ROLL_COEF)).toBe(false);
       expect(loopTry(variant, LOOP_RADIUS, 2.4 * LOOP_RADIUS, ROLL_COEF)).toBe(true);
