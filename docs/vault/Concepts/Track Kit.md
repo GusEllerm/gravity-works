@@ -18,14 +18,16 @@ All authoring in **world metres** at 1:64 visual scale. Physics converts to sim 
 
 ```
 TrackSpline            src/track/spline.ts
-  sample(t: number):   { pos, tangent, up, banking, solid }  # t in [0,1]; solid=false inside a gap
+  sample(t, out?):     { pos, tangent, up, banking, solid }  # t in [0,1]; solid=false inside a gap
   length: number                                           # metres
   stations: number; stationTs(): number[]; stationFrames(): TrackFrame[]
                                                           # the shared sample set (invariant 1)
   transformed(m: Mat4): TrackSpline                         # piece-local -> world, keeps samples analytic
   toMesh(o): BufferGeometry                                # sweep of CrossSection
   toColliderDescs(RAPIER, o): ColliderDesc[]                # convexs; smooth rolling deck
-  railPoints(n): Vec3[]                                    # wheel-height centreline for the run camera
+                                                          # o carries the length `scale` (kit stays unit-blind)
+  railPoints(n, wheelHeight): Vec3[]                        # wheel-height centreline for the run camera
+                                                          # (default RAIL_WHEEL_HEIGHT)
 
 CrossSection           src/track/cross-section.ts           # the U channel + rail lips; one for all pieces
                                                           # stored as convex parts so each ring pair hulls
@@ -58,8 +60,8 @@ Build tools            src/track/build.ts
   rigFingerprint(build): string                             # FNV-1a of reified samples (NaN poisons)
 
 World                  src/world/world.ts
-  constructor(level, build, opts)   # owns scene+physics+track graph
-  step(dt fixed 1/120): void        # systems in fixed order: inputs → car forces → physics → constraints
+  World.create(level, build, opts)  # async factory (awaits Rapier); owns scene+physics+track graph
+  step(): void                      # fixed 1/120 baked in; systems in fixed order: inputs → car forces → physics → constraints
   state(): interpolable snapshot    # renderer lerps between last two states; never reads physics per frame
   hash(): number                    # FNV-1a of quantised body transforms every 10 steps  (NaN must poison, not zero)
 ```
@@ -71,17 +73,25 @@ World                  src/world/world.ts
 3. `Build` serialises losslessly (JSON round-trip → same hash).
 4. Snapping is a pure function; a build is reproducible from (level, build, seed) alone — no hidden world state.
 
-> [!note] Elaborated by the implementation (2026-10-04, systems engineer)
-> Four things the interface sketch left open, now fixed by the code — see
+> [!note] Elaborated by the implementation (2026-10-04, systems engineer; interface lines re-verified against `src/track` at the stage-2 close, Documentarian)
+> The interface sketch left things open, now fixed by the code — see
 > [[Modules/track]] for the reasoning and `Sessions/2026-10-04 Stage 2 - track kit.md`:
 > a `sample()` also reports whether the point is over solid track (gaps are part
-> of a piece, so `drop` and `gapLip` can carry their own empty space);
+> of a piece, so `drop` and `gapLip` can carry their own empty space — and after
+> the 2026-10-06 landing fix the feel track's gap uses a `drop` **catch ramp**
+> between lip and landing);
 > `toColliderDescs` takes a length `scale` at build time, which is how the kit
 > stays unit-blind while physics still gets sim-space convexs; a collider
 > "segment" is the convex hull of *consecutive* rings, merged across rings that
 > are collinear — that merging is what "deck quads large and few" means, and a
 > straight 2 m deck becomes a handful of hulls rather than a seam per station;
 > and `PieceDef.applyImpulse` expresses a launcher's `power` as a Δv.
+> Two further deviations from this sketch, kept deliberately: the `World` is
+> created through the async factory `World.create` (Rapier's wasm needs an
+> await before any body exists), and the camera rail has TWO honest consumers —
+> the run camera ([[camera]]) reads it through `KitRig.railPointAt`/`frameAt`
+> (true-spacing, interpolated — the snap-to-sample version drifted), while
+> `railPoints` remains the analytic kit form.
 
 ## Stage-2 acceptance hooks
 
