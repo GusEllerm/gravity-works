@@ -106,3 +106,41 @@ self-equal assertions in `tests/unit/tokens.test.ts` say something real.
 - Technical Artist: `pieceGeometries` is the seam where swept channel geometry
   and prop-shaped extras meet; triangle budget is ~1k per straight, ~1.5k per
   loop, ~5k for the whole 13-piece kit.
+
+## Addendum — session 2 on the branch (later the same day): feel track completes
+
+Picked up from the handoff block. What moved, and what it took:
+
+- The `TRACK_GROUP` filter mask still admitted the chassis body: the raycast
+  car was being physically carried by hull-vs-track contacts through ramps
+  and loop chords ("hoovering") while the suspension measured fiction.
+  Track group is now `0x0001_fffd`. This one change exposed the real
+  dynamics and invalidated several tuned-on-top-of-nothing numbers.
+- Straight-line stability turned out to be a **geometry** problem, not a
+  controller problem: the channel's lower block leaves its inner wall
+  0.5 mm proud of the wheel side face, and the wheel never reached the lip
+  face where the real clearance lives. Feel rays now ride the **lip mid-band
+  height** (0.020 m) with 3.5 mm total slack; the rails became the steering
+  of record and four successive controller designs (scrub, caster,
+  weathervane, COM-cancel) retired gracefully in favour of geometry.
+- The loop was never a speed problem — it was the **bump stop eating the
+  car**: 19 chord risers × a full-stop catcher on every gentle climb.
+  Speed-gated (`vdot < 6.6` sim or deep compression), the car sails through.
+- Layout: bank + counter-curve moved after the finish cup as run-out —
+  mid-run banked yaw arcs are the honest boundary of the pure-raycast model
+  (four lateral models, same plough/ring-roll wall; the variant-a question
+  for stage 3).
+- **Raycast variant completes the kit feel track headless: 3.07 s,
+  deterministic.** Roll metric at 2.65 m (2.5 ±10% ✓). Loop gates: H/R =
+  1.41 (raycast) / 2.85 (wheel colliders) at R = 0.03.
+- Run camera shipped as a pure class with five timing tests (§7.3 numbers
+  verified: 150 ms positional τ, ~350 ms rotational τ aimed at the lead
+  frame; steady-state straight-line gap = v·(lead − τ), which the test
+  documents rather than hand-waves).
+- All 48 tests green; physics.md reconciled and stamped; pushed as
+  `stage2-feel-b`.
+
+Open for the next session: variant-a completion (its wheels touching lips
+should cross the bank; the same feeler model then retires), game.ts wiring
+of RunCamera into the feel scene, and the PD-vs-rail trade for wheel-collide
+contacts at the cup approach.
