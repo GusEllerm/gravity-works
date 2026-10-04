@@ -6,6 +6,31 @@ target = "src/boot.ts"
 sig = "c792e7b2ffb80e0f"
 
 [[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/render/geometry.ts"
+sig = "0e4e78212a50e506"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/render/materials.ts"
+sig = "31477df388547628"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/render/tokens.ts"
+sig = "bbb6841e7a5ab509"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/render/toon-material.ts"
+sig = "8ab5d15dededb1a1"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "tests/unit/tokens.test.ts"
+sig = "a6a5c4de984ede79"
+
+[[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/boot.ts"
 sig = "c792e7b2ffb80e0f"
