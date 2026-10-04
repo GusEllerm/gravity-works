@@ -7,7 +7,7 @@
 
 import * as THREE from 'three'
 import { ceramic, dieCastPaint, fabric, liquid, paintedWood, trackPlastic } from '../../render/materials.ts'
-import { bowlForm, toyBlock, trackChannel } from '../../render/geometry.ts'
+import { toyBlock, trackChannel } from '../../render/geometry.ts'
 import { GLOBAL_TOKENS, SET_TOKENS, darken, mixHex } from '../../render/tokens.ts'
 import { ToonMaterial } from '../../render/toon-material.ts'
 import { registerScene, type SceneEntry, type SceneFactory } from '../registry.ts'
@@ -266,7 +266,7 @@ function crumbs(): THREE.InstancedMesh {
     const r = 0.02 + rnd() * 0.075
     dummy.position.set(Math.cos(a) * r, 0.0022 + rnd() * 0.002, Math.sin(a) * r)
     dummy.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3)
-    dummy.scale.setScalar(0.35 + rnd() * 0.5)
+    dummy.scale.setScalar(0.22 + rnd() * 0.3)
     dummy.updateMatrix()
     mesh.setMatrixAt(i, dummy.matrix)
   }
@@ -333,7 +333,25 @@ function kitchenScene(): SceneFactory {
       diffuseStrength: 1.15,
     })
     bowlMat.side = THREE.DoubleSide
-    const bowl = new THREE.Mesh(bowlForm(0.098, 0.054, 0.005), bowlMat)
+    // local bowl profile: the shared lathe's dome touches the floor only at
+    // its centre and reads as floating; add a flat foot ring at y = 0.001
+    const bowlPts: THREE.Vector2[] = [new THREE.Vector2(0.0001, 0.001), new THREE.Vector2(0.06, 0.001)]
+    {
+      const R = 0.098, H = 0.054, w = 0.005, n = 12
+      const footR = R * 0.26
+      for (let i = 5; i <= n; i++) {
+        const t = i / n
+        bowlPts.push(new THREE.Vector2(footR + (R - footR) * Math.sqrt(t), Math.max(H * t * (0.88 * t + 0.12), 0.001)))
+      }
+      bowlPts.push(new THREE.Vector2(R, H), new THREE.Vector2(R - w / 2, H + w / 2), new THREE.Vector2(R - w, H))
+      for (let i = n; i >= 0; i--) {
+        const t = i / n
+        bowlPts.push(new THREE.Vector2(Math.max((R - w) * Math.sqrt(t), 0.0001), H * 0.05 + (H - H * 0.05) * (0.85 * t * t + 0.15 * t)))
+      }
+    }
+    const bowlGeo = new THREE.LatheGeometry(bowlPts, 56)
+    bowlGeo.computeVertexNormals()
+    const bowl = new THREE.Mesh(bowlGeo, bowlMat)
     props(bowl)
     bowl.position.set(-0.035, 0, -0.045)
     vignette.add(bowl)
