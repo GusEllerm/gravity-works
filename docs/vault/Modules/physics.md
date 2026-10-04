@@ -12,7 +12,11 @@ no DOM — safe under Vitest (node) and `tools/feel.mjs` alike.
 - `src/physics/sim.ts` — Rapier init, `createWorld()` (120 Hz fixed step,
   gravity `G_SIM = 98.1`, solver knobs), static box track spawning, FNV-1a
   state hash every `HASH_INTERVAL` steps, world↔sim conversion helpers
-  (`SIM_SCALE = 10`, see [[Feel#Physics scale factor]]).
+  (`SIM_SCALE = 10`, see [[Feel#Physics scale factor]]). Time is
+  scale-invariant, so conversions scale at S: world→sim velocity **x S** and
+  impulse x S^4; `toWorldSpeed` divides by S — an earlier `sqrt(S)` version
+  inflated every reported speed 3.16x and poisoned every speed-domain
+  tuning (ROLL_COEF, the loop apex floor); see the 2026-10-05 session note.
 - `src/physics/car.ts` — `spawnCar(world, variant, pose)` + `carStep()`.
   Variants: `wheelColliders` (a) and `raycastWheels` (b). Collision groups
   are explicit and load-bearing (stage-2 fixes): track `0x0001_fffd`, chassis
@@ -31,7 +35,11 @@ no DOM — safe under Vitest (node) and `tools/feel.mjs` alike.
 ## Variant design (stage 1, bake-off outcome)
 
 Both variants carry the chassis on **explicit coil springs along the track
-contact normal**, computed from `castRayAndGetNormal` at four mounts
+contact normal**, computed from `castRayAndGetNormal` at four mounts (the
+  SPRING pushes along the contact normal; the DAMPER measures the strut-axis
+  extension rate, never contact-normal velocity — along the normal it reads
+  the car's own orbital motion wherever the deck curves and brakes the
+  suspension against steady cornering, measured on loops)
 (`supportStep`). Pushing along the normal, not chassis-up, is load-bearing:
 a pitch-tilted support force creates slope drag that exactly cancels gravity
 and stalls the car on any incline (found by measurement, not theory).

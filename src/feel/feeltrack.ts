@@ -156,7 +156,11 @@ export function loopRig(releaseHeight: number, radius: number): KitRig {
     params: {
       ramp: { angle: -LOOP_RAMP_ANGLE, blend, level },
       loop: { radius, lead },
-      straight: { length: 0.5 },
+      // Long run-out: a high-margin bisect trial leaves the loop at several
+      // m/s and must have deck to land on BEFORE it can be judged by the
+      // rail-proximate exit check (a 0.5 m run-out let fast trials fly off
+      // the end of the rig and read DNF whatever the gate said).
+      straight: { length: 4 },
     },
     levelId: 'loop-gate',
     seed: 0,

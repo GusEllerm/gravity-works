@@ -16,10 +16,10 @@
  *    kit loop of radius r, for the standing physics gate (§7.1, target ≈2.5 r).
  */
 import {
+  G_SIM,
   G_WORLD,
   HASH_INTERVAL,
   SIM_SCALE as S,
-  SQRT_S,
   createWorld,
   hashBodies,
   hashHex,
@@ -67,6 +67,46 @@ export interface RunResult {
 /** World metres of deck the free-drop rig drops onto, down-deck of release. */
 export const ROLL_DECK_OFFSET_M = 2;
 
+// ---- honest loop-completion gate (stage-2 loop-gate audit) ------------------
+
+/** Apex-speed margin over the theoretical sqrt(g r) the gate demands: a run
+ *  counted as holding the loop must clear the frictionless point-mass floor
+ *  by this, so measurement noise cannot smuggle a marginal flop through. */
+export const APEX_SPEED_EPS = 0.02;
+/** Chassis up . world up at the apex must be at most this for "INVERTED"
+ *  (180 deg +/- ~60 deg: the raycast chassis flops a little on its springs
+ *  inside the loop; measured passing runs sit past -0.9, every exploit run
+ *  stays well short of -0.5 near the apex arc). */
+export const APEX_UP_MAX = -0.5;
+/** Minimum suspension spring force (sim N) at the apex for "the wheels are
+ *  LOADED against the deck" — a fraction of the car's sim weight
+ *  (m g_sim ~ 3.9 kN). A flying car's rays hit the deck at zero load. */
+export const APEX_FORCE_MIN = 400;
+/** Half-width of the apex arc window (world m of rail) the checks run in.
+ *  A FIXED window narrower than one frame of travel can be skipped whole by
+ *  a fast lap (the first cut of this gate did exactly that to its own
+ *  speed sample), so the effective window widens by two frames of travel —
+ *  a few centimetres at lap speed, geometric at crawl. */
+export const APEX_ARC_WINDOW = 0.03;
+export function apexWindow(speedSim: number): number {
+  return APEX_ARC_WINDOW + 2 * speedSim * (1 / 120) / 10; // sim v -> world m/s
+}
+/** How close (world m) the wheel-ref point must be to its projected rail
+ *  point to count as ON the track at the EXIT. A car rolling out sits
+ *  ~0.008-0.030 from the rail (measured: pitch from the ramp handoff adds
+ *  a couple cm at speed); one airborne or on a wrong deck projects 0.05+
+ *  away. Grounded-contact is the co-witness — an airborne car is not
+ *  grounded, and a car rolled onto the exit rail from the WRONG branch of
+ *  the arc projection is far from the rail. This pair kills arc-projection
+ *  teleport. */
+export const RAIL_PROX = 0.04;
+/** Apex proximity is judged LOOSER than exit proximity, and is not the
+ *  witness there (inversion + deck load + speed floor is): a genuine lap
+ *  runs with real droop sag - measured 0.02-0.04 from the rail through the
+ *  apex on the loop rig's geometry - so a 2.5 cm apex window disqualifies
+ *  exactly the cars that held the loop. */
+export const APEX_PROX = 0.05;
+
 /** Wheel-plane point rigidly attached to the chassis (sim space). */
 function wheelRef(car: Car): { x: number; y: number; z: number } {
   if (car.wheels.length > 0) {
@@ -96,15 +136,21 @@ export interface SimOpts {
   releasePose?: { p: { x: number; y: number; z: number }; f: { x: number; y: number; z: number }; u: { x: number; y: number; z: number } };
   /** Forward release speed (sim); 0 = rest. */
   launchSpeed?: number;
-  /** Success = wheel-ref point inside this world-space capture volume. */
+  /** Success = wheel-ref point inside this world-space capture volume AND
+   *  touching the deck there (finish cup — proximity alone counted cars
+   *  skipping over the cup). */
   capture?: { center: { x: number; y: number; z: number }; radius: number };
   /** Arc position past which a landing impact counts (gap metric). */
   gapAt?: number;
-  /** Arc position of the loop apex (apex-speed metric). */
+  /** Arc position of the loop apex (apex-speed + apex-contact metrics). */
   apexAt?: number;
-  /** Loop radius for the apex-speed floor metric. */
+  /** Loop radius (world m) for the apex-speed floor. */
   apexRadius?: number;
-  /** Success = projected arc past this (world m) — the loop-completion gate. */
+  /** Success = projected arc past this (world m) — the loop-completion
+   *  gate. HONEST form: only counted once the car has HELD the apex
+   *  (inverted, deck loaded, speed >= sqrt(g r)(1+eps) at the apex) and is
+   *  itself within RAIL_PROX of the rail at `exitAt` — an airborne car's
+   *  global rail projection is not evidence of progress. */
   exitAt?: number;
 }
 
@@ -133,6 +179,12 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
   let exitPassed = false;
   let touchdownX: { x: number; y: number; z: number } | null = null;
   let distance = 0;
+  // Honest loop-state machine (see the gate constants above): the apex must
+  // be HELD (inverted + deck loaded + above the speed floor) before any arc
+  // past the exit counts as completion.
+  const apexMinSim = Math.sqrt(G_SIM * (opts.apexRadius ?? LOOP_RADIUS) * S) * (1 + APEX_SPEED_EPS);
+  let apexContact = false;
+  let apexSpeedMin: number | null = null;
 
   for (let step = 0; step < maxSteps; step++) {
     const support = carStep(world, car);
@@ -151,10 +203,31 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
       distance = Math.hypot(ref.x - touchdownX.x, ref.z - touchdownX.z);
     }
 
-    // apex speed: first sample within a rail-width of the apex arc, aloft
-    if (apexSpeed === null && opts.apexAt !== undefined) {
-      const s = rig.nearestArc(v(ref.x / S, ref.y / S, ref.z / S));
-      if (Math.abs(s - opts.apexAt) < 0.02 && ref.y / S > 0.02) apexSpeed = speed;
+    // ONE distance-aware rail projection per step, shared by the apex and
+    // exit checks (the old code projected blindly and trusted it blindly).
+    const project = opts.apexAt !== undefined || opts.exitAt !== undefined;
+    const proj = project
+      ? rig.nearestArcInfo(v(ref.x / S, ref.y / S, ref.z / S))
+      : { arc: 0, dist: Infinity };
+    const onRail = proj.dist < RAIL_PROX;
+
+    if (opts.apexAt !== undefined) {
+      const dArc = proj.arc - opts.apexAt;
+      const win = apexWindow(speed);
+      if (Math.abs(dArc) < win && proj.dist < APEX_PROX) {
+        const rq = car.chassis.rotation();
+        const upY = qrot({ w: rq.w, x: rq.x, y: rq.y, z: rq.z }, v(0, 1, 0)).y;
+        // deck loaded + inverted near the apex: the car is IN the loop, not
+        // flying through its empty interior
+        if (Math.abs(dArc) < win / 2
+          && upY <= APEX_UP_MAX && support.grounded && support.force >= APEX_FORCE_MIN) {
+          apexContact = true;
+        }
+        // apex speed = the SLOWEST sample in the tight apex window (the
+        // floor must hold AT the apex, not merely somewhere near it)
+        if (Math.abs(dArc) < win / 3
+          && (apexSpeedMin === null || speed < apexSpeedMin)) apexSpeedMin = speed;
+      }
     }
 
     // landing impulse after the gap: biggest positive vy jump while airborne
@@ -174,7 +247,10 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
       const dx = (ref.x - c.center.x * S) / S;
       const dy = (ref.y - c.center.y * S) / S;
       const dz = (ref.z - c.center.z * S) / S;
-      if (dx * dx + dy * dy + dz * dz < c.radius * c.radius) {
+      // completion at the cup means ARRIVING at the cup: inside the capture
+      // volume AND touching the deck (proximity alone let a skip past the
+      // cup count as a finish — the same class of bug as the loop exploit)
+      if (dx * dx + dy * dy + dz * dz < c.radius * c.radius && support.grounded) {
         finished = true;
         hash = hashBodies(bodies, hash);
         return {
@@ -190,12 +266,17 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
       }
     }
 
-    if (opts.exitAt !== undefined) {
-      const s = rig.nearestArc(v(ref.x / S, ref.y / S, ref.z / S));
-      if (s > opts.exitAt && ref.y > -S * 0.1) {
-        exitPassed = true;
-        break;
-      }
+    // The completion witness lives entirely at the APEX (inverted + deck
+    // load + speed floor, above). At the exit only the arc advance counts:
+    // a car that truly held the apex and then launches off the loop's
+    // exit tangent (measured: a genuine 2.8r lap goes briefly airborne
+    // ~0.05 m short of the old exit line) has driven the loop, and the
+    // only way to fake that airborne arc is to skip the apex witnesses -
+    // which disqualifies the ballistic-interior exploit by construction.
+    if (opts.exitAt !== undefined && onRail && apexContact
+      && apexSpeedMin !== null && apexSpeedMin >= apexMinSim && proj.arc > opts.exitAt) {
+      exitPassed = true;
+      break;
     }
 
     // stopped (roll rigs / stall detection): sustained sub-threshold FORWARD
@@ -215,7 +296,7 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
     completed: finished || exitPassed,
     timeToFinish: null,
     peakSpeed: toWorldSpeed(peak),
-    apexSpeed: apexSpeed === null ? null : toWorldSpeed(apexSpeed),
+    apexSpeed: apexSpeedMin === null ? null : toWorldSpeed(apexSpeedMin),
     apexMin: Math.sqrt(G_WORLD * (opts.apexRadius ?? LOOP_RADIUS)),
     landingImpulse: toWorldImpulse(landImpulse),
     rollDistance: touchdownX === null ? null : toWorldDist(distance),
@@ -285,11 +366,10 @@ export function loopTry(variant: CarVariant, radius: number, height: number, coe
     variant,
     coef,
     timeout: 8,
-    exitAt: rig.marks.loopEnd! + 0.03,
+    exitAt: rig.marks.loopEnd! + 0.4,
     apexAt: rig.marks.loopApex,
     apexRadius: radius,
   }).completed;
 }
 
 export const TRACK_CONSTANTS = { DROP_HEIGHT, LOOP_RADIUS };
-export { SQRT_S };

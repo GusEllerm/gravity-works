@@ -92,7 +92,8 @@ carry a `power` param and the same `applyImpulse` hook, where power is a
 **velocity increment** (Δv along a direction, default the body's own velocity)
 rather than a Newton-second — mass and velocity are read from the body it is
 applied to, which keeps kit code scale-blind; a world Δv becomes a sim Δv via
-`SQRT_SIM_SCALE` in `src/physics/sim.ts`. `finishCup` adds a bowl to
+`SIM_SCALE` (velocity scales at S, time being
+scale-free — `SQRT_SIM_SCALE` was a dimensional bug and is gone). `finishCup` adds a bowl to
 `pieceGeometries` and a `captureVolume` sphere.
 
 **Builds are data.** `serialize` writes canonical JSON (keys in ascending

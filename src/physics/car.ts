@@ -20,6 +20,8 @@ import {
   vadd,
   vcross,
   vdot,
+  vlen,
+  vnorm,
   vscale,
   vsub,
   type Vec,
@@ -53,7 +55,37 @@ export const CAR = {
   suspRest: 0.42,
   suspK: 12000,
   suspC: 550,
-  suspMaxForce: 9000,
+  // Push-side force ceiling. A 6g+ loop-bottom load has to fit inside the
+  // travel x rate envelope (k * suspRest = 5040 at suspK 12000), so this
+  // ceiling only bites on hard landings. The PULL side has its own, much
+  // smaller cap (droopMaxForce) - an airborne car must never be reeled in
+  // hard by a long leash.
+  suspMaxForce: 20000,
+  droopMaxForce: 6000,
+  // DROOP STOP (the tension side of the strut): pulled along the ray toward
+  // the deck hit once the strut extends past suspRest by up to droopMax.
+  // A push-only strut cannot run a loop inverted: hung d below the deck line
+  // (this car d ~ 0.83 r at the loop radius), gravity OVERSHOOTS the apex
+  // centripetal demand and the chassis free-falls away from the deck — the
+  // "passes the loop, never runs it" failure. A real (rigid-wheeled) toy is
+  // tension-constrained to orbit its wheel line; droopK enforces that, and
+  // droopMax bounds the leash so a genuinely airborne car is not reeled in
+  // (no maglev: beyond rest+droopMax the strut is slack, forceless).
+  // The droop side is the axle tether: a real toy's chassis is
+  // kinematically forbidden from getting away from its wheel line (the
+  // axle carries tension directly). The leash must be LONGER than the
+  // chassis's own droop sag off the wheel line (wheelY + rest geometry =
+  // ~0.55 sim), or it goes slack in exactly the tension quadrants of a
+  // loop and the car free-falls through the apex (measured: peel-off at
+  // ph ~150 with the wheels 3 mm off the deck). With that travel comes a
+  // lower rate so the stop stays sub-critical and cannot catapult
+  // (see the tension note in supportStep).
+  droopK: 90000,
+  // Damper sized to THAT spring (zeta ~0.5 at the stop), not to suspC:
+  // against droopK 400000 the suspC-scaled damper is zeta 0.04, and an
+  // undamped hard stop is a catapult (see the tension note in supportStep).
+  droopC: 1050, // zeta ~0.4 at droopK
+  droopMax: 0.15,
   bumpSpeed: 6.6, // sim m/s: one step of full-throttle spring dV — see the catcher note
   // Lateral tyre grip (scrub) — deliberately small: the CHANNEL does the
   // steering, not the tyres (see the rail-contact block in `supportStep`).
@@ -83,6 +115,16 @@ export const CAR = {
   rideH: 0.4, // chassis centre height above floor at spawn
 } as const;
 
+/** Stage-2 loop-gate energy audit hook: accumulates per-step mechanical work
+ *  (sim J) by mechanism WHILE ENABLED (see the session log 2026-10-05 - the
+ *  entry-loss finding that pinned the honest threshold). Off costs one
+ *  boolean test per impulse. */
+export const WORK: Record<string, number> & { on?: boolean } = {};
+function work(name: string, imp: Vec, vel: Vec): void {
+  if (!WORK.on) return;
+  WORK[name] = (WORK[name] ?? 0) + (imp.x * vel.x + imp.y * vel.y + imp.z * vel.z);
+}
+
 export interface Pose {
   p: Vec;
   f: Vec;
@@ -96,6 +138,10 @@ export interface Car {
   attach: Vec[]; // wheel attach points in chassis-local coords
   quat0: Quat;
   mass: number;
+  /** Previous step's deck-plane normal (see the deck-alignment torque). */
+  deckPrev: Vec;
+  /** Lagged deck-frame angular velocity estimate. */
+  deckPrevW: Vec;
 }
 
 const WHEEL_LOCAL: Vec[] = [
@@ -187,11 +233,16 @@ export function spawnCar(
     wn.setLinvel(vscale(pose.f, v0), true);
     wn.setAngvel(v(0, 0, -v0 / CAR.wheelR), true);
   }
-  return { variant, chassis, wheels, attach: variant === 'raycastWheels' ? ATTACH_LOCAL : WHEEL_LOCAL, quat0: q, mass: chassis.mass() };
+  return { variant, chassis, wheels, attach: variant === 'raycastWheels' ? ATTACH_LOCAL : WHEEL_LOCAL, quat0: q, mass: chassis.mass(), deckPrev: v(0, 1, 0), deckPrevW: v(0, 0, 0) };
 }
 
 export interface WheelSupport {
   grounded: boolean;
+  /** Sum of the suspension spring forces applied along contact normals this
+   *  step (sim N; a settled car on flat deck reads its own weight m*g_sim).
+   *  The loop gate uses it to prove the deck is LOADED, not merely in ray
+   *  range — a flying car's rays hit the deck too. */
+  force: number;
 }
 
 /** Per-step update. Variant b applies spring/damper forces; a relies on joints. */
@@ -212,9 +263,18 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
   const { pos, quat } = chassisFrame(car);
   let grounded = false;
   let normImpulse = 0;
+  // Sum of the ABSOLUTE normal strut load applied this step (push or pull);
+  // the loop gate's apex-contact proof reads it — a flying car's rays hit
+  // the deck at zero load, a car running the loop is loaded against the deck
+  // whether its struts are compressed (fast apex) or on the droop stop
+  // (threshold apex).
+  let springForce = 0;
   const sideSum = [0, 0]; // per-side sums of contact-normal mount velocity
   const sideN: (Vec | null)[] = [null, null];
   const sidePt: (Vec | null)[] = [null, null];
+  // running deck-frame estimate for the alignment torque above
+  let deckN = v(0, 0, 0);
+  let deckHits = 0;
   for (let k = 0; k < car.attach.length; k++) {
     const aLocal = car.attach[k]!;
     const attach = vadd(pos, qrot(quat, aLocal));
@@ -251,15 +311,65 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
         // the deck approaches the car continuously at a few cm/s, and a
         // full-stop bump stop there dumps that climb — i.e. forward speed —
         // inelastically every step (measured: stall at the loop bottom).
-        if (vn < 0 && (vn < -CAR.bumpSpeed || compression > 0.3 * CAR.suspRest)) {
-          car.chassis.applyImpulseAtPoint(vscale(nB, -vn * car.chassis.mass() / 4), attach, true);
+        if (vn < 0 && (vn < -CAR.bumpSpeed || compression > 0.75 * CAR.suspRest)) {
+          { const imp = vscale(nB, -vn * car.chassis.mass() / 4); work('catch', imp, v(vb.x, vb.y, vb.z)); car.chassis.applyImpulseAtPoint(imp, attach, true); }
         }
       }
     }
-    if (compression <= 0) continue;
+    if (compression <= 0) {
+      // DROOP-STOP side of the strut. The damper is two-sided physics (a
+      // real strut damps both ways); the pull is the droop stop, zero until
+      // the arm passes rest, maxed at droopMax past the rest length.
+      const nD = v(hit.normal.x, hit.normal.y, hit.normal.z);
+      const upD = qrot(quat, v(0, 1, 0));
+      if (-compression <= CAR.droopMax && vdot(nD, upD) > 0.7) {
+        grounded = true;
+        const mc = car.chassis.mass() / 4;
+        const vb = car.chassis.velocityAtPoint(attach);
+        const v3 = v(vb.x, vb.y, vb.z);
+        // strut-axis extension rate, as on the compression side
+        const relA = vdot(v3, down);
+        const dampFrac = Math.min(1, (CAR.droopC * FIXED_DT) / mc);
+        { const imp = vscale(down, -relA * dampFrac * mc); work('droopD', imp, v3); car.chassis.applyImpulseAtPoint(imp, attach, true); }
+        const t = Math.min(CAR.droopK * -compression, CAR.droopMaxForce);
+        { const imp = vscale(nD, -t * FIXED_DT); work('droopT', imp, v3); car.chassis.applyImpulseAtPoint(imp, attach, true); }
+        normImpulse += t * FIXED_DT;
+        springForce += t;
+        deckN = vadd(deckN, nD); deckHits++;
+      } else if (-compression <= CAR.droopMax) {
+        // guide-side droop stop: undamped, budget-clamped (see the filtered
+        // contact note below the push branch)
+        const t = Math.min(CAR.droopK * -compression, CAR.droopMaxForce);
+        car.chassis.applyImpulseAtPoint(vscale(nD, -t * FIXED_DT), attach, true);
+        springForce += t;
+        grounded = true;
+        deckN = vadd(deckN, nD); deckHits++;
+      }
+      continue;
+    }
     const n0 = v(hit.normal.x, hit.normal.y, hit.normal.z);
     const upW = qrot(quat, v(0, 1, 0));
-    if (vdot(n0, upW) < 0.7) continue; // seam/edge hits are not support
+    if (vdot(n0, upW) < 0.7) {
+      // FILTERED CONTACT (loop-wall facing / unaligned orbit). The stage-1
+      // model dropped these hits wholesale ("seam/edge hits are not
+      // support") — fine on flat ground, fatal inside a loop where it
+      // starves the orbit of centripetal load and denies the aligning
+      // torque: the chassis can never rotate onto a wall it is pushing on.
+      // A push-only, undamped, budget-clamped normal spring aligns and
+      // supports without re-introducing the riser plough — the plough was
+      // the velocity cancellation on these hits, which stays excluded.
+      if (compression > 0) {
+        const f = Math.min(CAR.suspK * compression, CAR.suspMaxForce);
+        { const imp = vscale(n0, f * FIXED_DT); const lv0 = car.chassis.linvel(); work('guideS', imp, v(lv0.x, lv0.y, lv0.z)); car.chassis.applyImpulseAtPoint(imp, attach, true); }
+        springForce += f;
+        grounded = true;
+        deckN = vadd(deckN, n0); deckHits++;
+      }
+      // Deliberately UNVIGORED: along the normal a damper here is the
+      // riser plough; and a skim at deck height would find soft sand where
+      // the car should bounce. Align-only, push/pull-only, budget-clamped.
+      continue; // never the support/anti-roll/feeler path
+    }
     grounded = true;
     const mc = car.chassis.mass() / 4;
     const vb = car.chassis.velocityAtPoint(attach);
@@ -271,12 +381,24 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
     sidePt[side] = attach;
     // Push along the CONTACT NORMAL: a support force tilted with body pitch
     // creates slope drag that can exactly balance gravity and stall the car.
-    // Semi-implicit damper first, then the explicit spring term.
+    // The DAMPER is different: it measures the STRUT EXTENSION RATE (velocity
+    // along the strut axis = the ray direction), never the contact-normal
+    // velocity. Along the normal it reads the car's own orbital motion
+    // wherever the deck curves (v·sin(turn angle)) and the fraction-velocity
+    // cancellation then brakes the suspension against steady cornering -
+    // measured: violent loop pumping that throws the car off the deck past
+    // ph ~250 at any energy above threshold. Along the axis, a car tracking
+    // the deck has ~zero extension rate anywhere: straights, valleys, ramps,
+    // loops, and the damper stops fighting the geometry it is meant to
+    // settle. Semi-implicit damper first, then the explicit spring term.
     const dampFrac = Math.min(1, (CAR.suspC * FIXED_DT) / mc);
-    car.chassis.applyImpulseAtPoint(vscale(n0, -relV * dampFrac * mc), attach, true);
+    const relA = vdot(v3, down);
+    { const imp = vscale(down, -relA * dampFrac * mc); work('damp', imp, v3); car.chassis.applyImpulseAtPoint(imp, attach, true); }
     const f = Math.min(Math.max(CAR.suspK * compression, 0), CAR.suspMaxForce);
-    car.chassis.applyImpulseAtPoint(vscale(n0, f * FIXED_DT), attach, true);
+    { const imp = vscale(n0, f * FIXED_DT); work('spring', imp, v3); car.chassis.applyImpulseAtPoint(imp, attach, true); }
     normImpulse += f * FIXED_DT;
+    springForce += f;
+    deckN = vadd(deckN, n0); deckHits++;
 
     // Channel-contact feeler (the actual steering mechanism — see
     // CAR.railSlack): a short lateral ray at rail-lip height, out from this
@@ -321,6 +443,67 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
         }
       }
     }
+  }
+  // Deck-alignment strut torque — the moment transfer a push-only strut
+  // cannot provide. A real car's wheels are pinned near the deck line, so
+  // the deck plane DEFINES the chassis attitude through rigid wishbones.
+  // The raycast chassis touches nowhere, and inside a loop the deck frame
+  // rotates at v/r (tens of rad/s at this toy radius) with nothing to turn
+  // it — measured: pitch lag at the loop bottom turned half the entry
+  // energy into damper heat within ten steps, throwing the car off the
+  // deck. Track the deck-plane normal (mean of this step's contact
+  // normals), and drive the chassis angular state toward that frame with a
+  // damped torque budgeted by the step's contact load — the same modelling
+  // family and friction-circle discipline as the anti-roll and
+  // self-aligning torques below: it can turn attitude INTO the track,
+  // never push the car along it.
+  if (deckHits >= 2) {
+    const nBar = vnorm(deckN);
+    const upC = qrot(quat, v(0, 1, 0));
+    const err = vcross(upC, nBar); // axis * sin(error)
+    const raw = vscale(vcross(car.deckPrev, nBar), 2 / FIXED_DT); // raw frame spin
+    // Wishbones are not perfect joints: the estimate (and the correction)
+    // runs through a first-order lag, because the collider chord staircase
+    // rotates the raw normal in 10-deg spikes and an unfiltered wWant
+    // back-flips the car at ramp valleys (measured: wy spikes to -80).
+    const a = 0.3;
+    const wDeck = vadd(vscale(car.deckPrevW, 1 - a), vscale(raw, a));
+    const wc = car.chassis.angvel();
+    const em = vlen(err);
+    // Sanity gate: past ~50 deg of misalignment the mean normal is no
+    // longer a trustworthy frame (the rays are reading chord faces, not
+    // treads), and steering on it reverse-rotates the car - measured on
+    // the loop's upper rise, where an unclamped alignment REVERSED the
+    // pitch mid-climb. Below the gate it is exact.
+    const pTerm = em > 1e-6 && em < 0.85 ? vscale(vnorm(err), Math.min(em, 0.35) * 40) : v(0, 0, 0);
+    // Tensor-correct authority: this chassis's roll inertia is ~4x smaller
+    // than its pitch inertia (flat, wide box), so a scalar-I torque law
+    // overdrives ROLL ninefold - measured: the roll mode exploded to
+    // -58 rad/s about the apex and threw the car sideways off the deck.
+    // Transform dw to chassis frame, scale by the principal inertias,
+    // transform back.
+    const mass = car.chassis.mass();
+    // box collider cuboid(halfL, halfH, halfW): principal inertias
+    const Ix = (mass / 3) * (CAR.halfH * CAR.halfH + CAR.halfW * CAR.halfW);
+    const Iy = (mass / 3) * (CAR.halfL * CAR.halfL + CAR.halfW * CAR.halfW);
+    const Iz = (mass / 3) * (CAR.halfL * CAR.halfL + CAR.halfH * CAR.halfH);
+    const Ivec = v(Ix, Iy, Iz);
+    const dwW = vsub(vadd(wDeck, pTerm), wc);
+    const rq = { w: quat.w, x: quat.x, y: quat.y, z: quat.z };
+    const inv = { w: rq.w, x: -rq.x, y: -rq.y, z: -rq.z };
+    const dwL = qrot(inv, dwW);
+    const jL = v(dwL.x * Ivec.x * 0.5, dwL.y * Ivec.y * 0.5, dwL.z * Ivec.z * 0.5);
+    let j = qrot(rq, jL);
+    // the wishbone's honest moment limit: contact force x structural arm
+    // (a real suspension transfers attitude moment structurally, not
+    // through the friction circle - force x arm, clamped by what the
+    // contacts can actually carry)
+    const budget = springForce * FIXED_DT * CAR.halfL;
+    const jm = vlen(j);
+    if (jm > budget) j = vscale(j, budget / jm);
+    if (jm > 1e-9) car.chassis.applyTorqueImpulse(j, true);
+    car.deckPrev = nBar;
+    car.deckPrevW = wDeck;
   }
   // Anti-roll damper. The mounts sit BELOW the chassis centre of mass, so
   // the spring layout carries an inverted-pendulum roll term — gravity's
@@ -376,7 +559,7 @@ function supportStep(world: RAPIER.World, car: Car): WheelSupport {
       }
     }
   }
-  return { grounded };
+  return { grounded, force: springForce };
 }
 
 /**
@@ -427,7 +610,7 @@ function jointedStep(world: RAPIER.World, car: Car): WheelSupport {
       );
     }
   }
-  return { grounded: support.grounded };
+  return { grounded: support.grounded, force: support.force };
 }
 
 /**
@@ -443,7 +626,7 @@ export function applyRollingResistance(car: Car, grounded: boolean, coeff: numbe
   const l = Math.sqrt(vdot(hv, hv));
   if (l < 0.05) return;
   const f = car.chassis.mass() * coeff * G_SIM * FIXED_DT;
-  car.chassis.applyImpulse(vscale(hv, -f / l), true);
+  { const imp = vscale(hv, -f / l); work('roll', imp, v(lv.x, lv.y, lv.z)); car.chassis.applyImpulse(imp, true); }
 }
 
 /** World-space speed of the chassis (sim units). */

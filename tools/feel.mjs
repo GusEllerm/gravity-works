@@ -34,9 +34,9 @@ for (const variant of variants) {
     landing: `${feel.landingImpulse.toFixed(3)} Ns`,
     rollDrop: roll.rollDistance === null ? 'no touchdown' : `${roll.rollDistance.toFixed(2)} m`,
     rollRamp: ramp.rollDistance === null ? 'no touchdown' : `${ramp.rollDistance.toFixed(2)} m`,
-    loopH: Number.isNaN(loop.height) ? '>' : `${loop.height.toFixed(3)} m (${loop.heightOverR.toFixed(2)} r)`,
+    loopH: Number.isNaN(loop.height) ? 'DNF' : `${loop.height.toFixed(3)} m (${loop.heightOverR.toFixed(2)} r)`,
     loopHfric: Number.isNaN(loopFric.height)
-      ? '>4.5r'
+      ? 'DNF'
       : `${loopFric.heightOverR.toFixed(2)} r`,
     hash: `${feel.hash}${feel2.hash === feel.hash ? ' =repeat' : ' !=repeat!'}`,
   });
@@ -52,9 +52,12 @@ console.log();
 console.log(
   'rollDrop = free-drop rig (0.3 m vertical, no launch; travel after touchdown).\n' +
     'rollRamp = brief §7.1 rig (release from rest on the 30 cm drop ramp; travel\n' +
-    'to stop). Target ~2.5 m: ideal physics d = h/mu puts mu=0.02 at ~15 m, so\n' +
-    'ROLL_COEF (tuned on the broken stage-1 rig) still needs re-tuning; seam\n' +
-    'stitching + spring losses already cut it to 8.46 m and real-wheel ploughing\n' +
-    'on the chord slabs to 5.87 m. The track kit\'s stitched colliders are the\n' +
-    'stage-2 item that closes the remaining gap.',
+    'to stop). Target ~2.5 m: MET (2.49 m) since the SIM_SCALE velocity-mapping\n' +
+    'fix - toWorldSpeed divided by sqrt(S) instead of S had tuned mu against an\n' +
+    'inflated number; ROLL_COEF 0.12 is the honest constant now.\n' +
+    'loopH = bisected release height on the steep-ramp loop rig (r = 0.09) under\n' +
+    'the HARDENED gate (apex inverted + deck-loaded + speed floor). DNF = no\n' +
+    'release height completes: the 1.41 r ballistic-interior pass is closed and\n' +
+    'no positive threshold has been found yet - the suspension cannot track a\n' +
+    '20-30 rad/s loop frame rate at any k swept. See Modules/feel.md.',
 );

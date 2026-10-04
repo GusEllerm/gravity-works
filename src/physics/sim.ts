@@ -5,7 +5,17 @@
  *   length_sim  = S * length_world
  *   mass_sim    = S^3 * mass_world      (density is scale-invariant)
  *   gravity_sim = S * g                 (keeps wall-clock time identical)
- *   speed_sim   = sqrt(S) * speed_world (falls out of the above two)
+ *   speed_sim   = S * speed_world       (v = g*t with time unchanged: NOT
+ *                                        sqrt(S) — sqrt(S) is the mapping for
+ *                                        the OTHER scaling, same-g/longer-
+ *                                        time, and using it here inflated
+ *                                        every reported speed by sqrt(S)=3.16
+ *                                        — the stage-2 loop-gate audit found
+ *                                        an apex-speed floor thereby bogus-
+ *                                        passing: the sim speed of a car that
+ *                                        never HELD the loop read 3.16x over
+ *                                        the sqrt(g r) floor once divided by
+ *                                        the wrong factor.)
  * So a 0.05 kg toy behaves, to the digit, like a ~50 kg object 75 cm long
  * falling in 10g — which is what the f32 solver likes. All conversions live
  * here; see docs/vault/Concepts/Feel.md "Physics scale factor".
@@ -17,7 +27,6 @@ export { RAPIER };
 export const SIM_SCALE = 10;
 export const S = SIM_SCALE;
 export const S2 = S * S;
-export const SQRT_S = Math.sqrt(S);
 export const G_WORLD = 9.81;
 export const G_SIM = G_WORLD * S;
 export const WORLD_MASS_KG = 0.05;
@@ -200,5 +209,8 @@ export function stepWorld(world: RAPIER.World): void {
 // ---- unit conversions to world (1:64 toy) units ----------------------------
 
 export const toWorldDist = (dSim: number): number => dSim / S;
-export const toWorldSpeed = (vSim: number): number => vSim / SQRT_S;
-export const toWorldImpulse = (jSim: number): number => jSim / (S2 * SQRT_S);
+/** v_world = v_sim / S: length x S with time unchanged (g x S) makes velocity
+ *  scale at S, not sqrt(S).) */
+export const toWorldSpeed = (vSim: number): number => vSim / S;
+/** momentum/impulse: mass x S^3 and velocity x S => j_world = j_sim / S^4. */
+export const toWorldImpulse = (jSim: number): number => jSim / (S2 * S2);

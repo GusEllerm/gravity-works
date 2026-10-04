@@ -16,24 +16,24 @@
  *     rest at the top of the 30 cm drop ramp, wheel-centre travel from
  *     touchdown to stop. THIS is where the ~2.5 m target lives.
  *
- * Measured 2026-10-04 (npm run feel, honest rigs, ROLL_COEF = 0.02):
- *   free-drop: wheelColliders 0.00 m | raycastWheels 0.00 m
- *   drop-ramp: wheelColliders 5.87 m | raycastWheels 8.46 m
- *   target ~2.5 m NOT yet met — currently an OVERSHOOT: mu = 0.02 was tuned
- *   on the broken stage-1 rig and puts the ideal (d = h/mu) near 15 m; seam
- *   stitching + spring losses cut that to 8.46 m, and variant a's real
- *   wheel colliders plough the chord slabs down to 5.87 m. ROLL_COEF
- *   re-tuning and the track kit's stitched colliders are expected to close
- *   the gap to ~2.5 m. The assertions below are floors/tripwires that
- *   remain GREEN the day the target is met (the stage-1 tripwire was
- *   inverted — it failed on success, finding 6).
- *
- *   loop: completion still unmeasurable on the provisional track (target
- *         2.50 r +-10%); feel track: both variants still DNF.
+ * Measured 2026-10-05 (npm run feel, honest rigs, ROLL_COEF = 0.12, after
+ * the SIM_SCALE velocity-mapping fix - toWorldSpeed divided by sqrt(S)
+ * instead of S, which had inflated every reported speed 3.16x and silently
+ * tuned mu against a lie):
+ *   free-drop: wheelColliders 0.00 m | raycastWheels 0.00 m (symmetry)
+ *   drop-ramp: wheelColliders 2.49 m | raycastWheels 2.49 m
+ *   - the §7.1 target of ~2.5 m is now MET (2.49 m, within 1%).
+ *   feel track: raycastWheels COMPLETES (2.92 s) with the cup now requiring
+ *         deck contact, not just proximity; wheelColliders DNF unchanged.
+ *   loop: the honest gate (inverted + deck-loaded + speed floor AT the
+ *         apex) is in place and the 1.41 R ballistic-interior exploit is
+ *         CLOSED (see loopGate below); a positive threshold is currently
+ *         DNF - no release height completes yet, tracked under the
+ *         loop-suspension work item.
  *   determinism: bit-identical state hashes across repeat runs  PASS
  */
 import { beforeAll, describe, expect, it } from 'vitest';
-import { feelTrackRun, rampRollRun, rollRun } from '../../src/feel/run.ts';
+import { feelTrackRun, loopThreshold, loopTry, rampRollRun, rollRun, APEX_UP_MAX, APEX_SPEED_EPS, APEX_FORCE_MIN } from '../../src/feel/run.ts';
 import { initRapier, quant } from '../../src/physics/sim.ts';
 
 beforeAll(async () => {
@@ -44,17 +44,16 @@ beforeAll(async () => {
 const TARGET_ROLL_M = 2.5;
 
 /**
- * Honest measured values on the honest rigs, 2026-10-04 (npm run feel).
+ * Honest measured values on the honest rigs, 2026-10-05 (npm run feel).
  * See the file header for what each rig is and why the free-drop number is
- * zero by symmetry. Kit colliders + ROLL_COEF re-tuning are expected to
- * move the drop-ramp numbers DOWN toward the target; the free-drop pins are
- * launch-artifact tripwires (~0 + 0.2 m creep band), not ceilings on
- * legitimate progress (review finding 6).
+ * zero by symmetry. The drop-ramp numbers now sit ON the §7.1 target; the
+ * free-drop pins are launch-artifact tripwires (~0 + 0.2 m creep band),
+ * not ceilings on legitimate progress (review finding 6).
  */
 const MEASURED_DROP_ROLL_RAYCAST_M = 0.0;
 const MEASURED_DROP_ROLL_WHEEL_M = 0.0;
-const MEASURED_RAMP_ROLL_RAYCAST_M = 8.46;
-const MEASURED_RAMP_ROLL_WHEEL_M = 5.87;
+const MEASURED_RAMP_ROLL_RAYCAST_M = 2.49;
+const MEASURED_RAMP_ROLL_WHEEL_M = 2.49;
 
 /** Regression band: +/-15% of today's measured value on the same rig. */
 const DRIFT_TOL = 1.15;
@@ -124,14 +123,57 @@ describe('drop-ramp roll rig — brief §7.1 metric (target ~2.5 m)', () => {
     expect(d).toBeLessThanOrEqual(MEASURED_RAMP_ROLL_RAYCAST_M * DRIFT_TOL);
   }, 120_000);
 
-  it('wheel-collider variant (REAL wheel colliders + friction) ploughs the chord slabs, as documented', () => {
+  it('wheel-collider variant rolls within one band of the raycast variant', () => {
     const d = rampRollRun('wheelColliders').rollDistance as number;
     expect(Number.isFinite(d)).toBe(true);
     expect(d).toBeGreaterThanOrEqual(0.85 * TARGET_ROLL_M);
     expect(d).toBeLessThanOrEqual(MEASURED_RAMP_ROLL_WHEEL_M * DRIFT_TOL);
-    // The plough gap vs the raycast variant (8.46 - 5.87 = 2.59 m, ~31%) is
-    // expected on hand-chorded slabs and is a WHY of the track kit, not a
-    // bug to tune around. See Modules/physics.md.
+    // 2026-10-05: measured 2.49 m - the same as the raycast variant. The
+    // earlier 2.59 m "plough gap" against 8.46 m was the sqrt-S speed-map
+    // bug inflating the raycast number; both variants now report the same
+    // honest travel.
+  }, 120_000);
+});
+
+describe('loop gate honesty (stage-2 audit)', () => {
+  // The stage-2 audit (session log 2026-10-05): the old gate counted any
+  // state whose ARC PROJECTION passed the exit station. A car released at
+  // 1.41 R flew ballistically through the loop interior - never inverted,
+  // never touching the deck - and the global rail projection teleported
+  // its arc past the exit. The hardened gate demands, AT the apex: chassis
+  // inverted (upY <= APEX_UP_MAX), deck structurally LOADED (support
+  // force >= APEX_FORCE_MIN, not mere ray proximity), and speed at or
+  // above the dry-loop floor sqrt(g r) (1 + APEX_SPEED_EPS).
+  const R = 0.09; // a radius at which the car geometry is non-degenerate
+
+  it('the exploit that passed at 1.41 R is closed on both variants', () => {
+    // The exact family of run that the old gate scored as a 1.41 R lap.
+    expect(loopTry('raycastWheels', R, 1.41 * R, 0.12)).toBe(false);
+    expect(loopTry('wheelColliders', R, 1.41 * R, 0.12)).toBe(false);
+  }, 120_000);
+
+  it('gate physics constants encode the theory, not a plucked number', () => {
+    // inverted at the apex is half-way or worse (cos 120 deg = -0.5)
+    expect(APEX_UP_MAX).toBeLessThanOrEqual(-0.5);
+    // the speed floor is sqrt(g r) with only a small sampling margin
+    expect(APEX_SPEED_EPS).toBeGreaterThan(0);
+    expect(APEX_SPEED_EPS).toBeLessThan(0.1);
+    // "deck loaded" must be far above a settled car's idle m*g_sim and
+    // far above anything a grazing ray hit can fake
+    expect(APEX_FORCE_MIN).toBeGreaterThanOrEqual(400);
+  });
+
+  // The threshold bisect currently DNFs (no release height completes with
+  // the honest gate yet - the suspension cannot track the loop's 20-30
+  // rad/s frame rate at any k tested; see the session log). it.fails keeps
+  // this green today and turns RED (loudly, in the suite) the day the
+  // loop-tracking suspension lands, when it should be replaced by a plain
+  // in-band assertion.
+  it.fails('bisected honest loop threshold lands in [2.25, 2.75] R', () => {
+    const t = loopThreshold('raycastWheels', R, { iters: 3 });
+    expect(Number.isFinite(t.heightOverR)).toBe(true);
+    expect(t.heightOverR).toBeGreaterThanOrEqual(2.25);
+    expect(t.heightOverR).toBeLessThanOrEqual(2.75);
   }, 120_000);
 });
 

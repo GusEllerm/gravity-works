@@ -113,7 +113,12 @@ export class KitRig {
     return out;
   }
 
-  /** Uniform-arc wheel-height rail over the whole build (world metres). */
+  /** Uniform-arc wheel-height rail over the whole build (world metres).
+   *  The returned spacing is the TRUE sample step, (length-eps)/(n-1), never
+   *  the requested one: treating the requested 0.01 as the true step when the
+   *  build length does not divide by it re-scaled every arc projection by up
+   *  to ~1 % and desynchronised railPointAt from frameAt — the straight-line
+   *  camera drift. */
   rail(spacing = 0.01): { points: THREE.Vector3[]; spacing: number } {
     if (!this.railPts || Math.abs(this.railSpacing - spacing) > 1e-12) {
       const n = Math.max(2, Math.ceil(this.length / spacing) + 1);
@@ -123,16 +128,29 @@ export class KitRig {
         pts.push(f.pos.clone().addScaledVector(f.up, RAIL_WHEEL_HEIGHT));
       }
       this.railPts = pts;
-      this.railSpacing = spacing;
+      this.railSpacing = (this.length - 1e-9) / (n - 1);
     }
     return { points: this.railPts, spacing: this.railSpacing };
   }
 
-  /** Nearest rail arc-length to a world point (piecewise-linear search). */
+  /** Nearest rail arc-length to a world point (piecewise-linear search).
+   *  Global and DISTANCE-BLIND — for any judgement about where the car IS,
+   *  prefer nearestArcInfo, which reports how far the point was from the rail
+   *  it projected onto. */
   nearestArc(p: { x: number; y: number; z: number }, spacing = 0.01): number {
+    return this.nearestArcInfo(p, spacing).arc;
+  }
+
+  /** Nearest rail arc AND the distance to the rail there. The distance is
+   *  what makes projections honest: a car flying through a loop's empty
+   *  interior is ~4 cm from the deck yet projects onto an arc PAST the loop
+   *  exit (the stage-2 loop-gate exploit), while a car riding the deck is
+   *  always within ~1.5 cm of its own rail point. */
+  nearestArcInfo(p: { x: number; y: number; z: number }, spacing = 0.01): { arc: number; dist: number } {
     const { points, spacing: h } = this.rail(spacing);
     let bestD2 = Infinity;
-    let bestS = 0;
+    let bestT = 0;
+    let bestI = 0;
     const probe = new THREE.Vector3();
     for (let i = 0; i + 1 < points.length; i++) {
       const a = points[i]!;
@@ -143,17 +161,23 @@ export class KitRig {
       const d2 = probe.set(p.x, p.y, p.z).distanceToSquared(a.clone().addScaledVector(ab, t));
       if (d2 < bestD2) {
         bestD2 = d2;
-        bestS = (i + t) * h;
+        bestI = i;
+        bestT = t;
       }
     }
-    return bestS;
+    return { arc: (bestI + bestT) * h, dist: Math.sqrt(bestD2) };
   }
 
-  /** Rail point at world-arc `s` (rail spacing resolution, clamped). */
+  /** Rail point at world-arc `s` — LINEARLY INTERPOLATED between the true-
+   *  spacing samples. Snapping to the nearest sample (the old round()) made
+   *  the camera position stick-slip by up to half a sample on straights and
+   *  put it at arc round(s/h)*h_true != s wherever h did not divide the
+   *  build length — the arc-length re-projection drift of the run camera. */
   railPointAt(s: number, spacing = 0.01): THREE.Vector3 {
     const { points, spacing: h } = this.rail(spacing);
-    const i = THREE.MathUtils.clamp(Math.round(s / h), 0, points.length - 1);
-    return points[i]!.clone();
+    const u = THREE.MathUtils.clamp(s / h, 0, points.length - 1);
+    const i = Math.min(Math.floor(u), points.length - 2);
+    return points[i]!.clone().lerp(points[i + 1]!, u - i);
   }
 }
 

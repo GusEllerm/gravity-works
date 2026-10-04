@@ -29,7 +29,6 @@ import {
   initRapier,
   RAPIER,
   SIM_SCALE,
-  SQRT_S,
   createWorld as createSimWorld,
   hashBodies,
   hashHex,
@@ -218,7 +217,7 @@ export class World {
         this.launchers.push({
           pos: { x: world.pos.x, y: world.pos.y, z: world.pos.z },
           dir: { x: world.tangent.x, y: world.tangent.y, z: world.tangent.z },
-          power: def.power * SQRT_S, // world Δv -> sim Δv
+          power: def.power * SIM_SCALE, // world Δv -> sim Δv (v scales at S)
           fire: def.applyImpulse,
           fired: false,
         });
@@ -424,7 +423,7 @@ export class World {
       car: {
         pos: v(t.x / SIM_SCALE, t.y / SIM_SCALE, t.z / SIM_SCALE),
         quat: { w: r.w, x: r.x, y: r.y, z: r.z },
-        speed: carSpeed(this.car) / SQRT_S,
+        speed: carSpeed(this.car) / SIM_SCALE,
         grounded,
       },
     };
@@ -446,7 +445,7 @@ export class World {
       this.runStatus = 'fell';
       return;
     }
-    const speed = carSpeed(this.car) / SQRT_S;
+    const speed = carSpeed(this.car) / SIM_SCALE;
     if (grounded && speed < this.stallSpeed) this.stallRun += 1;
     else this.stallRun = 0;
     if (this.stallRun > this.stallLimit) {

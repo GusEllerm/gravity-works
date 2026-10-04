@@ -74,8 +74,9 @@ export interface ImpulseBody {
  * booster: `power` is a **velocity increment** applied along `dir` (default:
  * the body's current velocity, falling back to its local +x). Expressing power
  * as a Δv rather than a Newton-second keeps kit code scale-blind — mass and
- * velocity are read from the body it is applied to. A world-space Δv becomes a
- * sim-space one by multiplying by `SQRT_SIM_SCALE` (see `src/physics/sim.ts`).
+ * velocity are read from the body it is applied to. A world-space Δv becomes
+ * a sim-space one by multiplying by `SIM_SCALE` (velocity scales at S, since
+ * the sim runs gravity at S*g with time unchanged — see `src/physics/sim.ts`).
  */
 export function applyImpulse(body: ImpulseBody, power: number, dir?: { x: number; y: number; z: number }): void {
   let d: { x: number; y: number; z: number } = dir ?? { x: 0, y: 0, z: 0 };

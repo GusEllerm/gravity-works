@@ -8,6 +8,8 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { RunCamera, RUN_CAMERA } from '../../src/camera/run-camera.ts';
 import type { RunCameraSource } from '../../src/camera/run-camera.ts';
+import { feelTrackRig } from '../../src/feel/feeltrack.ts';
+import { RAIL_WHEEL_HEIGHT } from '../../src/track/cross-section.ts';
 
 const R = 4; // corner radius of the bend
 const L = 10; // arc where the bend starts
@@ -110,6 +112,52 @@ describe('run camera (§7.3: leads ~0.4 s, 150 ms positional lag, slower rotatio
       return cam.position.x + 7919 * cam.position.z + 104729 * cam.rotation.w;
     };
     expect(mk()).toBe(mk());
+  });
+});
+
+describe('KitRig railPointAt (the straight-line camera drift regression)', () => {
+  // RunCamera itself is pure filtering - the §7.3 "camera drifts sideways
+  // on straights" bug lived in its SOURCE, KitRig.railPointAt: it snapped
+  // s to the nearest 1 cm rail sample (5 mm stick-slip per sample step)
+  // and the sample cache rescaled arc by the requested-vs-true spacing
+  // ratio (a systematic drift growing along the track, ~40% of the arc
+  // near x = -1 on the feel track). Both are fixed in KitRig.rail();
+  // these are the regression tests on the REAL kit rig, which the
+  // analytic rail above cannot express.
+  const rig = feelTrackRig();
+
+  it('is continuous and arc-faithful along a straight (no sample snap)', () => {
+    // a 0.9 m stretch of the run-out straight, sampled far finer than the
+    // 1 cm rail cache spacing
+    const s0 = rig.length - 1.2;
+    const step = 0.0004;
+    let prev = rig.railPointAt(s0);
+    let worstBack = 0;
+    let worstJump = 0;
+    for (let s = s0 + step; s <= s0 + 0.9; s += step) {
+      const p = rig.railPointAt(s);
+      const d = p.distanceTo(prev);
+      // a forward monotone rail: never retreats, never sticks, never jumps
+      worstBack = Math.max(worstBack, prev.x - p.x);
+      worstJump = Math.max(worstJump, Math.max(0, d - step) , Math.max(0, step * 0.5 - d));
+      prev = p;
+    }
+    expect(worstBack).toBeLessThan(1e-9);            // monotone in x
+    expect(worstJump).toBeLessThan(step * 0.5);      // no stick or slip
+  });
+
+  it('railPointAt(s) agrees with frameAt(s) everywhere on the straight', () => {
+    // the spacing-ratio drift made railPointAt lag frameAt by a growing
+    // arc fraction; they must now agree well under a millimetre
+    const s0 = rig.length - 1.5;
+    for (let s = s0; s < rig.length - 0.3; s += 0.0137) {
+      const f = rig.frameAt(s);
+      const p = rig.railPointAt(s);
+      const expectY = f.pos.y + RAIL_WHEEL_HEIGHT * f.up.y;
+      const expectX = f.pos.x + RAIL_WHEEL_HEIGHT * f.up.x;
+      expect(Math.abs(p.x - expectX)).toBeLessThan(5e-4);
+      expect(Math.abs(p.y - expectY)).toBeLessThan(5e-4);
+    }
   });
 });
 
