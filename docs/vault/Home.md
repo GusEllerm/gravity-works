@@ -30,13 +30,15 @@ commit that changes the code is blocked until the note is updated or acknowledge
 
 ## Current status
 
-**Stage 1 (explorations) — closed.** References chosen by the fresh Art Director (scores in `Reference/Review 2026-10-04 Stage 1 explorations.md`): **kitchen tile B** (hero shot is a painting; one integration send-back queued for stage 3), **car-a sedan blocky**, **ramp variant B (three hard steps)**. Physics reference: **raycast wheels** (bake-off measured; jointed wheels rejected). `src/render/` (toon system + tokens), `src/dev/` (deterministic harness), `src/physics/` + provisional `src/feel/` exist. The stage-2 spine's right half has landed: `src/world/` (`World`, levels), `src/ui/` (builder), `src/save/`, `src/share/`, `src/replay/`, and `src/boot.ts` boots the real game (placeholder feel-track build) plus a share-replay `verified` page — the track kit's left half (feel track, run camera) is the Feel Engineer's parallel branch. Tilt-shift is the flagged blocking dependency for all future render finals.
+**Stage 1 (explorations) — closed** (references in `Reference/Review 2026-10-04 Stage 1 explorations.md`: kitchen tile B, car-a sedan blocky, ramp variant B; physics reference: raycast wheels; tile-B integration send-back queued for stage 3).
+
+**Stage 2 (the spine) — closed.** The whole spine is landed and the accept lines are proven on `main`: track kit (`src/track`, 13 pieces, splines → mesh/collider/rail/sockets), `World` + data-driven feel-track level (`src/world`), builder UI (`src/ui`), save/share/replay (`src/save`, `src/share`, `src/replay`), the §7.3 run camera as a pure tested class (`src/camera`; not yet wired into the shell's frame loop — stage-3 item), and the physics rework (raycast-wheel car with rail steering, solver-energy audit, crutch-ablation suite). Accept lines: a car completes the feel track (harness 3.31 s / world 361 steps, both variants); canonical loop threshold **2.30 R** from the bracketed, wing-probed bisect, band-asserted in test; node↔browser determinism hard-matches at `099403c7` with the page verdict `verified`; the builder e2e derives its counters from level data; 90/90 unit, 9/9 e2e. **The kitchen art slice is NOT started** — no `src/sets/`, no tile-B re-render, tilt-shift still the flagged blocking dependency for all render finals; stage 2 changed no render output.
 
 ## Plan
 
 - [x] Stage 0 — bootstrap, CI, vault, bibles v0 (tag `stage-0`)
 - [x] Stage 1 — explorations: kitchen tiles ×3, car ×3, physics ×2, toon ramps ×3; references chosen (`stage-1`)
-- [ ] Stage 2 — the spine: track kit + sockets, builder, `World`, fixed-step physics, run camera, real feel track, determinism harness, save/share
+- [x] Stage 2 — the spine: track kit + sockets, builder, `World`, fixed-step physics, run camera, real feel track, determinism harness, save/share (`stage-2`)
 - [ ] Stage 3 — kitchen vertical slice (materials, light, post, set, 5 levels, result screen, help drawer, share card)
 - [ ] Stage 4 — bathroom / bedroom / garden / garage in parallel + levels + hazards
 - [ ] Stage 5 — porch, cinematic replay, synthesised sound
@@ -46,7 +48,13 @@ Staffing is per-stage and recorded in `Sessions/` notes; roles and protocols liv
 
 ## Deferred
 
-- Stage-1 review findings to fix in stage 2 (see `Sessions/2026-10-04 Stage 1 review.md`): honest roll-test rig (no launch velocity; real world-metre decks); corrected wheel-collider variant for the standing physics gate; remove dead `setRollCoef`/`startOffset`; make `tokens.test.ts` assertions non-vacuous; roll test must pass when the target is *met*; `quant()` must not map NaN→0 in the state hash.
+- Stage-2 reviewer carry-ins to stage 3 (from `Sessions/2026-10-06 Stage 2 review.md` and the round's notes):
+  - **Size the loop piece for the collider variant** — the shipped `LOOP_RADIUS` and gate bracket are tuned with the raycast car; the `wheelColliders` variant's tyres physically touch the lips and its banked-yaw crossing is unproven.
+  - **Feel-track gap length** — a carry-in quoted "the feel-track gap is fixed at 45 cm"; VERIFIED STALE at the stage-2 close: `FEEL_DROP_HEIGHT` is **0.52 m** (the 2026-10-06 energy audit rebalanced 0.45 → 0.52 and the fix-crew swept the stale 0.45 comments; the value deliberately sits in a narrow two-line window — see [[feel]] Layout). Do not re-apply 45 cm.
+  - **Hardware 60 fps confirmation** — every stage-2 rendered number is SwiftShader software GL; the ~59.9 fps line needs one pass on a real GPU (stage-3 re-measure, [[Performance/stage-2|Performance/stage-2]]).
+  - **Up-stop wheels question** — the loop's speed-window ceiling is real physics with a missing component: either model up-stop wheels or state in the brief that a loop has a speed window by design (carried from `Sessions/2026-10-05 Stage 2 - loop geometry fix.md`; the post-audit "holds through 7 R" result removed the solver-made ceiling, not the physical question).
+  - Run-camera wiring into the game shell ([[camera]] Integration status).
+- Stage-1 review findings to fix in stage 2 (see `Sessions/2026-10-04 Stage 1 review.md`) — all landed in stage 2: honest roll-test rig; corrected wheel-collider variant; `setRollCoef`/`startOffset` removed; `tokens.test.ts` assertions non-vacuous; roll test passes when the target is met; `quant()` NaN no longer maps to 0.
 - Tile-B integration re-render (Art Director send-back) → first task of stage 3.
 - Material backlog (grain frequency, accent-to-light, decals, ceramic saturation, dither budget, tyre lightness floor) → stage 3, Technical Artist.
 - Tilt-shift/post stack → stage 3; renders are *provisional* until then.

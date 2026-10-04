@@ -102,6 +102,11 @@ sig = "4fe23bf6f5ca2b6b"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
+target = "src/dev/scenes/worldsmoke.ts"
+sig = "dcf594af7c381b9d"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
 target = "src/main.ts"
 sig = "777f9bdbd60fe546"
 
@@ -479,6 +484,16 @@ sig = "8917cdf1c38db74e"
 doc = "docs/vault/Reference/Canonical Cameras.md"
 target = "src/dev/cameras.ts"
 sig = "9512fc975c9378c7"
+
+[[bindings]]
+doc = "docs/vault/Reference/Level Ladder.md"
+target = "src/feel/feeltrack.ts"
+sig = "cbba72af04a17c24"
+
+[[bindings]]
+doc = "docs/vault/Reference/Level Ladder.md"
+target = "src/world/levels/feeltrack.level.ts"
+sig = "fb06ede3e0b45cba"
 
 [[bindings]]
 doc = "docs/vault/Reference/Performance Baselines.md"
