@@ -6,6 +6,41 @@ target = "src/boot.ts"
 sig = "c792e7b2ffb80e0f"
 
 [[bindings]]
+doc = "docs/vault/Modules/dev.md"
+target = "src/dev/cameras.ts"
+sig = "9512fc975c9378c7"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
+target = "src/dev/harness.ts"
+sig = "9306c60d6e91b389"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
+target = "src/dev/registry.ts"
+sig = "10c95ddb0fa1d051"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
+target = "src/dev/scenes/material-ramp.ts"
+sig = "0b8956e4fdc50db2"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
+target = "src/main.ts"
+sig = "777f9bdbd60fe546"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
+target = "tests/e2e/harness.spec.ts"
+sig = "076a54f22734436c"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
+target = "tools/render.mjs"
+sig = "20dbcfc36e4d734a"
+
+[[bindings]]
 doc = "docs/vault/Modules/render.md"
 target = "src/render/geometry.ts"
 sig = "0e4e78212a50e506"
@@ -37,8 +72,13 @@ sig = "c792e7b2ffb80e0f"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
+target = "src/dev/harness.ts"
+sig = "9306c60d6e91b389"
+
+[[bindings]]
+doc = "docs/vault/Modules/src.md"
 target = "src/main.ts"
-sig = "74ff3097ab79287a"
+sig = "777f9bdbd60fe546"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
