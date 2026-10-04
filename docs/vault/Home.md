@@ -30,13 +30,13 @@ commit that changes the code is blocked until the note is updated or acknowledge
 
 ## Current status
 
-**Stage 0 (bootstrap and charter) — closing.** Repo scaffolded (Vite vanilla-ts, npm), TypeScript strict, Vitest + Playwright smoke, CI (typecheck / unit / e2e / `livedocs verify`) and Pages deploy workflows, Pages live at https://gusellerm.github.io/gravity-works/ . Runtime deps installed but nothing of the game is built yet: `src/boot.ts` shows a placeholder. The three bibles exist at version zero from the brief; nothing visual is chosen yet.
+**Stage 1 (explorations) — closed.** References chosen by the fresh Art Director (scores in `Reference/Review 2026-10-04 Stage 1 explorations.md`): **kitchen tile B** (hero shot is a painting; one integration send-back queued for stage 3), **car-a sedan blocky**, **ramp variant B (three hard steps)**. Physics reference: **raycast wheels** (bake-off measured; jointed wheels rejected). `src/render/` (toon system + tokens), `src/dev/` (deterministic harness), `src/physics/` + provisional `src/feel/` exist; nothing player-facing yet — `src/boot.ts` still shows the placeholder. Tilt-shift is the flagged blocking dependency for all future render finals.
 
 ## Plan
 
-- [x] Stage 0 — bootstrap, CI, vault, bibles v0 (this commit, tag `stage-0`)
-- [ ] Stage 1 — explorations: kitchen tiles ×3, car ×3, physics ×2, toon ramps ×3; references chosen and recorded
-- [ ] Stage 2 — the spine: track kit + sockets, builder, `World`, fixed-step physics, run camera, feel track, determinism harness, save/share
+- [x] Stage 0 — bootstrap, CI, vault, bibles v0 (tag `stage-0`)
+- [x] Stage 1 — explorations: kitchen tiles ×3, car ×3, physics ×2, toon ramps ×3; references chosen (`stage-1`)
+- [ ] Stage 2 — the spine: track kit + sockets, builder, `World`, fixed-step physics, run camera, real feel track, determinism harness, save/share
 - [ ] Stage 3 — kitchen vertical slice (materials, light, post, set, 5 levels, result screen, help drawer, share card)
 - [ ] Stage 4 — bathroom / bedroom / garden / garage in parallel + levels + hazards
 - [ ] Stage 5 — porch, cinematic replay, synthesised sound
@@ -46,9 +46,12 @@ Staffing is per-stage and recorded in `Sessions/` notes; roles and protocols liv
 
 ## Deferred
 
-- Cross-platform determinism claim — awaiting the stage-2 harness measurement (see Decision Log 2026-10-03).
+- Tile-B integration re-render (Art Director send-back) → first task of stage 3.
+- Material backlog (grain frequency, accent-to-light, decals, ceramic saturation, dither budget, tyre lightness floor) → stage 3, Technical Artist.
+- Tilt-shift/post stack → stage 3; renders are *provisional* until then.
+- Cross-platform determinism claim — awaiting the stage-2 harness measurement.
 - Sound — stage 5 by design.
-- livedocs TS symbol anchoring is `unknown`-heavy; reconciliation is by Documentarian discipline (Decision Log 2026-10-03).
+- livedocs TS symbol anchoring is `unknown`-heavy; reconciliation is by Documentarian discipline (Decision Log 2026-10-03). Never backtick PNG paths in notes.
 
 ## Decisions a human should review
 

@@ -21,6 +21,11 @@ target = "src/render/materials.ts"
 sig = "31477df388547628"
 
 [[bindings]]
+doc = "docs/vault/Concepts/Feel.md"
+target = "src/physics/sim.ts"
+sig = "5182fb41a910b5e1"
+
+[[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/boot.ts"
 sig = "c792e7b2ffb80e0f"

@@ -9,7 +9,7 @@ tags: [concept]
 ## Physics targets
 
 - Fixed step **120 Hz**, render-interpolated, substeps allowed for fast cars. Never a variable step.
-- Car: rigid body with four wheel colliders **or** raycast wheels — chosen at stage 1 by a two-variant bake-off on the feel track; the one that survives loops and landings wins.
+- Car: **raycast wheels with contact-normal spring support** — chosen at the stage-1 bake-off (see Decision Log 2026-10-04 and `Modules/physics`); wheel-collider/revolute variants measured and rejected. Stage 2 must beat the bake-off baseline: the provisional feel track completed by a car.
 - Simulate at a scaled mass/length (a literal 0.05 kg at 1:64 is too light for solver behaviour); the **visual** scale stays 1:64. The scale factor is documented in exactly one place: this note.
 - Rolling resistance + bearing friction: a car released from a **30 cm drop onto flat track rolls ≈ 2.5 m** before stopping.
 - Loop physics within **10 % of theory**: minimum release height for a loop of radius r is a little over 2.5 r frictionless; with game friction the game lands near that. Guarded by a test.
