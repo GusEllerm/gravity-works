@@ -50,6 +50,20 @@ chassis, so force-couple bars are ill-conditioned on slopes), and a
 friction-circle-budgeted self-aligning axle torque; see [[feel]] stage-2
 notes.
 
+The strut's GEOMETRY was reconciled to the car's real axle line on 2026-10-05
+and the old numbers were fictions: `ATTACH_LOCAL` sits at `CAR.wheelY` (−0.25
+sim, the axle plane) rather than somewhere above it; `suspRest` is 0.16 (the
+wheel radius plus the static sag — the previous 0.42 was a "virtual wheel"
+radius no part of the car has); `droopMax` is 0.08. That last one is a balance,
+not a constant: at 0.15 the strut is a LEASH that lets an inverted car free-fall
+away from the deck through a loop apex and land back on the track (it was
+completing laps the witnesses should have refused), and at 0.03 it goes SLACK
+over any convex crest — a gap lip or a chord joint — after which the chassis
+rides the rest of the course on its own floor with the support force chattering
+0, 0, 0, 22 kN, 0. Support rays also reject back-face hits (`dot(n, down) > 0`),
+without which a wheel ray reading a loop chord from underneath pushed the car
+through the deck.
+
 - **Variant b (raycastWheels)** — chassis-only body; the four rays are the
   wheels. Winner: rolls true down the drop (peak 7.25 m/s world ≈ free-fall
   7.7), no contact path, no sleep/joint pathologies.

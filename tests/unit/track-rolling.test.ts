@@ -37,7 +37,7 @@ import {
 } from '../../src/physics/sim.ts';
 import { chain, reify } from '../../src/track/build.ts';
 import { DECK_HALF_WIDTH, DECK_THICKNESS } from '../../src/track/cross-section.ts';
-import { pieceSpline } from '../../src/track/pieces.ts';
+import { pieceSpline, loopGeometry, LOOP_EXIT_LIFT } from '../../src/track/pieces.ts';
 import type { TrackSpline } from '../../src/track/spline.ts';
 
 beforeAll(async () => {
@@ -243,20 +243,26 @@ describe('deck quality — kit convex hulls vs chord slabs', () => {
     const r = 0.08;
     const spline = pieceSpline('loop', { radius: r, lead: 0.05 });
     const lead = 0.05;
-    const circumference = 2 * Math.PI * r;
+    // The ring is two half-arcs (see pieces.ts loopGeometry), so the sampled
+    // length is the ascent plus the descent, not 2*pi*r.
+    const g = loopGeometry(r, LOOP_EXIT_LIFT, lead);
     const arc = Array.from({ length: 601 }, (_, i) =>
-      spline.sample((lead + (i / 601) * circumference) / spline.length).pos.clone(),
+      spline.sample((lead + (i / 601) * g.ringLength) / spline.length).pos.clone(),
     );
     const frames = spline.stationFrames();
     const runs = spline.colliderRuns(frames);
     const bounds = [...new Set(runs.flatMap((run) => [run.start, run.end]))].sort((a, b) => a - b);
     const kitPolyline = bounds.map((i) => frames[i]!.pos.clone());
     const chords = Array.from({ length: 13 }, (_, i) =>
-      spline.sample((lead + (i / 12) * circumference) / spline.length).pos.clone(),
+      spline.sample((lead + (i / 12) * g.ringLength) / spline.length).pos.clone(),
     );
     const kit = surfaceDeviation(kitPolyline, arc);
     const slabs = surfaceDeviation(chords, arc);
-    expect(kit).toBeLessThan(0.0005);
+    // Half a millimetre rather than the fifth the single-circle loop used to
+    // clear: the ring now joins an arc of r to an arc of r + lift/2 at the
+    // apex, and a curvature step leaves a deviation of its own (measured
+    // 0.56 mm at the join, against the ~4 mm a chord staircase reaches).
+    expect(kit).toBeLessThan(0.0006);
     expect(slabs).toBeGreaterThan(0.002);
     expect(slabs / kit).toBeGreaterThan(3);
   });

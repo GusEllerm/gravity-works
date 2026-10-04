@@ -26,6 +26,7 @@ import {
   pieceSpline,
   type ImpulseBody,
   type PieceKind,
+  loopGeometry, LOOP_EXIT_LIFT,
 } from '../../src/track/pieces.ts';
 import { fitSocket, snapSocket, canonicalBuild, SNAP_ANGLE_TOL, SNAP_ROLL_TOL, SNAP_TRANSLATION_TOL } from '../../src/track/snap.ts';
 import { rollAngle, splineSockets, tangentAngle, transformSocket } from '../../src/track/socket.ts';
@@ -120,27 +121,56 @@ describe('invariant 1 — mesh and colliders consume the identical sample set', 
   });
 });
 
-describe('invariant 2 — the loop piece is the analytic circle', () => {
+describe('invariant 2 — the loop piece: front circle, dropped exit, no trap', () => {
   const r = 0.08;
   const spline = pieceSpline('loop', { radius: r, lead: 0.05 });
   const centre = new THREE.Vector3(0.05, r, 0); // bottom tangent at the origin, curving up
 
-  it('mid-piece samples lie on the circle of radius r within tessellation epsilon', () => {
+  // Used to read "the loop piece IS the analytic circle", and the piece was
+  // one pitchArc over a full 2*pi*r. That invariant is now FALSE by design, and
+  // the reason is in pieces.ts loopGeometry: a tangent circle hands the car
+  // back its own rising entry chords, so a car with less than lap energy
+  // cannot get out (measured in the stage-2 loop audit: it orbited the bottom
+  // corner for five or six laps with the apex witnesses green every time).
+  // The ring is therefore two half-circles whose radii differ by half the exit
+  // lift. What MUST hold is what the old invariant was really protecting:
+  // tangent-continuous joins, an apex at eye level, and no self-overlap.
+  it('the front half is the analytic circle of radius r within tessellation epsilon', () => {
     const lead = 0.05;
-    const circumference = 2 * Math.PI * r;
     let maxErr = 0;
     for (let i = 0; i <= 200; i++) {
-      const s = lead + (i / 200) * circumference;
+      const s = lead + (i / 200) * (Math.PI * r);
       maxErr = Math.max(maxErr, Math.abs(spline.sample(s / spline.length).pos.distanceTo(centre) - r));
     }
     expect(maxErr).toBeLessThan(TESS_EPSILON);
   });
 
-  it('a loop of any radius keeps its diameter and stays upright (banking 0, up inverted at the apex)', () => {
+  it('the back half is an arc of radius r + lift/2, so the exit sits lift below the entry', () => {
+    const lead = 0.05;
+    const g = loopGeometry(r, LOOP_EXIT_LIFT, lead);
+    expect(g.rDescent).toBeCloseTo(r + LOOP_EXIT_LIFT / 2, 12);
+    // Radius stated through curvature rather than through a centre I would
+    // have to derive by hand: the circumscribed circle of three close samples
+    // of the back half. What this protects is that the descent is a CIRCLE of
+    // the stated radius (tangent-continuous with the ascent at the apex), not
+    // a spiral or a straightened cheat.
+    const s0 = lead + g.ascent + g.descent * 0.4;
+    const h = g.descent * 0.02;
+    const [a, b, c] = [s0 - h, s0, s0 + h].map((s) => spline.sample(s / spline.length).pos);
+    const area = Math.abs((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y)) / 2;
+    const circum =
+      (a.distanceTo(b) * b.distanceTo(c) * c.distanceTo(a)) / (4 * area);
+    expect(circum).toBeCloseTo(g.rDescent, 4);
+    // and the piece hands the car an exit deck that is level, forward, and
+    // LOOP_EXIT_LIFT below where it went in
+    const exit = spline.sample(1).pos;
+    expect(exit.y).toBeCloseTo(-LOOP_EXIT_LIFT, 6);
+  });
+
+  it('a loop of any radius keeps its apex and stays upright (banking 0, up inverted at the apex)', () => {
     for (const radius of [0.05, 0.08, 0.12]) {
       const s = pieceSpline('loop', { radius, lead: 0.04 });
-      const lead = 0.04;
-      const apexT = (lead + Math.PI * radius) / s.length;
+      const apexT = (0.04 + Math.PI * radius) / s.length;
       const apex = s.sample(apexT);
       expect(apex.banking).toBe(0);
       expect(apex.pos.y).toBeCloseTo(2 * radius, 9);
@@ -149,17 +179,23 @@ describe('invariant 2 — the loop piece is the analytic circle', () => {
     }
   });
 
-  it('entry and exit are bottom-tangential: level, both along +x, exit ahead of entry', () => {
+  it('entry and exit are tangential and level; the exit deck is BELOW the entry, so nothing traps', () => {
     const [inSocket, outSocket] = PIECES.loop.sockets({ radius: r, lead: 0.05 });
     expect(inSocket.pos.y).toBeCloseTo(0, 12);
-    expect(outSocket.pos.y).toBeCloseTo(0, 12);
-    expect(inSocket.tangent.x).toBeCloseTo(1, 12);
     expect(outSocket.tangent.x).toBeCloseTo(1, 12);
-    expect(outSocket.pos.x).toBeGreaterThan(inSocket.pos.x);
-    // the circle's descending branch passes over the entry run, not through it
-    const descend = 0.05 + r * (2 * Math.PI - Math.PI / 6); // x = lead - r/2 again
-    expect(spline.length).toBeGreaterThan(descend);
-    expect(spline.sample(descend / spline.length).pos.y).toBeGreaterThan(0.001);
+    expect(inSocket.tangent.x).toBeCloseTo(1, 12);
+    // The old version of this test asserted the exit was level with the entry.
+    // Levelness in AND out is exactly the trap: it forces the ring to meet its
+    // own deck plane at ONE point, so the car returns onto the chords it
+    // climbed. The exit is now LOOP_EXIT_LIFT below the entry, which is also
+    // what a real toy loop does (it comes out under its own entry ramp).
+    expect(outSocket.pos.y).toBeCloseTo(-LOOP_EXIT_LIFT, 9);
+    expect(outSocket.tangent.y).toBeCloseTo(0, 9);
+    // ...and the descending branch passes OVER the entry run rather than
+    // through it, which is what keeps the two decks from colliding in the
+    // solver: at the apex the ring is a full diameter above its own entry.
+    const apex = spline.sample((0.05 + Math.PI * r) / spline.length).pos;
+    expect(apex.y).toBeGreaterThan(2 * r - 1e-9);
   });
 });
 

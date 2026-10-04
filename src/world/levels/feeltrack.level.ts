@@ -16,15 +16,15 @@
  * routes still reify to identical splines and identical collider rings —
  * that test is the seam, not a formality.
  *
- * The car spawns at the ramp's in-socket (the level's `startSocket`) and
- * rolls from rest under gravity — the same honest release the feel rigs
- * use, no launch velocity. No hidden state: reify the data and the world is
- * fully determined.
+ * The car is released at the harness's own release pose (`marks.start`, on the
+ * ramp's descending slope — see `startSocketOf` for why the entry socket will
+ * not do) from rest under gravity, so the game and the metrics drive the same
+ * car. No hidden state: reify the data and the world is fully determined.
  */
 import { chain, type Build } from '../../track/build.ts';
-import { PIECES } from '../../track/pieces.ts';
-import { transformSocket, type Socket } from '../../track/socket.ts';
-import { FEEL_PARAMS, FEEL_TRACK_KINDS } from '../../feel/feeltrack.ts';
+import * as THREE from 'three';
+import type { Socket } from '../../track/socket.ts';
+import { FEEL_PARAMS, FEEL_TRACK_KINDS, feelTrackRig } from '../../feel/feeltrack.ts';
 import type { Level } from '../level.ts';
 
 export const FEELTRACK_ID = 'feeltrack';
@@ -35,11 +35,25 @@ export function feelTrackBuild(): Build {
   return chain(FEEL_TRACK_KINDS, { params: FEEL_PARAMS, levelId: FEELTRACK_ID, seed: SEED });
 }
 
-/** The in-socket of a build's first placed piece — the spawn frame. */
-function startSocketOf(build: Build): Socket {
-  const first = build.pieces[0]!;
-  const [inSocket] = PIECES[first.def].sockets(first.params);
-  return transformSocket(inSocket, first.transform);
+/** The car's release: the SAME pose the feel harness releases from. */
+function startSocketOf(): Socket {
+  // This used to be "the in-socket of the first placed piece", which sounds
+  // equivalent to the harness release and is not: the ramp's first 7 cm is its
+  // pitch BLEND, so its entry socket is a LEVEL patch of deck. A car released
+  // there with the tuned Coulomb rolling resistance never starts — friction
+  // (mu * m * g, ~53 N against a downhill component of zero on level ground)
+  // outranks gravity on the flat and the run is a `stalled` car in the grass.
+  // The feel rigs release at `marks.start`, 0.9 of the blend along the ramp,
+  // where the deck is already tilted. Taking the level's release from the same
+  // rig makes the game and the metrics agree by construction instead of by
+  // somebody remembering to mirror a constant.
+  const rig = feelTrackRig();
+  const pose = rig.poseAt(rig.marks.start);
+  return {
+    pos: new THREE.Vector3(pose.p.x, pose.p.y, pose.p.z),
+    tangent: new THREE.Vector3(pose.f.x, pose.f.y, pose.f.z),
+    up: new THREE.Vector3(pose.u.x, pose.u.y, pose.u.z),
+  };
 }
 
 /** The registry. `getLevel` is what share links and replays resolve against. */
@@ -60,7 +74,7 @@ export const FEELTRACK: Level = registerLevel({
   id: FEELTRACK_ID,
   name: 'Feel track',
   seed: SEED,
-  startSocket: startSocketOf(feelTrackBuild()),
+  startSocket: startSocketOf(),
   budget: 16,
   par: { pieces: FEEL_TRACK_KINDS.length, time: 5 },
   maxTime: 20,

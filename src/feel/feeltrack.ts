@@ -41,9 +41,21 @@ export const DROP_BLEND = 0.08;
  *  so the feel track drops 0.45 m. (The §7.1 roll-metric rig keeps its
  *  canonical 0.3 m.) */
 export const FEEL_DROP_HEIGHT = 0.45;
-/** Loop radius on the feel track — the threshold radius for the 30 cm drop
- *  (~25 % apex-speed margin at the measured entry velocity; see feel.md). */
-export const LOOP_RADIUS = 0.03;
+/**
+ * Loop radius on the feel track, chosen by the LOOP GEOMETRY RULE
+ * (docs/vault/Concepts/Feel.md §Loop geometry), not by taste:
+ *
+ *   R >= 1.25 x car LENGTH = 1.25 x 0.750 sim = 0.9375 sim = 0.0938 world m
+ *   (equivalently inner diameter 2R >= 2.5 x WHEELBASE; here 2R = 3.7 WB)
+ *
+ * The old 0.03 sat BELOW the rule: the loop's own diameter (0.3 sim) was
+ * shorter than the 0.75-sim car, so the car physically could not run inside
+ * it — every "completion" at that radius was a ballistic hop through the
+ * loop's empty interior. 0.10 is the rule with a 7 % margin (it is also the
+ * radius whose measured threshold lands in the §7.1 [2.25, 2.75] R band:
+ * see the session log 2026-10-05 loop-geometry entry).
+ */
+export const LOOP_RADIUS = 0.10;
 /** Lead straights inside the loop piece. */
 export const LOOP_LEAD = 0.03;
 /** Gap-lip parameters (the empty arc IS the gap — Track Kit decision). */

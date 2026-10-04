@@ -133,6 +133,8 @@ export interface PieceParams {
   power?: number;
   /** Finish cup radius, metres. */
   cupRadius?: number;
+  /** How far a loop's exit deck sits below its entry deck, metres. */
+  exitLift?: number;
 }
 
 const DEFAULTS: Record<PieceKind, PieceParams> = {
@@ -172,6 +174,60 @@ export function pieceSegments(kind: PieceKind, params: PieceParams = {}): Segmen
   return segmentsFor(kind, resolveParams(kind, params));
 }
 
+// ---- loop geometry, shared with the gate's arc marks -----------------------
+
+/**
+ * How far a loop's exit deck sits below its entry deck, metres.
+ *
+ * This number IS the loop's trap fix, and it is not free to choose: it must
+ * exceed the height of the car's own envelope above the deck (chassis centre
+ * ride height plus half its height: 0.04 + 0.01 sim-metres = 5 cm) plus a
+ * margin, because the descending leg passes UNDER the rising chords it enters
+ * on and the exiting car must be clear of them. Measured at R = 0.10: a lift of
+ * 3 cm still let a car with sub-lap energy climb back over those chords and
+ * orbit; 5 cm exits cleanly at every release height tried, and 4.6 cm was the
+ * computed edge. Smaller than the envelope and the loop is a cage.
+ */
+export const LOOP_EXIT_LIFT = 0.05;
+
+/**
+ * A loop ring's arc-length bookkeeping. The gate's arc marks (apex, exit) and
+ * the audit tools all read this, so the ring's shape is defined in one place.
+ *
+ * The ring is NOT a circle, and the reason is geometric. A tangent circle
+ * returns the car to its own entry point, so after the lap it is sitting on
+ * the rising chords it climbed on the way in (11 degrees and 4 mm at the join,
+ * and a raycast wheel skips the staircase step and re-attaches a chord or two
+ * higher). A car with less than lap energy therefore cannot get out: the
+ * stage-2 loop audit measured it orbiting the bottom corner, five or six laps,
+ * apex witnesses green every time and `done` never. Opening the descent by half
+ * the lift makes the ring meet the deck plane twice — the entry, and the exit
+ * below it — so the car always has a deck to run out onto. See LOOP_EXIT_LIFT.
+ */
+export function loopGeometry(radius: number, exitLift = LOOP_EXIT_LIFT, lead = 0.03) {
+  // The ascent is the ring the gate is about; the descent is forced open by
+  // exactly the lift, because a half-circle of radius r changes height by 2r.
+  const rAscent = radius;
+  const rDescent = radius + exitLift / 2;
+  const ascent = Math.PI * rAscent; // pitch 0 -> 180, up by 2R
+  const descent = Math.PI * rDescent; // pitch 180 -> 360, down by 2(R + lift/2)
+  return {
+    rAscent,
+    rDescent,
+    lead,
+    ascent,
+    descent,
+    /** arc length from the piece's start to pitch = 180 (the apex witness) */
+    apexAt: lead + ascent,
+    /** arc length of the ring itself, entry chord to exit chord */
+    ringLength: ascent + descent,
+    /** the whole piece including both leads */
+    pieceLength: 2 * lead + ascent + descent,
+    /** the out socket sits this far BELOW the in socket */
+    drop: exitLift,
+  };
+}
+
 // ---- the pieces ------------------------------------------------------------
 
 /** The ballistic-ish empty span of the `drop` piece (geometry-free space). */
@@ -200,8 +256,17 @@ function segmentsFor(kind: PieceKind, p: PieceParams): SegmentSpec[] {
     case 'bank':
       return bankedTurn(p.radius! * p.angle! * D2R, p.angle!, p.bank!);
     case 'loop': {
-      const circumference = 2 * Math.PI * p.radius!;
-      return [straight(p.lead!), pitchArc(circumference, 0, 360), straight(p.lead!)];
+      const g = loopGeometry(p.radius ?? 0.1, p.exitLift ?? LOOP_EXIT_LIFT, p.lead ?? 0.03);
+      return [
+        straight(g.lead),
+        // pitch 0 -> 180 at radius R: the front of the ring and its apex
+        pitchArc(g.ascent, 0, 180),
+        // pitch 180 -> 360 at R + lift/2: the back, opening onto its own
+        // exit deck BELOW the entry deck, which is what makes the piece
+        // escapable (see loopGeometry)
+        pitchArc(g.descent, 180, 360),
+        straight(g.lead),
+      ];
     }
     case 'drop':
       return [

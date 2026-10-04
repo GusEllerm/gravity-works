@@ -61,6 +61,13 @@ export interface RunResult {
   apexMin: number; // sqrt(g r) world
   landingImpulse: number; // N s world
   rollDistance: number | null; // m world — wheel-centre travel after touchdown
+  /**
+   * Loop rigs only: which gate witness decided the run. `completed` alone
+   * cannot tell a car that failed the apex from one that held the apex and
+   * then could not get out, and that distinction is the whole argument of the
+   * loop gate, so it is reported rather than inferred from a boolean.
+   */
+  witnesses: { apexContact: boolean; apexFloor: boolean; exit: boolean };
   hash: string;
 }
 
@@ -107,19 +114,23 @@ export const RAIL_PROX = 0.04;
  *  exactly the cars that held the loop. */
 export const APEX_PROX = 0.05;
 
-/** Wheel-plane point rigidly attached to the chassis (sim space). */
+/**
+ * The car's WHEEL LINE, rigidly attached to the chassis (sim space): the mean
+ * of the four axle points, which by symmetry is the chassis centre pushed down
+ * the car's own up axis by the axle offset.
+ *
+ * It is deliberately NOT the mean of variant a's wheel BODY positions, even
+ * though those bodies exist. A real cylinder rolling on the kit's stitched
+ * chord slabs sometimes wedges - the stage-1 note calls it ploughing - and a
+ * wedged wheel body then sits still at 0 velocity while the car rolls on
+ * (measured: one wheel stopped dead on the loop rig's run-in, its velocity
+ * pinned to zero by the solver from step ~50, ending up a metre behind the
+ * car). Reading the car's position off that body made the loop gate blind: the
+ * apex witness looked for the car a metre away from where it was, so variant a
+ * could not complete a loop at any release height. The gate measures the car;
+ * the wheel bodies are part of the model being measured, not its odometer.
+ */
 function wheelRef(car: Car): { x: number; y: number; z: number } {
-  if (car.wheels.length > 0) {
-    let sx = 0;
-    let sy = 0;
-    let sz = 0;
-    for (const w of car.wheels) {
-      sx += w.translation().x;
-      sy += w.translation().y;
-      sz += w.translation().z;
-    }
-    return { x: sx / 4, y: sy / 4, z: sz / 4 };
-  }
   const t = car.chassis.translation();
   const r = car.chassis.rotation();
   const off = qrot({ w: r.w, x: r.x, y: r.y, z: r.z }, v(0, CAR.wheelY, 0));
@@ -152,6 +163,13 @@ export interface SimOpts {
    *  itself within RAIL_PROX of the rail at `exitAt` — an airborne car's
    *  global rail projection is not evidence of progress. */
   exitAt?: number;
+  /**
+   * x (m world) the car must be PAST to count as having left the loop. The arc
+   * projection alone cannot say this: a car parked in a ring corner with its
+   * wheels on a chord projects onto whatever deck is nearest in arc, so an
+   * orbiting car kept advancing `arc`. Position is not fooled.
+   */
+  exitX?: number;
 }
 
 /**
@@ -170,7 +188,6 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
   const maxSteps = Math.round(opts.timeout * 120);
   let hash = 0x811c9dc5 >>> 0;
   let peak = 0;
-  let apexSpeed: number | null = null;
   let landImpulse = 0;
   let prevVy = 0;
   let airborneSteps = 0;
@@ -185,6 +202,21 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
   const apexMinSim = Math.sqrt(G_SIM * (opts.apexRadius ?? LOOP_RADIUS) * S) * (1 + APEX_SPEED_EPS);
   let apexContact = false;
   let apexSpeedMin: number | null = null;
+  // The top quarter, recognised by attitude; see the witness below.
+  let apexVisited = false;
+  let apexRegionClosed = false;
+  // Height of the ring's apex, world m. Attitude alone cannot say "at the
+  // apex": a car tumbling end-over-end in the ring's BOTTOM corner reads
+  // inverted there too, and its near-zero linear speed then sinks the apex
+  // floor of a lap that actually went over the top at 1.6 m/s (measured: the
+  // threshold grid's verdicts flickered with release height for exactly this
+  // reason). The partner condition is the DECK's attitude at the nearest rail
+  // point — the ring's own surface is pointing down there — rather than a
+  // height band, because a height band has to be paid for out of the car's
+  // sag and ride height and is then marginal by millimetres on a track whose
+  // loop sits at a different elevation from the rig's (the feel track's apex
+  // witness was missed by 2 mm for exactly that reason, while the same lap on
+  // the loop rig witnessed fine).
 
   for (let step = 0; step < maxSteps; step++) {
     const support = carStep(world, car);
@@ -210,23 +242,36 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
       ? rig.nearestArcInfo(v(ref.x / S, ref.y / S, ref.z / S))
       : { arc: 0, dist: Infinity };
     const onRail = proj.dist < RAIL_PROX;
+    const rq2 = car.chassis.rotation();
+    const apexUpNow = qrot({ w: rq2.w, x: rq2.x, y: rq2.y, z: rq2.z }, v(0, 1, 0)).y;
 
     if (opts.apexAt !== undefined) {
-      const dArc = proj.arc - opts.apexAt;
-      const win = apexWindow(speed);
-      if (Math.abs(dArc) < win && proj.dist < APEX_PROX) {
-        const rq = car.chassis.rotation();
-        const upY = qrot({ w: rq.w, x: rq.x, y: rq.y, z: rq.z }, v(0, 1, 0)).y;
-        // deck loaded + inverted near the apex: the car is IN the loop, not
-        // flying through its empty interior
-        if (Math.abs(dArc) < win / 2
-          && upY <= APEX_UP_MAX && support.grounded && support.force >= APEX_FORCE_MIN) {
-          apexContact = true;
-        }
-        // apex speed = the SLOWEST sample in the tight apex window (the
-        // floor must hold AT the apex, not merely somewhere near it)
-        if (Math.abs(dArc) < win / 3
-          && (apexSpeedMin === null || speed < apexSpeedMin)) apexSpeedMin = speed;
+      // "At the apex" is stated as ATTITUDE, not as projected arc: upY <=
+      // -cos(45 deg) IS the ring's top quarter, and unlike the arc projection
+      // it cannot jump. The projection on this rig is genuinely jumpy (a car on
+      // the ascent has two decks roughly the same distance away - its own chord
+      // and the run-in it came in on - and the nearest-point search flips
+      // between them), which made an arc window open and close at random and
+      // the apex witness appear and vanish between neighbouring release
+      // heights. The three conditions must also hold AT ONE INSTANT: inverted,
+      // touching, carrying a real deck load. Reading the load as "the biggest
+      // force anywhere in the region" and the attitude as "whatever it was at
+      // the closest approach" was the other stage-2 hole: a car that PRESSes
+      // through the bottom and then FLIES across the top ballistically was
+      // inverted at its closest approach with a big load on file, and passed on
+      // two unrelated moments. The speed that counts is the slowest supported
+      // inverted sample - the speed at which the deck was really holding the
+      // car upside down - taken on the FIRST trip through the top quarter, so a
+      // car that goes over at 1.6 m/s, cannot get out and rolls back through at
+      // a crawl is not retroactively disqualified for a lap it did drive.
+      const deckUpY = rig.frameAt(proj.arc).up.y;
+      const nearTop = apexUpNow <= -Math.SQRT1_2 && deckUpY <= -Math.SQRT1_2;
+      if (nearTop) apexVisited = true;
+      else if (apexVisited) apexRegionClosed = true;
+      if (!apexRegionClosed && nearTop && onRail
+        && apexUpNow <= APEX_UP_MAX && support.grounded && support.force >= APEX_FORCE_MIN) {
+        apexContact = true;
+        if (apexSpeedMin === null || speed < apexSpeedMin) apexSpeedMin = speed;
       }
     }
 
@@ -256,8 +301,13 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
         return {
           completed: true,
           timeToFinish: step / 120,
+          witnesses: {
+            apexContact,
+            apexFloor: apexSpeedMin !== null && apexSpeedMin >= apexMinSim,
+            exit: false,
+          },
           peakSpeed: toWorldSpeed(peak),
-          apexSpeed: apexSpeed === null ? null : toWorldSpeed(apexSpeed),
+          apexSpeed: apexSpeedMin === null ? null : toWorldSpeed(apexSpeedMin),
           apexMin: Math.sqrt(G_WORLD * (opts.apexRadius ?? LOOP_RADIUS)),
           landingImpulse: toWorldImpulse(landImpulse),
           rollDistance: null,
@@ -273,8 +323,10 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
     // ~0.05 m short of the old exit line) has driven the loop, and the
     // only way to fake that airborne arc is to skip the apex witnesses -
     // which disqualifies the ballistic-interior exploit by construction.
-    if (opts.exitAt !== undefined && onRail && apexContact
-      && apexSpeedMin !== null && apexSpeedMin >= apexMinSim && proj.arc > opts.exitAt) {
+    if (opts.exitAt !== undefined && apexContact
+      && apexSpeedMin !== null && apexSpeedMin >= apexMinSim
+      && proj.arc > opts.exitAt
+      && (opts.exitX === undefined || ref.x / S > opts.exitX - 0.02)) {
       exitPassed = true;
       break;
     }
@@ -300,6 +352,11 @@ export function simulate(rig: KitRig, opts: SimOpts): RunResult {
     apexMin: Math.sqrt(G_WORLD * (opts.apexRadius ?? LOOP_RADIUS)),
     landingImpulse: toWorldImpulse(landImpulse),
     rollDistance: touchdownX === null ? null : toWorldDist(distance),
+    witnesses: {
+      apexContact,
+      apexFloor: apexSpeedMin !== null && apexSpeedMin >= apexMinSim,
+      exit: exitPassed,
+    },
     hash: hashHex(hash),
   };
 }
@@ -350,7 +407,7 @@ export function loopThreshold(
 ): { height: number; heightOverR: number } {
   const coef = opts.coef ?? ROLL_COEF;
   let lo = 1.4 * radius;
-  let hi = 6 * radius;
+  let hi = 4.5 * radius;
   if (!loopTry(variant, radius, hi, coef)) return { height: NaN, heightOverR: NaN };
   for (let i = 0; i < (opts.iters ?? 11); i++) {
     const mid = (lo + hi) / 2;
@@ -367,6 +424,7 @@ export function loopTry(variant: CarVariant, radius: number, height: number, coe
     coef,
     timeout: 8,
     exitAt: rig.marks.loopEnd! + 0.4,
+    exitX: rig.poseAt(rig.marks.loopEnd! + 0.4).p.x / S,
     apexAt: rig.marks.loopApex,
     apexRadius: radius,
   }).completed;

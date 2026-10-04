@@ -55,9 +55,16 @@ console.log(
     'to stop). Target ~2.5 m: MET (2.49 m) since the SIM_SCALE velocity-mapping\n' +
     'fix - toWorldSpeed divided by sqrt(S) instead of S had tuned mu against an\n' +
     'inflated number; ROLL_COEF 0.12 is the honest constant now.\n' +
-    'loopH = bisected release height on the steep-ramp loop rig (r = 0.09) under\n' +
-    'the HARDENED gate (apex inverted + deck-loaded + speed floor). DNF = no\n' +
-    'release height completes: the 1.41 r ballistic-interior pass is closed and\n' +
-    'no positive threshold has been found yet - the suspension cannot track a\n' +
-    '20-30 rad/s loop frame rate at any k swept. See Modules/feel.md.',
+    'loopH = bisected release height on the loop rig under the hardened gate\n' +
+    '(apex inverted + deck loaded + sqrt(gr) speed floor + exit witness).\n' +
+    'The ring is two half-arcs, not a circle - a tangent circle hands the car\n' +
+    'back its own rising entry chords and it orbits the bottom corner forever\n' +
+    '(pieces.ts loopGeometry). loopH is the LOW edge of a window: released too\n' +
+    'low the car cannot hold the apex, released above ~6 r it leaves the deck\n' +
+    'inside the ring and falls out. Both variants agree. The number sits at\n' +
+    '2.0 r, BELOW the 2.25-2.75 r target, because the lap gains energy from the\n' +
+    'solver (~50% more specific energy at the apex than the drop can pay for);\n' +
+    'that injection is the open item. loopHfric is the same wall with the\n' +
+    'shipped Coulomb coefficient spent across the run-in, which is the number\n' +
+    'the game plays with. See Modules/feel.md.',
 );

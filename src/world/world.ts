@@ -47,6 +47,7 @@ import {
   type Pose,
 } from '../physics/car.ts';
 import { reify, type Build, type PlacedPiece } from '../track/build.ts';
+import { ROLL_COEF } from '../feel/run.ts';
 import { PIECES, type PieceDef } from '../track/pieces.ts';
 import { transformSocket } from '../track/socket.ts';
 import { GLOBAL_TOKENS } from '../render/tokens.ts';
@@ -66,9 +67,18 @@ export const TRACK_FRICTION = 0.6;
  * unaffected: `castRay` is called without a group filter, so a collider's
  * filter mask never hides the deck from suspension. */
 export const TRACK_GROUP = 0x0001_fffd;
-/** Rolling-resistance coefficient used until the Feel Engineer retunes
- * `src/feel` ROLL_COEF on the real feel track (mirror of 0.02, 2026-10-04). */
-export const WORLD_ROLL_COEF = 0.02;
+/** Rolling-resistance coefficient the game plays with.
+ *
+ * This used to be 0.02 — "until the Feel Engineer retunes ROLL_COEF" — and
+ * ROLL_COEF in src/feel/run.ts was 0.12, so the shipped game and the metric
+ * harness were driving TWO DIFFERENT CARS off one level file. The loop made the
+ * split impossible to keep: at 0.02 the car arrives at the ring with so much
+ * surplus that it leaves the deck inside the ring and drops out of the sky
+ * (measured: the feel track's own replay status `fell` at t=2.49 s, x=2.76 m,
+ * while the harness run of the SAME track completes in 3.21 s). The coefficient
+ * is one physical property and now has one value, imported rather than
+ * mirrored. */
+export const WORLD_ROLL_COEF = ROLL_COEF;
 /** A finish cup captures when the chassis centre comes within this many
  * cup radii (the chassis rides above the deck, so 1x never triggers). */
 export const CUP_CAPTURE_FACTOR = 2;
@@ -76,8 +86,14 @@ export const CUP_CAPTURE_FACTOR = 2;
 export const LAUNCHER_RADIUS = 0.05;
 /** How far down the start socket's tangent the chassis centre spawns — a
  * car centred exactly on the start socket hangs half its wheelbase over
- * the deck edge and slides off backwards (measured, 2026-10-04). */
-export const SPAWN_ADVANCE = 0.05;
+ * the deck edge and slides off backwards (measured, 2026-10-04).
+ *
+ * It is kept deliberately short: the release pose now comes from the feel rig's
+ * own `marks.start`, so every extra centimetre here moves the GAME's release
+ * away from the one the METRICS measure. The feel rigs advance along the
+ * RIG's arc, which already puts the car's whole wheelbase on the deck, so the
+ * two agree to within this 5 cm of a 2.5 m track. */
+export const SPAWN_ADVANCE = 0.02;
 
 export type RunStatus = 'idle' | 'running' | 'finished' | 'fell' | 'stalled' | 'timeout';
 

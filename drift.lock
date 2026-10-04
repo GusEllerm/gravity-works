@@ -98,7 +98,7 @@ sig = "710213edb443a6b7"
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/feel/feeltrack.ts"
-sig = "d970fa35ea177ea8"
+sig = "8869917adf68a79e"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
@@ -108,17 +108,22 @@ sig = "2cf8de387514d7a1"
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/feel/run.ts"
-sig = "289008bf63a1e5c7"
+sig = "a26868cc240af742"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/physics/car.ts"
-sig = "1444993cbf33ab2b"
+sig = "d8b4d9ab91970d2d"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "src/physics/sim.ts"
 sig = "dac9bac5b8dc9d53"
+
+[[bindings]]
+doc = "docs/vault/Modules/feel.md"
+target = "src/world/levels/feeltrack.level.ts"
+sig = "6d1c5dedc854bcbf"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
@@ -128,17 +133,22 @@ sig = "e8778d9e1f60e91d"
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "tests/unit/feel.test.ts"
-sig = "2a638a3ff3ec8f64"
+sig = "5eed1dd94474e153"
+
+[[bindings]]
+doc = "docs/vault/Modules/feel.md"
+target = "tests/unit/feeltrack-level.test.ts"
+sig = "76aa13d75bc81d94"
 
 [[bindings]]
 doc = "docs/vault/Modules/feel.md"
 target = "tools/feel.mjs"
-sig = "7fe78cb509aa8389"
+sig = "c3232287ae5426cc"
 
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
 target = "src/physics/car.ts"
-sig = "1444993cbf33ab2b"
+sig = "d8b4d9ab91970d2d"
 
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
@@ -148,7 +158,7 @@ sig = "dac9bac5b8dc9d53"
 [[bindings]]
 doc = "docs/vault/Modules/physics.md"
 target = "tools/feel.mjs"
-sig = "7fe78cb509aa8389"
+sig = "c3232287ae5426cc"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
@@ -308,7 +318,7 @@ sig = "8f79e5fc5faffae7"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "src/track/pieces.ts"
-sig = "d5b19dd8bb9188f0"
+sig = "94460e820e031546"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -328,12 +338,12 @@ sig = "94a2ee27e5931879"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "tests/unit/track-rolling.test.ts"
-sig = "c1d72905e8feea04"
+sig = "39bbfa56d8e2a4d0"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "tests/unit/track.test.ts"
-sig = "70230c6497753041"
+sig = "4e0fc998b5b96411"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"

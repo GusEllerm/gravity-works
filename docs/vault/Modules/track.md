@@ -45,7 +45,13 @@ runs in the builder, the renderer and a headless Node replay.
   `pieceSpline`, `pieceSegments`, `pieceGeometries`, `applyImpulse`,
   `captureVolume`, `resolveParams`, `defaultParams`, segment sugar
   (`straight`, `pitchArc`, `yawArc`, `empty`). Piece-local space: the spline
-  starts at the origin heading +x with up +y.
+  starts at the origin heading +x with up +y. The `loop` piece is NOT a single
+  circle: `loopGeometry(radius, exitLift, lead)` splits the ring into an ascent
+  half of radius r and a descent half of r + exitLift/2, so the exit deck comes
+  out LOOP_EXIT_LIFT (5 cm, the car's own envelope height) BELOW the entry. A
+  tangent circle returns the car onto the rising chords it just climbed, and a
+  car without lap energy then orbits the bottom corner indefinitely — see
+  [[2026-10-05 Stage 2 - loop geometry fix]].
 - `src/track/socket.ts` — `Socket` plus the frame maths (`socketMatrix`,
   `socketAt`, `splineSockets`, `transformSocket`, `socketGap`, `tangentAngle`,
   `rollAngle`). A socket's `tangent` is the *direction of travel*, so mated
@@ -108,7 +114,7 @@ folding into zero.
 | Track Kit invariant | Test |
 |---|---|
 | 1 — mesh and colliders consume the identical sample set | `tests/unit/track.test.ts` › *invariant 1* — recording spline: same `t` list, same frames, hull vertices are the swept section points; plus *a straight piece merges its deck into a handful of large quads* |
-| 2 — a loop reifies to the analytic circle | *invariant 2* — mid-piece samples on the circle within 1e-9, apex at 2r with `up` inverted and banking 0, entry/exit level and bottom-tangential |
+| 2 — a loop piece: front circle, dropped exit, no trap | *invariant 2* — the ascent half lies on the circle of radius r within tessellation epsilon; the descent half's radius is recovered from three samples by circumscribed circle and is r + LOOP_EXIT_LIFT/2; apex at 2r with `up` inverted and banking 0; entry level and forward, exit level, forward and LOOP_EXIT_LIFT BELOW the entry |
 | 3 — a `Build` serialises losslessly | *invariant 3* — `rigFingerprint(deserialize(serialize(b))) === rigFingerprint(b)`, byte-identical canonical output for reordered input, malformed payloads rejected |
 | 4 — snapping is pure, builds are reproducible | *invariant 4* — purity/no-mutation, tolerance edges on all three tolerances, `canonicalBuild` stability, `reify` seats every joint of a chained build |
 
@@ -116,8 +122,10 @@ Deck quality lives in `tests/unit/track-rolling.test.ts`: a sphere rolls within
 10 % of the distance it rolls on a single perfect cuboid (measured 0.579 m vs
 0.611 m — the deck adds no false deceleration), the collider surface deviates
 from the centreline no further than the mesh does, and 12 chord slabs of a kit
-loop cut 6× deeper into the running surface than the kit's hulls (2.7 mm vs
-0.44 mm). It also records the honest result of the chord-slab bake-off described
+loop cut 6× deeper into the running surface than the kit's hulls (3.6 mm vs
+0.56 mm — the hull figure grew when the loop became two arcs of different radius
+joined at the apex; a curvature step leaves a deviation of its own). It also
+records the honest result of the chord-slab bake-off described
 in [[Decision Log|2026-10-04 (systems engineer)]]: on a 5° incline a *rigid*
 sphere rolls about the same distance on kit hulls and on a faithful 12-chord
 slab rebuild (1.83 m vs 2.15 m; the stage-1 car on the same two decks measured

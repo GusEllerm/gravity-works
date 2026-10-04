@@ -41,10 +41,17 @@ the loop-gate audit and the SIM_SCALE velocity-mapping fix:
 
 | metric | raycast variant | wheel-collider variant |
 |---|---|---|
-| roll from 0.3 m drop-ramp (§7.1) | **2.49 m** — target 2.5 m MET | 2.49 m ✓ |
-| feel-track completion | **completes, 2.92 s** (cup now demands deck contact) | DNF (see findings) |
-| min loop height / radius, honest gate | **DNF** — 1.41 R exploit CLOSED, no positive threshold yet | DNF |
-| peak speed | 1.96 m/s | 0.26 m/s (DNF) |
+| roll from 0.3 m drop-ramp (§7.1) | **2.48 m** — target 2.5 m MET | 2.48 m ✓ |
+| feel-track completion | **completes, 3.21 s** (live replay 2.86 s) | 3.21 s ✓ |
+| min loop height / radius, honest gate | **2.01 R** on the loop rig, 2.45 R with the shipped μ spent across the run-in; ceiling above ~6 R | 2.01 R ✓ (identical) |
+| apex speed / floor | 1.47 / 0.99 m/s (1.49×) | same ✓ |
+| peak speed | 2.28 m/s | 2.28 m/s ✓ |
+
+The 2.01 R is BELOW the [2.25, 2.75] R target and the reason is measured, not
+assumed: released at 2.0 R (0.20 m) the car reaches an apex at the same height
+and still carries 1.55 m/s — 2.97 J/kg of specific energy against the 1.96 J/kg
+the drop can pay for. The gate proves the right things; the solver is paying for
+part of the lap. See [[2026-10-05 Stage 2 - loop geometry fix]].
 
 The 2026-10-04 table's numbers (2.65 m roll, 1.41 R / 2.85 R loop
 thresholds) were measured through two lies: `toWorldSpeed` divided by
