@@ -125,3 +125,39 @@ and the one that will cost the most to build.
 - The pipe's bore only reads dark when its mouth faces away from the key; in C the culvert's mouth faces
   the sun and the bore is lighter than it should be. Rule worth keeping: author tunnel mouths to face
   up-track and check them against the sun bearing, not the camera.
+
+## Round 2 — production renders (variant B ratified; census evidence)
+
+The AD ratified variant B (golden-hour paving, 13/13 both cameras — Reference/Review 2026-10-08 Stage 4 garden.md).
+The production set (src/sets/garden) was rendered through its own canonical rigs at 1280×720, tilt-shift post ON:
+docs/explorations/garden/production-hero.png (shot hero — the ratified camera: sun disc AND trellis shadow bars
+in one frame), docs/explorations/garden/production-side.png (shot establishing — the whole patio to the hedge),
+docs/explorations/garden/production-low.png (shot floor — 35 mm over the flush deck, pipe mouth up-track).
+
+Pixel census (node tools/census.mjs):
+
+| frame | px | dark<60 % | tinted % | blackish % | blown ≥243 % | outlier % | medTone |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| production-hero | 921 600 | 0.675 | 0.675 | 0.000 | 0.000 | 0.000 | 121 |
+| production-side | 921 600 | 0.067 | 0.067 | 0.000 | 0.000 | 0.029 | 113 |
+| production-low | 921 600 | 0.000 | 0.000 | 0.000 | 0.000 | 0.607 | 148 |
+
+- **Never-list holds**: blackish = 0.000 % in all three frames (every sub-60 dark carries a channel
+  spread ≥ 18; measured min spreads 32–38), and blown is 0.000 % everywhere — no wash, no black.
+- **Tinted darks**: every dark the census finds is tinted, and the tint flipped sky-side. The average
+  RGB of the census darks is 48,58,19 (hero) / 50,59,20 (side) — BLUE ABOVE RED — where the ratified
+  hero-b/close-b darks sat warm olive with blue lowest (86,80,20 / 98,85,23 in the AD audit). The
+  sky-derived shadow mechanism the concept argued for and B's own pixels contradicted (AD note 2) is
+  now in the rig (`sky: SKY` in src/dev/scenes/garden-set.ts through the sky cut in createLightingRig),
+  not just in the prose.
+- **Dark budget vs the ratified stills**: histogram sub-60 luma is hero 1.99 % / side 2.05 % / low
+  0.22 % (means 132.1 / 131.9 / 150.9, p5 77/80/78, ≥243 at most 0.01 %) against hero-b's 1.33 % and
+  close-b's 2.44 % — the shadow budget B earned is kept at hero and side. The floor frame is the one
+  honest delta: at floor blur the long shadows sit on bright warm stone under sky fill, so no pixel
+  drops under the census floor at all; the frame stays high-key by illumination, not by missing shadows
+  (the trellis bars still read as bars).
+- **Must-not-lose list (the AD's six carry-forwards) — all in the pixels**: pipe mouth angled off-axis
+  and reading dark at the floor rig (1), snail with a diminishing whorl spiral mid-crossing (2), joint
+  moss authored at named joint crossings, resolvable at hero (3), galvanized can ramp band and a
+  die-cast pipe collar (4), trellis post feet (5), and the garden's own camera row with the ratified
+  disc-and-bars hero (6).
