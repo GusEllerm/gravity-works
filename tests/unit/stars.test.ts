@@ -98,8 +98,8 @@ describe('physicsNote (coverage map of src/ui/result.ts)', () => {
     }
   });
 
-  test('fell after a nose-down touchdown -> landed nose first', () => {
-    expect(physicsNote(run('fell'), ev({ lastTouchdownPitch: -0.6 }))).toMatch(/nose first/);
+  test('fell after a nose-down touchdown -> fell off nose-first', () => {
+    expect(physicsNote(run('fell'), ev({ lastTouchdownPitch: -0.6 }))).toMatch(/^fell off nose.first/);
   });
 
   test('fell or stalled slow at a real apex -> too slow at the top of the loop', () => {
@@ -114,15 +114,15 @@ describe('physicsNote (coverage map of src/ui/result.ts)', () => {
   });
 
   test('fell after a long flight -> the jump outran the landing', () => {
-    expect(physicsNote(run('fell'), ev({ finalAirtime: 0.8 }))).toMatch(/jump/);
+    expect(physicsNote(run('fell'), ev({ finalAirtime: 0.8 }))).toMatch(/^fell off .*jump/);
   });
 
   test('fell otherwise -> fell off the set', () => {
     expect(physicsNote(run('fell'), ev())).toMatch(/fell off the set/);
   });
 
-  test('stalled nose-high -> ran out going uphill', () => {
-    expect(physicsNote(run('stalled'), ev({ lastGroundedPitch: 0.3 }))).toMatch(/uphill/);
+  test('stalled nose-high -> stalled going uphill', () => {
+    expect(physicsNote(run('stalled'), ev({ lastGroundedPitch: 0.3 }))).toMatch(/^stalled .*uphill/);
   });
 
   test('stalled on the level after a recorded push -> last-push line', () => {
@@ -134,7 +134,7 @@ describe('physicsNote (coverage map of src/ui/result.ts)', () => {
   });
 
   test('timeout -> the time-limit line', () => {
-    expect(physicsNote(run('timeout'), ev())).toMatch(/time limit/);
+    expect(physicsNote(run('timeout'), ev())).toMatch(/^timed out/);
   });
 
   test('an outcome the evidence cannot explain gets the catch-all, never a guess', () => {
@@ -147,6 +147,23 @@ describe('physicsNote (coverage map of src/ui/result.ts)', () => {
       const note = physicsNote(run(status), ev());
       expect(note.length).toBeGreaterThan(0);
       expect(note).not.toContain('\n');
+    }
+  });
+
+  test('stage 3 vocabulary: the note head verb EQUALS the shell status-line verb', () => {
+    // one verb per physics event (playtest E "snapped vs seated"; G "says
+    // seated with a flew-off verdict") — the word the status line leads
+    // with (boot.ts runStatusLine) is the word the note leads with; no
+    // second verb for the same end (no "flew off" for a fell, no "ran
+    // out" for a stall). The placement ghost's amber word is `reversed`
+    // (builder.ts), never the physics word for sitting in the cup.
+    expect(physicsNote(run('fell'), ev())).toMatch(/^fell off/);
+    expect(physicsNote(run('stalled'), ev())).toMatch(/^stalled/);
+    expect(physicsNote(run('timeout'), ev())).toMatch(/^timed out/);
+    const all: RunResult['status'][] = ['fell', 'stalled', 'timeout'];
+    for (const s of all) {
+      const note = physicsNote(run(s), ev());
+      expect(note).not.toMatch(/\bflew off\b|\bran out\b|\bseated\b|\blanded\b/);
     }
   });
 });

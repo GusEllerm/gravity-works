@@ -27,7 +27,7 @@ import type { Level } from '../world/level.ts';
 /** Two socket origins this close are joined (metres; well above float noise). */
 export const JOIN_TOL = 0.004;
 
-export type GhostState = 'hidden' | 'snapped' | 'seated' | 'invalid' | 'blocked';
+export type GhostState = 'hidden' | 'snapped' | 'reversed' | 'invalid' | 'blocked';
 
 export interface BuilderOptions {
   level: Level;
@@ -321,9 +321,15 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
         // the set's solids outrank the socket graph: red ghost, no seat
         state = 'blocked';
       } else {
-        state = snapSocket(target, seated) !== null ? 'snapped' : flipped ? 'seated' : 'invalid';
+        // Stage-3 vocabulary pass: the amber word is `reversed`, never
+        // `seated` — playtest G read "seated" as a physics verdict next to
+        // a "flew off" result line. "Seated" now names ONE thing: the cup
+        // capture in world.ts. A reverse mount is a half turn about the
+        // target's up: deck lines match, tangents deliberately do not, so
+        // the snap gate reports it honestly (amber).
+        state = snapSocket(target, seated) !== null ? 'snapped' : flipped ? 'reversed' : 'invalid';
       }
-      ghostMaterial.color.set(state === 'snapped' ? 0x2fbf71 : state === 'seated' ? 0xffb627 : 0xd7263d);
+      ghostMaterial.color.set(state === 'snapped' ? 0x2fbf71 : state === 'reversed' ? 0xffb627 : 0xd7263d);
     }
     // the literal word "hidden" must never reach the screen (a11y pass):
     // the state line reads EMPTY when nothing is held/on

@@ -559,7 +559,7 @@ export class World {
     if (this.stallRun > this.stallLimit) {
       // Playtest G's contradiction, resolved by physics: a car that STOPS
       // with its nose in the bowl — centre up to a half-car-length beyond
-      // the capture sphere — is seated in the cup, not stalled (see
+      // the capture sphere — is CAPTURED, not stalled (see
       // CUP_CAPTURE_FACTOR). Measured: centre 0.084 m from the cup centre
       // at the rim-stall step; the pure-centre radius is 0.072 m.
       if (this.cup) {

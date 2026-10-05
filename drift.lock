@@ -23,7 +23,7 @@ sig = "358c8994ef168677"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/ui/builder.ts"
-sig = "08d1185c8ffef6f6"
+sig = "f7181a38976ccfd9"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -196,6 +196,36 @@ target = "tools/render.mjs"
 sig = "5455fbef64c07ef3"
 
 [[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "src/feel/feeltrack.ts"
+sig = "cbba72af04a17c24"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "src/physics/car.ts"
+sig = "371ef988b99714db"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "src/physics/sim.ts"
+sig = "09c7f3eef715d605"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "tests/unit/ablation.test.ts"
+sig = "0606c89252f3a2d3"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "tests/unit/world.test.ts"
+sig = "9599dbdb90965a2b"
+
+[[bindings]]
+doc = "docs/vault/Modules/physics.md"
+target = "tools/feel.mjs"
+sig = "4c45526e4182ba0a"
+
+[[bindings]]
 doc = "docs/vault/Modules/render.md"
 target = "src/dev/scenes/cars.ts"
 sig = "482eff61dd1440fc"
@@ -333,7 +363,7 @@ sig = "37b1fdac2d8feb62"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/ui/result.ts"
-sig = "c3212c287d987cae"
+sig = "12618348ff8333c9"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -353,7 +383,7 @@ sig = "2292c87818bc3c75"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/builder.spec.ts"
-sig = "720fc204782c6553"
+sig = "e60f0f15bb7f350e"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -393,7 +423,7 @@ sig = "a38e01706f33daf6"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/builder.ts"
-sig = "08d1185c8ffef6f6"
+sig = "f7181a38976ccfd9"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -408,7 +438,7 @@ sig = "37b1fdac2d8feb62"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/result.ts"
-sig = "c3212c287d987cae"
+sig = "12618348ff8333c9"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -418,7 +448,7 @@ sig = "d39584ece59db658"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/builder.spec.ts"
-sig = "720fc204782c6553"
+sig = "e60f0f15bb7f350e"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -453,7 +483,7 @@ sig = "315d9e31da4d0d73"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/stars.test.ts"
-sig = "b50f641ba3dc6dc1"
+sig = "fe6aa2b13c017fea"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -523,7 +553,7 @@ sig = "6178c7e423d10226"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/world.ts"
-sig = "4c69c95733813f23"
+sig = "753a591d2a4730a8"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -548,7 +578,7 @@ sig = "13b4636cb503cb29"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/stars.test.ts"
-sig = "b50f641ba3dc6dc1"
+sig = "fe6aa2b13c017fea"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -573,7 +603,7 @@ sig = "358c8994ef168677"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/ui/builder.ts"
-sig = "08d1185c8ffef6f6"
+sig = "f7181a38976ccfd9"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"

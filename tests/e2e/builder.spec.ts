@@ -41,7 +41,7 @@ test('builder: ghost appears on hover, place and remove move the piece counter',
 
   // the R button rotates the held piece into a reverse seat and back
   await page.click('#gw-rotate')
-  await expect(page.locator('#gw-ghost-state')).toHaveText('seated')
+  await expect(page.locator('#gw-ghost-state')).toHaveText('reversed')
   await page.click('#gw-rotate')
   await expect(page.locator('#gw-ghost-state')).toHaveText('snapped')
 
