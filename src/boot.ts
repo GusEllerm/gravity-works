@@ -17,11 +17,11 @@
 import * as THREE from 'three';
 import { FIXED_DT, SIM_SCALE } from './physics/sim.ts';
 import { getLevel } from './world/levels/feeltrack.level.ts';
-import { KITCHEN01 } from './world/levels/kitchen01.level.ts';
-import { KITCHEN02 } from './world/levels/kitchen02.level.ts';
-import { KITCHEN03 } from './world/levels/kitchen03.level.ts';
-import { KITCHEN04 } from './world/levels/kitchen04.level.ts';
-import { KITCHEN05, KITCHEN_SANDBOX } from './world/levels/kitchen05.level.ts';
+import { KITCHEN01, KITCHEN01_ID } from './world/levels/kitchen01.level.ts';
+import { KITCHEN02, KITCHEN02_ID } from './world/levels/kitchen02.level.ts';
+import { KITCHEN03, KITCHEN03_ID } from './world/levels/kitchen03.level.ts';
+import { KITCHEN04, KITCHEN04_ID } from './world/levels/kitchen04.level.ts';
+import { KITCHEN05, KITCHEN05_ID, KITCHEN_SANDBOX } from './world/levels/kitchen05.level.ts';
 import { World, type RunStatus } from './world/world.ts';
 import type { Build } from './track/build.ts';
 import type { Level } from './world/level.ts';
@@ -97,6 +97,17 @@ export function resolveLevel(params: URLSearchParams): Level {
 function levelTray(level: Level): Partial<Record<PieceKind, number>> | undefined {
   const tray = (level as { tray?: Partial<Record<PieceKind, number>> }).tray;
   return tray && typeof tray === 'object' ? tray : undefined;
+}
+
+/** The ladder, in order — the order `Next level` walks. Levels outside it
+ *  (the sandbox, the feel rig) are reachable by `?level=` but are nobody's
+ *  "next". */
+export const LADDER: readonly string[] = [KITCHEN01_ID, KITCHEN02_ID, KITCHEN03_ID, KITCHEN04_ID, KITCHEN05_ID];
+
+/** The next rung after `id`, or null (last rung / not on the ladder). */
+export function nextLevelId(id: string): string | null {
+  const i = LADDER.indexOf(id);
+  return i >= 0 && i < LADDER.length - 1 ? LADDER[i + 1]! : null;
 }
 
 /** Geometry of the tray pieces: the LEVEL's tuned parameters per kind,
@@ -248,9 +259,15 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
 
   // preserveDrawingBuffer: the QA seam the e2e canvas probe reads pixels
   // through (same convention as the help drawer's and the harness's
-  // renderers — a non-presentable buffer reads back black under Chrome)
+  // renderers — a non-presentable buffer reads back black under Chrome).
+  // updateStyle=false: the buffer is 960x540 but the ELEMENT sizes to the
+  // stage through `#gw-stage canvas` — the inline 960px style setSize
+  // used to write outranked that rule on every narrow window, so the page
+  // was taller and wider than a laptop viewport and everything pinned to
+  // the stage (the result panel first) scrolled off-screen — the deployed
+  // "panel invisible" finding's letterbox half.
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-  renderer.setSize(960, 540);
+  renderer.setSize(960, 540, false);
   renderer.domElement.id = 'gw-canvas';
   stage.appendChild(renderer.domElement);
   const camera = new THREE.PerspectiveCamera(35, 960 / 540, 0.01, 20);
@@ -299,6 +316,13 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // the e2e seam for the hazard status path: the live zone count of the
   // current world (0 for hazard-free levels) — debug surface, not UI
   (window as unknown as Record<string, unknown>).__gwHazardZones = (): number => world?.hazardZones.length ?? 0;
+  // the e2e seam for the CAMERA FOLLOW assertion (§7.3 on the live path):
+  // the render camera's current pose — a run that does not MOVE this object
+  // is a run the player cannot watch (debug surface, not UI)
+  (window as unknown as Record<string, unknown>).__gwCameraPose = (): { pos: number[]; quat: number[] } => ({
+    pos: camera.position.toArray(),
+    quat: camera.quaternion.toArray(),
+  });
 
   createHelpDrawer(root, { reducedMotion: loadSave().settings.reducedMotion ?? undefined });
 
@@ -322,6 +346,35 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   });
   builder.attachCanvas(renderer.domElement);
   builder.elements.launch.addEventListener('click', startRun);
+  // the progression loop closed on the buttons (§9.1 retry, ladder next):
+  // Retry = as-built, one click back to Launch; Next = the following rung,
+  // only when this level HAS one; Reset (permanent, beside Launch) walks
+  // the car home without touching the build.
+  const nextId = nextLevelId(level.id);
+  resultPanel.retry.addEventListener('click', () => resetCar());
+  if (nextId) {
+    resultPanel.next.addEventListener('click', () => {
+      const p = new URLSearchParams(window.location.search);
+      p.set('level', nextId);
+      window.location.search = p.toString(); // a search swap is a page boot
+    });
+  } else {
+    resultPanel.next.style.display = 'none';
+  }
+  builder.elements.reset.addEventListener('click', () => resetCar());
+
+  /** Car home to the release pose, the build untouched, the view back on
+   *  the board, the panel away — the missing "bring it back" control. */
+  function resetCar(): void {
+    const w = world;
+    if (!w) return;
+    w.reset();
+    acc = 0;
+    hazardsTouched = 0;
+    runCamActive = false;
+    if (w.scene) frameCamera(camera, w.scene);
+    resultPanel.hide();
+  }
 
   function startRun(): void {
     acc = 0;
@@ -369,6 +422,11 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
 
   await rebuild(startBuild);
 
+  // the shell's chase offset over the §7.3 rail eye (world m: up and back
+  // in the camera's own frame — see the follow block in `frame`)
+  const RUN_EYE_OFFSET = new THREE.Vector3(0, 0.05, 0.12);
+  const runEyeOffset = new THREE.Vector3();
+
   let last = performance.now();
   const frame = (now: number): void => {
     requestAnimationFrame(frame);
@@ -398,6 +456,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     }
     if (w.status !== 'running' && w.status !== 'idle' && lastStatus === 'running') {
       // the run just ended: stars, time, pieces, and the one-line note (§9.1)
+      // — and the follow camera HANDS THE VIEW BACK (§7.3): the static
+      // track framing at the end beat the rail freeze-frame every time
+      // ("camera buried inside the floor" — playtest B — was the run
+      // camera's last pose, kept forever)
+      runCamActive = false;
+      frameCamera(camera, w.scene);
       const result: RunResult = {
         status: w.status,
         time: w.time,
@@ -415,9 +479,14 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     statusLine.textContent = runStatusLine(w, builder.playerCount());
     if (runCamActive && runCam) {
       // §7.3: during a run (and on the freeze-frame after it) the RUN
-      // CAMERA owns the transform — leading the car along the rail
+      // CAMERA owns the transform — leading the car along the rail.
+      // The rail eye sits ~2 cm over a toy-scale deck, which reads as an
+      // unreadable blur on the game canvas; the shell lifts the eye and
+      // backs it off in the camera's own frame — the FILTER stays the Feel
+      // Engineer's class, the framing is the shell's.
       camera.position.copy(runCam.position);
       camera.quaternion.copy(runCam.rotation);
+      camera.position.add(runEyeOffset.copy(RUN_EYE_OFFSET).applyQuaternion(camera.quaternion));
     }
     if (post) {
       post.setFocus([pose.pos.x, pose.pos.y, pose.pos.z]); // §7.3: band centred on the car

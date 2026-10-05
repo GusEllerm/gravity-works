@@ -206,6 +206,10 @@ export interface ResultModel {
   piecesUsed: number;
   note: string;
   status: RunResult['status'];
+  /** The par the run was scored against — the panel shows it beside both
+   * tallies so the star rules are legible, not folklore (playtest B: "the
+   * rules behind the stars are opaque"). */
+  par: Par;
 }
 
 /** Stars + note for one finished-or-not run: the panel's whole content. */
@@ -216,6 +220,23 @@ export function resultModel(result: RunResult, par: Par, ev: RunEvidence): Resul
     piecesUsed: result.piecesUsed,
     note: physicsNote(result, ev),
     status: result.status,
+    par,
+  };
+}
+
+/**
+ * The panel's three explanatory lines, pure (unit-tested): the piece tally
+ * and the time against their par lines, and the static star rule. The ✓/✗
+ * marks appear only on a finished run — an unfinished one has 0 stars by
+ * rule 1 and the note already says why (the marks would be noise).
+ */
+export function outcomeLines(model: ResultModel): { pieces: string; time: string; rules: string } {
+  const finished = model.status === 'finished';
+  const mark = (ok: boolean): string => (finished ? (ok ? ' ✓' : ' ✗') : '');
+  return {
+    pieces: `${model.piecesUsed} pieces — par ${model.par.pieces}${mark(model.piecesUsed <= model.par.pieces)}`,
+    time: `${formatTime(model.time)} — par ${formatTime(model.par.time)}${mark(model.time <= model.par.time)}`,
+    rules: 'Stars: finish the run · stay at or under par pieces · stay at or under par time',
   };
 }
 
@@ -225,20 +246,48 @@ export function formatTime(seconds: number): string {
 
 export interface ResultPanel {
   element: HTMLElement;
+  /** The as-built retry: one click back to Launch (wired by the shell). */
+  retry: HTMLButtonElement;
+  /** On to the next rung of the ladder (wired by the shell; hidden when
+   * this level has no next). */
+  next: HTMLButtonElement;
   show(model: ResultModel): void;
   hide(): void;
 }
 
-function makePanel(): { root: HTMLElement; stars: HTMLElement; time: HTMLElement; pieces: HTMLElement; note: HTMLElement } {
+function panelButton(id: string, label: string, parent: HTMLElement): HTMLButtonElement {
+  const b = document.createElement('button');
+  b.id = id;
+  b.type = 'button';
+  b.textContent = label;
+  b.style.cssText =
+    'font:inherit;font-size:13px;padding:4px 10px;border-radius:4px;border:1px solid #fdf2e0;background:transparent;color:#fdf2e0;cursor:pointer';
+  parent.appendChild(b);
+  return b;
+}
+
+function makePanel(): {
+  root: HTMLElement;
+  stars: HTMLElement;
+  time: HTMLElement;
+  pieces: HTMLElement;
+  rules: HTMLElement;
+  note: HTMLElement;
+  retry: HTMLButtonElement;
+  next: HTMLButtonElement;
+} {
   const root = document.createElement('div');
   root.id = 'gw-result';
   root.setAttribute('role', 'status');
   root.setAttribute('aria-live', 'polite');
   root.hidden = true;
   // over the world, never over a run: shown only at run end (§5.11). Warm
-  // paper palette, no drop shadow (§5.10).
+  // paper palette, no drop shadow (§5.10). CENTRED over the stage and
+  // scrolled into view on show — pinned to a stage corner, the panel landed
+  // off-viewport whenever the reader had scrolled to look at the world
+  // (the deployed-page "invisible result" finding, 3/3 playtesters).
   root.style.cssText =
-    'position:absolute;top:8px;left:8px;padding:8px 12px;background:rgba(62,46,32,0.88);color:#fdf2e0;font:14px/1.4 system-ui,sans-serif;max-width:320px';
+    'position:absolute;top:8px;left:50%;transform:translateX(-50%);padding:8px 12px;background:rgba(62,46,32,0.88);color:#fdf2e0;font:14px/1.4 system-ui,sans-serif;max-width:380px';
   const stars = document.createElement('p');
   stars.id = 'gw-result-stars';
   stars.style.cssText = 'margin:0;font-size:20px;letter-spacing:2px';
@@ -248,11 +297,21 @@ function makePanel(): { root: HTMLElement; stars: HTMLElement; time: HTMLElement
   const pieces = document.createElement('p');
   pieces.id = 'gw-result-pieces';
   pieces.style.cssText = 'margin:0';
+  const rules = document.createElement('p');
+  rules.id = 'gw-result-rules';
+  rules.style.cssText = 'margin:2px 0 0;font-size:11px;opacity:0.85';
   const note = document.createElement('p');
   note.id = 'gw-result-note';
   note.style.cssText = 'margin:4px 0 0;font-style:italic';
-  root.append(stars, time, pieces, note);
-  return { root, stars, time, pieces, note };
+  const buttons = document.createElement('div');
+  buttons.id = 'gw-result-buttons';
+  buttons.style.cssText = 'display:flex;gap:6px;margin-top:6px';
+  const retry = panelButton('gw-result-retry', 'Retry', buttons);
+  retry.setAttribute('aria-label', 'Retry this build from the start');
+  const next = panelButton('gw-result-next', 'Next level', buttons);
+  next.setAttribute('aria-label', 'Play the next level');
+  root.append(stars, time, pieces, rules, note, buttons);
+  return { root, stars, time, pieces, rules, note, retry, next };
 }
 
 /**
@@ -261,23 +320,35 @@ function makePanel(): { root: HTMLElement; stars: HTMLElement; time: HTMLElement
  * shell only calls `show` on a terminal status.
  */
 export function createResultPanel(host: HTMLElement): ResultPanel {
-  const { root, stars, time, pieces, note } = makePanel();
+  const { root, stars, time, pieces, rules, note, retry, next } = makePanel();
   host.appendChild(root);
   return {
     element: root,
+    retry,
+    next,
     show(model) {
       stars.textContent = starGlyphs(model.stars);
       // role=img + label so a screen reader says "2 of 3 stars", not "star star star"
       stars.setAttribute('role', 'img');
       stars.setAttribute('aria-label', `${model.stars} of 3 stars`);
-      time.textContent = formatTime(model.time);
-      pieces.textContent = `${model.piecesUsed} pieces`;
+      const lines = outcomeLines(model);
+      time.textContent = lines.time;
+      pieces.textContent = lines.pieces;
+      rules.textContent = lines.rules;
       note.textContent = model.note;
       note.hidden = model.note === '';
+      // visibility on BOTH channels (the help drawer's lesson: `hidden`
+      // alone loses to any inline display; display alone loses to a11y)
       root.hidden = false;
+      root.style.display = '';
+      // and guarantee the reader is LOOKING at it: if the page is scrolled
+      // such that the panel is off-screen, jump it into view (nearest =
+      // the smallest scroll that works, no jump when already visible)
+      root.scrollIntoView({ block: 'nearest', behavior: 'instant' });
     },
     hide() {
       root.hidden = true;
+      root.style.display = 'none';
     },
   };
 }

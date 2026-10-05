@@ -32,8 +32,13 @@ test('finishing the feel track shows the result panel with stars and time', asyn
   await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
   await expect(page.locator('#gw-result-stars')).toHaveText('★★★')
   await expect(page.locator('#gw-result-stars')).toHaveAccessibleName(/3 of 3 stars/)
-  await expect(page.locator('#gw-result-time')).toHaveText(/^\d+\.\d{2} s$/)
-  await expect(page.locator('#gw-result-pieces')).toHaveText(`${FEEL_TRACK_KINDS.length} pieces`)
+  // the par lines ride with the tallies (playtest B: the star rules were
+  // opaque) — every ✓ is one of the three lines the rules line spells out
+  await expect(page.locator('#gw-result-time')).toHaveText(/^\d+\.\d{2} s — par [\d.]+ s ✓$/)
+  await expect(page.locator('#gw-result-pieces')).toHaveText(
+    new RegExp(`^${FEEL_TRACK_KINDS.length} pieces — par ${FEELTRACK.par.pieces} ✓$`),
+  )
+  await expect(page.locator('#gw-result-rules')).toContainText('finish the run')
   // a finished run earns silence, not a lecture (§11)
   await expect(page.locator('#gw-result-note')).toBeHidden()
   // and the par the page scored with is the regenerated one, sanity-bounded

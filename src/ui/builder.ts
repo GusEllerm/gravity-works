@@ -62,9 +62,16 @@ export interface BuilderElements {
   count: HTMLElement;
   ghostState: HTMLElement;
   targetLabel: HTMLElement;
+  /** The §9.3 teaching line shown while a piece is held and nothing has
+   * been placed yet (playtest A: never learnt Place). */
+  hint: HTMLElement;
   place: HTMLButtonElement;
   rotate: HTMLButtonElement;
   remove: HTMLButtonElement;
+  /** Permanent visible control next to Launch: returns the CAR to the start
+   * pose (the build untouched) — the missing "after a run, nothing brings
+   * the view home" control (playtest C). */
+  reset: HTMLButtonElement;
   launch: HTMLButtonElement;
 }
 
@@ -134,6 +141,9 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   let flipped = false;
   let targetIndex = 0;
   let state: GhostState = 'hidden';
+  // the teaching line persists until the FIRST successful place of the
+  // session (a build that loads already-built starts without the hint)
+  let everPlaced = trayPlaced() > 0;
 
   // ---- DOM ---------------------------------------------------------------
   const root = document.createElement('div');
@@ -155,7 +165,11 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     b.setAttribute('aria-label', `Hold the ${k} piece`);
     b.setAttribute('aria-pressed', 'false');
     b.addEventListener('click', () => {
-      if (!locked(k)) setKind(k);
+      // a click on a locked or spent button must EXPLAIN itself (playtest C:
+      // "clicking greyed booster left an unclear status")
+      if (locked(k)) ghostState.textContent = `the ${k} is not in this level’s tray`;
+      else if (!selectable(k)) ghostState.textContent = `no ${k} left in the tray`;
+      else setKind(k);
     });
     b.addEventListener('mouseenter', () => {
       if (!locked(k)) setKind(k);
@@ -169,7 +183,25 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   const placeBtn = button('gw-place', 'Place', controls);
   const rotateBtn = button('gw-rotate', 'Rotate (R)', controls);
   const remove = button('gw-remove-piece', 'Remove piece', controls);
+  const resetBtn = button('gw-reset', 'Reset', controls);
+  resetBtn.setAttribute('aria-label', 'Return the car to the start (the build stays as built)');
   const launch = button('gw-launch', 'Launch', controls);
+  // the teaching line (near the tray, §9.3): while a piece is held and the
+  // player has not placed anything yet, the HOW lives here — not buried in
+  // Help below the fold (playtest A held a piece and never found Place)
+  const hint = document.createElement('p');
+  hint.id = 'gw-tray-hint';
+  hint.setAttribute('aria-live', 'polite');
+  hint.textContent = 'Move: drag or arrows · Place: Enter · Rotate: R';
+  hint.hidden = true;
+  root.appendChild(hint);
+  // the VISIBLE reason behind every greyed/spent tray button (playtest C:
+  // "state and appearance disagreed") — aria-describedby points the
+  // disabled buttons at this on-screen line, not just a hover title
+  const trayReason = document.createElement('p');
+  trayReason.id = 'gw-tray-reason';
+  trayReason.textContent = 'Greyed pieces are not in this level · the ×N pieces are yours · ×0 means all placed';
+  root.appendChild(trayReason);
   const count = document.createElement('p');
   count.id = 'gw-piece-count';
   count.setAttribute('aria-live', 'polite');
@@ -297,13 +329,19 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     // the state line reads EMPTY when nothing is held/on
     ghostState.textContent = state === 'hidden' ? '' : state;
     count.textContent = `${trayPlaced()} / ${level.budget} pieces`;
+    hint.hidden = everPlaced || kind === null;
     for (const [k, b] of trayButtons) {
       const cap = allowance(k);
       const left = cap === null ? null : Math.max(0, cap - placedOf(k));
       b.setAttribute('aria-pressed', String(k === kind));
       // aria-disabled (not `disabled`) keeps the button focusable so the
-      // reason stays reachable; `title` carries WHY (brief §9.3 gating)
-      b.setAttribute('aria-disabled', String(locked(k) || left === 0));
+      // reason stays reachable; the reason is an ON-SCREEN line
+      // (#gw-tray-reason) via aria-describedby — a hover title alone read
+      // as "dead button with no story" (playtest C)
+      const spent = locked(k) || left === 0;
+      b.setAttribute('aria-disabled', String(spent));
+      if (spent) b.setAttribute('aria-describedby', 'gw-tray-reason');
+      else b.removeAttribute('aria-describedby');
       b.title = locked(k)
         ? 'not in this level’s tray'
         : left === 0
@@ -383,6 +421,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       ...pieces,
       { def: kind, params: { ...heldParams(kind) }, transform, seq: pieces.length },
     ];
+    everPlaced = true;
     updateGhost();
     emit();
     return true;
@@ -398,6 +437,10 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       if (i < 0) return false;
     }
     pieces = pieces.filter((_, j) => j !== i).map((p, j) => ({ ...p, seq: j }));
+    // removing back to an empty board re-lights the teaching line (§9.3: it
+    // persists until a FIRST successful place — the lesson is not learned
+    // if the player removed everything they ever placed)
+    everPlaced = trayPlaced() > 0;
     updateGhost();
     emit();
     return true;
@@ -430,7 +473,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   updateGhost();
 
   return {
-    elements: { root, tray, count, ghostState, targetLabel, place: placeBtn, rotate: rotateBtn, remove, launch },
+    elements: { root, tray, count, ghostState, targetLabel, hint, place: placeBtn, rotate: rotateBtn, remove, reset: resetBtn, launch },
     build: () => ({ levelId: level.id, pieces: canonicalBuild(pieces.map((p, i) => ({ ...p, seq: i }))), seed: level.seed }),
     setScene(next) {
       scene = next;

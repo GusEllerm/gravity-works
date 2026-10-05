@@ -4,7 +4,7 @@
  * tests/e2e/builder.spec.ts, which drive the real built page.
  */
 import { describe, expect, test } from 'vitest';
-import { boot, initialBuild, runStatusLine } from '../../src/boot.ts';
+import { boot, initialBuild, nextLevelId, runStatusLine } from '../../src/boot.ts';
 import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts';
 import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts';
 import type { World } from '../../src/world/world.ts';
@@ -36,5 +36,13 @@ describe('boot shell', () => {
     expect(Object.keys(KITCHEN01.tray)).toEqual(['gapLip', 'drop', 'landing']);
     // a level with no fixture table (the feel rig) ships its reference build
     expect(initialBuild(FEELTRACK).pieces.length).toBe(FEELTRACK.placeholderBuild().pieces.length);
+  });
+
+  test('the ladder walks kitchen01..05 and nothing is anyone’s next beyond it', () => {
+    expect(nextLevelId('kitchen01')).toBe('kitchen02');
+    expect(nextLevelId('kitchen04')).toBe('kitchen05');
+    expect(nextLevelId('kitchen05')).toBeNull(); // last rung: no Next button
+    expect(nextLevelId('kitchen-sandbox')).toBeNull(); // off-ladder surfaces
+    expect(nextLevelId('feeltrack')).toBeNull();
   });
 });

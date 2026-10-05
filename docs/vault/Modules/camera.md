@@ -66,12 +66,26 @@ See [[feel]] (rail-projection honesty) and
 `src/boot.ts` DOES drive it: each rebuild builds a `KitRig` over the live
 build (the `RunCameraSource` — rail, frames, length) and, once a run is
 released, the render loop updates the camera per fixed step
-(`update(FIXED_DT, rig.nearestArc(carPos), speed)`), so during a run — and
-on the freeze-frame after it — the rail camera leads the car (§7.3). The
-static bounding-box framing remains only between runs: it now boxes the
-TRACK group alone (named `track` in `buildTrackMeshes`), never the whole
-scene, so the set and the ground plane cannot steal the frame. Empty builds
-(no rail) stay on the static framing.
+(`update(FIXED_DT, rig.nearestArc(carPos), speed)`), so during a run the rail
+camera leads the car (§7.3). Two shell-side facts the playtest found (the
+class stayed untouched — framing is the shell's):
+
+- the rail eye sits ~2 cm over a toy-scale deck, which read as an
+  unreadable blur on the game canvas — the shell lifts and backs off the
+  eye by its own `RUN_EYE_OFFSET` in the camera frame (a rigid local
+  offset, the FILTER still comes from the class verbatim);
+- the rail freeze-frame after a run is GONE: at a terminal status the loop
+  hands the transform back to the static track framing — the deployed
+  "camera buried inside the floor" was the run camera's final pose kept
+  forever.
+
+The static bounding-box framing owns the table between runs and at run
+end: it boxes the TRACK group alone (named `track` in `buildTrackMeshes`),
+never the whole scene, so the set and the ground plane cannot steal the
+frame. Empty builds (no rail) stay on the static framing. The live-path
+follow is asserted on the BUILT app through the `__gwCameraPose` seam
+(`tests/e2e/loop.spec.ts`) — the e2e that should have caught this ran
+dev-time only once.
 
 ## Guarded by
 

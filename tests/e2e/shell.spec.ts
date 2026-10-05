@@ -116,8 +116,8 @@ test('building all three tray pieces launches, finishes, and shows the result pa
   // at least one star for finishing, and the tray-piece tally (3, not 5)
   await expect(page.locator('#gw-result-stars')).toHaveText(/[★☆]{3}/)
   expect(((await page.locator('#gw-result-stars').textContent()) ?? '').includes('★')).toBe(true)
-  await expect(page.locator('#gw-result-pieces')).toHaveText('3 pieces')
-  await expect(page.locator('#gw-result-time')).toHaveText(/^\d+\.\d{2} s$/)
+  await expect(page.locator('#gw-result-pieces')).toContainText('3 pieces')
+  await expect(page.locator('#gw-result-time')).toHaveText(/^\d+\.\d{2} s — par /)
 
   // and the panel never prints the word "hidden" either
   await expect(page.locator('body')).not.toContainText('hidden')

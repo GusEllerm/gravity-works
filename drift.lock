@@ -48,7 +48,7 @@ sig = "bd7f07f5e846d4a4"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/boot.ts"
-sig = "e493f6b8eb9ad605"
+sig = "f5aae17c600aab7d"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -64,6 +64,11 @@ sig = "23d6349a19a9619e"
 doc = "docs/vault/Modules/camera.md"
 target = "src/track/spline.ts"
 sig = "94a2ee27e5931879"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "tests/e2e/loop.spec.ts"
+sig = "74ce19d54ef6516d"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -233,7 +238,7 @@ sig = "0f065f90d47289b6"
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/boot.ts"
-sig = "e493f6b8eb9ad605"
+sig = "f5aae17c600aab7d"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
@@ -268,7 +273,7 @@ sig = "419088dfb08c761f"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/boot.ts"
-sig = "e493f6b8eb9ad605"
+sig = "f5aae17c600aab7d"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -298,12 +303,12 @@ sig = "37b1fdac2d8feb62"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/ui/result.ts"
-sig = "01701180b02055d4"
+sig = "c3212c287d987cae"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/ui/shell.css"
-sig = "e250852968e397aa"
+sig = "d39584ece59db658"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -317,8 +322,13 @@ sig = "720fc204782c6553"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
+target = "tests/e2e/loop.spec.ts"
+sig = "74ce19d54ef6516d"
+
+[[bindings]]
+doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/result.spec.ts"
-sig = "b5f2df413b03f65d"
+sig = "5b34c91454d2dbdb"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -328,12 +338,12 @@ sig = "3dc33ac21de385ff"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/unit/boot.test.ts"
-sig = "a577cfc5a46e7bd2"
+sig = "65bae38f778f4845"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/boot.ts"
-sig = "e493f6b8eb9ad605"
+sig = "f5aae17c600aab7d"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -343,7 +353,7 @@ sig = "a38e01706f33daf6"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/builder.ts"
-sig = "a4f4d2518d55944c"
+sig = "b9c5e9b71713759f"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -358,12 +368,12 @@ sig = "37b1fdac2d8feb62"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/result.ts"
-sig = "01701180b02055d4"
+sig = "c3212c287d987cae"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/shell.css"
-sig = "e250852968e397aa"
+sig = "d39584ece59db658"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -372,18 +382,28 @@ sig = "720fc204782c6553"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
+target = "tests/e2e/loop.spec.ts"
+sig = "74ce19d54ef6516d"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/result.spec.ts"
-sig = "b5f2df413b03f65d"
+sig = "5b34c91454d2dbdb"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/shell.spec.ts"
-sig = "ad63a57f1ae569a9"
+sig = "45b11fb79ed335b3"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/callouts.test.ts"
 sig = "3b56360f3ee33265"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
+target = "tests/unit/result.test.ts"
+sig = "315d9e31da4d0d73"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -403,7 +423,7 @@ sig = "c1d2af0be000e3d8"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/boot.ts"
-sig = "e493f6b8eb9ad605"
+sig = "f5aae17c600aab7d"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
