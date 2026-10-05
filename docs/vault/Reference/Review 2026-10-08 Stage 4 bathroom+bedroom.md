@@ -102,3 +102,42 @@ Re-render hero-a and close-a only. If the re-render lands both at ≥12 with no 
 4. **[AD] The exposure warning from stage 3 came true verbatim** — bathroom A shipped the wash (34 % blown, zero darks) precisely because the rig fix stayed in kitchen stills. Whatever mechanism makes the ceramic/shadow fixes survive from a dev scene into a set template is cheaper than one more set's worth of histogram reviews.
 5. **[AD] Self-score calibration, good news:** both Concept.md demerit sections volunteered exactly the flaws I scored down (bedroom: the empty A floor shot, the C marshmallow; bathroom: C's engine risk). Claims match pixels; keep the honesty notes coming and keep fresh-eyes AD per set.
 6. **[AD] Hazard-affordance scoreboard for playtest:** cable bump (bedroom B inherits A's — port it) = ready; bathroom wet patch = A's is the only visible one, on the watch-list until the film lands; C's puddle is withdrawn with the variant.
+
+## Round 2 — FINAL verdict, variant A re-render (2026-10-05, AD)
+
+> [!abstract] Method
+Measurement-first: the committed hero-a.png and close-a.png were re-measured with tools/histogram.mjs plus a
+per-pixel tint/spread, region-mean and high-frequency speckle audit (mean absolute deviation from a 5x5 box
+mean), each speckle metric run against the round-1 files from git for an old-vs-new comparison. Two 300 %
+crops (track wall, tub flank) for the literal crop acceptance. b/c variants confirmed byte-identical.
+
+### Fix-by-fix verification (measured, not prose)
+
+1. **Ceramic exposure — VERIFIED.** ≥243 coverage 34 % → **1.0 %** hero (bar <8), 39 % → **4.24 %** close (bar <10). Tub flank, rim and wall tiles resolve into distinct ramp bands in both frames.
+2. **Shadow budget — VERIFIED.** p5 **95** hero / **93** close (bar <120); sub-60 **4,240 / 4,958 px** (bar ≥1,000); blackish count **0** in both (min channel-spread 19/23 — every dark tinted; never-list audit stays clean).
+3. **Wet patch film — VERIFIED.** Patch-region mean 225.8 vs adjacent tile 227.6 (Δ 1.8, inside ±25); no blown patch pixels; close-a floor band carries 115 specular pixels in [240,243) — streaks clear 240 without re-blowing. The artist's volunteered cap (~239 in hero) checks out: hero detectability rides on tint + soft edge + grout wash, which it does. Hazard still placed where the hero camera sees it.
+4. **Tub flank — VERIFIED.** Speckle metric 0.29 (round-1 baseline 0.23 — flat); 300 % crop shows one contiguous band, no speckle. Caveat the artist volunteered and I confirm: the band edge is texel-staircased — a hard quantized edge, not the rejected signature; carry-forward, not a blocker.
+5. **Track side walls — VERIFIED.** Speckle metric close 3.58 → **1.38** (−62 %), hero 1.46 → **0.78** (−47 %); the 300 % crop of the focus-band run shows flat banded orange, hard car shadows, no dither fuzz. Residual stairstepping at band joins is geometry aliasing, not TA-1 speckle.
+
+### Rubric, variant A re-render
+
+| Line | hero-a | close-a |
+|---|---:|---:|
+| 1 Silhouette | 1 | 2 |
+| 2 Focal point | 2 | 2 |
+| 3 Scale cues | 2 | 2 |
+| 4 Color | 2 | 2 |
+| 5 Light | 2 | 2 |
+| 6 Material | 1 | 1 |
+| 7 Story | 2 | 2 |
+| 8 Nothing default | 2 | 2 |
+| **Total** | **14** | **15** |
+| **Verdict** | **PASS** | **PASS** |
+
+Material stays at 1 in both cameras: the drain's chrome ring still flares as a blown donut at the track's far end (pre-existing, belongs to the TA's chrome class), the sink glaze is a single flat sheet at close, and the flank's staircased band edge is not yet mathematically smooth. Hero silhouette holds at 1 — the duck mass still outweighs the car in the upper frame, unchanged and not asked to change.
+
+### Verdict: **variant A RATIFIED as the bathroom set. 14/15, both cameras pass, no zeros. No alternate invoked; send-back 2 of 2 unused.**
+
+Every one of the five acceptance bars measures green — the stage-3 wash disease is cured at scene level, and A kept exactly what it was nominated for: the fastest deck story, a camera-visible hazard that now reads as a film, and the clean scale discipline. The kitchen-collision question stays answered: cool porcelain, zero measured overlap with kitchen gold-mint.
+
+**The one thing production must not lose:** the exposure discipline that earned this ratification — the ceramic three-band ramp (upper threshold 0.72) with the deep tinted-aqua fill, entered at *material/registry level*, not scene values. This is the exact fix that died in stage-3 kitchen stills and reappeared as a 34 % wash; if the set template carries the porcelain bases without the bands and tinted fill, the wash is back by the first production still. Carry-forwards with the set, no round: chrome-ring flare (TA chrome class), tub-flank texel staircase, TA-1 speckle (still open, systemic), and the hero duck mass.
