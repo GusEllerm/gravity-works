@@ -167,6 +167,9 @@ function seededHash(seed: number): number {
  * worldsmoke harness scene). One group, world metres, no lights baked in. */
 export function buildTrackMeshes(build: Build): THREE.Group {
   const group = new THREE.Group();
+  // named so the shell's static framing can box the TRACK alone (never the
+  // set or the ground plane the scene also carries) — see boot.frameCamera
+  group.name = 'track';
   const deck = new THREE.MeshLambertMaterial({ color: GLOBAL_TOKENS.trackOrange });
   const shell = new THREE.MeshLambertMaterial({ color: '#dce6ea', side: THREE.DoubleSide });
   for (const piece of reify(build).pieces) {

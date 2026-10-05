@@ -26,11 +26,13 @@ test('builder: ghost appears on hover, place and remove move the piece counter',
   await expect(page.getByRole('toolbar', { name: 'Piece tray' })).toBeVisible()
   await expect(page.locator('#gw-tray button')).toHaveCount(13)
   await expect(page.locator('#gw-piece-count')).toHaveText(`${laid} / ${budget} pieces`)
-  await expect(page.locator('#gw-ghost-state')).toHaveText('hidden')
+  // the ghost-state line reads EMPTY when nothing is held — the literal
+  // word "hidden" never reaches the screen
+  await expect(page.locator('#gw-ghost-state')).toHaveText('')
 
   // hover the straight in the tray -> a translucent ghost appears at the open socket
   await page.hover('#gw-tray button[data-kind="straight"]')
-  await expect(page.locator('#gw-ghost-state')).not.toHaveText('hidden', { timeout: 10_000 })
+  await expect(page.locator('#gw-ghost-state')).not.toHaveText('', { timeout: 10_000 })
 
   // click to hold, Enter-equivalent button to place -> counter increments
   await page.click('#gw-tray button[data-kind="straight"]')

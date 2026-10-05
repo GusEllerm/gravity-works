@@ -4,7 +4,9 @@
  * tests/e2e/builder.spec.ts, which drive the real built page.
  */
 import { describe, expect, test } from 'vitest';
-import { boot, runStatusLine } from '../../src/boot.ts';
+import { boot, initialBuild, runStatusLine } from '../../src/boot.ts';
+import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts';
+import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts';
 import type { World } from '../../src/world/world.ts';
 
 const fake = (status: string, time: number, hash: string): World =>
@@ -22,5 +24,17 @@ describe('boot shell', () => {
     );
     expect(runStatusLine(fake('fell', 0.4, '01234567'), 5)).toContain('fell off the set');
     expect(runStatusLine(fake('running', 2, 'ffffffff'), 5)).toContain('hash ffffffff');
+  });
+
+  test('a kitchen level starts EMPTY of tray pieces: fixtures only, tray to build', () => {
+    // the deployed-page bug was booting placeholderBuild() (= the full par
+    // reference) as the STARTING build — pre-built level, over-budget tray
+    const start = initialBuild(KITCHEN01);
+    expect(start.pieces.map((p) => p.def)).toEqual(['ramp', 'finishCup']);
+    expect(start.pieces.every((p, i) => p.seq === i)).toBe(true);
+    expect(start.pieces.length).toBeLessThan(KITCHEN01.parBuild().pieces.length);
+    expect(Object.keys(KITCHEN01.tray)).toEqual(['gapLip', 'drop', 'landing']);
+    // a level with no fixture table (the feel rig) ships its reference build
+    expect(initialBuild(FEELTRACK).pieces.length).toBe(FEELTRACK.placeholderBuild().pieces.length);
   });
 });

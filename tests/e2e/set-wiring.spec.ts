@@ -6,11 +6,14 @@ import { replayRun } from '../../src/replay/replay.ts'
 /**
  * Stage-3 level↔set wiring, end to end on the built shell:
  *
- * 1. `/?level=kitchen01&launch=1` finishes IN its set (the mounted group is
- *    tagged on the stage), and its state hash equals the headless Node
- *    replay of the same (level, build, seed) — the set is visual mount only
- *    and cannot perturb physics through the browser;
- * 2. `/?level=kitchen04&launch=1` finishes, the hazard status path is live
+ * 1. `/?level=kitchen01&launch=1&build=par` finishes IN its set (the mounted
+ *    group is tagged on the stage), and its state hash equals the headless
+ *    Node replay of the same (level, build, seed) — the set is visual mount
+ *    only and cannot perturb physics through the browser (`build=par`
+ *    because the GAME default is now the fixture-only build — the player
+ *    builds the tray pieces; this seam pins the reference build);
+ * 2. `/?level=kitchen04&launch=1&build=par` finishes, the hazard status path
+ *    is live
  *    (the world exposes its mounted zone count: 1 for the tap level, 0 for
  *    hazard-free levels — the same field the grip hook reads);
  * 3. the set-aware builder guard: on kitchen03 a piece targeted at a bowl-rim
@@ -33,7 +36,7 @@ test('kitchen01 finishes in its mounted set at the headless replay hash', async 
   const node = await replayRun(KITCHEN01, KITCHEN01.parBuild())
   expect(node.status).toBe('finished')
 
-  await page.goto('/?level=kitchen01&launch=1')
+  await page.goto('/?level=kitchen01&launch=1&build=par')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'kitchen', { timeout: 60_000 })
   await expect(page.locator('#gw-status')).toContainText('finished', { timeout: 60_000 })
 
@@ -51,7 +54,7 @@ test('kitchen04 par finishes at the replay hash and the hazard path is live', as
   const node = await replayRun(KITCHEN04, KITCHEN04.parBuild())
   expect(node.status).toBe('finished')
 
-  await page.goto('/?level=kitchen04&launch=1')
+  await page.goto('/?level=kitchen04&launch=1&build=par')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'kitchen', { timeout: 60_000 })
   // the mounted world carries the tap's wet-patch zone (the grip field the
   // car's wheel contacts sample — this par line is grip-independent by design)
@@ -68,20 +71,24 @@ test('the builder ghost goes red on a set solid (L03 bowl-rim socket)', async ({
   await page.goto('/?level=kitchen03')
   await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
 
+  // the default boot is the FIXTURE build: ramp + cup + the two rim
+  // fixtures, tray full (`straight` is on L03's tray, so it is holdable)
   await page.click('#gw-tray button[data-kind="straight"]')
-  // targets: the chain's open exits first, then the bowl-rim fixture socket
-  // (end of curve = `bowl.out`; `bowl.in` is closed by the counter-arc's
-  // in-socket) — riding the rim, where a straight would drive through the
-  // ceramic
+  // targets: level start, then the fixtures' open exits — end of ramp,
+  // end of finishCup, and the bowl-rim fixture socket (end of curve =
+  // `bowl.out`; `bowl.in` is closed by the counter-arc's in-socket) —
+  // riding the rim, where a straight would drive through the ceramic
   await expect(page.locator('#gw-target-label')).toContainText('level start')
-  await page.locator('#gw-builder').press('ArrowRight') // the chain's open exit
+  await page.locator('#gw-builder').press('ArrowRight') // end of ramp
+  await expect(page.locator('#gw-target-label')).toContainText('end of ramp')
+  await page.locator('#gw-builder').press('ArrowRight') // the cup's run-out
   await expect(page.locator('#gw-target-label')).toContainText('end of finishCup')
   await page.locator('#gw-builder').press('ArrowRight') // end of curve -> bowl.out
+  await expect(page.locator('#gw-target-label')).toContainText('end of curve')
   await expect(page.locator('#gw-ghost-state')).toHaveText('blocked', { timeout: 10_000 })
 
-  // the red ghost is the guard's claim; a seat attempt (Enter — the button
-  // is disabled by the fixture-counted budget, an open builder seam) adds
-  // nothing to the build
+  // the red ghost is the guard's claim; a seat attempt (Enter — a blocked
+  // seat is refused) adds nothing to the build
   const before = (await page.locator('#gw-piece-count').textContent()) ?? ''
   await page.locator('#gw-builder').press('Enter')
   await expect(page.locator('#gw-piece-count')).toHaveText(before)

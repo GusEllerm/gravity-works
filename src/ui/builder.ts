@@ -19,7 +19,7 @@
  */
 import * as THREE from 'three';
 import { canonicalBuild, fitSocket, snapSocket } from '../track/snap.ts';
-import { PIECES, PIECE_KINDS, pieceGeometries, type PieceKind } from '../track/pieces.ts';
+import { PIECES, PIECE_KINDS, pieceGeometries, type PieceKind, type PieceParams } from '../track/pieces.ts';
 import { transformSocket, type Socket } from '../track/socket.ts';
 import type { Build, PlacedPiece } from '../track/build.ts';
 import type { Level } from '../world/level.ts';
@@ -33,6 +33,20 @@ export interface BuilderOptions {
   level: Level;
   /** The starting build (usually the level's placeholder or a saved one). */
   build?: Build;
+  /** Stage-3 tray gating (brief §9.3: a tutorial ships exactly its pieces):
+   *  when the level declares a tray, kinds OUTSIDE it are locked (disabled
+   *  buttons with a reason), a kind's placements are capped at its tray
+   *  count, and the piece counter reports TRAY placements against the
+   *  budget — built-in fixtures never count (the deployed-page "5 / 3
+   *  pieces" bug). Omitted = every kind unlocked, `level.budget` alone caps
+   *  (the feel-rig levels). */
+  tray?: Partial<Record<PieceKind, number>>;
+  /** Geometry of the tray pieces: the LEVEL's tuned parameters per kind
+   *  (the kitchen authoring kit lays per-instance params; a tray button
+   *  that placed kit DEFAULTS built a different gap than the one the
+   *  level was par'd on — the built-it-and-it-fell bug). Absent = kit
+   *  defaults (the feel-rig levels). */
+  trayParams?: Partial<Record<PieceKind, PieceParams>>;
   /** Called after every mutation with the canonical new build. */
   onChange?: (build: Build) => void;
   /** Stage-3 set wiring: world-space AABBs of the set's solid props. A seat
@@ -67,6 +81,9 @@ export interface Builder {
   rotate(): void;
   place(): boolean;
   removeLast(): boolean;
+  /** Pieces the PLAYER has placed from the tray (fixtures excluded) — the
+   *  number the counter, the budget gate and the result's piece tally use. */
+  playerCount(): number;
   kind(): PieceKind | null;
   ghost(): GhostState;
 }
@@ -88,6 +105,28 @@ function button(id: string, label: string, parent: HTMLElement): HTMLButtonEleme
 export function createBuilder(host: HTMLElement, options: BuilderOptions): Builder {
   const { level } = options;
   const solids = options.solids ?? [];
+  const traySpec = options.tray;
+  const trayParams = options.trayParams;
+  /** The parameters a held kind is GHOSTED AND SEATED with: the tray's
+   *  tuned set when the level ships one, kit defaults otherwise. */
+  const heldParams = (k: PieceKind): PieceParams => trayParams?.[k] ?? PIECES[k].params;
+  /** Kinds the tray allows at all; null = no tray, everything unlocked. */
+  const trayKinds: Set<PieceKind> | null = traySpec
+    ? new Set((Object.entries(traySpec) as [PieceKind, number][]).filter(([, n]) => (n ?? 0) > 0).map(([k]) => k))
+    : null;
+  /** How many of this kind the tray allows (null = no per-kind cap). */
+  const allowance = (k: PieceKind): number | null =>
+    trayKinds && trayKinds.has(k) ? (traySpec![k] ?? 0) : null;
+  const placedOf = (k: PieceKind): number => pieces.filter((p) => p.def === k).length;
+  /** Placements that count against the budget: tray pieces only (a level
+   *  with no tray counts everything, the pre-kitchen behaviour). */
+  const trayPlaced = (): number =>
+    trayKinds ? pieces.filter((p) => trayKinds.has(p.def)).length : pieces.length;
+  const locked = (k: PieceKind): boolean => trayKinds !== null && !trayKinds.has(k);
+  const selectable = (k: PieceKind): boolean => {
+    const cap = allowance(k);
+    return !locked(k) && (cap === null || placedOf(k) < cap);
+  };
   let pieces: PlacedPiece[] = canonicalBuild(
     (options.build ?? { levelId: level.id, pieces: [], seed: level.seed }).pieces,
   ).map((p, i) => ({ ...p, seq: i }));
@@ -111,12 +150,16 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   root.appendChild(tray);
   const trayButtons = new Map<PieceKind, HTMLButtonElement>();
   for (const k of PIECE_KINDS) {
-    const b = button(`gw-tray-${k}`, k, tray);
+    const b = button(`gw-tray-${k}`, traySpec && traySpec[k] ? `${k} ×${traySpec[k]}` : k, tray);
     b.dataset.kind = k;
     b.setAttribute('aria-label', `Hold the ${k} piece`);
     b.setAttribute('aria-pressed', 'false');
-    b.addEventListener('click', () => setKind(k));
-    b.addEventListener('mouseenter', () => setKind(k));
+    b.addEventListener('click', () => {
+      if (!locked(k)) setKind(k);
+    });
+    b.addEventListener('mouseenter', () => {
+      if (!locked(k)) setKind(k);
+    });
     trayButtons.set(k, b);
   }
 
@@ -163,7 +206,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       ghostGroup.remove(child);
     }
     if (kind) {
-      for (const geo of pieceGeometries(kind)) {
+      for (const geo of pieceGeometries(kind, heldParams(kind))) {
         ghostGroup.add(new THREE.Mesh(geo, ghostMaterial));
       }
     }
@@ -197,7 +240,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   }
 
   function placement(target: Socket, held: PieceKind): THREE.Matrix4 {
-    const [heldIn] = PIECES[held].sockets(PIECES[held].params);
+    const [heldIn] = PIECES[held].sockets(heldParams(held));
     const seat = fitSocket(target, heldIn);
     if (!flipped) return seat;
     const axis = target.up.clone().normalize();
@@ -213,7 +256,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   function overlapsSolid(transform: THREE.Matrix4, held: PieceKind): boolean {
     if (solids.length === 0) return false;
     const box = new THREE.Box3();
-    for (const geo of pieceGeometries(held)) {
+    for (const geo of pieceGeometries(held, heldParams(held))) {
       geo.computeBoundingBox();
       if (geo.boundingBox) box.union(geo.boundingBox.clone().applyMatrix4(transform));
     }
@@ -241,7 +284,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       const m = placement(target, kind);
       ghostGroup.matrix.copy(m);
       ghostGroup.visible = true;
-      const seated = transformSocket(PIECES[kind].sockets(PIECES[kind].params)[0], m);
+      const seated = transformSocket(PIECES[kind].sockets(heldParams(kind))[0], m);
       if (overlapsSolid(m, kind)) {
         // the set's solids outrank the socket graph: red ghost, no seat
         state = 'blocked';
@@ -250,10 +293,30 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       }
       ghostMaterial.color.set(state === 'snapped' ? 0x2fbf71 : state === 'seated' ? 0xffb627 : 0xd7263d);
     }
-    ghostState.textContent = state;
-    count.textContent = `${pieces.length} / ${level.budget} pieces`;
-    for (const [k, b] of trayButtons) b.setAttribute('aria-pressed', String(k === kind));
-    placeBtn.setAttribute('aria-disabled', String(!(kind && targets().length > 0 && pieces.length < level.budget)));
+    // the literal word "hidden" must never reach the screen (a11y pass):
+    // the state line reads EMPTY when nothing is held/on
+    ghostState.textContent = state === 'hidden' ? '' : state;
+    count.textContent = `${trayPlaced()} / ${level.budget} pieces`;
+    for (const [k, b] of trayButtons) {
+      const cap = allowance(k);
+      const left = cap === null ? null : Math.max(0, cap - placedOf(k));
+      b.setAttribute('aria-pressed', String(k === kind));
+      // aria-disabled (not `disabled`) keeps the button focusable so the
+      // reason stays reachable; `title` carries WHY (brief §9.3 gating)
+      b.setAttribute('aria-disabled', String(locked(k) || left === 0));
+      b.title = locked(k)
+        ? 'not in this level’s tray'
+        : left === 0
+          ? `no ${k} left in the tray (${cap} placed)`
+          : '';
+    }
+    placeBtn.setAttribute(
+      'aria-disabled',
+      String(
+        !(kind && targets().length > 0 && trayPlaced() < level.budget &&
+          (allowance(kind) === null || placedOf(kind) < allowance(kind)!)),
+      ),
+    );
   }
 
   function emit(): void {
@@ -272,10 +335,16 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   }
 
   function cycleKind(delta: number): void {
-    if (!kind) setKind(PIECE_KINDS[0]!);
-    else {
-      const i = (PIECE_KINDS.indexOf(kind) + delta + PIECE_KINDS.length) % PIECE_KINDS.length;
-      setKind(PIECE_KINDS[i]!);
+    // walk the kit in `delta` steps, skipping tray-locked and exhausted
+    // kinds (a tray level's ArrowUp never lands on an unreachable button)
+    const wrap = (a: number): number => ((a % PIECE_KINDS.length) + PIECE_KINDS.length) % PIECE_KINDS.length;
+    const start = kind ? PIECE_KINDS.indexOf(kind) : delta > 0 ? -1 : PIECE_KINDS.length;
+    for (let i = 1; i <= PIECE_KINDS.length; i++) {
+      const k = PIECE_KINDS[wrap(start + delta * i)]!;
+      if (selectable(k)) {
+        setKind(k);
+        return;
+      }
     }
   }
 
@@ -294,8 +363,13 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   function place(): boolean {
     const list = targets();
     if (!kind || list.length === 0) return false;
-    if (pieces.length >= level.budget) {
+    if (trayPlaced() >= level.budget) {
       ghostState.textContent = 'out of budget';
+      return false;
+    }
+    const cap = allowance(kind);
+    if (cap !== null && placedOf(kind) >= cap) {
+      ghostState.textContent = `no ${kind} left in the tray`;
       return false;
     }
     const target = list[targetIndex]!.socket;
@@ -307,7 +381,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     }
     pieces = [
       ...pieces,
-      { def: kind, params: { ...PIECES[kind].params }, transform, seq: pieces.length },
+      { def: kind, params: { ...heldParams(kind) }, transform, seq: pieces.length },
     ];
     updateGhost();
     emit();
@@ -316,7 +390,14 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
 
   function removeLast(): boolean {
     if (pieces.length === 0) return false;
-    pieces = pieces.slice(0, -1).map((p, i) => ({ ...p, seq: i }));
+    // tray gating: the level's BUILT-IN fixtures are not the player's
+    // pieces — Remove deletes the last TRAY placement, never a fixture
+    let i = pieces.length - 1;
+    if (trayKinds) {
+      while (i >= 0 && !trayKinds.has(pieces[i]!.def)) i -= 1;
+      if (i < 0) return false;
+    }
+    pieces = pieces.filter((_, j) => j !== i).map((p, j) => ({ ...p, seq: j }));
     updateGhost();
     emit();
     return true;
@@ -367,6 +448,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     rotate,
     place,
     removeLast,
+    playerCount: () => trayPlaced(),
     kind: () => kind,
     ghost: () => state,
   };

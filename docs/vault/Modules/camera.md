@@ -62,12 +62,16 @@ See [[feel]] (rail-projection honesty) and
 
 ## Integration status (honest)
 
-`RunCamera` is built and headless-tested, but the game shell in `src/boot.ts`
-does NOT drive it yet — the live frame loop still uses a static framing
-derived from the build's bounding box. Wiring the run camera into the shell
-(set scene plus a `RunCameraSource` over the world's track) is a stage-3
-integration item; the class and its source contract are proven, the wiring is
-not.
+`RunCamera` is built and headless-tested, and since the shell-readiness pass
+`src/boot.ts` DOES drive it: each rebuild builds a `KitRig` over the live
+build (the `RunCameraSource` — rail, frames, length) and, once a run is
+released, the render loop updates the camera per fixed step
+(`update(FIXED_DT, rig.nearestArc(carPos), speed)`), so during a run — and
+on the freeze-frame after it — the rail camera leads the car (§7.3). The
+static bounding-box framing remains only between runs: it now boxes the
+TRACK group alone (named `track` in `buildTrackMeshes`), never the whole
+scene, so the set and the ground plane cannot steal the frame. Empty builds
+(no rail) stay on the static framing.
 
 ## Guarded by
 

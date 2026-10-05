@@ -46,6 +46,31 @@ target = "tests/unit/kitchen-levels.test.ts"
 sig = "bd7f07f5e846d4a4"
 
 [[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "src/boot.ts"
+sig = "e493f6b8eb9ad605"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "src/camera/run-camera.ts"
+sig = "710213edb443a6b7"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "src/feel/kittrack.ts"
+sig = "23d6349a19a9619e"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "src/track/spline.ts"
+sig = "94a2ee27e5931879"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "tests/unit/camera.test.ts"
+sig = "4b534f858e55f855"
+
+[[bindings]]
 doc = "docs/vault/Modules/dev.md"
 target = "src/dev/cameras.ts"
 sig = "d9487cabf08239c0"
@@ -138,7 +163,7 @@ sig = "5455fbef64c07ef3"
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/boot.ts"
-sig = "640e14b202d08834"
+sig = "e493f6b8eb9ad605"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
@@ -157,13 +182,18 @@ sig = "8055ce0ebf3f9a95"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
+target = "src/world/setPlacement.ts"
+sig = "d4aca7e13048f5fa"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets-kitchen.md"
 target = "tests/unit/kitchen-set.test.ts"
 sig = "419088dfb08c761f"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/boot.ts"
-sig = "640e14b202d08834"
+sig = "e493f6b8eb9ad605"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -197,8 +227,18 @@ sig = "01701180b02055d4"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
+target = "src/ui/shell.css"
+sig = "e250852968e397aa"
+
+[[bindings]]
+doc = "docs/vault/Modules/src.md"
+target = "src/world/setPlacement.ts"
+sig = "d4aca7e13048f5fa"
+
+[[bindings]]
+doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/builder.spec.ts"
-sig = "cf4a64cb22ea1b60"
+sig = "720fc204782c6553"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -213,12 +253,12 @@ sig = "3dc33ac21de385ff"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/unit/boot.test.ts"
-sig = "7dbf9bb0d7da5a40"
+sig = "a577cfc5a46e7bd2"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/boot.ts"
-sig = "640e14b202d08834"
+sig = "e493f6b8eb9ad605"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -228,7 +268,7 @@ sig = "a38e01706f33daf6"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/builder.ts"
-sig = "6338bf14e43d8316"
+sig = "a4f4d2518d55944c"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -247,13 +287,23 @@ sig = "01701180b02055d4"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
+target = "src/ui/shell.css"
+sig = "e250852968e397aa"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/builder.spec.ts"
-sig = "cf4a64cb22ea1b60"
+sig = "720fc204782c6553"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/result.spec.ts"
 sig = "b5f2df413b03f65d"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
+target = "tests/e2e/shell.spec.ts"
+sig = "ad63a57f1ae569a9"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -278,7 +328,7 @@ sig = "c1d2af0be000e3d8"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/boot.ts"
-sig = "640e14b202d08834"
+sig = "e493f6b8eb9ad605"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -322,13 +372,18 @@ sig = "c8117bf73c6d5eb3"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
+target = "src/world/setPlacement.ts"
+sig = "d4aca7e13048f5fa"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
 target = "src/world/stars.ts"
 sig = "6178c7e423d10226"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/world.ts"
-sig = "722fe06ae0caab4f"
+sig = "4d65138cf18983db"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -344,6 +399,11 @@ sig = "77db69ce72487675"
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/replay.test.ts"
 sig = "c55f143b9eaa05bc"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "tests/unit/set-wiring.test.ts"
+sig = "234de9f2bbb676ae"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
