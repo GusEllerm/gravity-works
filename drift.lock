@@ -76,6 +76,21 @@ target = "tests/e2e/perf-stage3.spec.ts"
 sig = "2648b709ac3796c8"
 
 [[bindings]]
+doc = "docs/vault/Home.md"
+target = "src/track/build.ts"
+sig = "f8885ffd9d600d4d"
+
+[[bindings]]
+doc = "docs/vault/Home.md"
+target = "src/world/setPlacement.ts"
+sig = "2292c87818bc3c75"
+
+[[bindings]]
+doc = "docs/vault/Home.md"
+target = "tools/histogram.mjs"
+sig = "cb7dd5d5414784c4"
+
+[[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/boot.ts"
 sig = "b07be87376f32669"
@@ -673,7 +688,7 @@ sig = "50e1e4e590026781"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/boot.ts"
-sig = "e685eb4121d15314"
+sig = "b07be87376f32669"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
@@ -683,7 +698,7 @@ sig = "358c8994ef168677"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/ui/builder.ts"
-sig = "6a97a7a124fe9106"
+sig = "a21a2477761795e1"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"

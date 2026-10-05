@@ -15,7 +15,6 @@ tags: [reference, levels]
 | id | file | teaches | tray (budget) | par pieces | par time | status |
 |---|---|---|---|---|---|---|
 | `feeltrack` | `feeltrack.level.ts` | (test track, not a rung) | — (16) | 9 | 3.05 | the accept-line level, unchanged |
-| `feeltrack` | `feeltrack.level.ts` | (test track, not a rung) | — (16) | 9 | 3.05 | the accept-line level, unchanged |
 | `kitchen01` | `kitchen01.level.ts` | the tutorial: three pieces, one gap, launch | 3 (`gapLip`, `drop`, `landing`) | 3 | 2.25 | done — par build finishes headless WITH MARGIN (seed-stable, release-speed-range finish); a build missing any tray piece CANNOT finish against the anchored fixtures (stage-3 promise fix); the one-way ORDER is still authoring intent (ask #3) |
 | `kitchen02` | `kitchen02.level.ts` | a CHOICE: two lines across one gap; the lazy one is faster | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 3 | 2.35 | done, **with the curve rung BLOCKED** (ask #1) — the curve is fixture run-out past the cup; both lines finish (par 2.317 s, arc 2.442 s). Stage-3 coherence: ONE 0.18 m `straight` geometry (the tray seats both copies identically) and `trayParams` for the two kinds the lazy par never places |
 | `kitchen03` | `kitchen03.level.ts` | the bowl on the set; gap verbs at speed | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 5 | 2.65 | done, **with the bowl line BLOCKED** (ask #1 + ask #4) — the tray IS the par build's multiset (5/5 placeable, one 0.15 m straight geometry), rim built + socketed (`bowl.in`/`bowl.out`), timed line runs past it; par 2.617 s |
