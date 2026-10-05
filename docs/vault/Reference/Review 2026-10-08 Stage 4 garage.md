@@ -9,7 +9,9 @@ livedocs: snapshot
 > downscales for the silhouette and focal lines and at full size for the prop-specificity checks the studio named;
 > plus the standing battery: `tools/histogram.mjs` luminance stats, a per-pixel dark-tint/blackish audit, a token-red
 > chroma census, an isolated-bright-pixel (sparkle/speckle) census, and a 5x5 box-mean MAD for grazing speckle. The
-> concept's claims are treated as claims and re-measured. Rubric per Concepts/Art Bible §The rubric: eight lines,
+> concept's claims are treated as claims and re-measured. Cameras are the `canonicalCamera` `hero` and `floor` rigs from
+> `src/dev/cameras.ts` (the rigs are the kitchen's provisional ones — the garage is still unassigned in Canonical
+> Cameras, so these are set-look frames, not committed cameras). Rubric per Concepts/Art Bible §The rubric: eight lines,
 > 0–2, pass = 12/16, any zero is an auto-fail. No code changed.
 
 ## Cross-cutting finding first: the garage's accent is hung above the camera
@@ -17,12 +19,15 @@ livedocs: snapshot
 The art bible's warning was "the garage gets generic without real toys", and the set answers it structurally — five real
 toys as terrain. Measured, the failure is one floor higher than the terrain: **the accent never reaches a pixel.** In
 five of six frames no pixel carries the token red's chroma (hue ≤ 22°, sat > 0.42, luma > 105 — census: 0.000 %; the
-sixth, hero-b, is 0.059 %), because the tool wall that holds the red lives at y ≈ 0.44 m on the back wall, inside the
-defocused top of a tilt-shift frame, and the toolbox that should spend it floor-scale renders without its chroma in
-variant C. The tool wall appears in exactly one frame, hero-b, and there it is a blurry fringe — the concept volunteered
-"a blurry constellation in the tilt-shift" and the pixels agree. A set whose law is *one dominant + one accent* cannot
-pay the accent in a band the camera is contractually not allowed to focus on. This is ticket AD-2 below and it is not
-an Environment Artist failing; it is a placement rule the set template must carry.
+sixth, hero-b, is 0.059 %), and the reason is geometric, not chromatic. The tool wall that holds the red lives at
+y ≈ 0.44 m on the back wall, inside the defocused top of a tilt-shift frame; the tool wall appears in exactly one frame,
+hero-b, and there it is a blurry fringe — the concept volunteered
+"a blurry constellation in the tilt-shift" and the pixels agree. The fallback is worse: in variant C the toolbox is the
+floor-scale spend, and it is parked at x 0.2, z 0.3 — **7 cm from the floor camera and 14 cm from the hero camera**, so
+it is either out of frame or a pale blur at the bottom edge, which is exactly what both frames show. A set whose law is
+*one dominant + one accent* cannot pay the accent in a band the camera is contractually not allowed to focus on, nor in
+the lens. This is ticket AD-2 below and it is not an Environment Artist failing; it is a placement rule the set template
+must carry.
 
 Second finding, and it is a shared-prop mesh bug, not a variant bug: **the bucket tunnel reads as a floating hoop.** In
 variant A the bucket lies with its mouth to the camera (`rotation.x = PI/2`), and an open-ended cylinder seen mouth-on
@@ -116,7 +121,7 @@ ratified, and its foreground wheel is a framing fault line.
 
 **Send-back list, variant C re-render (all param/data-level, acceptance numbers attached — the standard shape):**
 
-1. **Spend the accent inside the focus band.** Put the token red on something floor-scale and sharp: the toolbox needs its chroma (it is currently shade-brown), plus a red-handled screwdriver leaning the bench leg or lying on the deck at car height. Acceptance: token-red chroma census **≥ 0.15 %** of pixels in each frame (today 0.000 %), with one red object unambiguously inside close-c's focus band and visible in a 400 px downscale.
+1. **Spend the accent inside the focus band.** Move variant C's toolbox off the camera — it currently sits 7 cm from the floor rig (x 0.2, z 0.3) — to somewhere on the straight at car height, and lean or lay a red-handled screwdriver beside it in the band. Acceptance: token-red chroma census **≥ 0.15 %** of pixels in each frame (today 0.000 %), with one red object unambiguously sharp inside close-c's focus band and visible in a 400 px downscale.
 2. **One car per focus band.** Move the blue witness car (currently parked look-at-the-wheel beside the hero) out of the band — behind the wheel, on the far side of the blade, or out of frame. Acceptance: at 400 px, exactly one car inside the focus band in both frames; any second car either out of frame or separated by **> 25 % of frame width**.
 3. **Flakes glint, they do not snow.** Halve flake size and move them to a specular/metal treatment so they fire only where the blade and its mirror land, not as pale dots in open shade. Acceptance: isolated ≥240 pixels in the floor band **≤ 0.01 %** (today 0.050 % close-c / 0.032 % hero-c), and **≥ 60 %** of whatever bright flake pixels remain sit inside the blade band.
 4. **The blade must reach the floor camera.** Widen or re-aim the sunblade strip so the light story is legifiable at the low rig, not just at hero. Acceptance: close-c contiguous bright floor coverage **≥ 1.5 %** with a bright run **≥ 300 px** (today 0.77 % / longest run 139 px), while p5 stays **below 60** (today 38) — a blade needs a dark room around it.
@@ -129,7 +134,7 @@ wall shows; give the stain the same film treatment), and garage send-back 2 of 2
 ## For the Director
 
 1. **[AD] Garage: no variant passes yet; send-back 1 of 2 spent on variant C**, five numbered fixes, all with acceptance numbers, two frames to re-render. Best frame of the stage is hero-c (12) — the bike-wheel tunnel is a real goal line and the darkest earned histogram in the house.
-2. **[AD] Ticket AD-2 (systemic, all sets): props hung above the focus band do not exist.** The tool wall sits at ~0.44 m in all three variants and pays nothing — it is the mechanism behind the missing accent in every garage frame. Rule for the set template: every set must land at least one read-surface of its accent and of each anchor prop inside the tilt-shift band. Worth deciding before the porch set, whose whole story is a wall of things.
+2. **[AD] Ticket AD-2 (systemic, all sets): props hung above the focus band — or parked in the lens — do not exist.** The tool wall sits at ~0.44 m in all three variants and pays nothing, and variant C's toolbox is 7 cm from the floor rig; together they explain why no frame in the set contains its own accent. Rule for the set template: every set must land at least one read-surface of its accent and of each anchor prop inside the tilt-shift band, at a stand-off the near plane can respect. Worth deciding before the porch set, whose whole story is a wall of things.
 3. **[AD] Bucket-mesh ticket: an open-ended cylinder aimed at the camera is invisible.** A's tunnel mouth renders as a floating hoop. Cap it or never aim a mouth dead-on; the fix is shared with every future tunnel, drain and tube.
 4. **[AD] Carry-forward to levels, independent of the verdict:** variant B's workbench mezzanine (ramp to bench shelf + claimable under-bench volume) is the best level idea in the exploration and should be ported into whichever variant is ratified — the geometry is already shared across the three skins, so it is a data-level ask. Also port B's drip-beside-the-bucket staging; it is the only spill in the stage that reads.
 5. **[AD] TA-1 still open and now measurable per set:** band speckle MAD 3.64/3.96 (C), 2.51–2.76 (A), ~2.0 (B). Before the next set's first still, this needs a 300 % crop verdict distinguishing ramp dither from C's intended flake layer, or the garage review keeps opening with an ambiguous number.
