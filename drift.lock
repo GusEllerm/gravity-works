@@ -71,6 +71,11 @@ target = "tests/unit/set-wiring.test.ts"
 sig = "13b4636cb503cb29"
 
 [[bindings]]
+doc = "docs/vault/Concepts/Performance.md"
+target = "tests/e2e/perf-stage3.spec.ts"
+sig = "2648b709ac3796c8"
+
+[[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/boot.ts"
 sig = "b07be87376f32669"

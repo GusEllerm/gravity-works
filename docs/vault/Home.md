@@ -48,6 +48,7 @@ Staffing is per-stage and recorded in `Sessions/` notes; roles and protocols liv
 
 ## Deferred
 
+- **60 fps with post ON on a hardware GPU — standing open item**: CI cannot prove it on software rasterizers; software GL records-and-defers, hardware measurement is owed (Decision Log 2026-10-07, [[Concepts/Performance|Performance]]).
 - Stage-2 reviewer carry-ins to stage 3 (from `Sessions/2026-10-06 Stage 2 review.md` and the round's notes):
   - ~~Size the loop piece for the collider variant~~ — RESOLVED stage 3: the collider variant's loop window is the same pass/fail pattern as the raycast car through 6 R (table in [[physics]] §speed window); the loop piece needs no resizing for it. The banked-yaw lip graze remains a geometry-cosmetics question, not physics.
   - **Feel-track gap length** — a carry-in quoted "the feel-track gap is fixed at 45 cm"; VERIFIED STALE at the stage-2 close: `FEEL_DROP_HEIGHT` is **0.52 m** (the 2026-10-06 energy audit rebalanced 0.45 → 0.52 and the fix-crew swept the stale 0.45 comments; the value deliberately sits in a narrow two-line window — see [[feel]] Layout). Do not re-apply 45 cm.

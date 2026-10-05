@@ -73,3 +73,24 @@ stars (`gateNext`), not URL addressability.
 the filmstrip gate on its own config); targeted proofs in the sections above. Notes reconciled:
 `Modules/src`, `Modules/dev`, `Modules/render`, `Modules/replay`, `Home`, `Performance/stage-3`,
 `Decision Log` (two new entries + one reconciliation).
+
+## Follow-up — the tier gate met the Linux rasteriser (software-GL branch)
+
+The first push carrying the new tier ceilings went red on ubuntu-latest — not a render-cost regression
+but a rasteriser confession: GitHub's runner renders headless Chromium with SwiftShader, where
+measurement B recorded **tier high median 351.00 ms** (p95 476.8 / max 510.6, blocking total 32.8 s /
+90 frames) against the 100 ms ceiling and measurement A recorded **keep-up 0.63** (median 250 ms) —
+the `fell behind the clock` failure. A software rasteriser cannot prove hardware 60 fps, and a ceiling
+loose enough to pass there would catch nothing. Fix (honest, not by inflating): `perf-stage3.spec.ts`
+now detects the renderer (`WEBGL_debug_renderer_info` / `UNMASKED_RENDERER_WEBGL`; SwiftShader /
+llvmpipe / Mesa-llvmpipe ⇒ software; `GQA_FORCE_SOFTWARE_GL=1` simulates the branch). On software GL
+the post-ON tier/keep-up measurements still run and their tables attach as artefacts, but every
+ceiling is reported via `testInfo.annotations` as **RECORDED (software GL — deferred to hardware
+GPU)** and passes; on hardware GL the per-platform ceilings stay hard (`HARDWARE_TIER_CEILINGS_MS`,
+darwin calibrated row 100/70/55). The post-OFF stage-2 stepping gate (C) is hard everywhere. On darwin
+the spec now launches Chromium with `--use-angle=metal` so the local box measures real hardware —
+proofs this pass: default run `branch=HARD(hardware GL)`, tiers **2.5 / 2.1 / 1.8 ms**, rendered loop
+median 16.70 ms / p95 16.70 ms / keep-up 1.00 with the 60 fps line HARD-ASSERTED; forced run
+`GQA_FORCE_SOFTWARE_GL=1` — `3 passed`, annotation
+`RECORDED (software GL — deferred to hardware GPU): tier high median=2.80ms vs hardware ceiling 100ms … deferred to hardware GPU.`
+Docs: [[Concepts/Performance]] (new), Decision Log 2026-10-07, Home Deferred standing item.
