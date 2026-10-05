@@ -15,7 +15,10 @@ tags: [module, camera]
 (`railPointAt(s)`, `frameAt(s)`, `length` — the interface `KitRig` in
 `src/feel/kittrack.ts` satisfies via `rail()` / `frameAt()`), an optional
 `{ solids }` list of world-space AABBs (`RunCameraSolid`, the set's prop
-boxes at leaf granularity — `setCameraSolids` in `src/boot.ts`), and the
+boxes at leaf granularity — `setCameraSolids` in `src/boot.ts`, fed by
+whichever set the level MOUNTS through the registry walk — a new set needs
+no camera-code edit, which is how the stage-4 bathroom dresses ride the
+same clearing), and the
 tuning object `RUN_CAMERA`: `LEAD_TIME` 0.4 s (how far AHEAD the AIM looks,
 as the speed-scaled look-ahead `speed · LEAD_TIME`, sweep-clamped by
 `TRAIL_MAX_SWEEP` 1.05 rad), `POS_LAG` 150 ms (the §7.3 number), `ROT_LAG`

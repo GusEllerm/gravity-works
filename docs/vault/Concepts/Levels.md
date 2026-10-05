@@ -52,6 +52,102 @@ The bedroom rungs (stage 4) mirror the WHOLE seam as `BedroomLevel`
 `bedroomLevel`/`registerBedroom` mirrors of `kitchenLevel`/
 `registerKitchen`) — every tray/`trayParams`/`fixtures`/`parBuild` rule
 above applies to both ladders, and the ladder test enforces it on both.
+The bathroom rungs (stage 4) mirror it a third time as `BathroomLevel`
+(`src/world/levels/bathroom01.level.ts`, `set: 'bathroom'`,
+`bathroomLevel`/`registerBathroom`) and add one authoring helper, `wetPatchOverSeam`
+— a wet-patch zone centred on a build's own deck SEAM (the kitchen04
+convention made reusable), used by rungs 01/04; rung 03 centres its zone
+directly on the SOFT line's landing deck.
+
+## The bathroom four (design cards)
+
+The bathroom ladder (stage 4) is four rungs on the RATIFIED variant-A set
+(`src/sets/bathroom/data.ts`, the porcelain cathedral, 14/15 at both
+cameras — ported by the Level Designer as a minimal art port, friction
+logged in `Sessions/2026-10-08 Stage 4 - bathroom ladder.md`), entering the
+campaign after `bedroom04`. Every rung rides the same authoring kit and the
+same invariants as the kitchen/bedroom ladders; the geometry economy is the
+bedroom's (one 0.20 m `straight` geometry for 01–03, the 0.30 m sweep
+seating on 04, the shared `KITCHEN_GAP` numbers as `DRAIN_GAP`). Set
+mounting follows the bedroom rule with its own offset — `bathroomSetPlacement`
+centres the 2.8 m floor disc on the run, 25 cm BEHIND the corridor
+(`BATH_AXIS_OFFSET`, larger than the bedroom's 15 because variant A's prop
+cluster spans ±0.29 m of its origin), floor 5 mm under the LOWEST authored
+deck. The set's two wet-patch FILMS are decoration at set space; live grip
+zones are LEVEL data (the kitchen04 convention), which is exactly ask #6.
+
+**BATHROOM 01 — The Drip** (`bathroom01.level.ts`, the hazard enters the
+bathroom). Teaches: a wet patch halves grip, and a wet patch is RIDDEN
+AROUND, not through. The par line is the kitchen L01's proven flight over
+the drain sink (`gapLip`→`drop`→`landing`, ramp 0.22, tray = the exact
+multiset, par 3, 2.25 — measured 2.233 s, builder-mount byte-identical to
+the par), and the puddle UNDER the flight window is a LIVE zone centred on
+the PROBE build's decked-sink seam — so the par replays BIT-IDENTICAL wet
+vs dry (airborne wheels, no contact), every one- and two-piece omission
+falls anchored, five of six whole-tray orders finish and the L01-pinned
+`landing→drop→gapLip` falls (the same table, re-measured). The THROUGH line
+is the probe (two 0.30 decks the tray cannot buy — no `straight` in the
+tray at all): it diverges wet vs dry and runs wet FASTER (2.250 vs 2.383 —
+the honest in-channel manifestation of halved grip is LOW DRAG,
+[[Modules/hazards]]; the slides-wide failure mode stays ask #1's blocked
+lateral half). The rung's one-line prop callout (`prop:wetPatch` in the set
+module — the lesson Playtest G never found on L04) says it in nine words:
+"Wet tile halves grip — put your line around it, not through it."
+
+**BATHROOM 02 — Rim or Drain** (`bathroom02.level.ts`). Teaches: the
+CHOICE — the lazy rim line vs the showy straight into the tunnel mouth —
+and that the fast line is the lazy one, kitchen02's lesson re-staged on
+tile. Par (3 of 5 tray pieces, 2.35) rolls the `drop`'s catch between two
+0.20 m decks; the DRAIN line (`gapLip` launch off the rim toward the set's
+drain prop — the tunnel mouth is STAGING; the drain is a plain anchor,
+nothing snaps to it) finishes too (chained 2.550) and the tray affords both
+(`trayParams` declares the `gapLip`/`landing` the par never places). The
+builder-anchored truth (ask #2b, and it bites LESS here than on
+bedroom02/03): BOTH lines reach the fixed cup and the lazy one still wins
+— 2.350 vs 2.367, test-pinned. Whole-tray orders finish every order the
+test samples (2.292–2.392; the best order beats the par clock at the
+pieces-star's cost) — but the CHOICE tray is not order-invariant whole
+(swept at authoring: 39 of the 60 distinct whole-tray orders finish — the
+extra two pieces are the OTHER line's parts; the family measured the same
+property on bedroom02, 13 of 20). The order-invariance gate lives on the
+capstones (kitchen04, bedroom04, bathroom04 — 24/24), not on a rung whose
+tray is deliberately bigger than its par. No live zone on this rung (the
+wet tile is the set's TELLS; grip returns as mechanic in 03).
+
+**BATHROOM 03 — Tub Wall** (`bathroom03.level.ts`). Teaches: the
+TRADE-OFF — height over the wall (dry, hard catch) vs the SPLASH-PATCH
+route (a soft `landing` whose deck sits low in a live wet zone). The par
+(4 of 5, 2.70 — measured 2.667) takes the hard `drop` catch across the
+wall's base and flies the splash: bit-identical wet vs dry. The splash
+line (the `landing` twin, declared in `trayParams`, chained 2.708) finishes
+chained and does NOT reach the anchored cup (ask #2b, pinned) — and it is
+LEGITIMATELY wet: its hash diverges, and the honest delta is low drag again
+— splash-wet 2.675 beats splash-dry 2.708 yet STILL loses to the dry high
+line (2.667 < 2.675), the tightest grip-physics statement in the ladder.
+Whole tray finishes every order the test samples (best 2.483, beats the
+par clock); like 02 it is a CHOICE tray, not order-invariant whole (swept
+at authoring: 42 of 60). The zone is centred deep on the soft line's own landing deck — the
+first draft centred mid-entry and the par's `drop` step-top grazed the band
+(measured, fixed; both lines share the launch, so the zone must start past
+the step).
+
+**BATHROOM 04 — Full Bath** (`bathroom04.level.ts`, the capstone). Every
+bathroom verb on one line — deck run, launch, sink dip-and-catch, soft
+run-out — with the bathroom's signature under the flight: the sink puddle
+is LIVE, centred above the sink mouth at the decked (probe) height, and the
+rung's claim is the strongest in the ladder: ALL 24 whole-tray orders
+finish (2.467–3.300, the bedroom04 sweep's seating inherited deliberately —
+the lesson IS the order-invariant whole-tray sum) AND the dry sweep IS a
+wet sweep: par and the sampled orders replay BIT-IDENTICAL wet vs dry,
+because every buildable line crosses the puddle airborne or on the low
+catch deck. The decked probe (one 0.62 m bridge the tray cannot seat)
+diverges and runs wet-faster — the toll stays theoretical. Par ORDER
+beatable at 2.467 s. The puddle centre is derived from the PAR's own
+landing-entry x, not the probe seam — the first draft's seam-centred zone
+let the par's step-top graze the band (measured wet != dry; the probe's
+deck is still high and wet at the shipped centre, so the bite claim
+survives the move).
+
 
 Pieces are laid per-instance by `lay` (the kitchen helper in `kitchen01`):
 the kit's `chain` keys params by KIND, so any level that reuses one kind more
@@ -384,7 +480,12 @@ now centres the patch on the ground build's straight seam (the decked
 sink's middle) — the earlier centre, taken from the PAR rig's landing run,
 sat on the par line's own deck and quietly broke the par's
 grip-independence promise the moment the hook existed. Flagged for LD
-review.
+review. The bathroom ladder (stage 4) generalises the convention into
+`wetPatchOverSeam` (`bathroom01.level.ts`) — a zone centred on a named
+build's entry-frame seam — and states the split explicitly: the bathroom
+SET carries wet-patch FILMS as decoration (`DRIPS` in
+`src/sets/bathroom/data.ts`), the LEVELS carry the live zones; lining a
+film up with a zone centre across a mounted set is ask #6.
 
 ## Piece requests / asks (one paragraph each)
 
@@ -469,6 +570,24 @@ dip card's story be geometry instead of prose. Owners: Environment Artist
 (anchors, tangent sign), Systems Engineer (dresser-only placement, ask #4
 for the seating side).
 
+**Ask #6 — put the bathroom wet-patch film on the lane (blocking: nothing;
+weakening: bathroom01/04's affordance precision).** Variant A's two wet-
+patch films sit on room-centre tile around the DEV track the exploration
+was dressed on; production mounts the set 25 cm behind a straight +x lane,
+so at every rung's mount the films land 10–25 cm SHORT of the live zone's
+footprint (centred on the deck seam by the kitchen04 convention) — the
+puddle TELLS but does not exactly touch the zone's near edge, and rung 01's
+"reads before it bites" is a near-miss rather than an exact overlay. The
+fix is one data value, not a remodel: a lane-crossing wetPatch anchor —
+move one `DRIPS` row so that at the four shipped mounts its world position
+lands inside the zone footprint (`tests/unit/bathroom-levels.test.ts` will
+assert the overlap the day it lands). Why not yaw, like kitchen04's tap?
+Measured while authoring bathroom01: variant A's prop cluster spans ±0.29 m
+of the set origin AROUND the dev track line, so any yaw that maps a film
+onto a lane-centred zone swings the TUB shell across the corridor guard
+boxes — the same finding that keeps `bathroomSetPlacement` at yaw 0.
+Owner: Environment Artist (one data row).
+
 ## The same data replayed the way the BUILDER mounts it
 
 Every claim above is a `lay`/`chain` build: the cup rides at the end of
@@ -520,7 +639,14 @@ their choice/hazard lessons). L03's bowl line additionally needs ask #4
 (prop-socket seating in the builder). The bedroom's drawer-tunnel THIRD
 line is BLOCKED (ask #5 — a tangent flip plus a lane-crossing bore
 anchor — with ask #4 on the seating side); the rung is NOT (bedroom03's
-two authored lines finish and its trade-off is measured). See
+two authored lines finish and its trade-off is measured). The bathroom
+four (stage 4) ship UNBLOCKED — all four par builds finish, both hazard
+gates measure, and 02's anchored truth is the ladder's rare case where ask
+#2b bites LESS than expected (both lines reach the cup); the rung-shaped
+caveat there is the grip one: on channel straights "rides around, not
+through" is a TELLS-not-a-TOLL lesson whose toll half waits on ask #1's
+lateral authority (the wet-zone low-drag and step-grazing numbers are
+pinned in `tests/unit/bathroom-levels.test.ts`). See
 [[Reference/Level Ladder]].
 
 ## Guarded by
@@ -548,4 +674,14 @@ placement table derived from the live builds, the drawer sockets
 exported) AND the describe **"ladders (kitchen + bedroom) — tray ⊇
 parBuild on EVERY authored level"**, which runs the invariant over BOTH
 ladders' rosters and their alternates — the rule is one test over the
-whole shipped ladder now, not a kitchen file.
+whole shipped ladder now, not a kitchen file. (Since the bathroom pass
+that describe spans THREE ladders — kitchen, bedroom, bathroom — and the
+bathroom's two alternates ride in it too.) The stage-4 bathroom pass adds
+`tests/unit/bathroom-levels.test.ts` — the same gates for the bathroom
+four PLUS the hazard gates the L04 pass established: every bathroom par
+replays BIT-IDENTICAL wet vs dry, every probe/splash line DIVERGES and
+runs wet-FASTER (the low-drag truth, not folk physics), 03's wet splash
+still loses to the dry high line, 04's sampled whole-tray orders replay
+wet == dry, and the placement table (rail midpoint, −25 cm offset, lowest-
+deck floor) is re-derived from the live builds with every prop's lane
+clearance asserted analytically.

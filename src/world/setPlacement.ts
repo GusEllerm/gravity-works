@@ -119,6 +119,35 @@ export function bedroomSetPlacement(levelId: string): SetPlacement | null {
   return row ? { position: [row[0], row[1], row[2]], yaw: 0 } : null;
 }
 
+/** ---- bathroom (stage 4) -------------------------------------------------
+ * The bathroom set is dressed around its own floor disc (`FLOOR` in
+ * `src/sets/bathroom/data.ts`), so the mount rule is the bedroom's, one row
+ * each: centred on the run (x = the par rail's midpoint so the disc contains
+ * the whole rail), BACK by `BATH_AXIS_OFFSET` (−z) and DOWN so the tile
+ * floor's top surface sits 5 mm under the LOWEST authored line's finish deck
+ * (a choice level's floor cannot bury a line the player can run — the rows
+ * are recomputed from the live builds by `tests/unit/bathroom-levels.test.ts`).
+ * Yaw 0 on every rung: variant A's prop cluster spans ±0.29 m of the set
+ * origin around the DEV track the room was dressed on, so any yaw that would
+ * map a wet-patch film onto a lane-centred hazard zone also swings the TUB
+ * onto the corridor (measured while authoring bathroom01 — the fix is one
+ * lane-crossing wetPatch anchor, ask #6, not a rotation of the room). */
+export const BATH_AXIS_OFFSET = 0.25;
+
+const BATH_ROWS: Record<string, readonly [number, number, number]> = {
+  bathroom01: [0.9711, -0.40809, -BATH_AXIS_OFFSET],
+  bathroom02: [1.0912, -0.46809, -BATH_AXIS_OFFSET],
+  bathroom03: [1.1825, -0.42567, -BATH_AXIS_OFFSET],
+  bathroom04: [1.2165, -0.44809, -BATH_AXIS_OFFSET],
+};
+
+/** The mount transform for one bathroom level id (null = no placement — the
+ *  canonical-origin fallback a `?set=bathroom` inspection entry would use). */
+export function bathroomSetPlacement(levelId: string): SetPlacement | null {
+  const row = BATH_ROWS[levelId];
+  return row ? { position: [row[0], row[1], row[2]], yaw: 0 } : null;
+}
+
 /** The rigid transform of a placement (three users: the scene mount, the
  *  L03 socket seating, the guard boxes). */
 export function placementMatrix(p: SetPlacement): THREE.Matrix4 {

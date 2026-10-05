@@ -29,6 +29,10 @@ import { KITCHEN02, kitchen02ArcBuild } from '../../src/world/levels/kitchen02.l
 import { KITCHEN03 } from '../../src/world/levels/kitchen03.level.ts';
 import { KITCHEN04 } from '../../src/world/levels/kitchen04.level.ts';
 import { KITCHEN05, KITCHEN_SANDBOX } from '../../src/world/levels/kitchen05.level.ts';
+import { BATHROOM01 } from '../../src/world/levels/bathroom01.level.ts';
+import { BATHROOM02, bathroom02DrainBuild } from '../../src/world/levels/bathroom02.level.ts';
+import { BATHROOM03, bathroom03SplashBuild } from '../../src/world/levels/bathroom03.level.ts';
+import { BATHROOM04 } from '../../src/world/levels/bathroom04.level.ts';
 import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
 import { PARS } from '../../src/world/stars.ts';
 import { PIECES, type PieceKind } from '../../src/track/pieces.ts';
@@ -139,10 +143,11 @@ describe('bedroom ladder — level contracts', () => {
   });
 });
 
-describe('ladders (kitchen + bedroom) — tray ⊇ parBuild on EVERY authored level', () => {
-  /** Every line BOTH ladders author, in the level files' own data. */
+describe('ladders (kitchen + bedroom + bathroom) — tray ⊇ parBuild on EVERY authored level', () => {
+  /** Every line ALL THREE ladders author, in the level files' own data. */
+  const BATHROOM_LADDER: readonly Rung[] = [BATHROOM01, BATHROOM02, BATHROOM03, BATHROOM04];
   const LINES: readonly { level: Rung; label: string; build: Build }[] = [
-    ...[...KITCHEN_LADDER, ...LADDER].map((level) => ({
+    ...[...KITCHEN_LADDER, ...LADDER, ...BATHROOM_LADDER].map((level) => ({
       level,
       label: 'par build',
       build: level.parBuild(),
@@ -150,6 +155,8 @@ describe('ladders (kitchen + bedroom) — tray ⊇ parBuild on EVERY authored le
     { level: KITCHEN02, label: 'arc line', build: kitchen02ArcBuild() },
     { level: BEDROOM02, label: 'soft line', build: bedroom02SoftBuild() },
     { level: BEDROOM03, label: 'soft catch line', build: bedroom03SoftBuild() },
+    { level: BATHROOM02, label: 'drain line', build: bathroom02DrainBuild() },
+    { level: BATHROOM03, label: 'splash line', build: bathroom03SplashBuild() },
   ];
 
   function multiset(pieces: Build['pieces']): Map<PieceKind, number> {
@@ -172,7 +179,7 @@ describe('ladders (kitchen + bedroom) — tray ⊇ parBuild on EVERY authored le
     });
   }
 
-  for (const level of [...KITCHEN_LADDER, ...LADDER]) {
+  for (const level of [...KITCHEN_LADDER, ...LADDER, ...BATHROOM_LADDER]) {
     test(`${level.id} — pars.json's par piece count is the tray-basis number`, () => {
       expect(PARS[level.id]?.pieces).toBe(level.par.pieces);
     });

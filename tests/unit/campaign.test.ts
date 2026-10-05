@@ -30,8 +30,8 @@ const P = (over: Partial<SaveProgress> = {}): SaveProgress => ({
 });
 
 describe('campaign table', () => {
-  test('the ladder is the rooms concatenated: kitchen01..05 then bedroom01..04', () => {
-    expect(CAMPAIGN.map((r) => r.id)).toEqual(['kitchen', 'bedroom']);
+  test('the ladder is the rooms concatenated: kitchen01..05, bedroom01..04, then bathroom01..04', () => {
+    expect(CAMPAIGN.map((r) => r.id)).toEqual(['kitchen', 'bedroom', 'bathroom']);
     expect(CAMPAIGN_LADDER).toEqual([
       'kitchen01',
       'kitchen02',
@@ -42,18 +42,25 @@ describe('campaign table', () => {
       'bedroom02',
       'bedroom03',
       'bedroom04',
+      'bathroom01',
+      'bathroom02',
+      'bathroom03',
+      'bathroom04',
     ]);
     expect(CAMPAIGN.flatMap((r) => [...r.levelIds])).toEqual([...CAMPAIGN_LADDER]);
   });
 
-  test('the boundary is a normal step: next after kitchen05 is bedroom01, none after bedroom04', () => {
+  test('the boundary is a normal step: next after kitchen05 is bedroom01, none after bathroom04', () => {
     expect(nextInCampaign('kitchen05')).toBe('bedroom01');
     expect(previousInCampaign('bedroom01')).toBe('kitchen05');
-    expect(nextInCampaign('bedroom04')).toBeNull();
+    expect(nextInCampaign('bedroom04')).toBe('bathroom01'); // the bedroom era hands off to the bathroom
+    expect(previousInCampaign('bathroom01')).toBe('bedroom04');
+    expect(nextInCampaign('bathroom04')).toBeNull();
     expect(previousInCampaign('kitchen01')).toBeNull();
     expect(nextInCampaign('feeltrack')).toBeNull();
     expect(campaignIndex('kitchen-sandbox')).toBe(-1);
     expect(campaignRoomOf('bedroom03')!.id).toBe('bedroom');
+    expect(campaignRoomOf('bathroom03')!.id).toBe('bathroom');
     expect(campaignRoomOf('feeltrack')).toBeNull();
   });
 });
@@ -105,6 +112,10 @@ describe('levelUnlock — the rule surfaces share', () => {
     }
     expect(levelUnlock(save.progress, 'bedroom01').unlocked).toBe(false);
     expect(levelUnlock(save.progress, 'bedroom01').requires).toBe('kitchen05');
+    // and neither does the bathroom: the ladder past bedroom04 is still
+    // star-gated the same way (the rule is ONE rule, not a per-room rule)
+    expect(levelUnlock(save.progress, 'bathroom01').unlocked).toBe(false);
+    expect(levelUnlock(save.progress, 'bathroom01').requires).toBe('bedroom04');
   });
 
   test('off-campaign ids are outside the rule (debug addressing is recorded elsewhere)', () => {

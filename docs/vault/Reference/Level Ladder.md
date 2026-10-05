@@ -23,7 +23,9 @@ tags: [reference, levels]
 | `kitchen-sandbox` | `kitchen05.level.ts` | the set unlocked (`sandbox: true`, no budget) | none (all pieces ×99) | 5 | 2.70 | done — reference build finishes (2.667 s), on one 0.175 m straight geometry |
 
 The other sets follow at their own stage (the bedroom shipped FOUR rungs
-at stage 4 — below); the ladder is otherwise empty.
+at stage 4 — below — and the bathroom FOUR right after it; the garden and
+garage explorations are ratified but their ladders are later waves); the
+ladder is otherwise empty.
 
 ## The bedroom ladder (stage 4 — four rungs)
 
@@ -40,6 +42,26 @@ mounts the ratified set UNDER the run (x = rail midpoint, −15 cm off the
 corridor, floor 5 mm under the LOWEST authored deck). The `kitchen-sandbox`
 row above remains the only sandbox; the bedroom sandbox follows the same
 shape at its own stage.
+
+## The bathroom ladder (stage 4 — four rungs)
+
+| id | file | teaches | tray (budget) | par pieces | par time | status |
+|---|---|---|---|---|---|---|
+| `bathroom01` | `bathroom01.level.ts` | the wet patch enters: grip is HALVED, and the patch is ridden AROUND (flown), not through | 3 (`gapLip`, `drop`, `landing`) | 3 | 2.25 | done — par = the L01 flight over the drain sink, BIT-IDENTICAL wet vs dry; every omission `fell` anchored; 5 of 6 whole-tray orders finish (`landing>drop>gapLip` pinned falling); the THROUGH line is the tray-unbuyable probe (diverges wet, wet FASTER — low drag, not folk physics) |
+| `bathroom02` | `bathroom02.level.ts` | the CHOICE: lazy rim line vs the showy straight at the drain (the tunnel mouth is staging) | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 3 | 2.35 | done — lazy 2.350 beats drain 2.550 chained; ANCHORED both lines still reach and the lazy one still wins (2.350 vs 2.367 — ask #2b bites LESS here, pinned); whole tray finishes every order SAMPLED (2.292–2.392) — the CHOICE tray is not whole-order-invariant (39 of 60 swept; same property as bedroom02's 13 of 20 — the invariant gate is the capstone's); `trayParams` seats the launch pieces the par never places |
+| `bathroom03` | `bathroom03.level.ts` | the TRADE-OFF: height over the tub wall (hard, dry catch) vs the splash-patch route (soft catch in a live wet zone) | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 4 | 2.70 | done — par 2.667 flies the splash (wet == dry bit-for-bit); splash chained 2.708 finishes and `fell` anchored (ask #2b); splash WET 2.675 beats its own dry yet still loses to the dry high line — the ladder's tightest grip statement; whole tray finishes every order SAMPLED (best 2.483); CHOICE tray, not whole-order-invariant (42 of 60 swept) |
+| `bathroom04` | `bathroom04.level.ts` | everything, one tray, a live puddle under the flight (capstone) | 4 (`straight`, `gapLip`, `drop`, `landing`) | 4 | 2.70 | done — ALL 24 whole-tray orders finish (the inherited 0.3 m sweep seating — the lesson IS the order-invariant sum) AND the sampled orders replay wet == dry; par ORDER beatable at 2.467 s; the decked probe diverges wet-faster — the toll stays theoretical (ask #1's lateral half) |
+
+The bathroom rungs join the ladder after `bedroom04`
+(`nextLevelId('bedroom04') === 'bathroom01'`); `bathroomSetPlacement`
+mounts the ratified variant-A set UNDER the run on the bedroom rule with a
+wider offset (x = rail midpoint, −25 cm off the corridor — variant A's prop
+cluster spans ±0.29 m of its origin — yaw 0, floor 5 mm under the LOWEST
+authored deck; rows re-derived by `tests/unit/bathroom-levels.test.ts`).
+The set is the RATIFIED porcelain cathedral ported from the dev scene by
+the Level Designer as a minimal art port — the ramp/material friction that
+implies is stated in `Sessions/2026-10-08 Stage 4 - bathroom ladder.md`,
+not tuned away.
 
 ## Pars
 
@@ -115,10 +137,14 @@ hazard probe, not a tray-affordable route), and `trayParityBuild` (the builder's
 fixtures anchored) must serialize byte-identically to `parBuild()`. Kinds a
 par line never places but an alternate line needs are declared in
 `trayParams` (see [[Concepts/Levels]]). Since stage 4 the same three
-assertions run over EVERY authored level of BOTH ladders in
-`tests/unit/bedroom-levels.test.ts` ("ladders (kitchen + bedroom) — tray ⊇
-parBuild on EVERY authored level") — the rule covers the whole shipped
-ladder, kitchen rungs included.
+assertions run over EVERY authored level of the shipped ladders in
+`tests/unit/bedroom-levels.test.ts` ("ladders (kitchen + bedroom +
+bathroom) — tray ⊇ parBuild on EVERY authored level") — the rule covers
+the whole shipped ladder, kitchen rungs included; since the bathroom pass
+it spans THREE ladders and the bathroom's `drain`/`splash` alternates ride
+in the same roster (the bathroom hazard PROBES, like kitchen04's ground
+build, are NOT in the line roster — hazard replay, not tray-affordable
+routes).
 
 ## Notes
 
@@ -133,13 +159,15 @@ ladder, kitchen rungs included.
   ground PROBE finishing, L04's whole-tray order sweep finishing — the
   Playtest G learnability gate — and L05's wrong allocations NOT
   finishing).
-- `getLevel` now resolves 11 ids once the level modules are imported (feel
-  rig, kitchen six, bedroom four); the kitchen files self-register via
+- `getLevel` now resolves 15 ids once the level modules are imported (feel
+  rig, kitchen six, bedroom four, bathroom four); the kitchen files self-register via
   `registerLevel` on import
-  (`feeltrack.level.ts`'s registry), and the bedroom files do the same
-  (`registerBedroom` wraps it). `src/boot.ts` imports every rung (the
+  (`feeltrack.level.ts`'s registry), the bedroom files do the same
+  (`registerBedroom` wraps it), and the bathroom files likewise
+  (`registerBathroom`). `src/boot.ts` imports every rung (the
   kitchen wiring since stage 2, the bedroom wiring added at the stage-4
-  ladder pass — a file outside the level designer's lane, touched only to
-  register and extend `LADDER`).
+  ladder pass, the bathroom wiring at the stage-4 bathroom pass — a file outside the level designer's lane, touched only to
+  register and extend the `void [...]` list; `LADDER` itself is the
+  campaign table).
 - Nothing on this rung-blocking blocks stage 3 integration; the blocked
   halves are additive data edits when ask #1 lands.

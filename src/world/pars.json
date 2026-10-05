@@ -1,5 +1,25 @@
 [
   {
+    "levelId": "bathroom01",
+    "parPieces": 3,
+    "parTime": 2.25
+  },
+  {
+    "levelId": "bathroom02",
+    "parPieces": 3,
+    "parTime": 2.35
+  },
+  {
+    "levelId": "bathroom03",
+    "parPieces": 4,
+    "parTime": 2.7
+  },
+  {
+    "levelId": "bathroom04",
+    "parPieces": 4,
+    "parTime": 2.7
+  },
+  {
     "levelId": "bedroom01",
     "parPieces": 3,
     "parTime": 2.35

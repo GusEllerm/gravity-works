@@ -26,6 +26,10 @@ import { BEDROOM01 } from './world/levels/bedroom01.level.ts';
 import { BEDROOM02 } from './world/levels/bedroom02.level.ts';
 import { BEDROOM03 } from './world/levels/bedroom03.level.ts';
 import { BEDROOM04 } from './world/levels/bedroom04.level.ts';
+import { BATHROOM01 } from './world/levels/bathroom01.level.ts';
+import { BATHROOM02 } from './world/levels/bathroom02.level.ts';
+import { BATHROOM03 } from './world/levels/bathroom03.level.ts';
+import { BATHROOM04 } from './world/levels/bathroom04.level.ts';
 import { World, type RunStatus } from './world/world.ts';
 import type { Build } from './track/build.ts';
 import { PIECES } from './track/pieces.ts';
@@ -57,7 +61,7 @@ import type { PieceKind, PieceParams } from './track/pieces.ts';
 // registers it; the feel track stays addressable for the stage-2 specs). The
 // campaign table (`src/world/campaign.ts`) names its rungs; the sandbox and
 // the feel rig are imported here for addressing only.
-void [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04, KITCHEN05, KITCHEN_SANDBOX, BEDROOM01, BEDROOM02, BEDROOM03, BEDROOM04];
+void [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04, KITCHEN05, KITCHEN_SANDBOX, BEDROOM01, BEDROOM02, BEDROOM03, BEDROOM04, BATHROOM01, BATHROOM02, BATHROOM03, BATHROOM04];
 
 /** The set a level declares (`KitchenLevel.set` / any set-carrying level),
  *  structurally — the boot must not depend on the level modules' types to
