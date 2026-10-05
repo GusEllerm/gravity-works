@@ -19,7 +19,7 @@ tags: [reference, levels]
 | `kitchen01` | `kitchen01.level.ts` | the tutorial: three pieces, one gap, launch | 3 (`gapLip`, `drop`, `landing`) | 3 | 2.25 | done — par build finishes headless WITH MARGIN (seed-stable, release-speed-range finish); a build missing any tray piece CANNOT finish against the anchored fixtures (stage-3 promise fix); the one-way ORDER is still authoring intent (ask #3) |
 | `kitchen02` | `kitchen02.level.ts` | a CHOICE: two lines across one gap; the lazy one is faster | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 3 | 2.35 | done, **with the curve rung BLOCKED** (ask #1) — the curve is fixture run-out past the cup; both lines finish (par 2.317 s, arc 2.442 s). Stage-3 coherence: ONE 0.18 m `straight` geometry (the tray seats both copies identically) and `trayParams` for the two kinds the lazy par never places |
 | `kitchen03` | `kitchen03.level.ts` | the bowl on the set; gap verbs at speed | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 5 | 2.65 | done, **with the bowl line BLOCKED** (ask #1 + ask #4) — the tray IS the par build's multiset (5/5 placeable, one 0.15 m straight geometry), rim built + socketed (`bowl.in`/`bowl.out`), timed line runs past it; par 2.617 s |
-| `kitchen04` | `kitchen04.level.ts` | the tap hazard: affordance before hazard, wet patch halves grip | 5 (`gapLip`, `drop`, `landing`, `straight`×2) | 4 | 2.55 | done, **hazard live** (ask #2a delivered, [[Modules/hazards]]) — par replays bit-identical with the zone (flies the patch, grip-independent to the bit; 2.517 s); ground line drives THROUGH it (hash diverges, finishes 0.06 s faster — low-drag plastic). Stage-3 coherence: the par's run-out is the ground line's 0.3 m straight (one tray geometry) |
+| `kitchen04` | `kitchen04.level.ts` | the tap hazard: affordance before hazard — the drips mark the sink the arc must fly | 4 (`gapLip`, `drop`, `landing`, `straight`) | 4 | 2.55 | done, **hazard live** (ask #2a delivered, [[Modules/hazards]]) — tray = the par line's exact multiset (learnability pass: the spare `straight` ×2 was Playtest G's "which 4 of 5" wall); ALL 24 whole-tray orders finish builder-anchored (2.47–3.12 s, test-gated), par ORDER beatable at 2.47 s; par replays bit-identical with the zone (flies the patch, 2.517 s); the patch is a TELLS-not-a-TOLL on every buildable line — grip physics measured on the ground build as HAZARD PROBE (hash diverges, wet faster — low-drag plastic), the probe is not a route (its bridged deck can't reach the anchored cup, `fell`; ask #2b) |
 | `kitchen05` | `kitchen05.level.ts` | everything + one forced trade-off (one landing, one booster, two gaps) | 6 (`gapLip`×2, `drop`×2, `landing`, `booster`) | 6 | 2.40 | done — both wrong allocations measured to NOT finish; par beatable, not obvious; chains the PINNED original gap (the trade-off needs an unforgiving gap). Coherence-checked unchanged: tray = the par build's exact multiset (6/6) |
 | `kitchen-sandbox` | `kitchen05.level.ts` | the set unlocked (`sandbox: true`, no budget) | none (all pieces ×99) | 5 | 2.70 | done — reference build finishes (2.667 s), on one 0.175 m straight geometry |
 
@@ -64,7 +64,8 @@ unified every level's `straight` geometry (a tray seats one geometry per kind)
   the real builder it must. This is also why L01's wrong-order experiments
   all finish. Stage-3 coherence measured what the anchored mounting does to
   the second lines: L02's arc route reaches the fixed cup and is then FASTER
-  than the lazy par (2.242 s vs 2.317 s), and L04's ground line does not
+  than the lazy par (2.242 s vs 2.317 s), and L04's ground build (hazard
+  probe since the learnability pass) does not
   reach it at all (`fell`) — see [[Concepts/Levels]] §The same data replayed
   the way the BUILDER mounts it.
 - **L01's three-piece fit could not be placed with the shipped target walk —
@@ -86,8 +87,9 @@ Every rung's tray must AFFORD its reference build (plus the fixtures), and
 because the builder seats a held kind with ONE geometry per kind, no par line
 may use one kind at two sizes. Both halves are a test, not a comment: the
 "tray ⊇ parBuild" describe in `tests/unit/kitchen-levels.test.ts` checks
-every line each level authors (par, L02's arc, L04's ground, L05's two wrong
-allocations), and `trayParityBuild` (the builder's seating of the par line,
+every line each level authors (par, L02's arc, L05's two wrong allocations;
+L04's ground build left the roster at the L04 learnability pass — it is a
+hazard probe, not a tray-affordable route), and `trayParityBuild` (the builder's seating of the par line,
 fixtures anchored) must serialize byte-identically to `parBuild()`. Kinds a
 par line never places but an alternate line needs are declared in
 `trayParams` (see [[Concepts/Levels]]).
@@ -101,8 +103,10 @@ par line never places but an alternate line needs are declared in
   home in the contract yet). `placeholderBuild()` returns the par build, so
   share/replay need no new seam.
 - Every kitchen parBuild finishing is a TEST, not a claim:
-  `tests/unit/kitchen-levels.test.ts` (plus L02/L04 second lines finishing
-  and L05's wrong allocations NOT finishing).
+  `tests/unit/kitchen-levels.test.ts` (plus L02's second line and L04's
+  ground PROBE finishing, L04's whole-tray order sweep finishing — the
+  Playtest G learnability gate — and L05's wrong allocations NOT
+  finishing).
 - `getLevel` now resolves 7 ids once the kitchen modules are imported; the
   kitchen files self-register via `registerLevel` on import
   (`feeltrack.level.ts`'s registry). Wiring the game entry (`src/boot.ts`)
