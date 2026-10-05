@@ -458,7 +458,7 @@ sig = "ca72175798caed55"
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/sets/index.ts"
-sig = "bc6574291a016895"
+sig = "81ee378df3ed4d7f"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
@@ -543,7 +543,7 @@ sig = "f619bf84287798df"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/sets/index.ts"
-sig = "bc6574291a016895"
+sig = "81ee378df3ed4d7f"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -588,7 +588,7 @@ sig = "a38e01706f33daf6"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/sets/index.ts"
-sig = "bc6574291a016895"
+sig = "81ee378df3ed4d7f"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"

@@ -29,6 +29,8 @@ import { kitchenSetPlacement } from '../world/setPlacement.ts'
 import { SET_TOKENS } from '../render/tokens.ts'
 import { buildBedroomSet } from './bedroom/index.ts'
 import { bedroomSetPlacement } from '../world/setPlacement.ts'
+import { buildBathroomSet, BATHROOM_TOKENS } from './bathroom/index.ts'
+import { bathroomSetPlacement } from '../world/setPlacement.ts'
 
 export interface SetInstanceSocket {
   pos: THREE_NS.Vector3
@@ -87,6 +89,20 @@ export const SETS: Record<string, SetRegistration> = {
     // (`bedroomSetPlacement`): the set slides behind/below the level's +x
     // chain so the corridor and the floor-band detail clear the track line.
     placement: bedroomSetPlacement,
+  },
+  bathroom: {
+    id: 'bathroom',
+    // the RATIFIED variant-A tokens (the deep tinted-aqua fill is token
+    // data — `src/sets/bathroom/data.ts`; the shell's background reads it)
+    tokens: BATHROOM_TOKENS,
+    build(T, opts = {}) {
+      const set = buildBathroomSet(T, opts)
+      return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.floor, staging: set.staging }
+    },
+    // the bathroom rungs mount through the stage-4 bathroom table
+    // (`bathroomSetPlacement`): the disc centres on the run, 25 cm behind
+    // the corridor, floor under the lowest authored deck.
+    placement: bathroomSetPlacement,
   },
 }
 
