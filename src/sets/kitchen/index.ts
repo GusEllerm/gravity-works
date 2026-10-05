@@ -127,12 +127,17 @@ export function buildKitchenSet(T = THREE_NS, opts: KitchenSetOptions = {}): Kit
   // crown's mid-wall circle lands EXACTLY on BOWL rim radius 0.12 so the rim
   // mesh passes through the socket poses (Concepts/Levels §props-sockets).
   const bs = BOWL.height / (0.054 * SET_SCALE) // == world profile scale / SET_SCALE
+  // The bowl keeps the lathe's ceramic colour but no longer overrides the
+  // ramp or the diffuse gain: the stage-3 review (fix 1) moved the band
+  // work INTO the ceramic class (three bands, upper threshold at ndl 0.6),
+  // and per-scene ramp hacks are exactly the class drift decision 5 forbids.
+  // Only the warm shade tint and a quieter glaze sheen stay set-specific —
+  // the shade tint deepened to amber with the fix-7 grade so the bowl's own
+  // core shadow reads as a band, not a cream wash.
   const bowlMat = ceramic(tokens, '#F0DDB2', {
     ...fillOver(),
-    shadowTint: '#FFDFA8',
-    ramp: { steps: [0.88, 1.0], thresholds: [0.12], softness: 0.1 },
-    specular: { size: 0.55, strength: 0.3 },
-    diffuseStrength: 1.15,
+    shadowTint: '#C9853E',
+    specular: { size: 0.55, strength: 0.22 },
   })
   bowlMat.side = T.DoubleSide
   const bowlPts: THREE_NS.Vector2[] = [new THREE_NS.Vector2(0.0001, 0.001 * bs), new THREE_NS.Vector2(0.06 * bs, 0.001 * bs)]
@@ -157,10 +162,12 @@ export function buildKitchenSet(T = THREE_NS, opts: KitchenSetOptions = {}): Kit
   bowl.position.set(BOWL.position[0] / SET_SCALE, 0, BOWL.position[2] / SET_SCALE)
   dress.add(bowl)
 
-  // milk settled in the bottom, cereal rings floating (the tile's story)
+  // milk settled in the bottom, cereal rings floating (the tile's story) —
+  // stage-3 fix 2: a set-tinted surface (~85 % brightness) with real wobble,
+  // so the liquid class reads as liquid with one highlight, not a flat plate
   const milk = new T.Mesh(
     new T.CylinderGeometry(0.062 * bs, 0.058 * bs, 0.003, 40),
-    liquid(tokens, '#F7EFDE', { ...fillOver(), opacity: 0.95, liquid: 0.08 }),
+    liquid(tokens, '#EADFC6', { ...fillOver(), opacity: 0.95, liquid: 0.25 }),
   )
   milk.name = 'milk'
   milk.position.set(BOWL.position[0] / SET_SCALE, 0.032 * bs, BOWL.position[2] / SET_SCALE)
@@ -213,20 +220,28 @@ export function buildKitchenSet(T = THREE_NS, opts: KitchenSetOptions = {}): Kit
     mugG.add(handle)
     const coffee = new T.Mesh(
       new T.CylinderGeometry(0.0285, 0.0285, 0.002, 32),
-      liquid(tokens, '#8A5A32', { ...fillOver(), opacity: 0.92, liquid: 0.12 }),
+      liquid(tokens, '#5C3720', { ...fillOver(), opacity: 0.92, liquid: 0.25 }),
     )
     coffee.name = 'coffee'
     coffee.position.y = 0.05
     mugG.add(coffee)
   }
   mugG.position.set(0.225, 0, 0.062)
-  mugG.rotation.y = -1.7
+  // turn the handle away from the canonical cameras: with the old yaw the
+  // handle sat between mug and lens, and through the blowout it read as the
+  // "standing grey washer" the stage-3 review logged (the ring FILM is a
+  // separate object and was always correct — see mug-ring-film below)
+  mugG.rotation.y = 1.4
   dress.add(mugG)
 
-  // the ring the mug left — FILM (film.ts), not a torus of liquid
-  const mugRing = stainDecal(tokens, { kind: 'mugRing', color: '#B98A5C', opacity: 0.6, size: 0.034, width: 0.0042, ...fillOver() })
+  // the ring the mug left — FILM (film.ts), not a torus of liquid.
+  // Stage-3 fix 6: the mesh WAS the stainDecal film (checked — no torus is
+  // wired); it read as a standing washer because it sat 7 cm from a mug that
+  // had been pulled back without it, at coffee-palette grey. Pulled in to
+  // the mug's flank and taken to espresso brown so it reads as a stain.
+  const mugRing = stainDecal(tokens, { kind: 'mugRing', color: '#8F5B36', opacity: 0.72, size: 0.034, width: 0.0042, ...fillOver() })
   mugRing.name = 'mug-ring-film'
-  mugRing.position.set(0.15, mugRing.position.y, 0.075)
+  mugRing.position.set(0.185, mugRing.position.y, 0.082)
   dress.add(mugRing)
 
   function pencilProp(name: string): THREE_NS.Group {
@@ -244,7 +259,7 @@ export function buildKitchenSet(T = THREE_NS, opts: KitchenSetOptions = {}): Kit
     wood.position.y = 0.061
     props(wood)
     g.add(wood)
-    const lead = new T.Mesh(new T.ConeGeometry(0.0016, 0.005, 6), fabric(tokens, '#4A3527', fillOver()))
+    const lead = new T.Mesh(new T.ConeGeometry(0.0016, 0.005, 6), fabric(tokens, '#382A1E', fillOver()))
     lead.name = 'pencil-lead'
     lead.position.y = 0.0685
     g.add(lead)
@@ -265,7 +280,9 @@ export function buildKitchenSet(T = THREE_NS, opts: KitchenSetOptions = {}): Kit
   books.name = 'book-stack'
   {
     const covers: Array<[string, number, number]> = [
-      ['#C2643F', 0.02, 0.4], // terracotta
+      ['#BEA88C', 0.02, 0.4], // warm putty — stage-3 fix 7: the spine is no
+      // longer in the track's orange hue family; track orange is reserved
+      // for track-plastic users (the brand constant must not have company)
       ['#EFE0C0', 0.017, -0.25], // paper cream
       ['#5FB49C', 0.019, 0.15], // mint — the set's accent
     ]
@@ -296,12 +313,14 @@ export function buildKitchenSet(T = THREE_NS, opts: KitchenSetOptions = {}): Kit
   books.rotation.y = 0.42
   dress.add(books)
 
-  // bitten toast soldier leaning on the mug — the crumb-coloured bite patch
-  // on the corner (the tile-B read; tile A's scalloped silhouette is the
-  // keep carried in the crumb trail's density instead)
+  // bitten toast soldier LEANING on the mug flank with real contact (the
+  // stage-3 review's fix 6 — the mug pull-back left it floating): bottom
+  // edge on the counter, top third resting against the ceramic at the
+  // bite-side, in the mug-toast sightline the ring now also sits on
   {
     const soldier = new T.Group()
     soldier.name = 'toast-soldier'
+    soldier.rotation.order = 'YXZ'
     const slice = new T.Mesh(toyBlock(0.041, 0.04, 0.012, 0.01, 0.003), paintedWood(tokens, '#E3A75B', { ...fillOver(), grain: 0.85 }))
     slice.name = 'toast'
     props(slice)
@@ -313,8 +332,8 @@ export function buildKitchenSet(T = THREE_NS, opts: KitchenSetOptions = {}): Kit
     bite.name = 'toast-bite'
     bite.position.set(0.013, 0.011, 0.0063)
     soldier.add(bite)
-    soldier.position.set(0.2, 0.024, 0.101)
-    soldier.rotation.set(-0.05, -0.75, -0.5)
+    soldier.position.set(0.1875, 0, 0.1023)
+    soldier.rotation.set(-0.45, -0.743, 0) // lean top toward the mug flank, bottom edge grounded
     dress.add(soldier)
   }
 

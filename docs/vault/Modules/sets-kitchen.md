@@ -8,7 +8,7 @@ tags: [module]
 
 ## What it does
 
-`src/sets/kitchen/data.ts` is the set as pure numbers (no three import — Node-testable bytes): `SET_SCALE` (the tile's 1.06 dress scale baked into world constants), `COUNTER` (the round warm-wood bounds every socket and hazard is tested against, via `insideCounter`), `BOWL` + `BOWL_RIM_RADIUS` + `BOWL_ARC` + `BOWL_SOCKET_FRAMES` (`bowl.in` / `bowl.out`), `TAP` (with the world `drip` anchor), `HAZARDS` (the `tapSplash` wet patch in the exact `WetPatch` shape `KitchenLevel.hazards` consumes), and `STAGING` (the two decorative orange runs + the rim-car angle the canonical renders re-use — never sockets, never built by the game). The bowl profile carries one deliberate deviation from the tile: the lathe is scaled so the rim crown's mid-wall circle lands exactly on the L03 bank radius (0.12), because Concepts/Levels says the artist's mesh is built TO the socket numbers — the reference bowl (~0.104) was ~15 % narrower.
+`src/sets/kitchen/data.ts` is the set as pure numbers (no three import — Node-testable bytes): `SET_SCALE` (the tile's 1.06 dress scale baked into world constants), `COUNTER` (the round warm-wood bounds every socket and hazard is tested against, via `insideCounter`), `BOWL` + `BOWL_RIM_RADIUS` + `BOWL_ARC` + `BOWL_SOCKET_FRAMES` (`bowl.in` / `bowl.out`), `TAP` (with the world `drip` anchor), `HAZARDS` (the `tapSplash` wet patch in the exact `WetPatch` shape `KitchenLevel.hazards` consumes), and `STAGING` (the two decorative orange runs — the ramp run's `b` end GROUNDED at counter level after the stage-3 review flagged a floating end-cap with a detached shadow — plus the rim-car still angle documenting where the canonical renders park it: AT the `bowl.out` socket on the crown, level, no bank, since a banked centreline pose drove the body through the ceramic; never sockets, never built by the game). The bowl profile carries one deliberate deviation from the tile: the lathe is scaled so the rim crown's mid-wall circle lands exactly on the L03 bank radius (0.12), because Concepts/Levels says the artist's mesh is built TO the socket numbers — the reference bowl (~0.104) was ~15 % narrower.
 
 `buildKitchenSet(THREE, opts)` in `src/sets/kitchen/index.ts` returns `{ group, sockets, hazardZones, counter, staging }` — a pure function (two calls, byte-identical geometry; hash-tested), no lights, no cars, no time reads. `opts` takes `tokens` and a `LightingRig`; with a rig the materials ride its fill bands and `applyKeyLight` is called on the group. The prop inventory and each prop's material class:
 
@@ -17,12 +17,12 @@ tags: [module]
 | counter floor + splashback | painted wood (`grainScale` 0.05 — the big-surface frequency) |
 | cereal bowl | ceramic (DoubleSide, warm shade band) |
 | milk / cereal rings | liquid / fabric (rings instanced) |
-| book stack + ramp book | painted wood (cream cover = the paper read, low grain) |
+| book stack + ramp book | painted wood (cream cover = the paper read, low grain; the terracotta spine is out of the track's orange hue family — putty now, track orange reserved for track-plastic) |
 | pencils ×2 (ramp shim + lazy) | die-cast toy shaft, wood tip, fabric lead, ceramic eraser |
 | tap + frozen drip | die-cast paint / liquid |
-| wet patch + spread + splash crown + mug ring | FILM (`stainDecal`, never cutout geometry); the spread film reaches the full 0.14 hazard radius at low alpha |
-| mug + coffee | ceramic / liquid |
-| bitten toast soldier | painted wood ×2 (crumb-colour bite patch) |
+| wet patch + spread + splash crown + mug ring | FILM (`stainDecal`, never cutout geometry); the spread film reaches the full 0.14 hazard radius at low alpha; the mug ring sits at the mug's flank in espresso brown so it reads as a stain, not a standing washer |
+| mug + coffee | ceramic / liquid (coffee a deep brown liquid tone, not grey; mug yawed so the handle leaves the canonical sightlines) |
+| bitten toast soldier | painted wood ×2 (crumb-colour bite patch) — LEANING on the mug flank, bottom edge grounded (the stage-3 contact fix) |
 | crumb trail | painted wood, `InstancedMesh` ×16, seeded LCG |
 | sugar-cube supports (tile-A keep) | painted wood, `InstancedMesh` ×5 — a stack pressing under the ramp run (reads `STAGING.trackRuns[0]`), one fallen by the toast |
 | cereal-box cliff (tile-A keep) | painted wood carton + ceramic mint band, up-left rear where it catches the tap's long shadow |

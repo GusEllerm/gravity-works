@@ -113,7 +113,7 @@ sig = "6076250d77860d77"
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
 target = "src/dev/scenes/kitchen-set.ts"
-sig = "b51c6d489d329dda"
+sig = "ca72175798caed55"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -161,6 +161,76 @@ target = "tools/render.mjs"
 sig = "5455fbef64c07ef3"
 
 [[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/dev/scenes/cars.ts"
+sig = "482eff61dd1440fc"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/dev/scenes/kitchen-a.ts"
+sig = "b3ffed4b20b94135"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/dev/scenes/kitchen-b.ts"
+sig = "9f4bce417acc7d9b"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/dev/scenes/kitchen-c.ts"
+sig = "6076250d77860d77"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/dev/scenes/material-ramp.ts"
+sig = "0b8956e4fdc50db2"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/render/film.ts"
+sig = "2eb775c4288f5c26"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/render/geometry.ts"
+sig = "0e4e78212a50e506"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/render/lighting.ts"
+sig = "0f44d434a7edb272"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/render/materials.ts"
+sig = "608391146d0569b3"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/render/tokens.ts"
+sig = "23049e685bb54f7b"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/render/toon-material.ts"
+sig = "70ac714cea9ffc13"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "tests/unit/render-materials.test.ts"
+sig = "7b31151e38510ae3"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "tests/unit/render-post.test.ts"
+sig = "f88a45cfb6aaf777"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "tests/unit/tokens.test.ts"
+sig = "0f065f90d47289b6"
+
+[[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/boot.ts"
 sig = "e493f6b8eb9ad605"
@@ -168,17 +238,22 @@ sig = "e493f6b8eb9ad605"
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/dev/scenes/kitchen-set.ts"
-sig = "b51c6d489d329dda"
+sig = "ca72175798caed55"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/sets/kitchen/data.ts"
-sig = "43186a00b27f8234"
+sig = "ab279d61dd7ba620"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/sets/kitchen/index.ts"
-sig = "8055ce0ebf3f9a95"
+sig = "8d54044f7dd6bb29"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets-kitchen.md"
+target = "src/world/setPlacement.ts"
+sig = "d4aca7e13048f5fa"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"

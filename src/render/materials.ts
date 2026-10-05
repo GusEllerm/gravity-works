@@ -116,7 +116,17 @@ export function ceramicSaturationLift(hex: string): string {
   return shiftHex(hex, 0, CERAMIC_SATURATION_LIFT, 0.012)
 }
 
-/** Broad soft specular, warm rim. Bowls, mugs, sinks. */
+/**
+ * Broad soft specular, warm rim. Bowls, mugs, sinks.
+ *
+ * 2026-10-07 (stage-3 review, fix 1): the two-band class put everything
+ * above its threshold in a single blown band — 243–250 across the whole
+ * key-facing bowl wall. The class now carries THREE bands with the upper
+ * threshold raised to ndl 0.6, so the full-brightness band only lands on
+ * the small wall arc that truly faces the key; the middle band holds the
+ * roundness, the low band the shade side. Specular strength came down with
+ * it (0.55 → 0.3): a broad soft glaze sheen, not a second light.
+ */
 export function ceramic(
   tokens: SetTokens,
   color: THREE.ColorRepresentation,
@@ -127,8 +137,8 @@ export function ceramic(
     tokens,
     lifted,
     {
-      ramp: { steps: [0.64, 1.0], thresholds: [0.32], softness: 0.08 },
-      specular: { size: 0.45, strength: 0.55 },
+      ramp: { steps: [0.58, 0.8, 1.0], thresholds: [0.25, 0.62], softness: 0.08 },
+      specular: { size: 0.45, strength: 0.3 },
       rim: { strength: 0.18, size: 0.4 },
     },
     overrides,
@@ -175,7 +185,14 @@ export function glass(
   return mat
 }
 
-/** Set-tinted, animated normal, broad specular. Tap water, puddles. */
+/**
+ * Set-tinted, animated normal, broad specular. Tap water, puddles.
+ *
+ * 2026-10-07 (stage-3 review, fix 2): a flat liquid surface with a wide
+ * specular band lit the WHOLE disc and desaturated the set tint into a grey
+ * read (the never-list's plastic grey). The class specular narrowed and
+ * lifted — ONE bright highlight riding the wobble, the set tint left whole.
+ */
 export function liquid(
   tokens: SetTokens,
   color: THREE.ColorRepresentation,
@@ -186,7 +203,7 @@ export function liquid(
     color,
     {
       ramp: { steps: [0.68, 1.0], thresholds: [0.3], softness: 0.15 },
-      specular: { size: 0.4, strength: 0.9, color: '#FFFDF2' },
+      specular: { size: 0.28, strength: 1.15, color: '#FFFDF2' },
       rim: { strength: 0.2, size: 0.4 },
       liquid: 0.35,
       opacity: 0.85,

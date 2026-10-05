@@ -114,16 +114,21 @@ export const STAGING = {
   trackRuns: [
     {
       a: [-0.24 * SET_SCALE, 0.09 * SET_SCALE, 0.22 * SET_SCALE],
-      b: [-0.1 * SET_SCALE, 0.022 * SET_SCALE, 0.022 * SET_SCALE],
+      // the run end now GROUNDS on the counter (stage-3 review fix 5): the
+      // old 0.022 end hung ~1 cm off the surface with a detached shadow.
+      b: [-0.1 * SET_SCALE, 0.001 * SET_SCALE, 0.022 * SET_SCALE],
     },
     {
       a: [0.095 * SET_SCALE, 0.02 * SET_SCALE, -0.03 * SET_SCALE],
       b: [0.21 * SET_SCALE, 0.005 * SET_SCALE, -0.06 * SET_SCALE],
     },
   ],
-  /** The rim car the hero shot parks mid-bank: an angle on the rim
-   *  centreline, inside the socket arc, for the tilt-shift focus band. */
-  rimCar: { angleDeg: -27, bank: 0.35 },
+  /** Where the canonical renders park the rim car (stage-3 review fix 3):
+   *  AT the `bowl.in` socket angle — wheels on the rim crown, LEVEL like
+   *  the named sockets (the crown is level; the old 0.35 bank drove the
+   *  body through the ceramic). The dev scene poses it from
+   *  `BOWL_SOCKET_FRAMES` directly; these fields document the still. */
+  rimCar: { angleDeg: -75, bank: 0 },
 } as const
 
 /** True when a world-space point lies inside the counter bounds. */

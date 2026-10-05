@@ -7,22 +7,36 @@
 //   ?harness=1&scene=kitchen-set&shot=hero&post=on
 // The `focus=car` value in the render brief parses to null in
 // `parseFocusParam`, which makes the harness fall back to the `focus` this
-// SceneEntry carries — the car riding the bowl rim, exactly the tilt-shift
-// subject of the reference.
+// SceneEntry carries — the car riding the bowl rim for establishing/hero,
+// and the parked focus-band car for the floor shot (stage-3 fix 4; the
+// §7.3 car-following band still holds, it just follows the SHOT's car).
 
 import * as THREE from 'three'
 import { dieCastPaint, fabric, trackPlastic } from '../../render/materials.ts'
 import { toyBlock, trackChannel } from '../../render/geometry.ts'
-import { GLOBAL_TOKENS, SET_TOKENS, clampLightness } from '../../render/tokens.ts'
+import { GLOBAL_TOKENS, SET_TOKENS, clampLightness, mixHex } from '../../render/tokens.ts'
 import { applyKeyLight, createLightingRig } from '../../render/lighting.ts'
-import { buildKitchenSet, bowlArcPoint, STAGING } from '../../sets/kitchen/index.ts'
+import { BOWL_SOCKET_FRAMES, buildKitchenSet, STAGING } from '../../sets/kitchen/index.ts'
+import { canonicalCamera } from '../cameras.ts'
 import { registerScene, type SceneEntry, type SceneFactory } from '../registry.ts'
 import { LEVELS } from '../../world/levels/feeltrack.level.ts'
 import { buildTrackMeshes } from '../../world/world.ts'
 import { kitchenSetPlacement, placeSet } from '../../world/setPlacement.ts'
 
 const tokens = SET_TOKENS.kitchen
-const rig = createLightingRig(tokens, { accentMix: 0.4 })
+// Stage-3 review fix 7 (grade): the fill gain comes down hard from the rig
+// default so cast shadows earn their darks again — the reference frames
+// carry core shadows; the first production frames lived entirely above 60.
+// The key stays at its 1.3 breakfast value; only the fill pull is the
+// scene's, which is also the answer to the AD's "did the rig drift"
+// question: the rig itself did not, the set just never paid a shadow budget.
+const rig = createLightingRig(tokens, { accentMix: 0.4, fillStrength: 0.07 })
+// …and the shadow side of the grade: the token shadow tint sits near cream,
+// so a fully-attenuated pixel could never fall below ~70 no matter where the
+// fill sat. Mixed toward a deep raw umber (still pulled toward the dominant —
+// tinted, never black, the never-list holds) so cast shadows carry a real
+// core. Stage-3 fix 7.
+rig.shadowTint = mixHex(rig.shadowTint, '#502D10', 0.7)
 
 function props(mesh: THREE.Object3D, cast = true, receive = true): void {
   mesh.castShadow = cast
@@ -142,7 +156,8 @@ function kitchenSetScene(): SceneFactory {
       scene.add(runner)
     }
 
-    // a car racing out along the flat run — the floor camera's hero
+    // a car racing out along the flat run — background life for the wide
+    // frames (stage-3: no longer the floor camera's hero, see floorCar)
     {
       const racer2 = car()
       const a = new THREE.Vector3(...STAGING.trackRuns[1]!.a)
@@ -155,17 +170,38 @@ function kitchenSetScene(): SceneFactory {
       scene.add(racer2)
     }
 
-    // the car riding the bowl's banked rim — the story of the set, parked
-    // on the rim centreline inside the socket arc (the tilt-shift subject).
-    // It faces along the rim in the reference's direction — the car is
-    // parked where Sunday stopped it, not committed to the bowl.in→out line
-    const [rx, ry, rz] = bowlArcPoint(STAGING.rimCar.angleDeg)
+    // the floor camera's focus-band car (stage-3 review fix 4): the run
+    // landings both project into the frame's OUTER thirds from the low rig
+    // (the ramp run ends hard left, the flat run exits right), so the AD's
+    // "park it on the near run" suggestion cannot also satisfy their own
+    // "middle third at 200 px" bar. This stand-in is parked on the counter
+    // centreline just clear of the bowl rim — exactly where the ramp run's
+    // traffic would roll to a stop — fully visible, and the floor shot
+    // re-points its focus at it so the band is sharp across it.
+    const floorCar = car()
+    const floorCarPos: readonly [number, number, number] = [0.049, 0.0005, 0.086]
+    floorCar.position.set(...floorCarPos)
+    floorCar.lookAt(floorCarPos[0] + 0.577, floorCarPos[1], floorCarPos[2] - 0.817)
+    floorCar.rotateY(-Math.PI / 2)
+    scene.add(floorCar)
+
+    // the car riding the bowl's rim — the story of the set (stage-3 review
+    // fix 3): seated AT a named socket frame — wheels on the rim crown
+    // circle, yaw along the rim tangent, level like the crown itself. The
+    // old pose (centreline angle, 6 mm sunk, 0.35 bank) drove the body
+    // through the ceramic — the tile-A disease in one prop. `bowl.out` is
+    // the seat for the stills: at `bowl.in` the car is geometrically on the
+    // crown but projects across the milk disc from the hero height and
+    // reads as parked in the soup; on the far side it silhouettes clean.
+    const rimPose = BOWL_SOCKET_FRAMES['bowl.out']
     const racer = car()
-    racer.position.set(rx, ry - 0.006, rz)
-    const a = (STAGING.rimCar.angleDeg * Math.PI) / 180
-    racer.lookAt(rx - Math.sin(a) * 0.06, ry - 0.006, rz + Math.cos(a) * 0.06)
+    racer.position.set(rimPose.pos[0], rimPose.pos[1], rimPose.pos[2])
+    racer.lookAt(
+      rimPose.pos[0] + rimPose.tangent[0] * 0.06,
+      rimPose.pos[1] + rimPose.tangent[1] * 0.06,
+      rimPose.pos[2] + rimPose.tangent[2] * 0.06,
+    )
     racer.rotateY(-Math.PI / 2)
-    racer.rotateX(STAGING.rimCar.bank)
     scene.add(racer)
 
     applyKeyLight(scene, rig)
@@ -173,7 +209,16 @@ function kitchenSetScene(): SceneFactory {
     const camera = new THREE.PerspectiveCamera(ctx.rig.fov, 16 / 9, ctx.rig.near, ctx.rig.far)
     camera.position.set(...ctx.rig.position)
     camera.lookAt(new THREE.Vector3(...ctx.rig.target))
-    return { scene, camera, focus: [rx, ry + 0.006, rz], tokens }
+    // the tilt-shift focus: the rim car everywhere EXCEPT the floor shot,
+    // which re-points its band at the parked floorCar (stage-3 fix 4 — the
+    // canonical floor is "a car in the focus band", and the rim car sits
+    // behind the bowl wall from this height). The shot is identified by
+    // the rig identity — canonicalCamera returns the one shared object.
+    const isFloorShot = ctx.rig === canonicalCamera('floor')
+    const focus: readonly [number, number, number] = isFloorShot
+      ? [floorCarPos[0], 0.015, floorCarPos[2]]
+      : [rimPose.pos[0], rimPose.pos[1] + 0.006, rimPose.pos[2]]
+    return { scene, camera, focus, tokens }
   }
 }
 
