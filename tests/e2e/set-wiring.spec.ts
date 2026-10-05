@@ -40,9 +40,9 @@ test('kitchen01 finishes in its mounted set at the headless replay hash', async 
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'kitchen', { timeout: 60_000 })
   await expect(page.locator('#gw-status')).toContainText('finished', { timeout: 60_000 })
 
-  const text = (await page.locator('#gw-status').textContent()) ?? ''
-  const hash = text.match(/hash ([0-9a-f]{8})/)?.[1]
-  expect(hash, `status line carried no hash: ${JSON.stringify(text)}`).toBe(node.hash)
+  const text = (await page.locator('#gw-hash-value').textContent()) ?? ''
+  const hash = text.match(/[0-9a-f]{8}/)?.[0]
+  expect(hash, `fingerprint panel carried no hash: ${JSON.stringify(text)}`).toBe(node.hash)
   // the hazard status path is data-honest on a hazard-free level, too
   expect(await page.evaluate(() => (window as unknown as Record<string, () => number>).__gwHazardZones())).toBe(0)
   expect(errors).toEqual([])
@@ -62,8 +62,8 @@ test('kitchen04 par finishes at the replay hash and the hazard path is live', as
     .poll(() => page.evaluate(() => (window as unknown as Record<string, () => number>).__gwHazardZones()), { timeout: 60_000 })
     .toBe(1)
   await expect(page.locator('#gw-status')).toContainText('finished', { timeout: 60_000 })
-  const text = (await page.locator('#gw-status').textContent()) ?? ''
-  expect(text.match(/hash ([0-9a-f]{8})/)?.[1]).toBe(node.hash)
+  const text = (await page.locator('#gw-hash-value').textContent()) ?? ''
+  expect(text.match(/[0-9a-f]{8}/)?.[0]).toBe(node.hash)
   expect(errors).toEqual([])
 })
 
@@ -85,7 +85,7 @@ test('the builder ghost goes red on a set solid (L03 bowl-rim socket)', async ({
   await expect(page.locator('#gw-target-label')).toContainText('end of finishCup')
   await page.locator('#gw-builder').press('ArrowRight') // end of curve -> bowl.out
   await expect(page.locator('#gw-target-label')).toContainText('end of curve')
-  await expect(page.locator('#gw-ghost-state')).toHaveText('blocked', { timeout: 10_000 })
+  await expect(page.locator('#gw-ghost-state')).toContainText('blocked', { timeout: 10_000 })
 
   // the red ghost is the guard's claim; a seat attempt (Enter — a blocked
   // seat is refused) adds nothing to the build

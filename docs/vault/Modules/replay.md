@@ -13,6 +13,8 @@ tags: [module, replay]
 
 The browser side of a replay is `src/boot.ts`'s shared-run page: `parseShareUrl` → `getLevel` → `replayRun` → compare with the embedded hash → `verified`/`mismatch` in `#gw-replay-status`, echoing the recomputed hash beside it. Since stage 3 the page also wires `#gw-share-card` — a share-card PNG of the replayed run through `src/share/card.ts`, its stars scored from the replay time and the regenerated pars (`Modules/world`).
 
+What the hash COVERS, stated precisely (playtest F's "different builds, same hash" finding): `hashBodies` folds the quantised transforms of the RUN'S CAR BODIES (chassis + wheels, `world.hashedBodies`) every `HASH_INTERVAL` steps into the seed-folded accumulator — static track bodies are never hashed directly. Two builds are therefore guaranteed equal-hash exactly when the car's sampled trajectory is equal; a piece that sits OFF the car's road (a static the run never touches) cannot perturb the hash, and the shell's panel may say so truthfully ("same run — your extra piece never touched the road", `#gw-hash-note`).
+
 ## Measured
 
 Node and the built Chromium page produce the same hash for the real kit feel track — same-machine, same-engine verification holds with the shipped rapier3d-compat build (feel-audit retune 2026-10-06: `099403c7` / 361 steps from both sides, page verdict `verified`; earlier quoted runs `9decb4fb`/343 and `074b1ef6`/239 steps belonged to pre-retune constants and are retired). The cross-platform claim (different CPU/OS) is still open ([[Home]] Deferred; QA owns the stage-3 gate).

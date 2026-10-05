@@ -17,13 +17,14 @@ describe('boot shell', () => {
     expect(typeof boot).toBe('function');
   });
 
-  test('run status copy is concrete and shows the hash once physics has one', () => {
-    expect(runStatusLine(fake('idle', 0, '00000000'), 5)).toBe('ready — 5 pieces');
-    expect(runStatusLine(fake('finished', 1.5, 'abcd1234'), 6)).toBe(
-      'finished — 1.50s — 6 pieces — hash abcd1234',
-    );
+  test('run status copy is concrete and carries no hash (hash lives in the details)', () => {
+    // playtest E+F: the hash was engineer trivia on the player's line — it
+    // now rides #gw-hash-value behind the determinism-fingerprint disclosure
+    expect(runStatusLine(fake('idle', 0, '00000000'), 5)).toBe('ready — 5 pieces placed');
+    expect(runStatusLine(fake('finished', 1.5, 'abcd1234'), 6)).toBe('finished — 1.50s');
     expect(runStatusLine(fake('fell', 0.4, '01234567'), 5)).toContain('fell off the set');
-    expect(runStatusLine(fake('running', 2, 'ffffffff'), 5)).toContain('hash ffffffff');
+    expect(runStatusLine(fake('running', 2, 'ffffffff'), 5)).toBe('running — 2.00s');
+    expect(runStatusLine(fake('running', 2, 'ffffffff'), 5)).not.toContain('hash');
   });
 
   test('a kitchen level starts EMPTY of tray pieces: fixtures only, tray to build', () => {

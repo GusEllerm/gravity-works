@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test'
  *    the line is exactly how "cream void" reached the deployed page);
  * 3. the tray speaks the level budget: kitchen01's tray is gapLip/drop/
  *    landing — those three enabled, the other ten kinds aria-disabled with
- *    a reason title, and the counter reads `0 / 3 pieces` (TRAY placements
+ *    a reason title, and the counter reads `0 of 3 pieces used` (TRAY placements
  *    over budget, never build-size over budget);
  * 4. no literal "hidden" anywhere on the shell;
  * 5. placing all three pieces finishes the level (Concepts/Levels' proved
@@ -54,7 +54,7 @@ test('kitchen01 boots framed, empty, tray-gated, and says no literal "hidden"', 
   await expect.poll(() => probe(page), { timeout: 15_000 }).toBeGreaterThan(0.01)
 
   // the tutorial build is EMPTY of tray pieces and the counter is honest
-  await expect(page.locator('#gw-piece-count')).toHaveText('0 / 3 pieces')
+  await expect(page.locator('#gw-piece-count')).toHaveText('0 of 3 pieces used')
   await expect(page.locator('#gw-ghost-state')).toHaveText('')
 
   // tray gating: exactly the three tray kinds live, the rest carry a reason
@@ -89,13 +89,13 @@ test('building all three tray pieces launches, finishes, and shows the result pa
   await page.keyboard.press('ArrowRight') // past `level start` onto `end of ramp`
   await expect(page.locator('#gw-target-label')).toContainText('end of ramp')
   await page.click('#gw-place')
-  await expect(page.locator('#gw-piece-count')).toHaveText('1 / 3 pieces')
+  await expect(page.locator('#gw-piece-count')).toHaveText('1 of 3 pieces used')
   await page.click('#gw-tray-drop')
   await page.click('#gw-place')
-  await expect(page.locator('#gw-piece-count')).toHaveText('2 / 3 pieces')
+  await expect(page.locator('#gw-piece-count')).toHaveText('2 of 3 pieces used')
   await page.click('#gw-tray-landing')
   await page.click('#gw-place')
-  await expect(page.locator('#gw-piece-count')).toHaveText('3 / 3 pieces')
+  await expect(page.locator('#gw-piece-count')).toHaveText('3 of 3 pieces used')
 
   // the tray now says so: every kind of the budget is spent
   await expect(page.locator('#gw-tray-gapLip')).toHaveAttribute('aria-disabled', 'true')

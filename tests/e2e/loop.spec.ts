@@ -35,7 +35,7 @@ const buildAllThree = async (page: import('@playwright/test').Page): Promise<voi
     }
     await page.click('#gw-place')
     await expect(page.locator('#gw-piece-count')).toContainText(
-      `${['gapLip', 'drop', 'landing'].indexOf(k) + 1} / 3`,
+      `${['gapLip', 'drop', 'landing'].indexOf(k) + 1} of 3`,
     )
   }
 }
@@ -127,7 +127,7 @@ test('the result states the par rules, and Retry / Launch / Next close the loop'
   await page.click('#gw-result-retry')
   await expect(page.locator('#gw-status')).toContainText('ready')
   await expect(page.locator('#gw-result')).toBeHidden()
-  await expect(page.locator('#gw-piece-count')).toHaveText('3 / 3 pieces')
+  await expect(page.locator('#gw-piece-count')).toHaveText('3 of 3 pieces used')
 
   // Next level: the ladder walks forward
   await launchAgain(page)
@@ -189,7 +189,7 @@ test('holding a tray piece teaches Place, and disabled buttons say why', async (
 
   // hold a live piece: the one-line instruction appears next to the tray
   await page.click('#gw-tray-drop')
-  await expect(page.locator('#gw-tray-hint')).toHaveText('Move: drag or arrows · Place: Enter · Rotate: R')
+  await expect(page.locator('#gw-tray-hint')).toHaveText('Aim: hover the world or ←→ · Place: click the world or Enter · Flip: R')
 
   // a click on a greyed piece explains itself in the live status line
   // (dispatchEvent: the button is aria-disabled but focusable — the real
@@ -199,7 +199,7 @@ test('holding a tray piece teaches Place, and disabled buttons say why', async (
 
   // the first successful placement retires the lesson
   await page.click('#gw-place')
-  await expect(page.locator('#gw-piece-count')).toContainText('1 / 3')
+  await expect(page.locator('#gw-piece-count')).toContainText('1 of 3')
   await expect(page.locator('#gw-tray-hint')).toBeHidden()
 
   expect(errors).toEqual([])

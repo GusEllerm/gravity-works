@@ -11,8 +11,13 @@ body {
 #app { max-width: 980px; margin: 0 auto; padding: 12px 16px 32px; }
 h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
 #gw-stage { background: #efe0c8; border-radius: 6px; overflow: hidden; }
-#gw-stage canvas { display: block; width: 100%; height: auto; max-height: 540px; }
+#gw-stage canvas { display: block; width: 100%; height: auto; max-height: 540px; max-width: 960px; margin-inline: auto; background: #efe0c8; }
 #gw-status, #gw-callout { font-size: 13px; margin: 8px 0; }
+/* the determinism fingerprint: engineer trivia behind a quiet disclosure
+ * (playtest E+F: the hash on the player's status line was unreadable noise) */
+#gw-hash-details { font-size: 11px; color: #8a7040; margin: 2px 0; }
+#gw-hash-details summary { cursor: pointer; }
+#gw-hash-details p { margin: 2px 0 0; }
 #gw-builder { margin-top: 10px; }
 #gw-tray { display: flex; flex-wrap: wrap; gap: 6px; }
 #gw-tray button, #gw-controls button, #gw-help-toggle {
@@ -27,3 +32,7 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
 #gw-tray-reason { font-size: 12px; color: #6a5636; margin: 2px 0 4px; }
 #gw-help-list { background: #fff8ec; border: 1px solid #d8c49a; border-radius: 6px; padding: 8px; }
 #gw-result { background: #fff8ec; border: 1px solid #d8c49a; border-radius: 6px; padding: 10px 14px; }
+/* the tray legend decrements (×N counts what is LEFT) — the label is set
+ * from code; keep the spent buttons visually distinct without removing them
+ * from the tab order (aria-disabled, not disabled) */
+#gw-tray button[aria-disabled='true'] { opacity: 0.45; }

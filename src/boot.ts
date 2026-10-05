@@ -314,6 +314,22 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   root.appendChild(stage);
   const statusLine = paragraph('gw-status', root);
   const calloutLine = paragraph('gw-callout', root, 'text');
+  // The run hash is engineer trivia on a PLAYER panel (playtest E+F: “run
+  // hash” unreadable): it lives behind a <details> labelled for what it IS,
+  // and the panel may explain an unchanged hash truthfully — the hash covers
+  // BODY TRANSFORMS along the path, so a static piece off the road cannot
+  // perturb it (`Modules/replay`).
+  const hashDetails = document.createElement('details');
+  hashDetails.id = 'gw-hash-details';
+  const hashSummary = document.createElement('summary');
+  hashSummary.textContent = 'determinism fingerprint — same build, same run, anywhere';
+  const hashValue = document.createElement('p');
+  hashValue.id = 'gw-hash-value';
+  const hashNote = document.createElement('p');
+  hashNote.id = 'gw-hash-note';
+  hashNote.hidden = true;
+  hashDetails.append(hashSummary, hashValue, hashNote);
+  root.appendChild(hashDetails);
 
   // preserveDrawingBuffer: the QA seam the e2e canvas probe reads pixels
   // through (same convention as the help drawer's and the harness's
@@ -329,6 +345,16 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   renderer.domElement.id = 'gw-canvas';
   stage.appendChild(renderer.domElement);
   const camera = new THREE.PerspectiveCamera(35, 960 / 540, 0.01, 20);
+  // FIRST PAINT (playtest F: “black screen for seconds”): the canvas must
+  // never show an unpainted WebGL buffer while `World.create` awaits the
+  // physics wasm. One static warm frame straight after mount (the set's sky
+  // when a set mounts, the shell's warm paper otherwise) — the e2e probes
+  // the very first canvas bytes and asserts non-black.
+  {
+    const warm = new THREE.Scene();
+    warm.background = new THREE.Color(SET_TOKENS.kitchen.background);
+    renderer.render(warm, camera);
+  }
 
   // Stage 3 wiring: a level that declares a set renders INSIDE it. The set
   // is mounted under the world root beside the track group as a VISUAL only
@@ -382,7 +408,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     quat: camera.quaternion.toArray(),
   });
 
-  createHelpDrawer(root, { reducedMotion: loadSave().settings.reducedMotion ?? undefined });
+  createHelpDrawer(stage, { reducedMotion: loadSave().settings.reducedMotion ?? undefined });
+  // quiet, focusable, TOP-RIGHT of the world (playtest A+F: “Help = collapsed
+  // word-button at page bottom”); the drawer itself is an overlay, never
+  // inline content pushing the page down (`src/ui/help.ts`).
 
   const builder = createBuilder(builderHost, {
     level,
@@ -402,7 +431,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       void rebuild(build);
     },
   });
-  builder.attachCanvas(renderer.domElement);
+  builder.attachCanvas(renderer.domElement, camera);
   builder.elements.launch.addEventListener('click', startRun);
   // the progression loop closed on the buttons (§9.1 retry, ladder next):
   // Retry = as-built, one click back to Launch; Next = the following rung,
@@ -416,10 +445,25 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       p.set('level', nextId);
       window.location.search = p.toString(); // a search swap is a page boot
     });
-  } else {
-    resultPanel.next.style.display = 'none';
   }
+  gateNext(0); // hidden until a run EARNS a star (see gateNext)
   builder.elements.reset.addEventListener('click', () => resetCar());
+
+  // the e2e/keyboard-parity seam: the world position of the VISIBLE target
+  // marker — arrows and hover move this socket, nothing targets invisibly
+  (window as unknown as Record<string, unknown>).__gwTargetSocket = (): number[] | null => {
+    const s = builder.targetSocket();
+    return s ? [s.pos.x, s.pos.y, s.pos.z] : null;
+  };
+
+  /** Star-gated progression (§9.2, playtest E/F/G): `Next level` appears
+   *  only when the level EARNED at least one star; a failed run gets Retry
+   *  only. The ladder walk stays the shell's (`nextLevelId`). */
+  function gateNext(stars: number): void {
+    const show = nextId !== null && stars >= 1;
+    resultPanel.next.hidden = !show;
+    resultPanel.next.style.display = show ? '' : 'none';
+  }
 
   /** Car home to the release pose, the build untouched, the view back on
    *  the board, the panel away — the missing "bring it back" control. */
@@ -485,6 +529,11 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   const RUN_EYE_OFFSET = new THREE.Vector3(0, 0.05, 0.12);
   const runEyeOffset = new THREE.Vector3();
 
+  // the terminal state of the LAST finished run, for the honest same-hash
+  // line: equal hashes on DIFFERENT builds mean the added piece never
+  // entered the hashed body set (statics off the path do not perturb it)
+  let lastRun: { hash: string; pieces: number } | null = null;
+
   let last = performance.now();
   const frame = (now: number): void => {
     requestAnimationFrame(frame);
@@ -526,7 +575,17 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         piecesUsed: builder.playerCount(),
         hazardsTouched,
       };
-      resultPanel.show(resultModel(result, parFor(level.id, level.par), recorder.evidence()));
+      const model = resultModel(result, parFor(level.id, level.par), recorder.evidence());
+      resultPanel.show(model);
+      gateNext(model.stars); // §9.2: the ladder advances on STARS, not on trying
+      const h = w.hashHex();
+      if (lastRun && lastRun.hash === h && lastRun.pieces !== result.piecesUsed) {
+        hashNote.textContent = 'same run — your extra piece never touched the road';
+        hashNote.hidden = false;
+      } else {
+        hashNote.hidden = true;
+      }
+      lastRun = { hash: h, pieces: result.piecesUsed };
     }
     lastStatus = w.status;
     const pose = w.carPose(w.status === 'running' ? acc / FIXED_DT : 0);
@@ -535,6 +594,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       w.carMesh.quaternion.set(pose.quat.x, pose.quat.y, pose.quat.z, pose.quat.w);
     }
     statusLine.textContent = runStatusLine(w, builder.playerCount());
+    if (w.status !== 'idle') hashValue.textContent = w.hashHex(); // live under the details
     if (runCamActive && runCam) {
       // §7.3: during a run (and on the freeze-frame after it) the RUN
       // CAMERA owns the transform — leading the car along the rail.
@@ -581,21 +641,23 @@ function frameCamera(camera: THREE.PerspectiveCamera, scene: THREE.Scene | null)
   camera.lookAt(center);
 }
 
-/** Plain-text run status; the aria-live line the run reports through. */
+/** Plain-text run status; the aria-live line the run reports through. The
+ *  hash is NOT here (playtest E: engineer trivia on the player's line) — it
+ *  lives in `#gw-hash-value` behind the determinism-fingerprint details. */
 export function runStatusLine(world: World, pieces: number): string {
   const t = `${world.time.toFixed(2)}s`;
   switch (world.status) {
     case 'idle':
-      return `ready — ${pieces} pieces`;
+      return `ready — ${pieces} pieces placed`;
     case 'running':
-      return `running — ${t} — hash ${world.hashHex()}`;
+      return `running — ${t}`;
     case 'finished':
-      return `finished — ${t} — ${pieces} pieces — hash ${world.hashHex()}`;
+      return `finished — ${t}`;
     case 'fell':
-      return `fell off the set — ${t} — hash ${world.hashHex()}`;
+      return `fell off the set — ${t}`;
     case 'stalled':
-      return `stalled — ${t} — hash ${world.hashHex()}`;
+      return `stalled — ${t}`;
     case 'timeout':
-      return `timed out — ${t} — hash ${world.hashHex()}`;
+      return `timed out — ${t}`;
   }
 }

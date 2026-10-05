@@ -1,18 +1,48 @@
 /**
- * The builder UI (brief §9.1): a piece tray of the 13 kit kinds, socket
- * snapping through `snap.ts`, a translucent ghost, remove + a live piece
- * counter. It is deliberately plain DOM — real `<button>`s with names and
- * roles, aria-live status text — so stage 6's a11y pass extends it instead
- * of rebuilding it, and so Playwright has stable selectors to poke.
+ * The builder UI (brief §9.1): a piece tray, socket snapping through
+ * `snap.ts`, a translucent ghost, remove and a live piece counter. Plain
+ * DOM — real `<button>`s with names and roles, aria-live status text — so
+ * stage 6's a11y pass extends it instead of rebuilding it, and so Playwright
+ * has stable selectors to poke.
  *
- * Placement model (v1 of the builder, and the honest one): the track is a
- * graph of sockets; the open ones are the places a piece can go. Arrows pick
- * an open socket, `R` toggles forward/reverse seating, Enter or a click
- * places. Forward seating is the contract's `fitSocket` (exact seating); the
- * ghost colour reports the `snapSocket` gate (green = it passes, amber = a
- * reverse-mounted seat, red = neither). Reverse seating rotates the piece a
- * half turn about the socket's up axis, so its deck line still matches the
- * target's — the same transform trick the feel track's launch ramp uses.
+ * Placement model (v2, the shell-truth pass after playtests E/F/G):
+ *
+ * - The CURRENT TARGET is always VISIBLE: a ring marker (`#gw-target` torus)
+ *   sits at the socket the held piece WILL occupy. The ghost (when a piece is
+ *   held) renders at that same socket — green `fits here`, amber `flipped
+ *   fit`, red `blocked — <reason>`. Nothing is ever targeted silently.
+ * - HOVERING the canvas moves the target to the nearest open socket on
+ *   screen (projection-nearest, within `HOVER_PX`), so the ghost always
+ *   shows the socket a click would use BEFORE the click.
+ * - CLICKING the canvas (a track end, the ghost, anywhere) places the held
+ *   piece at the hovered socket — click = place, drag stays optional. With
+ *   nothing held a click only moves the marker, and says nothing false.
+ * - KEYBOARD PARITY (the stage-6 requirement arriving early): the SAME keys
+ *   drive the SAME visible marker — ↑/↓ pick the piece, ←/→ move the target
+ *   ring, Enter places, R flips the fit, Delete removes. The handler lives
+ *   on `window`, so the keys work with focus anywhere on the page (a
+ *   focused `<button>` keeps its native Enter/space activation). Every hint
+ *   line describes exactly these affordances — no dead hints.
+ *
+ * VERB TABLE (shell truth — playtest E: "'snapped' vs 'seated'"; one verb
+ * per event, and the failure-note wording the Feel Engineer owns in
+ * `src/ui/result.ts` never collides with these):
+ *
+ *   event                                verb (screen copy)
+ *   ---------------------------------------------------------------
+ *   a piece leaves the tray onto the track   "place" (button/hint) / "placed"
+ *   the tally                              "N of M pieces used"
+ *   the socket's verdict on the ghost       "fits here" | "flipped fit" |
+ *                                           "blocked — the set is in the way"
+ *   a tray kind's stock                     "drop ×1" → "drop ×0" (counts LEFT)
+ *   car events (notes, camera)             the Feel Engineer's lines only
+ *
+ * The words "snapped" and "seated" never reach the screen; the internal
+ * `GhostState` names stay for code/tests. Forward seating is the contract's
+ * `fitSocket`; the `snapSocket` gate colours the ghost. A flip is the
+ * contract's half turn about the socket's up axis, ANIMATED over
+ * `ROTATE_MS` (≤ 150 ms) so the change is always visible — playtest G
+ * pressed R and saw nothing.
  *
  * The builder owns no physics. On every change it hands the new `Build` to
  * `onChange`; the game shell rebuilds the `World` (see `src/boot.ts`).
@@ -20,14 +50,28 @@
 import * as THREE from 'three';
 import { canonicalBuild, fitSocket, snapSocket } from '../track/snap.ts';
 import { PIECES, PIECE_KINDS, pieceGeometries, type PieceKind, type PieceParams } from '../track/pieces.ts';
-import { transformSocket, type Socket } from '../track/socket.ts';
+import { socketMatrix, transformSocket, type Socket } from '../track/socket.ts';
 import type { Build, PlacedPiece } from '../track/build.ts';
 import type { Level } from '../world/level.ts';
 
 /** Two socket origins this close are joined (metres; well above float noise). */
 export const JOIN_TOL = 0.004;
+/** Screen radius (CSS px) in which a canvas hover/click claims a socket. */
+export const HOVER_PX = 120;
+/** The flip animation length — short enough to feel instant, long enough
+ *  to be SEEN (playtest G: "clicked R; ghost never visibly changed"). */
+export const ROTATE_MS = 150;
 
 export type GhostState = 'hidden' | 'snapped' | 'seated' | 'invalid' | 'blocked';
+
+/** The VERB TABLE's screen copy per internal state ('' = say nothing). */
+export const GHOST_LABEL: Record<GhostState, string> = {
+  hidden: '',
+  snapped: 'fits here',
+  seated: 'flipped fit',
+  invalid: 'no seat at this socket',
+  blocked: 'blocked — the set is in the way',
+};
 
 export interface BuilderOptions {
   level: Level;
@@ -41,18 +85,13 @@ export interface BuilderOptions {
    *  pieces" bug). Omitted = every kind unlocked, `level.budget` alone caps
    *  (the feel-rig levels). */
   tray?: Partial<Record<PieceKind, number>>;
-  /** Geometry of the tray pieces: the LEVEL's tuned parameters per kind
-   *  (the kitchen authoring kit lays per-instance params; a tray button
-   *  that placed kit DEFAULTS built a different gap than the one the
-   *  level was par'd on — the built-it-and-it-fell bug). Absent = kit
-   *  defaults (the feel-rig levels). */
+  /** Geometry of the tray pieces: the LEVEL's tuned parameters per kind. */
   trayParams?: Partial<Record<PieceKind, PieceParams>>;
   /** Called after every mutation with the canonical new build. */
   onChange?: (build: Build) => void;
   /** Stage-3 set wiring: world-space AABBs of the set's solid props. A seat
    *  whose piece box overlaps one of them is REJECTED — the ghost goes red
-   *  (`blocked`) and `place` refuses. Deliberately cheap: AABB-vs-AABB per
-   *  ghost update, no mesh tests, nothing per frame. */
+   *  and `place` refuses. AABB-vs-AABB per ghost update, nothing per frame. */
   solids?: readonly THREE.Box3[];
 }
 
@@ -69,8 +108,7 @@ export interface BuilderElements {
   rotate: HTMLButtonElement;
   remove: HTMLButtonElement;
   /** Permanent visible control next to Launch: returns the CAR to the start
-   * pose (the build untouched) — the missing "after a run, nothing brings
-   * the view home" control (playtest C). */
+   * pose (the build untouched). */
   reset: HTMLButtonElement;
   launch: HTMLButtonElement;
 }
@@ -78,21 +116,23 @@ export interface BuilderElements {
 export interface Builder {
   elements: BuilderElements;
   build(): Build;
-  /** Move the ghost into a (re)built world's scene. Null hides it. */
+  /** Move the ghost and target marker into a (re)built world's scene. */
   setScene(scene: THREE.Scene | null): void;
-  /** Attach the game canvas: clicking it places the held piece. */
-  attachCanvas(canvas: HTMLElement): void;
+  /** Attach the game canvas: hovering aims the target, clicking places.
+   *  The camera is needed to project sockets to the pointer. */
+  attachCanvas(canvas: HTMLElement, camera?: THREE.Camera): void;
   setKind(kind: PieceKind | null): void;
   cycleKind(delta: number): void;
   cycleTarget(delta: number): void;
   rotate(): void;
   place(): boolean;
   removeLast(): boolean;
-  /** Pieces the PLAYER has placed from the tray (fixtures excluded) — the
-   *  number the counter, the budget gate and the result's piece tally use. */
+  /** Pieces the PLAYER has placed from the tray (fixtures excluded). */
   playerCount(): number;
   kind(): PieceKind | null;
   ghost(): GhostState;
+  /** The socket the target marker (and ghost) currently sit on, or null. */
+  targetSocket(): Socket | null;
 }
 
 interface Target {
@@ -114,8 +154,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   const solids = options.solids ?? [];
   const traySpec = options.tray;
   const trayParams = options.trayParams;
-  /** The parameters a held kind is GHOSTED AND SEATED with: the tray's
-   *  tuned set when the level ships one, kit defaults otherwise. */
+  /** The parameters a held kind is GHOSTED AND PLACED with. */
   const heldParams = (k: PieceKind): PieceParams => trayParams?.[k] ?? PIECES[k].params;
   /** Kinds the tray allows at all; null = no tray, everything unlocked. */
   const trayKinds: Set<PieceKind> | null = traySpec
@@ -125,8 +164,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   const allowance = (k: PieceKind): number | null =>
     trayKinds && trayKinds.has(k) ? (traySpec![k] ?? 0) : null;
   const placedOf = (k: PieceKind): number => pieces.filter((p) => p.def === k).length;
-  /** Placements that count against the budget: tray pieces only (a level
-   *  with no tray counts everything, the pre-kitchen behaviour). */
+  /** Placements that count against the budget: tray pieces only. */
   const trayPlaced = (): number =>
     trayKinds ? pieces.filter((p) => trayKinds.has(p.def)).length : pieces.length;
   const locked = (k: PieceKind): boolean => trayKinds !== null && !trayKinds.has(k);
@@ -160,13 +198,12 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   root.appendChild(tray);
   const trayButtons = new Map<PieceKind, HTMLButtonElement>();
   for (const k of PIECE_KINDS) {
-    const b = button(`gw-tray-${k}`, traySpec && traySpec[k] ? `${k} ×${traySpec[k]}` : k, tray);
+    const b = button(`gw-tray-${k}`, k, tray);
     b.dataset.kind = k;
     b.setAttribute('aria-label', `Hold the ${k} piece`);
     b.setAttribute('aria-pressed', 'false');
     b.addEventListener('click', () => {
-      // a click on a locked or spent button must EXPLAIN itself (playtest C:
-      // "clicking greyed booster left an unclear status")
+      // a click on a locked or spent button must EXPLAIN itself
       if (locked(k)) ghostState.textContent = `the ${k} is not in this level’s tray`;
       else if (!selectable(k)) ghostState.textContent = `no ${k} left in the tray`;
       else setKind(k);
@@ -186,21 +223,21 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   const resetBtn = button('gw-reset', 'Reset', controls);
   resetBtn.setAttribute('aria-label', 'Return the car to the start (the build stays as built)');
   const launch = button('gw-launch', 'Launch', controls);
-  // the teaching line (near the tray, §9.3): while a piece is held and the
-  // player has not placed anything yet, the HOW lives here — not buried in
-  // Help below the fold (playtest A held a piece and never found Place)
+  // the teaching line (near the tray, §9.3). The copy describes what the
+  // inputs ACTUALLY do (playtest E: "Place: Enter — Enter did nothing"):
+  // hover aims, click/Enter place, the arrows drive the same visible marker.
   const hint = document.createElement('p');
   hint.id = 'gw-tray-hint';
   hint.setAttribute('aria-live', 'polite');
-  hint.textContent = 'Move: drag or arrows · Place: Enter · Rotate: R';
+  hint.textContent = 'Aim: hover the world or ←→ · Place: click the world or Enter · Flip: R';
   hint.hidden = true;
   root.appendChild(hint);
-  // the VISIBLE reason behind every greyed/spent tray button (playtest C:
-  // "state and appearance disagreed") — aria-describedby points the
-  // disabled buttons at this on-screen line, not just a hover title
+  // the VISIBLE reason behind every greyed/spent tray button — one counter,
+  // the tray legend itself; ×N counts what is LEFT and decrements as pieces
+  // are placed (playtest G: "×2 stayed ×2")
   const trayReason = document.createElement('p');
   trayReason.id = 'gw-tray-reason';
-  trayReason.textContent = 'Greyed pieces are not in this level · the ×N pieces are yours · ×0 means all placed';
+  trayReason.textContent = 'Greyed pieces are not in this level · ×N counts the pieces left to place';
   root.appendChild(trayReason);
   const count = document.createElement('p');
   count.id = 'gw-piece-count';
@@ -217,7 +254,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
 
   host.appendChild(root);
 
-  // ---- ghost -------------------------------------------------------------
+  // ---- ghost + target marker ----------------------------------------------
   const ghostGroup = new THREE.Group();
   ghostGroup.name = 'builder-ghost';
   ghostGroup.matrixAutoUpdate = false;
@@ -231,6 +268,18 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   let ghostKind: PieceKind | null = null;
   let scene: THREE.Scene | null = null;
 
+  // The VISIBLE target: a quiet ring at the socket the held piece WILL
+  // occupy. Shown whenever a target exists, held piece or not — the arrows
+  // and the mouse drive this exact ring (playtest E/F: "arrows cycle an
+  // unmarked target").
+  const marker = new THREE.Mesh(
+    new THREE.TorusGeometry(0.055, 0.006, 8, 32),
+    new THREE.MeshBasicMaterial({ color: 0xfdf2e0, transparent: true, opacity: 0.95, depthWrite: false }),
+  );
+  marker.name = 'builder-target';
+  marker.matrixAutoUpdate = false;
+  marker.visible = false;
+
   function rebuildGhostGeometry(): void {
     if (ghostKind === kind) return;
     for (const child of [...ghostGroup.children]) {
@@ -243,6 +292,52 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       }
     }
     ghostKind = kind;
+  }
+
+  // ---- the flip animation (≤ ROTATE_MS so R is always SEEN) ---------------
+  let anim: { from: THREE.Matrix4; to: THREE.Matrix4; start: number } | null = null;
+  let animTick = 0;
+  const tmpP = new THREE.Vector3();
+  const tmpQ = new THREE.Quaternion();
+  const tmpS = new THREE.Vector3();
+  const fromP = new THREE.Vector3();
+  const fromQ = new THREE.Quaternion();
+  const fromS = new THREE.Vector3();
+  const toP = new THREE.Vector3();
+  const toQ = new THREE.Quaternion();
+  const toS = new THREE.Vector3();
+
+  function animateGhostTo(to: THREE.Matrix4, animate: boolean): void {
+    // no animation possible (ghost not on screen yet) or not asked for:
+    // snap, and cancel any in-flight flip so nothing overwrites the matrix
+    if (!animate || !ghostGroup.visible) {
+      anim = null;
+      ghostGroup.matrix.copy(to);
+      return;
+    }
+    anim = { from: ghostGroup.matrix.clone(), to: to.clone(), start: performance.now() };
+    if (animTick) return; // the running loop picks the new pair up
+    const step = (): void => {
+      if (!anim) {
+        animTick = 0;
+        return;
+      }
+      const k = Math.min(1, (performance.now() - anim.start) / ROTATE_MS);
+      const e = k * (2 - k); // ease-out
+      anim.from.decompose(fromP, fromQ, fromS);
+      anim.to.decompose(toP, toQ, toS);
+      tmpP.lerpVectors(fromP, toP, e);
+      tmpQ.slerpQuaternions(fromQ, toQ, e);
+      tmpS.lerpVectors(fromS, toS, e);
+      ghostGroup.matrix.compose(tmpP, tmpQ, tmpS);
+      if (k >= 1) {
+        anim = null;
+        animTick = 0;
+        return;
+      }
+      animTick = requestAnimationFrame(step);
+    };
+    animTick = requestAnimationFrame(step);
   }
 
   // ---- socket graph ------------------------------------------------------
@@ -283,8 +378,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     return flip.multiply(seat);
   }
 
-  /** True when a placed piece's world AABB overlaps one of the set's solids.
-   *  The ghost geometry is the piece geometry, so ghost and placement agree. */
+  /** True when a placed piece's world AABB overlaps one of the set's solids. */
   function overlapsSolid(transform: THREE.Matrix4, held: PieceKind): boolean {
     if (solids.length === 0) return false;
     const box = new THREE.Box3();
@@ -293,13 +387,11 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       if (geo.boundingBox) box.union(geo.boundingBox.clone().applyMatrix4(transform));
     }
     if (box.isEmpty()) return false;
-    // a hair of tolerance: a piece SEATED on a socket brushes neighbouring
-    // geometry; only a real overlap (beyond 2 mm) is a collision
     box.expandByScalar(-0.002);
     return solids.some((s) => s.intersectsBox(box));
   }
 
-  function updateGhost(): void {
+  function updateGhost(animate = false): void {
     rebuildGhostGeometry();
     const list = targets();
     if (targetIndex >= list.length) targetIndex = Math.max(0, list.length - 1);
@@ -308,36 +400,51 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
         ? `target: ${list[targetIndex]!.label}`
         : 'target: none'
       : '';
-    if (!kind || list.length === 0 || !scene) {
+    if (list.length === 0 || !scene) {
       state = 'hidden';
+      anim = null;
       ghostGroup.visible = false;
+      marker.visible = false;
+      if (list.length === 0) targetIndex = 0;
     } else {
       const target = list[targetIndex]!.socket;
-      const m = placement(target, kind);
-      ghostGroup.matrix.copy(m);
-      ghostGroup.visible = true;
-      const seated = transformSocket(PIECES[kind].sockets(heldParams(kind))[0], m);
-      if (overlapsSolid(m, kind)) {
-        // the set's solids outrank the socket graph: red ghost, no seat
-        state = 'blocked';
+      // the ring marks the target socket, held piece or not
+      marker.matrix
+        .copy(socketMatrix(target))
+        .setPosition(
+          target.pos.x + target.tangent.x * 0.02,
+          target.pos.y + target.tangent.y * 0.02,
+          target.pos.z + target.tangent.z * 0.02,
+        );
+      marker.visible = true;
+      if (!kind) {
+        state = 'hidden';
+        ghostGroup.visible = false;
       } else {
-        state = snapSocket(target, seated) !== null ? 'snapped' : flipped ? 'seated' : 'invalid';
+        const m = placement(target, kind);
+        animateGhostTo(m, animate);
+        ghostGroup.visible = true;
+        const seated = transformSocket(PIECES[kind].sockets(heldParams(kind))[0], m);
+        if (overlapsSolid(m, kind)) {
+          state = 'blocked';
+        } else {
+          state = snapSocket(target, seated) !== null ? 'snapped' : flipped ? 'seated' : 'invalid';
+        }
+        ghostMaterial.color.set(
+          state === 'snapped' ? 0x2fbf71 : state === 'seated' ? 0xffb627 : 0xd7263d,
+        );
       }
-      ghostMaterial.color.set(state === 'snapped' ? 0x2fbf71 : state === 'seated' ? 0xffb627 : 0xd7263d);
     }
-    // the literal word "hidden" must never reach the screen (a11y pass):
-    // the state line reads EMPTY when nothing is held/on
-    ghostState.textContent = state === 'hidden' ? '' : state;
-    count.textContent = `${trayPlaced()} / ${level.budget} pieces`;
+    // the VERB TABLE's copy — never the internal state word
+    ghostState.textContent = GHOST_LABEL[state];
+    count.textContent = `${trayPlaced()} of ${level.budget} pieces used`;
     hint.hidden = everPlaced || kind === null;
     for (const [k, b] of trayButtons) {
       const cap = allowance(k);
       const left = cap === null ? null : Math.max(0, cap - placedOf(k));
+      // the tray LEGEND decrements: ×N counts what is LEFT to place
+      b.textContent = cap === null ? k : `${k} ×${left}`;
       b.setAttribute('aria-pressed', String(k === kind));
-      // aria-disabled (not `disabled`) keeps the button focusable so the
-      // reason stays reachable; the reason is an ON-SCREEN line
-      // (#gw-tray-reason) via aria-describedby — a hover title alone read
-      // as "dead button with no story" (playtest C)
       const spent = locked(k) || left === 0;
       b.setAttribute('aria-disabled', String(spent));
       if (spent) b.setAttribute('aria-describedby', 'gw-tray-reason');
@@ -373,8 +480,6 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   }
 
   function cycleKind(delta: number): void {
-    // walk the kit in `delta` steps, skipping tray-locked and exhausted
-    // kinds (a tray level's ArrowUp never lands on an unreachable button)
     const wrap = (a: number): number => ((a % PIECE_KINDS.length) + PIECE_KINDS.length) % PIECE_KINDS.length;
     const start = kind ? PIECE_KINDS.indexOf(kind) : delta > 0 ? -1 : PIECE_KINDS.length;
     for (let i = 1; i <= PIECE_KINDS.length; i++) {
@@ -395,14 +500,20 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
 
   function rotate(): void {
     flipped = !flipped;
-    updateGhost();
+    // `animate` — the flip is the one change the eye must not be able to
+    // miss (playtest G: "Rotate (R): clicked it; ghost never visibly changed")
+    updateGhost(true);
   }
 
   function place(): boolean {
     const list = targets();
     if (!kind || list.length === 0) return false;
     if (trayPlaced() >= level.budget) {
-      ghostState.textContent = 'out of budget';
+      // on a TRAY level the legend already tells this story per kind; the
+      // line only appears where the tray cannot say it (sandbox budgets)
+      ghostState.textContent = trayKinds
+        ? 'every piece in the tray is placed — the ×0 buttons are the count'
+        : 'out of budget';
       return false;
     }
     const cap = allowance(kind);
@@ -413,8 +524,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     const target = list[targetIndex]!.socket;
     const transform = placement(target, kind);
     if (overlapsSolid(transform, kind)) {
-      // the ghost is already red; say why, and refuse the seat
-      ghostState.textContent = 'blocked';
+      ghostState.textContent = GHOST_LABEL.blocked;
       return false;
     }
     pieces = [
@@ -422,16 +532,10 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       { def: kind, params: { ...heldParams(kind) }, transform, seq: pieces.length },
     ];
     everPlaced = true;
-    // THE TARGET FOLLOWS THE LINE. The free-exit list is built in piece-array
-    // order and `initialBuild` mounts a level's FIXTURES first, so on a
-    // fixture-anchored level the exit the player just created is NOT at the
-    // index the eye is used to: on kitchen01, after the `gapLip` takes the
-    // ramp's exit, index 1 of [level start, end of finishCup, end of gapLip]
-    // is the CUP's exit, and the next `Place` seats the `drop` on the cup —
-    // the tutorial's own three-piece fit fell (`fell`, hash 0951a819) exactly
-    // this way in the shipped builder while every data-level test stayed
-    // green. Staying on the index is what the arrow keys are FOR; the default
-    // now tracks the piece just placed, and the arrows still go everywhere.
+    // THE TARGET FOLLOWS THE LINE: the default target moves to the exit the
+    // placed piece just created (the arrows still walk everywhere) — on a
+    // fixture-anchored level the array-order index the eye was on is the
+    // FIXTURE's exit one keystroke later (the kitchen01 `0951a819` fall).
     const placedExit = transformSocket(PIECES[kind].sockets(heldParams(kind))[1], transform);
     const after = targets();
     const next = after.findIndex((t) => t.socket.pos.distanceTo(placedExit.pos) < JOIN_TOL);
@@ -443,21 +547,40 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
 
   function removeLast(): boolean {
     if (pieces.length === 0) return false;
-    // tray gating: the level's BUILT-IN fixtures are not the player's
-    // pieces — Remove deletes the last TRAY placement, never a fixture
     let i = pieces.length - 1;
     if (trayKinds) {
       while (i >= 0 && !trayKinds.has(pieces[i]!.def)) i -= 1;
       if (i < 0) return false;
     }
     pieces = pieces.filter((_, j) => j !== i).map((p, j) => ({ ...p, seq: j }));
-    // removing back to an empty board re-lights the teaching line (§9.3: it
-    // persists until a FIRST successful place — the lesson is not learned
-    // if the player removed everything they ever placed)
     everPlaced = trayPlaced() > 0;
     updateGhost();
     emit();
     return true;
+  }
+
+  // ---- canvas aiming (hover aims, click places) ----------------------------
+  let canvasEl: HTMLElement | null = null;
+  let camera: THREE.Camera | null = null;
+
+  /** Nearest open socket to a pointer position (CSS px in the canvas box),
+   *  or -1 when every socket is farther than HOVER_PX. */
+  function socketAtPoint(clientX: number, clientY: number): number {
+    if (!camera || !canvasEl) return -1;
+    const rect = canvasEl.getBoundingClientRect();
+    const v = new THREE.Vector3();
+    let best = -1;
+    let bestD = HOVER_PX;
+    targets().forEach((t, i) => {
+      v.copy(t.socket.pos).project(camera!);
+      if (v.z > 1) return; // behind the camera
+      const d = Math.hypot((v.x * 0.5 + 0.5) * rect.width - (clientX - rect.left), (0.5 - v.y * 0.5) * rect.height - (clientY - rect.top));
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    });
+    return best;
   }
 
   // ---- wiring ------------------------------------------------------------
@@ -465,23 +588,35 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   placeBtn.addEventListener('click', () => place());
   rotateBtn.addEventListener('click', () => rotate());
   remove.addEventListener('click', () => removeLast());
-  root.addEventListener('keydown', (ev) => {
+
+  // KEYBOARD PARITY on `window`: the arrows/Enter/R/Delete drive the SAME
+  // visible marker from anywhere on the page (stage-6's requirement,
+  // arriving early). A focused <button> keeps its native Enter/space
+  // activation; arrows are ours everywhere (they move the marker, so the
+  // page must not scroll under them).
+  window.addEventListener('keydown', (ev) => {
+    const t = ev.target as HTMLElement | null;
+    const onButton = t !== null && (t.tagName === 'BUTTON' || t.tagName === 'A');
     const keys: Record<string, () => void> = {
       ArrowRight: () => cycleTarget(1),
       ArrowLeft: () => cycleTarget(-1),
       ArrowUp: () => cycleKind(1),
       ArrowDown: () => cycleKind(-1),
-      r: () => rotate(),
-      R: () => rotate(),
-      Enter: () => place(),
+      r: rotate,
+      R: rotate,
+      Enter: () => {
+        if (!onButton) place(); // a focused button's Enter is its own click
+      },
       Delete: () => removeLast(),
       Backspace: () => removeLast(),
     };
     const fn = keys[ev.key];
-    if (fn) {
-      ev.preventDefault();
-      fn();
-    }
+    if (!fn) return;
+    // a focused <button> keeps its native Enter activation — preventing the
+    // default there would CANCEL the click, not just the page action
+    if (onButton && ev.key === 'Enter') return;
+    ev.preventDefault();
+    fn();
   });
 
   updateGhost();
@@ -491,11 +626,32 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     build: () => ({ levelId: level.id, pieces: canonicalBuild(pieces.map((p, i) => ({ ...p, seq: i }))), seed: level.seed }),
     setScene(next) {
       scene = next;
-      if (next) next.add(ghostGroup);
+      if (next) {
+        next.add(ghostGroup);
+        next.add(marker);
+      }
       updateGhost();
     },
-    attachCanvas(canvas) {
-      canvas.addEventListener('click', () => {
+    attachCanvas(canvas, cam) {
+      canvasEl = canvas;
+      camera = cam ?? null;
+      // hover AIMS: the ghost moves to the socket a click would use, so the
+      // player sees the decision before making it (playtest E/F: "canvas
+      // clicks auto-target silently")
+      canvas.addEventListener('pointermove', (ev) => {
+        const hit = socketAtPoint(ev.clientX, ev.clientY);
+        if (hit >= 0 && hit !== targetIndex) {
+          targetIndex = hit;
+          updateGhost();
+        }
+      });
+      // click PLACES at the hovered socket (drag stays optional)
+      canvas.addEventListener('click', (ev) => {
+        const hit = socketAtPoint(ev.clientX, ev.clientY);
+        if (hit >= 0 && hit !== targetIndex) {
+          targetIndex = hit;
+          updateGhost();
+        }
         if (kind) place();
       });
     },
@@ -508,5 +664,9 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     playerCount: () => trayPlaced(),
     kind: () => kind,
     ghost: () => state,
+    targetSocket: () => {
+      const list = targets();
+      return list.length > 0 ? list[Math.min(targetIndex, list.length - 1)]!.socket : null;
+    },
   };
 }

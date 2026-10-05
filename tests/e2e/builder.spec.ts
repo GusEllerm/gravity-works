@@ -25,7 +25,7 @@ test('builder: ghost appears on hover, place and remove move the piece counter',
   await expect(page.getByRole('heading', { name: 'Gravity Works' })).toBeVisible()
   await expect(page.getByRole('toolbar', { name: 'Piece tray' })).toBeVisible()
   await expect(page.locator('#gw-tray button')).toHaveCount(13)
-  await expect(page.locator('#gw-piece-count')).toHaveText(`${laid} / ${budget} pieces`)
+  await expect(page.locator('#gw-piece-count')).toHaveText(`${laid} of ${budget} pieces used`)
   // the ghost-state line reads EMPTY when nothing is held — the literal
   // word "hidden" never reaches the screen
   await expect(page.locator('#gw-ghost-state')).toHaveText('')
@@ -37,17 +37,18 @@ test('builder: ghost appears on hover, place and remove move the piece counter',
   // click to hold, Enter-equivalent button to place -> counter increments
   await page.click('#gw-tray button[data-kind="straight"]')
   await page.click('#gw-place')
-  await expect(page.locator('#gw-piece-count')).toHaveText(`${laid + 1} / ${budget} pieces`)
+  await expect(page.locator('#gw-piece-count')).toHaveText(`${laid + 1} of ${budget} pieces used`)
 
-  // the R button rotates the held piece into a reverse seat and back
+  // the R button flips the fit into a reverse seat and back — the VERB
+// TABLE's copy ("seated"/"snapped" never reach the screen; playtest E)
   await page.click('#gw-rotate')
-  await expect(page.locator('#gw-ghost-state')).toHaveText('seated')
+  await expect(page.locator('#gw-ghost-state')).toHaveText('flipped fit')
   await page.click('#gw-rotate')
-  await expect(page.locator('#gw-ghost-state')).toHaveText('snapped')
+  await expect(page.locator('#gw-ghost-state')).toHaveText('fits here')
 
   // remove puts it back
   await page.click('#gw-remove-piece')
-  await expect(page.locator('#gw-piece-count')).toHaveText(`${laid} / ${budget} pieces`)
+  await expect(page.locator('#gw-piece-count')).toHaveText(`${laid} of ${budget} pieces used`)
 
   expect(errors).toEqual([])
 })

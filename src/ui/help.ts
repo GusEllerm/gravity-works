@@ -118,9 +118,14 @@ export function createHelpDrawer(host: HTMLElement, options: HelpOptions = {}): 
   const reduced = options.reducedMotion ?? reducedMotionDefault();
 
   // ---- DOM ------------------------------------------------------------------
+  // The drawer OVERLAYS the stage: a quiet top-right toggle (focusable real
+  // button) and the list as a floating panel, never inline content pushing
+  // the page down (playtest A+F: “Help = collapsed word-button at page
+  // bottom”). pointer-events:none on the frame so world clicks still land.
   const wrap = document.createElement('div');
   wrap.id = 'gw-help';
-  wrap.style.cssText = 'position:relative;font:14px/1.45 system-ui,sans-serif;margin-top:8px';
+  wrap.style.cssText =
+    'position:absolute;inset:0;pointer-events:none;font:14px/1.45 system-ui,sans-serif';
 
   const toggle = document.createElement('button');
   toggle.id = 'gw-help-toggle';
@@ -128,6 +133,8 @@ export function createHelpDrawer(host: HTMLElement, options: HelpOptions = {}): 
   toggle.textContent = 'Help';
   toggle.setAttribute('aria-expanded', 'false');
   toggle.setAttribute('aria-controls', 'gw-help-list');
+  toggle.style.cssText =
+    'position:absolute;top:8px;right:10px;z-index:3;pointer-events:auto;font:12px system-ui,sans-serif;padding:2px 8px;border-radius:4px;border:1px solid rgba(185,163,124,0.7);background:rgba(255,248,236,0.78);color:#6a5636;cursor:pointer';
   wrap.appendChild(toggle);
 
   const list = document.createElement('ul');
@@ -138,7 +145,7 @@ export function createHelpDrawer(host: HTMLElement, options: HelpOptions = {}): 
   // the drawer rendered always-expanded. Visibility is now driven by BOTH
   // channels together (hidden for a11y, display for layout) in open/close.
   list.style.cssText =
-    'position:relative;list-style:none;margin:8px 0;padding:0;display:none;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px';
+    'position:absolute;top:36px;right:10px;left:10px;z-index:2;pointer-events:auto;max-height:calc(100% - 46px);overflow:auto;list-style:none;margin:0;padding:8px;display:none;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;background:rgba(255,248,236,0.97);border:1px solid #d8c49a;border-radius:6px';
   const cells: Cell[] = [];
   for (const entry of entries) {
     const li = document.createElement('li');
