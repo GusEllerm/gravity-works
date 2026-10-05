@@ -94,11 +94,45 @@ export const KITCHEN_GEOM = {
 
 /** The kitchen gap, as authored for the tutorial and reused by name in later
  *  rungs — the same lip/catch/roll-out combo the feel track measures, at the
- *  size a first level can forgive. */
+ *  size a first level can forgive.
+ *
+ *  STAGE-3 RE-AUTHOR (L01 promise fix — the old numbers were a 1-pixel win).
+ *  The playtest finding was that the exact three-piece tray fit did NOT close
+ *  the gap with the shipped launch, and the replay data says why: the piece
+ *  geometry assumes the car follows the drop's catch ARC, but after the lip
+ *  the car is ballistic — a parabola. Launched at ~1.3 m/s and +10 deg off
+ *  the 0.22 m book stack, it crosses the deck plane ~0.24 m from the lip and
+ *  ~30 deg nose-down; the old `drop` (height 0.15, angle 40, lead 0.01) put
+ *  the landing deck's ENTRY plane ~15 mm BELOW that parabola by the time the
+ *  chain reached it, so the car arrived under the deck and fell (the deck was
+ *  placed where the arc says the car is, not where the parabola says it is),
+ *  or slammed the flat deck at -34 deg and survived only by luck — the pass
+ *  set was fragmented (drop.lead 0.01 finished, 0.02 fell; lip.length 0.04
+ *  finished, 0.06 fell).
+ *
+ *  The three numbers below are measured to make the PARABOLA meet the DECK:
+ *  - `drop` height 0.12 / angle 45 / lead 0.05: the shallower step (0.12) puts
+ *    the deck plane into the parabola's sink, not under it; the steeper 45 deg
+ *    keeps the EMPTY span short (0.136 m — the ballistic crossing lands ON the
+ *    exit lead deck with ~40 mm of solid deck behind it) while the two 0.05
+ *    leads make the WHOLE drop span (0.24 m) longer than a flat roll-off can
+ *    fly (reach ~0.19 m), so a build MISSING the drop cannot skip the hole on
+ *    a bounce into the cup — the tray fit is enforced by geometry.
+ *  - `landing` level 0.24 (was 0.18): a 0.36 m soft catch — touchdown lands
+ *    ~0.25 m inside a deck that still has ~0.10 m of run-out to the cup-side
+ *    blend; ±10 % of release speed moves touchdown by millimetres, not off.
+ *  - `lip` unchanged: the 10 deg launch is the lesson; the fix was under the
+ *    car, not at it.
+ *  Measured margin at the shipped default launch (speed 0, ramp 0.22 m):
+ *  finish 2.23 s; 8-seed sweep bit-stable in time (0 % spread; the seed is
+ *  folded into the hash only); launch jitter 0-0.1 m/s finishes; every
+ *  one- and two-piece omission against the cup anchored at its par transform
+ *  fails (`tests/unit/kitchen-levels.test.ts`). See Concepts/Levels §L01 card
+ *  and the session log `2026-10-05 Stage 3 - L01 promise fix`. */
 export const KITCHEN_GAP = {
   lip: { length: 0.02, angle: 10, blend: 0.05 },
-  drop: { height: 0.15, angle: 40, radius: 0.02, lead: 0.01 },
-  landing: { level: 0.18, angle: 12, blend: 0.06 },
+  drop: { height: 0.12, angle: 45, radius: 0.02, lead: 0.05 },
+  landing: { level: 0.24, angle: 12, blend: 0.06 },
 } as const;
 
 /** A wet patch — the kitchen hazard as DATA. `World` does not yet read zones
@@ -193,7 +227,7 @@ export const KITCHEN01: KitchenLevel = registerKitchen(
     set: 'kitchen',
     seed: 1,
     startSocket: startSocketFromBuild(parBuild(), KITCHEN_GEOM.release * KITCHEN_GEOM.rampBlend),
-    par: { time: 2.21 }, // measured on the par build (regenerate via pars)
+    par: { time: 2.23 }, // measured on the par build (regenerate via pars)
     maxTime: 12,
     tray: { gapLip: 1, drop: 1, landing: 1 },
     fixtures: { ramp: 1, finishCup: 1 },

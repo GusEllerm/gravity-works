@@ -18,6 +18,7 @@
  */
 import { describe, expect, test } from 'vitest';
 import { KITCHEN01, KITCHEN_GEOM, trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
+import type { Build } from '../../src/track/build.ts';
 import { KITCHEN02, kitchen02ArcBuild } from '../../src/world/levels/kitchen02.level.ts';
 import { KITCHEN03 } from '../../src/world/levels/kitchen03.level.ts';
 import { KITCHEN04, kitchen04GroundBuild } from '../../src/world/levels/kitchen04.level.ts';
@@ -113,4 +114,60 @@ describe('kitchen ladder — the choices and the trade-off are real', () => {
     expect(noBooster.status).not.toBe('finished');
     expect(lateBooster.status).not.toBe('finished');
   }, 30_000);
+});
+
+/**
+ * THE L01 PROMISE (stage 3, "L01 promise fix"). The playtest finding: the
+ * three tray pieces did NOT close the gap with the shipped default launch
+ * (A), and finishing needed a straight the budget never intended (C). The
+ * gap geometry was re-authored so the exact three-piece fit (gapLip -> drop
+ * -> landing, as the tray teaches) finishes — with MARGIN, not luck:
+ * bit-stable across a seed sweep, and finishing across the whole release-
+ * speed range (the old geometry fell from a 0.2-sim-unit nudge; the new one
+ * survives up to the kit's full launch speed). And ONLY the three-piece fit
+ * finishes: a build missing any tray piece is replayed the way the shipped
+ * builder mounts one (`initialBuild` in boot.ts: fixtures sit ANCHORED at
+ * their par transforms, the player's pieces chain off the start), so a
+ * missing piece leaves its hole as real geometry and the car falls in.
+ */
+function l01BuildMissing(def: string): Build {
+  const par = KITCHEN01.parBuild();
+  const cup = par.pieces.find((p) => p.def === 'finishCup')!;
+  const placed = par.pieces.filter((p) => p.def !== 'finishCup' && p.def !== def && (def !== 'all' || p.def === 'ramp'));
+  return { levelId: KITCHEN01.id, seed: par.seed, pieces: [...placed, cup] };
+}
+
+describe('L01 promise — the three-piece tray fit finishes with margin, and ONLY it', () => {
+  test('the exact three-piece fit finishes with the shipped default launch', async () => {
+    const run = await replayRun(KITCHEN01, KITCHEN01.parBuild());
+    expect(run.status).toBe('finished');
+    expect(run.time).toBeLessThan(3); // measured 2.23 s; a full second of headroom
+  }, 30_000);
+
+  test('no build missing a tray piece finishes (cup anchored as in the shipped builder)', async () => {
+    for (const def of ['gapLip', 'drop', 'landing']) {
+      const run = await replayRun(KITCHEN01, l01BuildMissing(def));
+      expect(run.status, `missing ${def}`).not.toBe('finished');
+    }
+    const bare = await replayRun(KITCHEN01, l01BuildMissing('all'));
+    expect(bare.status).not.toBe('finished');
+  }, 60_000);
+
+  test('the finish is seed-stable (bit-identical times, 8-seed sweep)', async () => {
+    const times = new Set<number>();
+    for (let seed = 1; seed <= 8; seed++) {
+      const build = KITCHEN01.parBuild();
+      const run = await replayRun({ ...KITCHEN01, seed }, { ...build, seed });
+      expect(run.status).toBe('finished');
+      times.add(Number(run.time.toFixed(6)));
+    }
+    expect(times.size).toBe(1); // 0 % spread across the sweep
+  }, 90_000);
+
+  test('the finish survives the whole release-speed range (default 0 .. kit launch 3)', async () => {
+    for (const launchSpeed of [0, 0.2, 1, 3]) {
+      const run = await replayRun(KITCHEN01, KITCHEN01.parBuild(), { launchSpeed });
+      expect(run.status, `launchSpeed ${launchSpeed}`).toBe('finished');
+    }
+  }, 60_000);
 });

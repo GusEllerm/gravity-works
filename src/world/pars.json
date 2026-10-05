@@ -3,5 +3,35 @@
     "levelId": "feeltrack",
     "parPieces": 9,
     "parTime": 3.05
+  },
+  {
+    "levelId": "kitchen-sandbox",
+    "parPieces": 7,
+    "parTime": 2.65
+  },
+  {
+    "levelId": "kitchen01",
+    "parPieces": 5,
+    "parTime": 2.25
+  },
+  {
+    "levelId": "kitchen02",
+    "parPieces": 6,
+    "parTime": 2.35
+  },
+  {
+    "levelId": "kitchen03",
+    "parPieces": 9,
+    "parTime": 2.6
+  },
+  {
+    "levelId": "kitchen04",
+    "parPieces": 6,
+    "parTime": 2.6
+  },
+  {
+    "levelId": "kitchen05",
+    "parPieces": 8,
+    "parTime": 2.4
   }
 ]

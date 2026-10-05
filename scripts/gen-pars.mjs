@@ -38,6 +38,11 @@ const OUT = new URL('../src/world/pars.json', import.meta.url);
 // adding its import here (same one-liner convention as the share registry
 // tests) — nothing else in this script enumerates levels by hand.
 await import('../src/world/levels/feeltrack.level.ts');
+await import('../src/world/levels/kitchen01.level.ts');
+await import('../src/world/levels/kitchen02.level.ts');
+await import('../src/world/levels/kitchen03.level.ts');
+await import('../src/world/levels/kitchen04.level.ts');
+await import('../src/world/levels/kitchen05.level.ts');
 const { LEVELS } = await import('../src/world/levels/feeltrack.level.ts');
 const { replayRun } = await import('../src/replay/replay.ts');
 

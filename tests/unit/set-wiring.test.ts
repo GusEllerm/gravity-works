@@ -44,14 +44,21 @@ const LADDER: readonly KitchenLevel[] = [KITCHEN01, KITCHEN02, KITCHEN03, KITCHE
 /** The hashes the ladder carried INTO this seam (measured on the pre-wiring
  *  tree, `stage 3: systems engineer - level↔set wiring`). If the wiring — the
  *  set mount, the L03 socket seating, the guard — ever starts perturbing a
- *  run, one of these pins breaks. */
+ *  run, one of these pins breaks.
+ *
+ *  RE-MEASURED at the L01 promise fix (stage 3): the shared `KITCHEN_GAP`
+ *  geometry was re-authored, so the par replays of every rung that chains the
+ *  shared gap (L01-L04, sandbox) legitimately moved. `kitchen05` is the
+ *  control: it pins the original gap numbers in its own file and its hash is
+ *  byte-for-byte the pre-wiring one. See the session log
+ *  `2026-10-05 Stage 3 - L01 promise fix`. */
 const PINNED: Record<string, string> = {
-  kitchen01: 'b4d7c637',
-  kitchen02: '2178a5ec',
-  kitchen03: '2bf45e43',
-  kitchen04: '7adc07a8',
+  kitchen01: 'd32417dc',
+  kitchen02: '07986be5',
+  kitchen03: 'ee52ff13',
+  kitchen04: 'c6a63a80',
   kitchen05: '1d8d1713',
-  'kitchen-sandbox': '2bf45e43',
+  'kitchen-sandbox': 'ee52ff13',
 };
 
 describe('physics neutrality of the set wiring', () => {

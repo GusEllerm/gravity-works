@@ -93,7 +93,7 @@ export const KITCHEN04: KitchenLevel = registerKitchen(
     set: 'kitchen',
     seed: 1,
     startSocket: startSocketFromBuild(parBuild(), KITCHEN_GEOM.release * KITCHEN_GEOM.rampBlend),
-    par: { pieces: 4, time: 2.45 }, // the par line places 4 of the 5 tray pieces
+    par: { pieces: 4, time: 2.57 }, // the par line places 4 of the 5 tray pieces (measured — regenerate via pars)
     maxTime: 12,
     tray: { gapLip: 1, drop: 1, landing: 1, straight: 2 },
     fixtures: { ramp: 1, finishCup: 1 },

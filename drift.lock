@@ -8,7 +8,7 @@ sig = "e4e17cd7588ac713"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "scripts/gen-pars.mjs"
-sig = "c1d2af0be000e3d8"
+sig = "30c6afd3dd092659"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -28,22 +28,32 @@ sig = "d9b324167989351e"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/world/levels/kitchen01.level.ts"
-sig = "6c77c38f078c5bf0"
+sig = "3d980cdf812c5b1a"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/world/levels/kitchen05.level.ts"
-sig = "dde4698d91a1234c"
+sig = "a1ff75d21a38b8f8"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/world/pars.json"
-sig = "c8117bf73c6d5eb3"
+sig = "b1e43bf8a947321c"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Levels.md"
+target = "src/world/setPlacement.ts"
+sig = "10324a02a60082a2"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "tests/unit/kitchen-levels.test.ts"
-sig = "bd7f07f5e846d4a4"
+sig = "8a832199cbdc369c"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Levels.md"
+target = "tests/unit/set-wiring.test.ts"
+sig = "aef5ca80b40db6c6"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -253,12 +263,7 @@ sig = "8d54044f7dd6bb29"
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/world/setPlacement.ts"
-sig = "d4aca7e13048f5fa"
-
-[[bindings]]
-doc = "docs/vault/Modules/sets-kitchen.md"
-target = "src/world/setPlacement.ts"
-sig = "d4aca7e13048f5fa"
+sig = "10324a02a60082a2"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
@@ -308,7 +313,7 @@ sig = "e250852968e397aa"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/world/setPlacement.ts"
-sig = "d4aca7e13048f5fa"
+sig = "10324a02a60082a2"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -398,7 +403,7 @@ sig = "2dc0fc06f1637093"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "scripts/gen-pars.mjs"
-sig = "c1d2af0be000e3d8"
+sig = "30c6afd3dd092659"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -443,12 +448,12 @@ sig = "fb06ede3e0b45cba"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/pars.json"
-sig = "c8117bf73c6d5eb3"
+sig = "b1e43bf8a947321c"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/setPlacement.ts"
-sig = "d4aca7e13048f5fa"
+sig = "10324a02a60082a2"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -468,7 +473,7 @@ sig = "76aa13d75bc81d94"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/juice.test.ts"
-sig = "77db69ce72487675"
+sig = "08664b4769cae6c1"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -478,7 +483,7 @@ sig = "c55f143b9eaa05bc"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/set-wiring.test.ts"
-sig = "234de9f2bbb676ae"
+sig = "aef5ca80b40db6c6"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -489,3 +494,28 @@ sig = "b50f641ba3dc6dc1"
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/world.test.ts"
 sig = "8917cdf1c38db74e"
+
+[[bindings]]
+doc = "docs/vault/Reference/Level Ladder.md"
+target = "scripts/gen-pars.mjs"
+sig = "30c6afd3dd092659"
+
+[[bindings]]
+doc = "docs/vault/Reference/Level Ladder.md"
+target = "src/boot.ts"
+sig = "e493f6b8eb9ad605"
+
+[[bindings]]
+doc = "docs/vault/Reference/Level Ladder.md"
+target = "src/replay/replay.ts"
+sig = "358c8994ef168677"
+
+[[bindings]]
+doc = "docs/vault/Reference/Level Ladder.md"
+target = "src/world/pars.json"
+sig = "b1e43bf8a947321c"
+
+[[bindings]]
+doc = "docs/vault/Reference/Level Ladder.md"
+target = "tests/unit/kitchen-levels.test.ts"
+sig = "8a832199cbdc369c"
