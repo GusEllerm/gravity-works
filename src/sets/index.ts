@@ -28,6 +28,7 @@ import { buildKitchenSet } from './kitchen/index.ts'
 import { kitchenSetPlacement } from '../world/setPlacement.ts'
 import { SET_TOKENS } from '../render/tokens.ts'
 import { buildBedroomSet } from './bedroom/index.ts'
+import { bedroomSetPlacement } from '../world/setPlacement.ts'
 
 export interface SetInstanceSocket {
   pos: THREE_NS.Vector3
@@ -82,8 +83,10 @@ export const SETS: Record<string, SetRegistration> = {
       const set = buildBedroomSet(T, opts)
       return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.floor, staging: set.staging }
     },
-    // no bedroom level exists yet; the first one adds its row here
-    placement: () => null,
+    // the bedroom rungs mount through the stage-4 placement table
+    // (`bedroomSetPlacement`): the set slides behind/below the level's +x
+    // chain so the corridor and the floor-band detail clear the track line.
+    placement: bedroomSetPlacement,
   },
 }
 

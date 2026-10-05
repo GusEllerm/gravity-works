@@ -39,10 +39,13 @@ describe('boot shell', () => {
     expect(initialBuild(FEELTRACK).pieces.length).toBe(FEELTRACK.placeholderBuild().pieces.length);
   });
 
-  test('the ladder walks kitchen01..05 and nothing is anyone’s next beyond it', () => {
+  test('the ladder walks kitchen01..05 into bedroom01..04 and nothing is anyone’s next beyond it', () => {
     expect(nextLevelId('kitchen01')).toBe('kitchen02');
     expect(nextLevelId('kitchen04')).toBe('kitchen05');
-    expect(nextLevelId('kitchen05')).toBeNull(); // last rung: no Next button
+    expect(nextLevelId('kitchen05')).toBe('bedroom01'); // the kitchen era hands off to the bedroom
+    expect(nextLevelId('bedroom01')).toBe('bedroom02');
+    expect(nextLevelId('bedroom03')).toBe('bedroom04');
+    expect(nextLevelId('bedroom04')).toBeNull(); // last rung: no Next button
     expect(nextLevelId('kitchen-sandbox')).toBeNull(); // off-ladder surfaces
     expect(nextLevelId('feeltrack')).toBeNull();
   });

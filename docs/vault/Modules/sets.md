@@ -12,7 +12,7 @@ tags: [module]
 
 The naming convention the guard depends on (documented at BOTH ends — `src/sets/index.ts` and `collectSetBoxes` in `src/boot.ts`): props live under a group named `dress`, the non-solid floor/wall shell lives OUTSIDE it (the kitchen's named `counter`, the bedroom's named `shell`), and anything named `*film*` is never a solid. A set that renames `dress` silently mounts invisible to the placement guard — this is the registry's sharpest edge and the friction named for the next three mounts.
 
-Adapters kept honest: the kitchen's floor surface is named `counter` and its placement table is `kitchenSetPlacement` — the registry's kitchen row is the one translation (`counter` → `bounds`); the bedroom row places null until a bedroom level exists, at which point a placement row is data, not code.
+Adapters kept honest: the kitchen's floor surface is named `counter` and its placement table is `kitchenSetPlacement` — the registry's kitchen row is the one translation (`counter` → `bounds`); the bedroom row (stage 4) places through `bedroomSetPlacement` — four rows, one per shipped bedroom rung, the mount rule recorded in [[world]] and [[Concepts/Levels]].
 
 ## The bedroom set
 

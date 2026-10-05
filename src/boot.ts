@@ -22,6 +22,10 @@ import { KITCHEN02, KITCHEN02_ID } from './world/levels/kitchen02.level.ts';
 import { KITCHEN03, KITCHEN03_ID } from './world/levels/kitchen03.level.ts';
 import { KITCHEN04, KITCHEN04_ID } from './world/levels/kitchen04.level.ts';
 import { KITCHEN05, KITCHEN05_ID, KITCHEN_SANDBOX } from './world/levels/kitchen05.level.ts';
+import { BEDROOM01, BEDROOM01_ID } from './world/levels/bedroom01.level.ts';
+import { BEDROOM02, BEDROOM02_ID } from './world/levels/bedroom02.level.ts';
+import { BEDROOM03, BEDROOM03_ID } from './world/levels/bedroom03.level.ts';
+import { BEDROOM04, BEDROOM04_ID } from './world/levels/bedroom04.level.ts';
 import { World, type RunStatus } from './world/world.ts';
 import type { Build } from './track/build.ts';
 import { PIECES } from './track/pieces.ts';
@@ -49,7 +53,7 @@ import type { PieceKind, PieceParams } from './track/pieces.ts';
 
 // Level registry ids reachable through ?level= (importing each file is what
 // registers it; the feel track stays addressable for the stage-2 specs).
-void [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04, KITCHEN05, KITCHEN_SANDBOX];
+void [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04, KITCHEN05, KITCHEN_SANDBOX, BEDROOM01, BEDROOM02, BEDROOM03, BEDROOM04];
 
 /** The set a level declares (`KitchenLevel.set` / any set-carrying level),
  *  structurally — the boot must not depend on the level modules' types to
@@ -131,7 +135,17 @@ function levelTray(level: Level): Partial<Record<PieceKind, number>> | undefined
 /** The ladder, in order — the order `Next level` walks. Levels outside it
  *  (the sandbox, the feel rig) are reachable by `?level=` but are nobody's
  *  "next". */
-export const LADDER: readonly string[] = [KITCHEN01_ID, KITCHEN02_ID, KITCHEN03_ID, KITCHEN04_ID, KITCHEN05_ID];
+export const LADDER: readonly string[] = [
+  KITCHEN01_ID,
+  KITCHEN02_ID,
+  KITCHEN03_ID,
+  KITCHEN04_ID,
+  KITCHEN05_ID,
+  BEDROOM01_ID,
+  BEDROOM02_ID,
+  BEDROOM03_ID,
+  BEDROOM04_ID,
+];
 
 /** The next rung after `id`, or null (last rung / not on the ladder). */
 export function nextLevelId(id: string): string | null {

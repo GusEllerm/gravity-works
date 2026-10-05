@@ -22,8 +22,24 @@ tags: [reference, levels]
 | `kitchen05` | `kitchen05.level.ts` | everything + one forced trade-off (one landing, one booster, two gaps) | 6 (`gapLip`×2, `drop`×2, `landing`, `booster`) | 6 | 2.40 | done — both wrong allocations measured to NOT finish; par beatable, not obvious; chains the PINNED original gap (the trade-off needs an unforgiving gap). Coherence-checked unchanged: tray = the par build's exact multiset (6/6) |
 | `kitchen-sandbox` | `kitchen05.level.ts` | the set unlocked (`sandbox: true`, no budget) | none (all pieces ×99) | 5 | 2.70 | done — reference build finishes (2.667 s), on one 0.175 m straight geometry |
 
-Five other sets: five rungs each at their own stage (stage 4+); the ladder is
-otherwise empty.
+The other sets follow at their own stage (the bedroom shipped FOUR rungs
+at stage 4 — below); the ladder is otherwise empty.
+
+## The bedroom ladder (stage 4 — four rungs)
+
+| id | file | teaches | tray (budget) | par pieces | par time | status |
+|---|---|---|---|---|---|---|
+| `bedroom01` | `bedroom01.level.ts` | the cable: RIDE OVER, don't fly — no lip exists | 3 (`straight`×2, `drop`) | 3 | 2.35 | done — the three-piece fit is the ONLY builder-mountable fit (every omission `fell` anchored, all three whole-tray orders finish); 0.20 m single `straight` geometry, `KITCHEN_GAP` dip, ramp 0.28 |
+| `bedroom02` | `bedroom02.level.ts` | a CHOICE off the mattress: stay high or drop to the pillow — high is faster | 5 (`straight`×3, `drop`, `landing`) | 3 | 2.40 | done — par 2.367 vs soft 2.575 (chained, both finish, test-asserted); `trayParams` carries the two pieces the par never places; ANCHORED: only the high line reaches the cup (soft `fell` 18 cm below — ask #2b, pinned by test) |
+| `bedroom03` | `bedroom03.level.ts` | the trade-off: one launch, which catcher do you buy? | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 4 | 2.70 | done, **the tunnel THIRD line BLOCKED** (ask #5 + ask #4) — hard `drop` catch 2.667 beats the soft 0.32 m `landing` 2.708 (chained); whole tray finishes ANY order sampled (2.483–2.558, beats par, loses the pieces star — no Playtest-G wall); `drawer.in`/`drawer.out` exported as `propSockets` through the level's mount, with the tangent-sign defect stated |
+| `bedroom04` | `bedroom04.level.ts` | everything, one tray, no guesses (capstone) | 4 (`straight`, `gapLip`, `drop`, `landing`) | 4 | 2.70 | done — tray = the par's exact multiset, ALL 24 whole-tray orders finish anchored (2.467–3.300, test-gated), par ORDER beatable at 2.467 s; lamp-shadow drama is pure staging (the set's own `LAMP.bulb` practical) |
+
+The bedroom rungs join the shipped ladder after `kitchen05`
+(`nextLevelId('kitchen05') === 'bedroom01'`); `bedroomSetPlacement`
+mounts the ratified set UNDER the run (x = rail midpoint, −15 cm off the
+corridor, floor 5 mm under the LOWEST authored deck). The `kitchen-sandbox`
+row above remains the only sandbox; the bedroom sandbox follows the same
+shape at its own stage.
 
 ## Pars
 
@@ -56,6 +72,13 @@ unified every level's `straight` geometry (a tray seats one geometry per kind)
   [[Concepts/Levels]] (ask #1) for the Feel Engineer. The LEVELS are not
   blocked — all five par builds finish (`tests/unit/kitchen-levels.test.ts`)
   — but L02 and L03 do not yet deliver their yaw half.
+- **Bedroom drawer-tunnel THIRD line — BLOCKED** (stage 4): the bore never
+  crosses the level corridor and `drawer.in`'s tangent points OUT of the
+  bore (against the bowl-socket travel convention); one sign flip plus a
+  lane-crossing bore anchor (ask #5), and prop-socket seating in the
+  builder (ask #4), put the tunnel on the map. The RUNG is not blocked —
+  both authored lines of `bedroom03` finish and the catch trade-off is
+  measured.
 - **Hazard mechanic (wet patch) — pending** (ask #2a): `World` reads no grip
   zones; L04's par line is designed grip-independent so it is provable today.
 - **`Level.finishSocket` — pending** (ask #2b): the cup currently rides at
@@ -91,7 +114,11 @@ L04's ground build left the roster at the L04 learnability pass — it is a
 hazard probe, not a tray-affordable route), and `trayParityBuild` (the builder's seating of the par line,
 fixtures anchored) must serialize byte-identically to `parBuild()`. Kinds a
 par line never places but an alternate line needs are declared in
-`trayParams` (see [[Concepts/Levels]]).
+`trayParams` (see [[Concepts/Levels]]). Since stage 4 the same three
+assertions run over EVERY authored level of BOTH ladders in
+`tests/unit/bedroom-levels.test.ts` ("ladders (kitchen + bedroom) — tray ⊇
+parBuild on EVERY authored level") — the rule covers the whole shipped
+ladder, kitchen rungs included.
 
 ## Notes
 
@@ -106,10 +133,13 @@ par line never places but an alternate line needs are declared in
   ground PROBE finishing, L04's whole-tray order sweep finishing — the
   Playtest G learnability gate — and L05's wrong allocations NOT
   finishing).
-- `getLevel` now resolves 7 ids once the kitchen modules are imported; the
-  kitchen files self-register via `registerLevel` on import
-  (`feeltrack.level.ts`'s registry). Wiring the game entry (`src/boot.ts`)
-  to import them is a one-line systems task, deliberately not done here —
-  `src/boot.ts` is not the level designer's file.
+- `getLevel` now resolves 11 ids once the level modules are imported (feel
+  rig, kitchen six, bedroom four); the kitchen files self-register via
+  `registerLevel` on import
+  (`feeltrack.level.ts`'s registry), and the bedroom files do the same
+  (`registerBedroom` wraps it). `src/boot.ts` imports every rung (the
+  kitchen wiring since stage 2, the bedroom wiring added at the stage-4
+  ladder pass — a file outside the level designer's lane, touched only to
+  register and extend `LADDER`).
 - Nothing on this rung-blocking blocks stage 3 integration; the blocked
   halves are additive data edits when ask #1 lands.

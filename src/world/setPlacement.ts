@@ -81,6 +81,44 @@ export function kitchenSetPlacement(levelId: string): SetPlacement | null {
   return std ? { position: [std[0], std[1], std[2]], yaw: 0 } : null;
 }
 
+/** ---- bedroom (stage 4) -------------------------------------------------
+ * The bedroom set is dressed around the FLOOR DISC centred on the set origin
+ * (`FLOOR` in `src/sets/bedroom/data.ts`), so the mount rule is the kitchen
+ * standard one step removed: the level chains along +x from the world origin
+ * exactly as the kitchen rungs do, and the set slides to sit UNDER the lane —
+ * centred on the run (x = the par rail's midpoint, so the floor disc contains
+ * the whole rail), BACK (−z, so the corridor clears the props) and DOWN so
+ * (a) the floor's top surface sits 5 mm below the LOWEST finish deck of any
+ *     authored line of the rung (the same `DECK_CLEARANCE` contract as the
+ *     kitchen counter, with one bedroom-stage addition: a choice level's
+ *     floor cannot bury a line the player can actually run, so the row is
+ *     `min(par, alternates).finishDeckY − 0.005` — identical to the kitchen
+ *     rule wherever the par line is the low one. The y values below are
+ *     recomputed from the live builds by `tests/unit/bedroom-levels.test.ts`);
+ * (b) the props clear the corridor: the lived-in homework (`HOMEWORK`, the
+ *     set's one floor-band detail within 15 cm of the run axis) ends up at
+ *     least 10 cm off the lane and every named solid clears the track line
+ *     (guard-box tested in `tests/unit/bedroom-levels.test.ts`).
+ * Yaw 0 on every rung: the ratified canonical frames are the hero frames,
+ * and the drawer bore NEVER enters the corridor — the tunnel line is a
+ * blocked rung (Concepts/Levels §Piece requests, the bedroom asks), not a
+ * placement the level could solve by rotating the room into the set's own
+ * bed and pyramid. */
+const BEDROOM_ROWS: Record<string, readonly [number, number, number]> = {
+  bedroom01: [1.0912, -0.41177, -0.15],
+  bedroom02: [1.0727, -0.47419, -0.15],
+  bedroom03: [1.1825, -0.42567, -0.15],
+  bedroom04: [1.2165, -0.44809, -0.15],
+};
+
+/** The mount transform for one bedroom level id (null = no placement — the
+ *  canonical-origin fallback the set-inspection entry (`?set=bedroom`) uses,
+ *  where there is no level line to dress against). */
+export function bedroomSetPlacement(levelId: string): SetPlacement | null {
+  const row = BEDROOM_ROWS[levelId];
+  return row ? { position: [row[0], row[1], row[2]], yaw: 0 } : null;
+}
+
 /** The rigid transform of a placement (three users: the scene mount, the
  *  L03 socket seating, the guard boxes). */
 export function placementMatrix(p: SetPlacement): THREE.Matrix4 {

@@ -47,6 +47,12 @@ richer — `KitchenLevel` (`src/world/levels/kitchen01.level.ts`) adds:
   `kitchen-sandbox`, registered by `src/world/levels/kitchen05.level.ts`).
 - `hazards` and `propSockets` — see the two convention sections below.
 
+The bedroom rungs (stage 4) mirror the WHOLE seam as `BedroomLevel`
+(`src/world/levels/bedroom01.level.ts`, `set: 'bedroom'`,
+`bedroomLevel`/`registerBedroom` mirrors of `kitchenLevel`/
+`registerKitchen`) — every tray/`trayParams`/`fixtures`/`parBuild` rule
+above applies to both ladders, and the ladder test enforces it on both.
+
 Pieces are laid per-instance by `lay` (the kitchen helper in `kitchen01`):
 the kit's `chain` keys params by KIND, so any level that reuses one kind more
 than once (L05's two lips) seats each instance with `fitSocket` directly —
@@ -244,6 +250,100 @@ pieces; measured against the shipped `initialBuild` + tray seating it does —
 tray-basis par is 6/6. No geometry moved here; the rung's hashes are the
 pre-coherence ones.
 
+## The bedroom four (design cards)
+
+The bedroom ladder (stage 4) is four rungs, not five — it inherits the
+kitchen's five as its prequel (`nextLevelId` walks `kitchen05 → bedroom01`
+and star-gates the walk as everywhere: `Next` appears only on an earned
+star). Every rung rides the shared authoring kit
+(`src/world/levels/bedroom01.level.ts` re-exports the placement math from
+`kitchen01.level.ts` — that file's `lay`/`kitchenRamp`/`startSocketFromBuild`
+are the family's, not the kitchen's) and the stage-3 invariants: tray =
+multiset `parBuild` uses, ONE geometry per kind per level, par ≤ 4 tray
+pieces. The set is the level: `bedroomSetPlacement`
+(`src/world/setPlacement.ts`) centres the floor disc ON the run (x = the
+par rail's midpoint — the rails are 2.2–2.5 m long and the disc is a
+2.8 m diameter), slides it 15 cm off the corridor (−z) so every prop
+solid clears the lane (homework near edge 14.6 cm off-axis, test-asserted)
+and drops it so the floor sits 5 mm under the LOWEST authored line's
+finish deck — the kitchen counter rule with one stage-4 addition: a
+choice level's floor cannot bury a line the player can run (bedroom02's
+soft line ends 18 cm below its par, so the row follows the soft line).
+
+**BEDROOM 01 — Cable Dip** (`bedroom01.level.ts`, the tutorial of RIDE
+OVER). The cable snake crossing the floor is the set's fourth voice, and
+this rung says what a cable means: you do not launch at a cable — the
+tray holds NO `gapLip` and none appears in the line. The deck steps DOWN
+for the cable (the `drop` piece IS the dip: step, catch, roll-out)
+between two 0.20 m `straight`s, and the exact three-piece fit finishes —
+par 2.35 (measured 2.350 s), tray = par = 3 = budget, every piece
+load-bearing. The promise is the kitchen L01 standard, on the shipped
+builder's mounting: placing all three finishes (and every whole-tray
+ORDER finishes — eligibility, not order-guessing), while every omission
+falls against the anchored fixtures (bare, drop-only, straight-only,
+either single straight missing — all `fell`, test-pinned). The geometry
+is the stage-3-proven lazy-line catch (ramp 0.28, `KITCHEN_GAP` drop, one
+0.20 m straight geometry — one step longer than the kitchen's 0.18 so the
+rung's hashes are its own). Common failure: none that ends the run — the
+hole the missing `drop` leaves is 0.136 m of empty span, longer than the
+flat roll-off clears.
+
+**BEDROOM 02 — Pillow Plateau** (`bedroom02.level.ts`). Teaches: a
+choice off the mattress — stay high, or drop to the pillow. The par
+(three of five tray pieces, 2.40 — measured 2.367 s) is the HIGH line:
+three `straight`s, the deck never leaves plateau height, pure rolling.
+The tempting SOFT line (`drop` off the plateau edge into the `landing`
+pillow, then the floor run) finishes too — 2.575 s chained — and the
+catch costs it 0.21 s. `trayParams` declares `drop`/`landing` (the par
+line never places them — the choice pieces must seat at the geometry the
+lines were measured on, not kit defaults). ANCHORED HONESTY (ask #2b,
+and sharper here than kitchen02's table entry): on the mount the shipped
+builder makes, ONLY the high line reaches the anchored cup — the soft
+line runs 18 cm below the cup deck (`fell`, pinned by test), and the
+two-straight partial falls short. "Two ways off the plateau" is a
+chained-model claim; on one rail the plateau line is the only finisher,
+and the card says so. The soft line stays authored data so the claim
+stays falsifiable, not folklore.
+
+**BEDROOM 03 — Pyramid Air** (`bedroom03.level.ts`). Teaches: one
+launch, two catches — the trade-off is which catcher you buy. The line:
+`gapLip` off the book pyramid (a fixture-top `ramp` at 0.30), then
+EITHER the HARD catch (the `drop`'s stepped catch onto the desk deck,
+then the run-out straight — the PAR, 4 of 5 tray pieces, 2.70 — measured
+2.667 s) OR the SOFT catch (a longer 0.32 m `landing`, declared in
+`trayParams`, measured 2.708 s). The hard catch wins the clock by 0.04 s
+— small, measured, true. No whole-tray wall (the Playtest-G rule this
+rung was authored under): placing ALL FIVE finishes in every order
+sampled (2.483–2.558 s — faster than the par, at the cost of the pieces
+star), so the only dead builds are the ones that SKIP the catcher; the
+soft four-piece fit falls against the anchored cup (chained-model claim,
+ask #2b, test-pinned). THE TUNNEL THAT IS NOT: the half-open drawer would
+be the third line — straight through the bore. It stays a dream for the
+kitchen-bowl reasons plus one: the builder cannot seat on a prop socket
+(ask #4), and the bore never crosses the level corridor — so this level
+exports `propSockets` `drawer.in`/`drawer.out` through its own set mount
+(the `BOWL_SOCKET_FRAMES` convention, `DRAWER_SOCKET_FRAMES` carried by
+`bedroomSetPlacement`) AND states the defect: `drawer.in`'s tangent
+points OUT of the bore at both ends (it is `+DRAWER_AXIS` at the front
+face), against the travel direction the bowl pair's convention defines.
+The ask to the Environment Artist (ask #5) is a tangent flip and one
+lane-crossing bore anchor — not a remodel.
+
+**BEDROOM 04 — Lights Out** (`bedroom04.level.ts`, the capstone). Every
+bedroom verb on one line — deck run (`straight`), pyramid launch
+(`gapLip`), cable dip-and-catch (`drop`), soft run-out (`landing`) — and
+the tray IS the answer: four pieces, budget four, all load-bearing, the
+Playtest-G lesson as architecture. All 24 whole-tray orders finish on the
+builder's anchored mount (measured 2.467–3.300 s, test-gated exactly like
+kitchen04's gate), the par ORDER (2.683 → par 2.70) is beatable within
+the tray (`drop → landing → straight → gapLip` runs 2.467 s), and the
+lamp-shadow drama is PURE STAGING — the practical is the set's own
+`LAMP.bulb` point light; the level moves no light and no mechanic. The
+`straight` is 0.30 m here, not the ladder's 0.20: the order-invariant
+whole-tray SUM that makes 24/24 possible was proven at the kitchen L04
+sweep's 0.3 m run-out geometry, and one-geometry-per-kind holds — the
+tray seats its one straight at 0.30.
+
 ## Sandbox (per set)
 
 The kitchen sandbox: `sandbox: true`, budget 999 ("no budget"), every piece
@@ -345,6 +445,30 @@ mounts it. Without it, "seat a `bank` between the rim sockets" is an
 authoring joke — the player has no way to do it and the rim stays a fixture.
 Owner: Systems Engineer (builder) with the Environment Artist on the labels.
 
+**Ask #5 — put the bedroom tunnel and cable on the lane (blocking: the
+bedroom03 third line, the bedroom01 story).** Two set asks from the
+bedroom ladder, one per prop. (a) THE DRAWER BORE:
+`DRAWER_SOCKET_FRAMES` carries `drawer.in`'s tangent as `+DRAWER_AXIS` at
+the FRONT face — out of the bore, against the in-then-through travel
+direction the `bowl.in`/`bowl.out` convention defines (the bowl pair's
+tangents point ALONG the ride; the drawer pair's point away from it at
+both ends). One sign flip (or mirroring the pair the way the rim does)
+makes the frames lawful data. And no level chain can cross the bore at
+deck height today: the dresser sits 30 cm behind the corridor the set's
+own layout draws, and yawing the room onto the bore lands the bed and
+pyramid ON the lane (measured while authoring bedroom03 — the placement
+table therefore keeps yaw 0 and the tunnel stays a fixture-dream). What
+the tunnel needs is one bore-aligned anchor a level can cross — a second
+dresser placement, or a dresser-only offset the SetInstance surface can
+carry — with the neighbours kept off the +x lane. (b) THE CABLE: the AD
+ratified the cable as a TRACK ask, not a grip zone, and the set is a
+visual mount (no colliders — the kitchen rule), so the "speed bump" a
+level can teach with is the `drop` it already rides. One named anchor —
+where the cable's run crosses the future track corridor — would let the
+dip card's story be geometry instead of prose. Owners: Environment Artist
+(anchors, tangent sign), Systems Engineer (dresser-only placement, ask #4
+for the seating side).
+
 ## The same data replayed the way the BUILDER mounts it
 
 Every claim above is a `lay`/`chain` build: the cup rides at the end of
@@ -393,7 +517,11 @@ will move these targets again).
 L02's curve and L03's bowl line are BLOCKED pending ask #1 (the levels
 themselves are NOT blocked — both par builds finish and both levels teach
 their choice/hazard lessons). L03's bowl line additionally needs ask #4
-(prop-socket seating in the builder). See [[Reference/Level Ladder]].
+(prop-socket seating in the builder). The bedroom's drawer-tunnel THIRD
+line is BLOCKED (ask #5 — a tangent flip plus a lane-crossing bore
+anchor — with ask #4 on the seating side); the rung is NOT (bedroom03's
+two authored lines finish and its trade-off is measured). See
+[[Reference/Level Ladder]].
 
 ## Guarded by
 
@@ -412,3 +540,12 @@ per AUTHORED line, every piece is tray- or fixture-afforded and placed at the
 tray's one geometry per kind; per level, `trayParityBuild` (the builder's own
 seating of the par line) is byte-identical to `parBuild()`, and
 `pars.json`'s par piece count equals the level's tray-basis `par.pieces`.
+The stage-4 bedroom pass adds `tests/unit/bedroom-levels.test.ts` — the
+same gates for the bedroom four (every par finishes headless, contracts,
+both authored lines of 02/03, the 01 only-fit with every omission falling
+anchored, 03's no-wall whole tray, 04's 24/24 sweep and beatable par, the
+placement table derived from the live builds, the drawer sockets
+exported) AND the describe **"ladders (kitchen + bedroom) — tray ⊇
+parBuild on EVERY authored level"**, which runs the invariant over BOTH
+ladders' rosters and their alternates — the rule is one test over the
+whole shipped ladder now, not a kitchen file.
