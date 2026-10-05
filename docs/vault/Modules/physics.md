@@ -289,3 +289,17 @@ ablation goes red proving it can go. The audit column of the wishbone
 crutch (positive net work in the sub-2.25 R phase window, see
 [[feel]] §Loop threshold) is the one known place the pair still pumps —
 pinned by the bracket floor, not by faith.
+
+## Terminal speed: a parked chassis does not read zero (stage 3, 2026-10-06)
+
+`carSpeed` on a PARKED, grounded chassis reads 0.02–0.05 m/s — the contact
+corrector's per-step position nudges carry into the chassis velocity. This is
+why the playtest-E "result arrives seconds late" complaint was understated:
+the old stall pair (`STALL_SPEED` 0.02 m/s held 2 s) never fired for a dead
+car sitting on the deck — the phantom speed kept the counter resetting and
+the run rode to the 12 s timeout (`tests/unit/world.test.ts` reproduces both
+halves). The stage-3 pair (0.05 m/s / 0.5 s, see [[world]]) sits above the
+jitter floor and below anything a player reads as motion: 0.05 m/s at 1:10
+toy scale is 0.67 car-lengths a real-second. The constant lives in `world.ts`
+because it is an OUTCOME read, not a force — the sim itself is untouched by
+it (feel-track hash and finish step bit-identical across the swap).

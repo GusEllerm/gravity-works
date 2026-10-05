@@ -7,9 +7,13 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { RunCamera, RUN_CAMERA } from '../../src/camera/run-camera.ts';
+import type { RunCameraSolid } from '../../src/camera/run-camera.ts';
 import type { RunCameraSource } from '../../src/camera/run-camera.ts';
 import { feelTrackRig, loopRig, LOOP_RADIUS } from '../../src/feel/feeltrack.ts';
 import { KitRig } from '../../src/feel/kittrack.ts';
+import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts';
+import { KITCHEN02 } from '../../src/world/levels/kitchen02.level.ts';
+import { KITCHEN03 } from '../../src/world/levels/kitchen03.level.ts';
 import { KITCHEN04 } from '../../src/world/levels/kitchen04.level.ts';
 import { RAIL_WHEEL_HEIGHT } from '../../src/track/cross-section.ts';
 
@@ -79,16 +83,24 @@ describe('run camera (§7.3: leads ~0.4 s, 150 ms positional lag, slower rotatio
     const v = 3;
     const cam = new RunCamera(rail, 0);
     // Park the lead target a fixed distance INSIDE the corner: the target
-    // orientation then makes one clean step (straight -> corner tangent) and
-    // the 63 % crossing time measures ROT_LAG directly.
-    cam.snap(L - 0.6 - v * RUN_CAMERA.LEAD_TIME + v * RUN_CAMERA.LEAD_TIME); // arc = L - 0.6
+    // orientation then makes one clean step and the 63 % crossing time
+    // measures ROT_LAG directly. Stage 3 aims at the lead RAIL POINT from
+    // the (trailing) eye, not the tangent frame, so the target yaw is the
+    // eye-to-lead-point azimuth — on a straight-inclined corner the two
+    // differ only by the chord angle; the azimuth is what the camera
+    // actually converges to.
+    cam.snap(L - 0.6);
     const carArc = L - 0.6; // lead = L - 0.6 + 0.4v ~ inside the bend
     const yawAt = (c: RunCamera): number => {
       // the camera's actual facing
       const z = new THREE.Vector3(0, 0, -1).applyQuaternion(c.rotation);
-      return Math.atan2(-z.z, z.x) === 0 ? Math.atan2(z.z, z.x) : Math.atan2(z.z, z.x);
+      return Math.atan2(z.z, z.x);
     };
-    const yawTarget = Math.atan2(-rail.frameAt(carArc + v * RUN_CAMERA.LEAD_TIME).tangent.z, rail.frameAt(carArc + v * RUN_CAMERA.LEAD_TIME).tangent.x);
+    const lead = rail.frameAt(carArc + v * RUN_CAMERA.LEAD_TIME);
+    const eye0 = rail.railPointAt(carArc - RUN_CAMERA.TRAIL);
+    const lp = rail.railPointAt(carArc + v * RUN_CAMERA.LEAD_TIME);
+    void lead;
+    const yawTarget = Math.atan2(-(lp.z - eye0.z), lp.x - eye0.x);
     const yaw0 = yawAt(cam);
     let t63 = -1;
     for (let i = 0; i < 240; i++) {
@@ -103,8 +115,11 @@ describe('run camera (§7.3: leads ~0.4 s, 150 ms positional lag, slower rotatio
   it('snap cuts the filters instantly (reset/cut scene)', () => {
     const cam = new RunCamera(rail, 0);
     cam.snap(5, 0);
-    expect(cam.railArc).toBeCloseTo(5, 6);
-    expect(cam.position.x).toBeCloseTo(5, 6);
+    expect(cam.railArc).toBeCloseTo(5, 6); // the AIM reads 5 (speed 0, no lead)
+    // stage 3: the EYE rides TRAIL of track behind the car, not the car's
+    // own rail point — snap(5) parks the eye at rail(5 − TRAIL)
+    expect(cam.eyeArc).toBeCloseTo(5 - RUN_CAMERA.TRAIL, 6);
+    expect(cam.position.x).toBeCloseTo(5 - RUN_CAMERA.TRAIL, 6);
   });
 
   it('deterministic: identical inputs frame identically', () => {
@@ -231,3 +246,81 @@ describe('§7.3 lead/lag measured on a REAL kit rail (loop-rig run-out)', () => 
   });
 });
 
+
+describe('stage 3: the beige-wall proof (L01–L04 par runs, harness-rendered metrics)', () => {
+  // Playtests E/F/G: "camera buried in a grey wall", "mid-run frames are
+  // just beige blur", "car off-screen in most launches". Measured cause on
+  // this exact path (World -> KitRig.nearestArc -> RunCamera, the boot
+  // wiring headless): the old rail-lead eye sat AHEAD of the car for
+  // 67–72 % of every run and the car left the frustum ~95 % of the time.
+  // The contract now, per step of every ladder level's PAR run:
+  //   - the car projects inside the frame (|ndc| ≤ 0.95) — the §7.3 focus
+  //     band's "centred on the car" precondition;
+  //   - the eye never sits inside a set solid (the placement-guard props,
+  //     leaf-mesh granularity, mounted where kitchenSetPlacement puts them);
+  //   - the eye→car sightline is never buried in a full solid (a box the
+  //     car itself is inside is the car passing UNDER a prop — legal).
+  const FOV = 35; // boot's PerspectiveCamera fov
+  const ASPECT = 960 / 540;
+  const tan = Math.tan((FOV / 2) * Math.PI / 180);
+
+  for (const level of [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04]) {
+    it(`${level.id}: car in frame every step, eye never inside a set solid`, async () => {
+      const { World } = await import('../../src/world/world.ts');
+      const { initRapier } = await import('../../src/physics/sim.ts');
+      const { buildKitchenSet } = await import('../../src/sets/kitchen/index.ts');
+      const { kitchenSetPlacement, placeSet } = await import('../../src/world/setPlacement.ts');
+      const { setCameraSolids } = await import('../../src/boot.ts');
+      const { SET_TOKENS } = await import('../../src/render/tokens.ts');
+      await initRapier();
+      const set = buildKitchenSet(THREE, { tokens: SET_TOKENS.kitchen });
+      const placement = kitchenSetPlacement(level.id);
+      if (placement) placeSet(set.group, placement);
+      const solids: RunCameraSolid[] = setCameraSolids(set.group).map((b) => ({
+        min: [b.min.x, b.min.y, b.min.z],
+        max: [b.max.x, b.max.y, b.max.z],
+      }));
+      const build = level.parBuild();
+      const world = await World.create(level, build, { visuals: false });
+      const rig = new KitRig(build, 10);
+      const cam = new RunCamera(rig, 0, { solids });
+      world.launch();
+      cam.snap(rig.nearestArc(world.state().car.pos));
+      let steps = 0;
+      let worstNdc = 0;
+      let minDist = Infinity;
+      let maxDist = 0;
+      for (; steps < 12 / DT && world.status === 'running'; steps++) {
+        world.step();
+        const s = world.state();
+        cam.update(DT, rig.nearestArc(s.car.pos), s.car.speed, s.car.pos);
+        // — frustum test
+        const q = cam.rotation.clone().invert();
+        const v = new THREE.Vector3(s.car.pos.x, s.car.pos.y, s.car.pos.z)
+          .sub(cam.position)
+          .applyQuaternion(q);
+        expect(v.z, `t=${(steps * DT).toFixed(3)}: car behind the camera plane`).toBeLessThan(-0.01);
+        const nx = Math.abs(v.x / (-v.z * tan * ASPECT));
+        const ny = Math.abs(v.y / (-v.z * tan));
+        worstNdc = Math.max(worstNdc, nx, ny);
+        minDist = Math.min(minDist, v.length());
+        maxDist = Math.max(maxDist, v.length());
+        // — solid test (raw boxes, no margin: the INTERSECTION promise)
+        const e = cam.position;
+        for (const b of solids) {
+          const inBox =
+            e.x > b.min[0] && e.x < b.max[0] &&
+            e.y > b.min[1] && e.y < b.max[1] &&
+            e.z > b.min[2] && e.z < b.max[2];
+          expect(inBox, `t=${(steps * DT).toFixed(3)}: eye inside a set solid`).toBe(false);
+        }
+      }
+      expect(world.status).toBe('finished');
+      expect(steps).toBeGreaterThan(100);
+      expect(worstNdc).toBeLessThanOrEqual(0.95);
+      expect(minDist).toBeGreaterThan(0.1);
+      expect(maxDist).toBeLessThan(0.7);
+      world.dispose();
+    }, 30_000);
+  }
+});

@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:filmstrip": "playwright test --config playwright.filmstrip.config.ts",
     "pars": "node scripts/gen-pars.mjs",
     "render": "node tools/render.mjs",
     "feel": "node tools/feel.mjs"

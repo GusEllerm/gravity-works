@@ -6,6 +6,9 @@ const port = Number(process.env.E2E_PORT ?? 4173)
 
 export default defineConfig({
   testDir: 'tests/e2e',
+  // the filmstrip gate owns its own port (4210) and config — it samples on
+  // wall-clock boundaries and must not share the parallel suite's server
+  testIgnore: 'filmstrip.spec.ts',
   fullyParallel: true,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {

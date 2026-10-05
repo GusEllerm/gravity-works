@@ -62,13 +62,13 @@ export const HOVER_PX = 120;
  *  to be SEEN (playtest G: "clicked R; ghost never visibly changed"). */
 export const ROTATE_MS = 150;
 
-export type GhostState = 'hidden' | 'snapped' | 'seated' | 'invalid' | 'blocked';
+export type GhostState = 'hidden' | 'snapped' | 'reversed' | 'invalid' | 'blocked';
 
 /** The VERB TABLE's screen copy per internal state ('' = say nothing). */
 export const GHOST_LABEL: Record<GhostState, string> = {
   hidden: '',
   snapped: 'fits here',
-  seated: 'flipped fit',
+  reversed: 'flipped fit',
   invalid: 'no seat at this socket',
   blocked: 'blocked — the set is in the way',
 };
@@ -425,15 +425,23 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
         animateGhostTo(m, animate);
         ghostGroup.visible = true;
         const seated = transformSocket(PIECES[kind].sockets(heldParams(kind))[0], m);
-        if (overlapsSolid(m, kind)) {
-          state = 'blocked';
-        } else {
-          state = snapSocket(target, seated) !== null ? 'snapped' : flipped ? 'seated' : 'invalid';
-        }
-        ghostMaterial.color.set(
-          state === 'snapped' ? 0x2fbf71 : state === 'seated' ? 0xffb627 : 0xd7263d,
-        );
+        // Stage-3 vocabulary pass: the amber word is `reversed`, never
+        // `seated` — playtest G read "seated" as a physics verdict next
+        // to a "flew off" result line. "Seated" now names ONE thing: the
+        // cup capture in world.ts. A reverse mount is a half turn about
+        // the target's up: deck lines match, tangents deliberately do
+        // not, so the snap gate reports it honestly (amber).
+        state = overlapsSolid(m, kind)
+          ? 'blocked'
+          : snapSocket(target, seated) !== null
+            ? 'snapped'
+            : flipped
+              ? 'reversed'
+              : 'invalid';
       }
+      ghostMaterial.color.set(
+        state === 'snapped' ? 0x2fbf71 : state === 'reversed' ? 0xffb627 : 0xd7263d,
+      );
     }
     // the VERB TABLE's copy — never the internal state word
     ghostState.textContent = GHOST_LABEL[state];

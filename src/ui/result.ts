@@ -149,15 +149,31 @@ export function createRunRecorder(): RunRecorder {
  * map at the top of this file and in docs/vault/Modules/ui.md:
  *
  *   hazard touched        -> "a hazard took the run" (which one, once props report it)
- *   fell, nose-down touchdown -> landed nose-first
- *   any slow-at-apex      -> too slow at the top of the loop (computed floor)
- *   fell after a long flight -> the jump outran the landing
+ *   fell, nose-down touchdown -> fell off nose-first
+ *   any slow-at-apex      -> fell off / stalled — too slow at the top of the loop
+ *   fell after a long flight -> fell off after a long jump
  *   fell otherwise        -> fell off the set
- *   stalled nose-high     -> ran out going uphill
- *   stalled after a push  -> ran out after its last push
- *   stalled otherwise     -> ran out on the flat (friction won)
- *   timeout               -> never made it inside the time limit
+ *   stalled nose-high     -> stalled going uphill
+ *   stalled after a push  -> stalled after its last push
+ *   stalled otherwise     -> stalled on the flat (friction won)
+ *   timeout               -> timed out — never made it inside the limit
  *   anything unexplained  -> the catch-all (never a guess)
+ *
+ * STAGE 3 VOCABULARY PASS (playtest E "snapped vs seated"; G "status line
+ * says seated with a flew-off verdict"). One verb per physics event, and
+ * the note's head verb now EQUALS the shell's status-line verb in
+ * `runStatusLine` (boot.ts) — the two places a player reads the same end:
+ *
+ *   event                     verb (status line = note head)
+ *   cup capture               finished ("seated" belongs to the CUP now:
+ *                             world.ts stall-capture; it is banned from the
+ *                             placement ghost, renamed `reversed` there)
+ *   leaving the set           fell off  (never also "flew off"/"landed")
+ *   stopped, no grip left     stalled   (never also "ran out")
+ *   clock                     timed out
+ *   piece meets socket        snapped / reversed / invalid / blocked
+ *                             (builder ghost states — placement words, no
+ *                             longer sharing vocabulary with physics)
  *
  * A finished run gets no note — the panel already shows what finishing looked
  * like (§11: text never explains what a picture shows).
@@ -172,24 +188,24 @@ export function physicsNote(result: RunResult, ev: RunEvidence): string {
 
   if (result.status === 'fell') {
     if (ev.lastTouchdownPitch !== null && ev.lastTouchdownPitch < NOSE_FIRST_PITCH) {
-      return 'landed nose first — flatten the landing or lower the lip';
+      return 'fell off nose-first — flatten the landing or lower the lip';
     }
-    if (tooSlowAtApex) return 'too slow at the top of the loop — give it more height before it';
-    if (ev.finalAirtime > LONG_FLIGHT) return 'flew off after a long jump — the gap outran the landing';
+    if (tooSlowAtApex) return 'fell off — too slow at the top of the loop; give it more height before it';
+    if (ev.finalAirtime > LONG_FLIGHT) return 'fell off after a long jump — the gap outran the landing';
     return 'fell off the set — the line let go before the cup';
   }
   if (result.status === 'stalled') {
-    if (tooSlowAtApex) return 'too slow at the top of the loop — give it more height before it';
+    if (tooSlowAtApex) return 'stalled — too slow at the top of the loop; give it more height before it';
     if (ev.lastGroundedPitch !== null && ev.lastGroundedPitch > UPHILL_PITCH) {
-      return 'ran out going uphill — more speed or a shorter climb';
+      return 'stalled going uphill — more speed or a shorter climb';
     }
     if (ev.lastPushTime !== null) {
-      return 'ran out of speed after its last push — the track ahead needs less than it gave';
+      return 'stalled after its last push — the track ahead needs less than it gave';
     }
-    return 'ran out of speed on the flat — friction won; start higher or add a booster';
+    return 'stalled on the flat — friction won; start higher or add a booster';
   }
   if (result.status === 'timeout') {
-    return 'never made it — the run went past the time limit';
+    return 'timed out — the run went past the time limit';
   }
   if (result.status === 'hazard') {
     // a hazard status without a counted touch should not happen; honest line
