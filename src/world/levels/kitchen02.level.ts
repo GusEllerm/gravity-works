@@ -36,13 +36,27 @@ export const KITCHEN02_ID = 'kitchen02';
 /** The fixture run-out past the cup (visible curve; the timed run ends first). */
 export const KITCHEN02_RUNOUT = { radius: 1.2, angle: 40 };
 
+/** ONE straight geometry for the whole level (0.18 m).
+ *  STAGE-3 LADDER-COHERENCE FIX: the par line used to chain a 0.12 and a 0.25
+ *  straight. The tray has ONE geometry per kind — `levelTrayParams` takes a
+ *  kind's FIRST par placement and the builder ghosts and seats every held
+ *  straight with it — so a second, longer straight was a piece the shipped
+ *  builder could not place: replayed the way the builder mounts a level
+ *  (`initialBuild` anchors the fixtures, the tray pieces chain off them), the
+ *  player's lazy line fell 0.13 m short of the anchored cup. One geometry per
+ *  kind, both straights 0.18 m (the par's old 0.37 m of counter deck, kept
+ *  within 1 cm), makes the par build exactly what the tray can place; the
+ *  par's finish time is unchanged at 2.317 s and the arc route is still the
+ *  slower line in the same authored model (2.442 s vs 2.317 s). */
+const L02_STRAIGHT = 0.18;
+
 function parBuild(): Build {
   return lay(
     [
       { def: 'ramp', params: kitchenRamp(0.28) }, // the books (fixture)
-      { def: 'straight', params: { length: 0.12 } }, // tray: counter lip
+      { def: 'straight', params: { length: L02_STRAIGHT } }, // tray: counter lip
       { def: 'drop', params: KITCHEN_GAP.drop }, // tray: the gap + its catch
-      { def: 'straight', params: { length: 0.25 } }, // tray: to the cup
+      { def: 'straight', params: { length: L02_STRAIGHT } }, // tray: to the cup
       { def: 'finishCup' }, // fixture
       { def: 'curve', params: KITCHEN02_RUNOUT }, // fixture: the visible curve
     ],
@@ -60,7 +74,7 @@ export function kitchen02ArcBuild(): Build {
       { def: 'gapLip', params: KITCHEN_GAP.lip },
       { def: 'drop', params: KITCHEN_GAP.drop },
       { def: 'landing', params: KITCHEN_GAP.landing },
-      { def: 'straight', params: { length: 0.25 } },
+      { def: 'straight', params: { length: L02_STRAIGHT } },
       { def: 'finishCup' },
       { def: 'curve', params: KITCHEN02_RUNOUT },
     ],
@@ -79,6 +93,12 @@ export const KITCHEN02: KitchenLevel = registerKitchen(
     par: { pieces: 3, time: 2.32 }, // 3 of the 5 tray pieces are placed on the par line (measured — regenerate via pars)
     maxTime: 12,
     tray: { straight: 2, gapLip: 1, drop: 1, landing: 1 },
+    // the arc route's pieces: the LAZY par line never places a `gapLip` or a
+    // `landing`, and a tray kind's geometry otherwise comes from the par
+    // build's first placement — without this declaration the two pieces the
+    // CHOICE exists for would seat at kit defaults and build a different gap
+    // than the one both lines were measured on.
+    trayParams: { gapLip: KITCHEN_GAP.lip, landing: KITCHEN_GAP.landing },
     fixtures: { ramp: 1, finishCup: 1, curve: 1 },
     parBuild,
   }),

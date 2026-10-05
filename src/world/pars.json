@@ -6,32 +6,32 @@
   },
   {
     "levelId": "kitchen-sandbox",
-    "parPieces": 7,
-    "parTime": 2.65
+    "parPieces": 5,
+    "parTime": 2.7
   },
   {
     "levelId": "kitchen01",
-    "parPieces": 5,
+    "parPieces": 3,
     "parTime": 2.25
   },
   {
     "levelId": "kitchen02",
-    "parPieces": 6,
+    "parPieces": 3,
     "parTime": 2.35
   },
   {
     "levelId": "kitchen03",
-    "parPieces": 9,
-    "parTime": 2.6
+    "parPieces": 5,
+    "parTime": 2.65
   },
   {
     "levelId": "kitchen04",
-    "parPieces": 6,
-    "parTime": 2.6
+    "parPieces": 4,
+    "parTime": 2.55
   },
   {
     "levelId": "kitchen05",
-    "parPieces": 8,
+    "parPieces": 6,
     "parTime": 2.4
   }
 ]

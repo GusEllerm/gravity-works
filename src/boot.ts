@@ -24,6 +24,9 @@ import { KITCHEN04, KITCHEN04_ID } from './world/levels/kitchen04.level.ts';
 import { KITCHEN05, KITCHEN05_ID, KITCHEN_SANDBOX } from './world/levels/kitchen05.level.ts';
 import { World, type RunStatus } from './world/world.ts';
 import type { Build } from './track/build.ts';
+import { PIECES } from './track/pieces.ts';
+import { fitSocket } from './track/snap.ts';
+import { transformSocket } from './track/socket.ts';
 import type { Level } from './world/level.ts';
 import { createBuilder } from './ui/builder.ts';
 import { parseShareUrl } from './share/share.ts';
@@ -114,15 +117,23 @@ export function nextLevelId(id: string): string | null {
  *  taken from that kind's FIRST placement in the par build (the kitchen
  *  authoring kit's per-instance params, Concepts/Levels). A tray button that
  *  placed kit DEFAULTS would build a different gap than the one the level
- *  was par'd on. */
-function levelTrayParams(
+ *  was par'd on. ONE geometry per kind is the tray's whole contract — the
+ *  builder ghosts and seats a held kind with these params — so a level that
+ *  uses one kind with two parameter sets has a par build NO tray can place
+ *  (`trayParityBuild` is the probe, `tests/unit/kitchen-levels.test.ts` the
+ *  gate). Exported for that parity probe. */
+export function levelTrayParams(
   level: Level,
   tray: Partial<Record<PieceKind, number>>,
 ): Partial<Record<PieceKind, PieceParams>> | undefined {
+  const declared = (level as unknown as { trayParams?: Partial<Record<PieceKind, PieceParams>> }).trayParams;
   const parBuild = (level as unknown as { parBuild?: () => Build }).parBuild;
-  if (!parBuild) return undefined;
-  const out: Partial<Record<PieceKind, PieceParams>> = {};
-  for (const p of parBuild().pieces) {
+  if (!parBuild && !declared) return undefined;
+  // the level's own declaration first (kinds its par line never places — the
+  // geometry a tray button must still seat with), the par build's tuned
+  // occurrences on top of it
+  const out: Partial<Record<PieceKind, PieceParams>> = { ...declared };
+  for (const p of parBuild ? parBuild().pieces : []) {
     if (tray[p.def] && out[p.def] === undefined) out[p.def] = p.params;
   }
   return out;
@@ -151,6 +162,53 @@ export function initialBuild(level: Level): Build {
     return { levelId: level.id, pieces, seed: level.seed };
   }
   return level.placeholderBuild();
+}
+
+/**
+ * What the SHIPPED BUILDER produces when the player places the level's par
+ * line: the fixtures stay ANCHORED at their par transforms (`initialBuild`
+ * mounts them, they are not the player's pieces) and the tray pieces are
+ * seated in par order onto the running socket cursor with the TRAY's single
+ * geometry per kind (`levelTrayParams`, exactly what a held button ghosts
+ * and seats). For a coherent level that build is byte-identical to
+ * `parBuild()` — "the tray can place the par build" as a data claim, not
+ * prose. It is not a runtime path (the builder is the runtime); it is the
+ * parity probe the ladder test reads, alongside `initialBuild`.
+ */
+export function trayParityBuild(level: Level): Build {
+  const kl = level as unknown as {
+    tray?: Partial<Record<PieceKind, number>>;
+    fixtures?: Partial<Record<PieceKind, number>>;
+    parBuild?: () => Build;
+  };
+  if (!kl.parBuild || !kl.tray || !kl.fixtures) return initialBuild(level);
+  const trayParams = levelTrayParams(level, kl.tray) ?? {};
+  const pieces: Build['pieces'] = [];
+  let cursor: ReturnType<typeof transformSocket> | null = null;
+  kl.parBuild().pieces.forEach((p, i) => {
+    if (p.def in kl.fixtures!) {
+      pieces.push({ ...p, seq: i });
+      cursor = transformSocket(PIECES[p.def].sockets(p.params)[1], p.transform);
+      return;
+    }
+    const params = trayParams[p.def] ?? p.params;
+    const [inSocket, outSocket] = PIECES[p.def].sockets(params);
+    // no anchor to hang off (a level with a tray but no start fixture) keeps
+    // the authored transform; the ladder's rungs all start on the ramp
+    const transform = cursor ? fitSocket(cursor, inSocket) : p.transform;
+    pieces.push({ def: p.def, params, transform, seq: i });
+    cursor = transformSocket(outSocket, transform);
+  });
+  return { levelId: level.id, pieces, seed: level.seed };
+}
+
+/** Pieces of a build the PLAYER placed — the tray basis every piece-count
+ *  star line compares against. `Builder.playerCount` reports this live; a
+ *  replay/share payload has no builder, so the same rule is applied to the
+ *  build here (a level's built-in fixtures are nobody's purchase). */
+export function playerPieceCount(level: Level, build: Build): number {
+  const fixtures = (level as unknown as { fixtures?: Partial<Record<PieceKind, number>> }).fixtures;
+  return fixtures ? build.pieces.filter((p) => !(p.def in fixtures)).length : build.pieces.length;
 }
 
 export function boot(root: HTMLElement): void {
@@ -218,7 +276,7 @@ function wireShareCard(
     const result: RunResult = {
       status: outcome,
       time: run.time,
-      piecesUsed: payload.build.pieces.length,
+      piecesUsed: playerPieceCount(level, payload.build),
       hazardsTouched: 0,
     };
     void generateShareCard({

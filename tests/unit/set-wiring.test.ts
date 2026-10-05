@@ -51,14 +51,24 @@ const LADDER: readonly KitchenLevel[] = [KITCHEN01, KITCHEN02, KITCHEN03, KITCHE
  *  shared gap (L01-L04, sandbox) legitimately moved. `kitchen05` is the
  *  control: it pins the original gap numbers in its own file and its hash is
  *  byte-for-byte the pre-wiring one. See the session log
- *  `2026-10-05 Stage 3 - L01 promise fix`. */
+ *  `2026-10-05 Stage 3 - L01 promise fix`.
+ *
+ *  RE-MEASURED AGAIN at the stage-3 LADDER COHERENCE pass: L02, L03 and the
+ *  sandbox each chained TWO different `straight` lengths, a geometry the tray
+ *  cannot place at all (one geometry per kind — Concepts/Levels §The data
+ *  model), so each now runs ONE straight size. `kitchen01` (untouched by
+ *  design), `kitchen04` (a straight-length change that lands between two hash
+ *  samples — same sampled states, finish 0.05 s earlier) and `kitchen05`
+ *  (never used two geometries) are byte-for-byte the pins above; three rows
+ *  moved and only three. See the session log
+ *  `2026-10-05 Stage 3 - ladder coherence`. */
 const PINNED: Record<string, string> = {
   kitchen01: 'd32417dc',
-  kitchen02: '07986be5',
-  kitchen03: 'ee52ff13',
+  kitchen02: '8e06206a',
+  kitchen03: '25e3e828',
   kitchen04: 'c6a63a80',
   kitchen05: '1d8d1713',
-  'kitchen-sandbox': 'ee52ff13',
+  'kitchen-sandbox': '7f008f48',
 };
 
 describe('physics neutrality of the set wiring', () => {

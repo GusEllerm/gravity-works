@@ -11,6 +11,17 @@
  *
  *   { levelId, parTime, parPieces }
  *
+ * `parPieces` is the TRAY-basis count — the number of pieces the reference
+ *  build asks the PLAYER to place, i.e. the reference build's pieces minus
+ *  the level's built-in `fixtures` (the book-stack ramp, the counter cup, the
+ *  bowl rim, the L02 run-out). That is the basis every consumer compares it
+ *  on: the builder counts tray placements only (`Builder.playerCount`), and a
+ *  level's tray total IS its `budget` (`kitchenLevel`), so a piece-count par
+ *  on any other basis is a star line no run can ever miss — the deployed
+ *  panel said "3 pieces — par 5" on a three-piece tutorial. Levels with no
+ *  fixture table (the feel rig, which ships no tray) keep the whole-build
+ *  count, which is what that level's counter already reported.
+ *
  * `parTime` is the measured finish time rounded UP to the next 0.05 s, so the
  * 3-star line is "at least as fast as the reference build" without punishing
  * float jitter at the exact reference time. A par build that does not finish
@@ -62,9 +73,14 @@ async function computePars() {
       );
       process.exit(2);
     }
+    // tray basis: everything the reference build places that is NOT a
+    // built-in fixture (levels without a fixture table count everything,
+    // which is what their counter already reports)
+    const fixtures = level.fixtures ?? {};
+    const trayPieces = build.pieces.filter((p) => !(p.def in fixtures)).length;
     entries.push({
       levelId: level.id,
-      parPieces: build.pieces.length,
+      parPieces: trayPieces,
       parTime: parTimeOf(run.time),
     });
   }

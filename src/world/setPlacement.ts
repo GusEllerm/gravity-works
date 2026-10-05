@@ -55,8 +55,11 @@ const STANDARD: Record<string, readonly [number, number, number]> = {
   // three-piece promise (L01 promise fix): L01/02/03 and the sandbox chain
   // the shared gap, so their counter centres moved with the cup; kitchen05
   // pins its original gap numbers and its row is byte-for-byte unchanged.
+  // L02 re-derived again at the stage-3 LADDER COHERENCE pass (its two
+  // straights are now ONE 0.18 m geometry, so the cup sits 5 mm nearer the
+  // start — the centre follows it); the other rows are untouched.
   kitchen01: [0.9111, -0.3980919, AXIS_OFFSET],
-  kitchen02: [1.0162, -0.4017658, AXIS_OFFSET],
+  kitchen02: [1.0112, -0.4017658, AXIS_OFFSET],
   kitchen03: [1.2469, -0.4780919, AXIS_OFFSET],
   kitchen05: [1.308, -0.6395241, AXIS_OFFSET],
   'kitchen-sandbox': [1.2719, -0.4780919, AXIS_OFFSET],

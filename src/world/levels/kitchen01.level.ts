@@ -160,6 +160,15 @@ export interface KitchenLevel extends Level {
   set: 'kitchen';
   /** What the player may place, per kind. The tray. Sum = `budget`. */
   tray: Partial<Record<PieceKind, number>>;
+  /** Geometry for a tray kind the PAR line never places. The tray's geometry
+   *  otherwise comes from the kind's first placement in `parBuild` (see
+   *  `levelTrayParams` in `src/boot.ts`), so a kind that only an ALTERNATE
+   *  line uses — L02's `gapLip`/`landing`, the whole point of a choice level —
+   *  would otherwise be seated with KIT DEFAULTS and build a different gap
+   *  than the level was par'd on. Declare those kinds here; the ladder test
+   *  asserts every authored line places each tray kind at exactly the
+   *  geometry the tray seats it with. */
+  trayParams?: Partial<Record<PieceKind, PieceParams>>;
   /** The reference build — fixtures plus the designer's line. `npm run pars`
    *  replays this and regenerates `par.time`. */
   parBuild(): Build;
