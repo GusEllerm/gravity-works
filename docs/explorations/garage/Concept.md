@@ -38,7 +38,7 @@ thermos and the blue car — the third room in the house where the inversion of 
 thing is tried deliberately. Two emissive overhead tube fixtures (geometry only) and one broad cool sun
 read as their light: flat, faintly cyan, shadows pooled directly under forms. **Scale joke:** the bench
 top vanishes above frame — furniture as weather again (bedroom B's desk leg, differentiated: this is a
-leg pair with a shelf, and the tool wall above it is a blurry constellation in the tilt-shift. **What a
+leg pair with a shelf), and the tool wall above it is a blurry constellation in the tilt-shift. **What a
 track wants here:** the WORKBENCH MEZZANINE — a cardboard ramp ramps up to the bench shelf and the whole
 under-bench half-room is low ground a builder claims for free; the grit arcs are visual grip lore, the
 real grip puzzle is the ramp's cardboard-vs-concrete lip at its foot.
