@@ -63,3 +63,46 @@ key in the engine; the TA should confirm the toon shader's shadow/unlit separati
 edge before ratifying the bulb variant. C's floor flake layer is one InstancedMesh (~260 flakes) and
 cheap; B's arcs are flat rings. None of these framings are set cameras yet — Canonical Cameras lists
 garage as unassigned; the real rigs land with the production set.
+
+## Round 2 — AD send-back of 2026-10-08 (numbered fixes, variant C only)
+
+The two C frames were re-rendered against the five numbered fixes plus the two studio
+notes; A and B were not re-saved (their renders are byte-identical to what HEAD produces —
+note the committed A PNGs predate a shared-code stamp and do not re-render byte-identical at
+HEAD itself, inherited, not introduced here).
+
+1. **Bench reads as furniture at the close rig** — the top dropped into frame (`topY 0.185`)
+   with its leg run, back rail and a grain-lit strip of top; measurable silhouette: the bench
+   edge now runs continuously through rows 240-460 of close-c where round 1 showed a
+   floating slab above frame.
+2. **One tool cast aside, on the top** — the wrench moved onto the dropped top
+   (`(-0.2, 0.2025, -0.31)`), the one hand-sized object in both rigs; nothing else is loose
+   in C's focus band (the hung screwdriver's handle went steel so the accent lives on the
+   toolbox only).
+3. **Isolated-bright census at the floor rig** — the speck budget fell from **0.050 % to
+   0.016 %** of frame (460 → 150 px; bar is 0.010 %). What actually fired, established by a
+   probe raycast from the speck pixels at a corrected camera matrix: the glint quads at
+   diffuse 2.4 (clamped white, now ~160 luma corridor-toned sparks), the wheel's chrome ring
+   and spokes and the tire sidewall band (dimmed steel), the nail spill at (0.22, 0.1) (ten
+   pins, chrome off), the parked car's cream roof stripe, the roller-door foot's clamped
+   bottom band, and the epoxy's specular mirror of the corridor. Several materials that the
+   removal tests kept exonerating (door, wall, ground, films, blade split) were given back
+   their light after the probe identified the true sources; the residual ~150 px ride the
+   tilt-shift CoC dither along the corridor-tail edges and belong to the open TA-1 ticket —
+   the same class, adjudicated at 300 % crop as ramp dither on the sharp/blur ring, not a
+   material. The 255-white band the census kept pointing at rows 393-438 triangulated onto
+   geometry only after the probe's camera-matrix fix; every "innocent" verdict before that
+   was cast against stale rays.
+4. **The practical bulb is in both rigs** — hung at (−0.05, 0.145, −0.24), visible upper-left
+   in hero-c and above the corridor in close-c, with the warm bounce disc under it keeping
+   the honest-bounce read where the bulb itself crops out.
+5. **Stain is a film, not a puddle** — the wet-patch treatment (bathroom-ratified) with the
+   white×2.2 fill experiment removed; it grazes the corridor's dark side and never crosses
+   the blade.
+
+Instrumented (`tools/histogram.mjs`, 1280×720, post=on): hero-c mean 152.3, p5 41, ≥243
+2.25 %, <60 10.05 %, token-red 0.50 %, iso 0.003 %, bright coverage 1.62 % of frame, longest
+≥240 run 427 px. close-c mean 131.5, p5 45 (baseline 38), ≥243 0.95 % (baseline 0.44 %),
+<60 17.9 %, token-red 0.44 %, iso 0.016 %, run 409 px (baseline 139). The <60 share rose
+with the dropped bench — the extra shade is under and behind it; p5 says nothing new crushed
+to black.

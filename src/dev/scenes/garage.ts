@@ -19,6 +19,7 @@
 
 import * as THREE from 'three'
 import { ceramic, dieCastPaint, fabric, liquid, paintedWood, trackPlastic } from '../../render/materials.ts'
+import { stainDecal } from '../../render/film.ts'
 import { toyBlock, trackChannel } from '../../render/geometry.ts'
 import { GLOBAL_TOKENS, SET_TOKENS, darken, mixHex, type SetTokens } from '../../render/tokens.ts'
 import { ToonMaterial, type ToonMaterialParams } from '../../render/toon-material.ts'
@@ -115,6 +116,20 @@ const VARIANTS: Record<Variant, VariantSpec> = {
 
 const STEEL = '#C4BEB2' // chrome, kept warm per the never-grey rule
 
+// The ratified bathroom wet-film fill pair (bathroom.ts round 2, fix 3): an
+// over-white fill so the film's fill-only shading lands on the LIT slab's
+// luma (the ±25 bar) while the Fresnel sheen rides past 240. Dark fills made
+// stickers.
+// (round 2: a white×2.2 FILM_FILL experiment pumped the wet-patch films to pure
+// white at the floor rig — the isolated specks; removed, the films keep the
+// bathroom's ratified fill.)
+
+// Variant C's sun-blade corridor, module-level so the flake layer in
+// `concreteSlab` and the glints in the C branch scatter along the SAME line
+// the light strip draws. C-only values; they touch no other variant.
+const BLADE_A: [number, number] = [0.31, -0.42]
+const BLADE_B: [number, number] = [-0.24, 0.05]
+
 // ---- helpers ----------------------------------------------------------
 
 function makeRng(seed: number): () => number {
@@ -137,9 +152,11 @@ function props(mesh: THREE.Object3D, cast = true, receive = true): void {
 }
 
 /** Material factories that pin the variant's fill gain on every surface. */
-function mk(v: VariantSpec) {
+function mk(v: VariantSpec, NO_DITHER = false) {
   const T = v.tokens
-  const F = { fillStrength: v.fill }
+  // shadowDither off for C round 2: the shadow-boundary ramp dither threw
+  // 242-252 staircase specks on the shaded floor (the open TA-1 fringe).
+  const F = { fillStrength: v.fill, ...(NO_DITHER ? { shadowDither: 0 } : {}) }
   const steel = (o: Partial<ToonMaterialParams> = {}) =>
     dieCastPaint(T, STEEL, { toy: 0.4, rim: { strength: 1.3, size: 0.15 }, ...F, ...o })
   const wood = (hex: string, o: Partial<ToonMaterialParams> = {}) =>
@@ -163,7 +180,7 @@ function concreteSlab(v: VariantSpec, M: ReturnType<typeof mk>, mode: Variant): 
       ? { specular: { size: 0.6, strength: 0.7 } } // sealed gloss
       : mode === 'b'
         ? { specular: { size: 0.15, strength: 0.06 } } // matte broom
-        : { specular: { size: 0.62, strength: 0.8 } } // poured epoxy
+        : { specular: { size: 0.62, strength: 0.32 } } // poured epoxy (round 2: 0.8 grazed the wall foot; 0.58 still mirrored the corridor's bright geometry off the epoxy as isolated specks at the floor rig)
   const slab = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.0), M.clay(v.concreteHex, spec))
   slab.rotation.x = -Math.PI / 2
   slab.receiveShadow = true
@@ -215,16 +232,26 @@ function concreteSlab(v: VariantSpec, M: ReturnType<typeof mk>, mode: Variant): 
     g.add(grit)
   }
   if (mode === 'c') {
-    // epoxy metallic flakes: flat pentagon confetti, sparse and glinting
+    // epoxy metallic flakes (round 2, send-back 3): halved in size, pulled to
+    // a darkened steel-metal treatment, and CONFINED to the sun-blade
+    // corridor — they fire where the blade lands instead of as pale dots in
+    // open shade. The diffuse is capped so no flake crosses 240 luma
+    // anywhere; the bright sparkle read is the sparse glint quads the C
+    // branch lays just above them, inside the same corridor.
     const d = new THREE.Object3D()
     const flake = new THREE.InstancedMesh(
-      new THREE.CircleGeometry(0.0018, 5),
-      M.paint(mixHex(v.concreteHex, '#E9E7D2', 0.75), { toy: 0.85, rim: { strength: 0.5, size: 0.3 } }),
-      260,
+      new THREE.CircleGeometry(0.0009, 5),
+      M.paint(mixHex(v.concreteHex, STEEL, 0.35), { toy: 0.4, diffuseStrength: 0.72 }),
+      240,
     )
     const rnd = makeRng(7002)
-    for (let i = 0; i < 260; i++) {
-      d.position.set((rnd() - 0.5) * 0.92, 0.0026, (rnd() - 0.5) * 0.92)
+    const dx = BLADE_B[0] - BLADE_A[0]
+    const dz = BLADE_B[1] - BLADE_A[1]
+    const len = Math.hypot(dx, dz)
+    for (let i = 0; i < 240; i++) {
+      const t = 0.02 + rnd() * 0.96
+      const off = (rnd() - 0.5) * 0.115
+      d.position.set(BLADE_A[0] + dx * t + (dz / len) * off, 0.0026, BLADE_A[1] + dz * t - (dx / len) * off)
       d.rotation.set(-Math.PI / 2, 0, rnd() * Math.PI * 2)
       d.updateMatrix()
       flake.setMatrixAt(i, d.matrix)
@@ -236,16 +263,19 @@ function concreteSlab(v: VariantSpec, M: ReturnType<typeof mk>, mode: Variant): 
   return g
 }
 
-/** Workbench: a monumental top that mostly lives above frame + fat legs. */
-function workbench(v: VariantSpec, M: ReturnType<typeof mk>, shelf: boolean): THREE.Group {
+/** Workbench: a monumental top that mostly lives above frame + fat legs.
+ *  `topY` lets a variant drop the top into a camera's frame (C round 2) —
+ *  default preserves the explored silhouette byte-for-byte. */
+function workbench(v: VariantSpec, M: ReturnType<typeof mk>, shelf: boolean, topY = 0.265): THREE.Group {
   const g = new THREE.Group()
   const top = new THREE.Mesh(toyBlock(0.46, 0.03, 0.22, 0.008), M.wood(v.benchHex, { grain: 0.55, grainScale: 0.4 }))
-  top.position.y = 0.265
+  top.position.y = topY
   props(top)
   g.add(top)
+  const legH = topY - 0.015
   for (const [x, z] of [[-0.2, -0.082], [0.2, -0.082], [-0.2, 0.082], [0.2, 0.082]] as const) {
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.25, 0.03), M.wood(darken(v.benchHex, 0.12)))
-    leg.position.set(x, 0.125, z)
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.03, legH, 0.03), M.wood(darken(v.benchHex, 0.12)))
+    leg.position.set(x, legH / 2, z)
     props(leg)
     g.add(leg)
   }
@@ -256,14 +286,16 @@ function workbench(v: VariantSpec, M: ReturnType<typeof mk>, shelf: boolean): TH
     g.add(sh)
   }
   const rail = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.06, 0.014), M.wood(darken(v.benchHex, 0.06)))
-  rail.position.set(0, 0.312, -0.104)
+  rail.position.set(0, topY + 0.047, -0.104)
   props(rail)
   g.add(rail)
   return g
 }
 
-/** Pegboard tool wall: a rail, a panel, four hung real toys. */
-function toolWall(v: VariantSpec, M: ReturnType<typeof mk>): THREE.Group {
+/** Pegboard tool wall: a rail, a panel, four hung real toys. `driverHex`
+ *  lets a variant take the red off the hung screwdriver (C round 2: the
+ *  accent moved down INTO the focus band, so the wall handle went steel). */
+function toolWall(v: VariantSpec, M: ReturnType<typeof mk>, driverHex?: string): THREE.Group {
   const g = new THREE.Group()
   const panel = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.24, 0.012), M.wood('#BFAF8C', { grain: 0.3, grainScale: 2 }))
   props(panel, false, true)
@@ -332,12 +364,44 @@ function toolWall(v: VariantSpec, M: ReturnType<typeof mk>): THREE.Group {
   dshaft.position.y = -0.012
   props(dshaft)
   driver.add(dshaft)
-  const dhandle = new THREE.Mesh(toyBlock(0.015, 0.038, 0.015, 0.006), M.paint(v.tokens.accent, { toy: 0.6 }))
+  const dhandle = new THREE.Mesh(toyBlock(0.015, 0.038, 0.015, 0.006), M.paint(driverHex ?? v.tokens.accent, { toy: 0.6 }))
   dhandle.position.y = 0.032
   props(dhandle)
   driver.add(dhandle)
   driver.position.set(0.1, 0.016, 0.014)
   g.add(driver)
+  return g
+}
+
+/** Screwdriver laid on its side on the floor — C's accent in the focus band
+ *  (send-back 1). Built lying so it never needs an Euler-order surprise. */
+function looseDriver(v: VariantSpec, M: ReturnType<typeof mk>, over: Partial<ToonMaterialParams> = {}): THREE.Group {
+  const g = new THREE.Group()
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.006, 0.006), M.steel())
+  shaft.position.x = 0.03
+  props(shaft)
+  g.add(shaft)
+  const handle = new THREE.Mesh(toyBlock(0.03, 0.016, 0.016, 0.005), M.paint(v.tokens.accent, { toy: 0.6, ...over }))
+  handle.position.x = -0.01
+  props(handle)
+  g.add(handle)
+  return g
+}
+
+/** Open-end wrench laid flat — the ONE tool cast aside on C's bench top
+ *  (studio round-2 note: the bench must read as furniture from the close
+ *  camera). Deliberately steel, not red: C spends its accent twice only. */
+function looseWrench(M: ReturnType<typeof mk>): THREE.Group {
+  const g = new THREE.Group()
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.005, 0.012), M.steel())
+  props(shaft)
+  g.add(shaft)
+  for (const sx of [-1, 1]) {
+    const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.005, 0.007), M.steel())
+    jaw.position.set(sx * 0.048, 0, 0)
+    props(jaw)
+    g.add(jaw)
+  }
   return g
 }
 
@@ -364,15 +428,18 @@ function bikeWheel(_v: VariantSpec, M: ReturnType<typeof mk>, R = 0.15): THREE.G
   return g
 }
 
-/** Enamel bucket, upright on its base (origin at floor centre, rim at top). */
-function bucket(_v: VariantSpec, M: ReturnType<typeof mk>, hex?: string): THREE.Group {
+/** Bucket, upright on its base (origin at floor centre, rim at top).
+ *  `paintOver` lets a variant tune the shell's paint (C tips one, and a
+ *  shell at the DEFAULT paint specular mirrors the low sun into isolated
+ *  ≥240 speckles at the floor camera — the AD's sparkle census). */
+function bucket(_v: VariantSpec, M: ReturnType<typeof mk>, hex?: string, paintOver: Partial<ToonMaterialParams> = {}): THREE.Group {
   const g = new THREE.Group()
-  const shell = new THREE.Mesh(new THREE.CylinderGeometry(0.047, 0.038, 0.068, 30, 1, true), M.paint(hex ?? '#A79C86', { toy: 0.55 }))
+  const shell = new THREE.Mesh(new THREE.CylinderGeometry(0.047, 0.038, 0.068, 30, 1, true), M.paint(hex ?? '#A79C86', { toy: 0.55, ...paintOver }))
   ;(shell.material as ToonMaterial).side = THREE.DoubleSide
   shell.position.y = 0.034
   props(shell)
   g.add(shell)
-  const base = new THREE.Mesh(new THREE.CircleGeometry(0.038, 26), M.paint(hex ?? '#A79C86', { toy: 0.5 }))
+  const base = new THREE.Mesh(new THREE.CircleGeometry(0.038, 26), M.paint(hex ?? '#A79C86', { toy: 0.5, ...paintOver }))
   base.rotation.x = -Math.PI / 2
   base.position.y = 0.004
   props(base)
@@ -483,7 +550,10 @@ function tubeFixture(_v: VariantSpec, M: ReturnType<typeof mk>): THREE.Group {
   return g
 }
 
-/** A low roller door with a bright slit at its bottom (variant C). */
+/** A low roller door with a bright slit at its bottom (variant C). C is the
+ *  only variant with the door IN frame at the low rig: the panel at the
+ *  plain skin tone sat a full ramp band above the room and threw a wall of
+ *  isolated ≥240 across its lower corner — pull it to the room's own shade tone. */
 function rollerDoor(v: VariantSpec, M: ReturnType<typeof mk>): THREE.Group {
   const g = new THREE.Group()
   const panel = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.37, 0.012), M.wood('#C6BC9C', { grain: 0.2, grainScale: 1.6 }))
@@ -503,25 +573,35 @@ function rollerDoor(v: VariantSpec, M: ReturnType<typeof mk>): THREE.Group {
 
 /** Sun blade: a bright floor strip from `from` to `to` (variant C's lie —
  *  the real light is one DirectionalLight along the same axis). */
-function sunBlade(_v: VariantSpec, M: ReturnType<typeof mk>, from: [number, number], to: [number, number], width: number): THREE.Group {
+function sunBlade(_v: VariantSpec, M: ReturnType<typeof mk>, from: [number, number], to: [number, number], width: number, hex = '#F1F6FF', diffuse = 1.7): THREE.Group {
   const g = new THREE.Group()
   const strip = new THREE.Mesh(
     new THREE.PlaneGeometry(width, Math.hypot(to[0] - from[0], to[1] - from[1])),
-    M.wood('#F1F6FF', { grain: 0, diffuseStrength: 1.7, specular: { strength: 0 } }),
+    // Round 2 fix 4: at 1.7 diffuse the ramp capped the strip at ~172 luma
+    // in the FLOOR camera — the blade literally could not cross the 240 bar
+    // at the low rig. 2.5 puts the strip itself over the bar in both rigs
+    // (it is a lie-strip, not a surface: brighter-than-sun is the point),
+    // and the y sits just under the track's underside so it never z-fights
+    // the channel where they cross, just over the flakes so it reads as
+    // light ON them.
+    M.wood(hex, { grain: 0, diffuseStrength: diffuse, specular: { strength: 0 } }),
   )
   strip.rotation.x = -Math.PI / 2
   strip.castShadow = false
   strip.receiveShadow = false
   g.add(strip)
-  g.position.set((from[0] + to[0]) / 2, 0.0022, (from[1] + to[1]) / 2)
-  g.lookAt(to[0], 0.0022, to[1])
+  g.position.set((from[0] + to[0]) / 2, 0.0028, (from[1] + to[1]) / 2)
+  g.lookAt(to[0], 0.0028, to[1])
   return g
 }
 
-/** Toolbox — the token red, one of C's exactly-two red objects. */
-function toolbox(v: VariantSpec, M: ReturnType<typeof mk>): THREE.Group {
+/** Toolbox — the token red, one of C's exactly-two red objects. `paintOver`
+ *  lets a variant tune the body's paint (C kills the broad gloss streak —
+ *  at the AD's sparkle census a 240-luma highlight on a fist-sized box is
+ *  exactly the isolated speckle that must not exist). */
+function toolbox(v: VariantSpec, M: ReturnType<typeof mk>, paintOver: Partial<ToonMaterialParams> = {}): THREE.Group {
   const g = new THREE.Group()
-  const body = new THREE.Mesh(toyBlock(0.072, 0.045, 0.038, 0.007), M.paint(v.tokens.accent, { toy: 0.6 }))
+  const body = new THREE.Mesh(toyBlock(0.072, 0.045, 0.038, 0.007), M.paint(v.tokens.accent, { toy: 0.6, ...paintOver }))
   body.position.y = 0.0225
   props(body)
   g.add(body)
@@ -643,7 +723,7 @@ function garageScene(variant: Variant): SceneFactory {
   return (ctx): SceneEntry => {
     const v = VARIANTS[variant]
     const t = v.tokens
-    const M = mk(v)
+    const M = mk(v, variant === 'c')
     const scene = new THREE.Scene()
     scene.background = new THREE.Color(t.background)
 
@@ -665,10 +745,11 @@ function garageScene(variant: Variant): SceneFactory {
     } else {
       const sun = new THREE.DirectionalLight(v.keyColor, v.keyIntensity)
       sun.position.set(...v.keyPos)
-      sun.shadow.camera.left = -1.2
-      sun.shadow.camera.right = 1.2
-      sun.shadow.camera.top = 1.2
-      sun.shadow.camera.bottom = -1.2
+      const fr = variant === 'c' ? 1.6 : 1.2
+      sun.shadow.camera.left = -fr
+      sun.shadow.camera.right = fr
+      sun.shadow.camera.top = fr
+      sun.shadow.camera.bottom = -fr
       sun.shadow.camera.near = 0.1
       sun.shadow.camera.far = 4
       sun.shadow.bias = -0.0004
@@ -683,12 +764,12 @@ function garageScene(variant: Variant): SceneFactory {
     // ground beyond the slab + the back wall
     const ground = new THREE.Mesh(
       new THREE.CircleGeometry(1.4, 72),
-      M.wood(darken(t.ground, 0.08), { grain: 0.25, grainScale: 0.25 }),
+      M.wood(darken(t.ground, variant === 'c' ? 0.16 : 0.08), { grain: variant === 'c' ? 0.1 : 0.25, grainScale: 0.25 }),
     )
     ground.rotation.x = -Math.PI / 2
     ground.receiveShadow = true
     scene.add(ground)
-    const wall = new THREE.Mesh(new THREE.PlaneGeometry(20, 4), M.wood(v.wallHex, { grain: 0.04, grainScale: 0.1, diffuseStrength: 0.9 }))
+    const wall = new THREE.Mesh(new THREE.PlaneGeometry(20, 4), M.wood(v.wallHex, { grain: 0.04, grainScale: 0.1, diffuseStrength: variant === 'c' ? 0.85 : 0.9 }))
     wall.position.set(0, 1.6, -0.45)
     wall.receiveShadow = true
     scene.add(wall)
@@ -700,9 +781,28 @@ function garageScene(variant: Variant): SceneFactory {
     // the track's line, shared by all three: straight down the room
     const trackA = new THREE.Vector3(0.0, 0.003, 0.34)
     const trackB = new THREE.Vector3(0.045, 0.003, -0.27)
-    const trackMat = trackPlastic(t, GLOBAL_TOKENS.trackOrange, { toy: 0.2, fillStrength: v.fill })
+    // Round 2 note 3: the probe caught the SPECK ray on the track channel's
+    // own top band — at C's key strength the orange ramp tops at ≥240 and
+    // its dithered AA stair ran the corridor's census tail. C's track runs
+    // a dimmer-diffuse twin of the same material; A/B keep theirs exactly.
+    const trackMat = trackPlastic(t, GLOBAL_TOKENS.trackOrange, { toy: 0.2, fillStrength: v.fill, ...(variant === 'c' ? { specular: { size: 0.3, strength: 0.08 } } : {}) })
 
     const heroCar = car(v, v.carHex)
+    if (variant === 'c') {
+      // Round 2 (AD note 3): the parked car's cream roof stripe at the plain
+      // toy skin sat ABOVE the bloom knee (~233 luma) and the floor rig's DOF
+      // stair-cut it into the isolated-bright specks running down the
+      // corridor's tail. The car keeps its colour; the stripe and the toy
+      // gradient come off the knee. (A/B keep the car byte-identical.)
+      for (const sub of heroCar.children) {
+        const m = (sub as THREE.Mesh).material as ToonMaterial
+        if (!m?.uniforms) continue
+        if ('uToy' in m.uniforms) m.uniforms.uToy.value = Math.min(m.uniforms.uToy.value as number, 0.25)
+        if (m.uniforms.uColor && (m.uniforms.uColor.value as THREE.Color).getHex() === 0xf6e9d2) {
+          m.uniforms.uDiffuseStrength.value = 0.55
+        }
+      }
+    }
     set.add(heroCar)
 
     if (variant === 'a') {
@@ -828,36 +928,179 @@ function garageScene(variant: Variant): SceneFactory {
       set.add(second)
     } else {
       // ---- C: epoxy sparkle, door-gap sunblade, wheel tunnel -------------
-      set.add(workbench(v, M, false).translateX(-0.24).translateZ(-0.26))
-      const tw = toolWall(v, M)
+      // Round 2 (2026-10-08 AD send-back, all five numbered fixes + the
+      // studio's two named notes). Everything below is C-branch only.
+      // Studio note 1: the bench DROPPED to table height (top 0.185) so the
+      // close camera takes in its front edge, its full leg run AND a strip
+      // of the grained top at the back — furniture, not architecture — with
+      // exactly ONE tool cast aside on the far of the top, where the low
+      // rig's top-of-view can still reach it.
+      set.add(workbench(v, M, false, 0.185).translateX(-0.24).translateZ(-0.26))
+      const benchTool = looseWrench(M)
+      benchTool.position.set(-0.2, 0.2025, -0.31)
+      benchTool.rotation.y = 0.55
+      set.add(benchTool)
+      // Fix 1: the accent moved DOWN off the tool wall and out of the lens
+      // shadow — the hung screwdriver's handle is steel now, and the red
+      // lives on the floor beside the straight at car height, in the band.
+      const tw = toolWall(v, M, STEEL)
       tw.position.set(-0.24, 0.44, -0.44)
       set.add(tw)
-      set.add(can(v, M).translateX(-0.16).translateY(0.283).translateZ(-0.24))
-      set.add(toolbox(v, M).translateX(0.2).translateY(0.004).translateZ(0.3))
+      set.add(can(v, M).translateX(-0.16).translateY(0.2).translateZ(-0.24))
+      // the toolbox pulled off the floor rig onto the straight (fix 1),
+      // parked just clear of the blade's band-line so its body does not
+      // stand on the run
+      const box = toolbox(v, M, { specular: { size: 0.5, strength: 0.18 }, toy: 0.28 })
+      // the bail's chrome at the full steel rim threw a 1px dash of ≥240
+      // over the box's own red at the floor camera — dim the wire chrome.
+      for (const kid of box.children) {
+        const m = (kid as THREE.Mesh).material as ToonMaterial
+        if (m?.uniforms?.uRimStrength) {
+          m.uniforms.uRimStrength.value = Math.min(m.uniforms.uRimStrength.value as number, 0.3)
+          m.uniforms.uSpecStrength.value = Math.min(m.uniforms.uSpecStrength.value as number, 0.25)
+        }
+      }
+      box.translateX(0.065).translateY(0.004).translateZ(-0.09)
+      set.add(box)
+      const driver = looseDriver(v, M, { toy: 0.3 })
+      for (const kid of driver.children) {
+        const m = (kid as THREE.Mesh).material as ToonMaterial
+        if (m?.uniforms?.uRimStrength) {
+          m.uniforms.uRimStrength.value = Math.min(m.uniforms.uRimStrength.value as number, 0.3)
+          m.uniforms.uSpecStrength.value = Math.min(m.uniforms.uSpecStrength.value as number, 0.25)
+        }
+      }
+      driver.translateX(0.03).translateY(0.011).translateZ(-0.13).rotateY(0.6)
+      set.add(driver)
 
-      // the roller door + the blade of light from its gap
+      // the roller door + the blade of light from its gap.
+      // Fix 4: the strip WIDENED to 0.075 and the corridor re-aimed so its
+      // path runs at a near-constant 0.3-0.5 m from the floor rig — the
+      // tilt-shift band's own depth shell — instead of sweeping in to the
+      // camera's feet and dropping out of the band. Projected, it crosses
+      // close-c at rows 452-471 (the band is 358-502): the blade is now one
+      // long sharp line at the LOW rig, not a hero-only story.
       const door = rollerDoor(v, M)
+      // Round 2 note 3: at C's key the roller panel's bottom slat clamped the
+      // ramp (192 x 1.62 >= 240) and threw AA fringe along its foot; the C
+      // instance only (A's door is untouched) comes down off the knee.
+      for (const kid of door.children) {
+        const m = (kid as THREE.Mesh).material as ToonMaterial
+        if (m?.uniforms?.uDiffuseStrength && m.uniforms.uDiffuseStrength.value === 1) m.uniforms.uDiffuseStrength.value = 0.8
+        else if (m?.uniforms?.uDiffuseStrength && (m.uniforms.uDiffuseStrength.value as number) === 1.5) m.uniforms.uDiffuseStrength.value = 1
+      }
       door.position.set(0.31, 0, -0.442)
       set.add(door)
-      set.add(sunBlade(v, M, [0.3, -0.42], [-0.2, 0.24], 0.034))
+      // Round 2 (AD round-2 note 3): the strip's FAR half sat exactly ON the
+      // 240/bloom knee, so its AA stair threw 1px specks along the corridor
+      // tail at the floor rig. The blade is now two segments — the near half
+      // keeps the lie-strip at 2.5 (the run, hero story), the far half is
+      // pulled to a dimmer wash: still a light line across the frame, but a
+      // clean ~200 luma, off the knee.
+      // Round 2 note 3: the corridor's FAR tail (A side, past the track
+      // intersection) sat on the 240/bloom knee at the floor rig and its
+      // AA stair cut threw the isolated specks. The first 30% of the run
+      // is a dimmer wash; the 70% that carries the hero story keeps 2.5.
+      const bladeQ: [number, number] = [BLADE_A[0] + (BLADE_B[0] - BLADE_A[0]) * 0.3, BLADE_A[1] + (BLADE_B[1] - BLADE_A[1]) * 0.3]
+      set.add(sunBlade(v, M, BLADE_A, bladeQ, 0.075, mixHex(v.concreteHex, '#F1F6FF', 0.4), 0.62))
+      set.add(sunBlade(v, M, bladeQ, BLADE_B, 0.075, '#F1F6FF', 2.5))
+      // fix 3 companion: sparse glint quads INSIDE the corridor only, and
+      // only in its SHARP middle third (t 0.42-0.72, the band's own depth
+      // shell) — a glint on the strip is invisible (same value as the
+      // light), a glint off it is exactly the isolated speck the census
+      // forbids, and in the blurred near/far runs a glint OUTSIDE the
+      // strip's few projected pixels is a 255-luma dot on dark floor.
+      const gd = new THREE.Object3D()
+      const glint = new THREE.InstancedMesh(
+        new THREE.CircleGeometry(0.0026, 5),
+        // Round 2 note 3: the quads at 2.4 diffused to CLAMPED white and their dithered
+        // edges on the dark floor WERE the isolated-bright census (never a mesh-removal
+        // could touch them — they are the specks). Off the bar now: sparkles of the
+        // corridor's own tone, a touch above the floor, not sun-on-chrome.
+        M.wood(mixHex(v.concreteHex, '#F4F8FF', 0.5), { grain: 0, diffuseStrength: 0.55, specular: { strength: 0 } }),
+        30,
+      )
+      const grnd = makeRng(7006)
+      const gdx = BLADE_B[0] - BLADE_A[0]
+      const gdz = BLADE_B[1] - BLADE_A[1]
+      for (let i = 0; i < 30; i++) {
+        const gt = 0.42 + grnd() * 0.3
+        gd.position.set(BLADE_A[0] + gdx * gt, 0.0036, BLADE_A[1] + gdz * gt)
+        gd.rotation.set(-Math.PI / 2, 0, grnd() * Math.PI * 2)
+        gd.updateMatrix()
+        glint.setMatrixAt(i, gd.matrix)
+      }
+      glint.castShadow = false
+      glint.receiveShadow = false
+      set.add(glint)
 
-      // the dead bulb, swinging-frozen (static: a hair off plumb)
+      // Studio note 2: the dead bulb is a PRACTICAL now, not an off-frame
+      // joke — hung over the bench foot at a height BOTH rigs can see, and
+      // it carries an honest, clearly-dimmer-than-the-blade warm bounce
+      // disc on the slab under it, so the practical read survives even
+      // where the bulb itself does not.
       const bulb = hangingBulb(v, M, false, 0.3)
-      bulb.position.set(-0.02, 0.42, -0.05)
+      bulb.position.set(-0.05, 0.145, -0.24)
       bulb.rotation.z = 0.04
       set.add(bulb)
+      const bounce = new THREE.Mesh(new THREE.CircleGeometry(0.075, 26), M.wood(mixHex(v.concreteHex, '#F4DBA8', 0.26), { grain: 0, diffuseStrength: 1.12, specular: { strength: 0.1 } }))
+      bounce.rotation.x = -Math.PI / 2
+      bounce.position.set(-0.05, 0.0019, -0.24)
+      bounce.castShadow = false
+      bounce.receiveShadow = true
+      set.add(bounce)
 
       // the parked wheel, stood up dead-centre on the straight: the tunnel
+      // (with a shadowed back cap — the AD's bucket/tunnel ticket: an open
+      // tube aimed at the camera reads as a floating hoop and, here, lit
+      // the wall through itself as an isolated-bright speck. C-scoped;
+      // a/b's tunnels are untouched pending the shared fix.)
       const wheel = bikeWheel(v, M)
       wheel.position.set(0.045, 0.14, -0.283)
+      // the 0.9mm spokes at the full steel rim band fired as isolated ≥240
+      // pixels once the wheel sat sharp in the floor camera's band — the
+      // ring's 6mm tube at 1.3 threw 1px 255-luma dashes along its lower
+      // arc and the spokes' own spec glaze threw another band of them, so
+      // the wire parts get a dimmer chrome (tire keeps its cloth matte,
+      // the hub its normal steel).
+      for (const i of [0, 1, 2, 3, 4, 5, 6, 7]) {
+        const m = (wheel.children[i] as THREE.Mesh).material as ToonMaterial
+        if (m.uniforms.uRimStrength) m.uniforms.uRimStrength.value = 0.2
+        if (m.uniforms.uSpecStrength) m.uniforms.uSpecStrength.value = 0.1
+        if (m.uniforms.uDiffuseStrength) m.uniforms.uDiffuseStrength.value = 0.6
+        if (m.uniforms.uColor) (m.uniforms.uColor.value as THREE.Color).multiplyScalar(0.72)
+      }
       set.add(wheel)
       set.add(tunnelShaft(M, [0.045, 0.02, -0.36], 0.034, 0.16))
+      const cap = new THREE.Mesh(new THREE.CircleGeometry(0.036, 22), M.cloth('#241C12', { diffuseStrength: 0.1, rim: { strength: 0, size: 1 } }))
+      cap.position.set(0.045, 0.02, -0.4395)
+      cap.castShadow = false
+      cap.receiveShadow = false
+      set.add(cap)
 
-      // the oil stain at the blade's dark edge; a tipped bucket + cardboards
-      const stain = oilStain(v, M, 0.06, 0.042)
-      stain.position.set(-0.035, 0.0025, -0.02)
+      // Fix 5: the stain is a FILM now — the ratified bathroom wet-patch
+      // treatment (base near the slab tone inside the ±25-luma bar, soft SDF
+      // edge, Fresnel sheen streaks), not a liquid decal. Nudged LEFT so its
+      // soft edge just grazes the widened corridor's dark side — a puddle
+      // lying IN the blade would read as a hole in the light.
+      const filmTone = mixHex(v.concreteHex, '#2A2418', 0.28)
+      const stain = stainDecal(t, { kind: 'wetPatch', color: filmTone, opacity: 0.5, size: 0.055, sheen: 1, lift: 0.0042 })
+      stain.position.set(-0.09, stain.position.y, -0.14)
       set.add(stain)
-      const b = bucket(v, M, '#A08E72')
+      for (const [sx, sz, ss] of [[-0.02, -0.19, 0.011], [-0.15, -0.11, 0.009]] as const) {
+        const drip = stainDecal(t, { kind: 'wetPatch', color: filmTone, opacity: 0.55, size: ss, sheen: 1, lift: 0.0042 })
+        drip.position.set(sx, drip.position.y, sz)
+        set.add(drip)
+      }
+      // a tipped bucket + cardboards
+      const b = bucket(v, M, '#A08E72', { specular: { size: 0.5, strength: 0.22 } })
+      // the tipped shell's steel rim carries a 1.3 rim band that fired as
+      // isolated ≥240 pixels at the floor camera — dim it for the tipped
+      // one only (the upright buckets keep the bright rim ring).
+      for (const kid of b.children) {
+        const m = (kid as THREE.Mesh).material as ToonMaterial
+        if (m?.uniforms?.uRimStrength) m.uniforms.uRimStrength.value = Math.min(m.uniforms.uRimStrength.value as number, 0.35)
+      }
       b.rotation.z = Math.PI / 2 - 0.15
       b.rotation.y = -Math.PI / 2
       b.position.set(-0.17, 0.04, 0.14)
@@ -873,12 +1116,30 @@ function garageScene(variant: Variant): SceneFactory {
       props(lid)
       set.add(lid)
       set.add(rag(v, M, '#8A8A60').translateX(0.12).translateY(0.006).translateZ(-0.08))
-      set.add(nails(v, M, [0.22, 0.1], 10, 7103))
+      const nailPile = nails(v, M, [0.22, 0.1], 10, 7103)
+      // Round 2 note 3: the spill's ten 0.9mm steel pins sat in full die-cast
+      // chrome in the floor rig's sharp band — each fired one isolated ≥240
+      // pixel (the probe ray hit the pile dead-on; it was NEVER the door,
+      // the blade, or the floor the removal tests kept exonerating). The
+      // spill reads as scattered hardware still; the pins just stop
+      // mirroring the sun.
+      nailPile.traverse((o) => {
+        const m = (o as THREE.Mesh).material as ToonMaterial
+        if (!m?.uniforms) return
+        if (m.uniforms.uRimStrength) m.uniforms.uRimStrength.value = 0.2
+        if (m.uniforms.uSpecStrength) m.uniforms.uSpecStrength.value = 0.12
+        if (m.uniforms.uDiffuseStrength) m.uniforms.uDiffuseStrength.value = 0.6
+      })
+      set.add(nailPile)
 
       placeCar(heroCar, trackA, trackB, 0.64, 0.0126)
+      // Fix 2: one car per focus band — the blue witness is PARKED UNDER
+      // THE BENCH (the under-bench low ground variant B pitched, ported),
+      // engine-off, facing its own business. It is still in both frames
+      // but far past the separation bar from the hero, in shade behind a leg.
       const second = car(v, '#0072BD')
-      second.position.set(-0.1, 0.0126, -0.18)
-      second.lookAt(0.045, 0.0126, -0.283)
+      second.position.set(-0.4, 0.0126, -0.24)
+      second.lookAt(-0.44, 0.0126, -0.4)
       second.rotateY(-Math.PI / 2)
       set.add(second)
     }
@@ -898,7 +1159,13 @@ function garageScene(variant: Variant): SceneFactory {
     const camera = new THREE.PerspectiveCamera(ctx.rig.fov, 16 / 9, ctx.rig.near, ctx.rig.far)
     camera.position.set(...ctx.rig.position)
     camera.lookAt(new THREE.Vector3(...ctx.rig.target))
-    return { scene, camera, focus: [heroCar.position.x, heroCar.position.y + 0.01, heroCar.position.z], tokens: t }
+    // Round 2 note 3: C's focus point moves off the (unmoved) hero car onto
+    // the corridor itself, so the blade tail and wheel sit in the SHARP
+    // band — the tilt-shift no longer tap-dithers the blade's bloom halo
+    // into isolated specks along the tail (the round-2 iso census).
+    const focus: [number, number, number] = variant === 'c' ? [0.02, 0.02, -0.3] : [heroCar.position.x, heroCar.position.y + 0.01, heroCar.position.z]
+    
+    return { scene, camera, focus, tokens: t }
   }
 }
 
