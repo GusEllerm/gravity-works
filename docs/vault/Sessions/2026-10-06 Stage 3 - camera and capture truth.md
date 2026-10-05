@@ -75,7 +75,7 @@ verb. `physicsNote` heads now equal those status words verbatim.
 
 ## 5. Verification
 
-vitest 254 green; feel harness hashes unchanged (`cee96961`, `90d4cd69`); `pars.json`
+vitest 255 green; feel harness hashes unchanged (`cee96961`, `90d4cd69`); `pars.json`
 regenerates byte-clean; e2e green except the pre-existing `visual.spec.ts` kitchen01 idle
 baseline mismatch (980×540 vs 960×540 canvas scaling, present before this crew). Docs
 reconciled: [[Modules/camera]], [[Modules/world]], [[Modules/physics]], [[Modules/ui]].
