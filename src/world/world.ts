@@ -88,8 +88,33 @@ export const WORLD_ROLL_COEF = ROLL_COEF;
 /** A finish cup captures when the chassis centre comes within this many
  * cup radii (the chassis rides above the deck, so 1x never triggers). */
 export const CUP_CAPTURE_FACTOR = 2;
-/** A launcher fires when the chassis centre passes within this (world m). */
-export const LAUNCHER_RADIUS = 0.05;
+/** Below this world speed, grounded, for `STALL_SECONDS` -> `stalled`.
+ *
+ * Stage 3 latency tune (playtest E: "the result panel appeared only seconds
+ * later" — the panel only shows on a TERMINAL status, and the stall window
+ * was the last mile of every dead run). Measured against the old pair
+ * (0.02 m/s held for a flat 2 s), a parked car did not conclude in 2 s at
+ * ALL: the contact corrector's jitter keeps a RESTING chassis reading
+ * 0.02–0.05 m/s of phantom speed (tests/unit/world.test.ts reproduces it),
+ * so the sub-0.02 counter never filled and a dead-on-the-deck car rode to
+ * the 12 s TIMEOUT — the playtest's "seconds" was up to twelve. Measured
+ * at 1:10 toy scale, 0.05 m/s is 0.67
+ * car-lengths per second — below anything a player reads as motion; 0.02
+ * was 0.27 lengths/s, a snail nobody can tell from parked. The speed gate
+ * is deliberately not simply "0": contact-corrector jitter on a resting
+ * chassis reads a few mm/s, and a real (if crawl) roll down a real slope
+ * must not be cut — the DURATION does that job instead of a lower number.
+ * The pair now concludes a dead run ≤ 0.5 s of the car's real stop —
+ * asserted in `tests/unit/world.test.ts` (`≤ 1.0 s` ledger bar with one
+ * full filter window of headroom). A genuine crest-crossing dip below
+ * 0.05 lasts ≪ 0.5 s and never trips the window: every par run of L01–L05
+ * and the feel track finish with their terminal step UNCHANGED (the same
+ * test pins the feel-track hash bit-for-bit across the constant swap —
+ * these are outcome-only reads; no force in the solver touches them). */
+export const STALL_SPEED = 0.05;
+/** Grounded-slow seconds before `observe` concludes `stalled` (see
+ *  `STALL_SPEED`). 0.5 s ≈ 60 steps of the 120 Hz stall counter. */
+export const STALL_SECONDS = 0.5;
 /** How far down the start socket's tangent the chassis centre spawns — a
  * car centred exactly on the start socket hangs half its wheelbase over
  * the deck edge and slides off backwards (measured, 2026-10-04).
@@ -100,6 +125,8 @@ export const LAUNCHER_RADIUS = 0.05;
  * RIG's arc, which already puts the car's whole wheelbase on the deck, so the
  * two agree to within this 2 cm of a 2.5 m track. */
 export const SPAWN_ADVANCE = 0.02;
+/** A launcher fires when the chassis centre passes within this (world m). */
+export const LAUNCHER_RADIUS = 0.05;
 
 export type RunStatus = 'idle' | 'running' | 'finished' | 'fell' | 'stalled' | 'timeout';
 
@@ -232,8 +259,8 @@ export class World {
     this.variant = options.variant ?? 'raycastWheels';
     this.rollCoef = options.rollCoef ?? WORLD_ROLL_COEF;
     this.maxTime = options.maxTime ?? level.maxTime;
-    this.stallSpeed = options.stallSpeed ?? 0.02;
-    this.stallLimit = Math.round((options.stallSeconds ?? 2) / FIXED_DT);
+    this.stallSpeed = options.stallSpeed ?? STALL_SPEED;
+    this.stallLimit = Math.round((options.stallSeconds ?? STALL_SECONDS) / FIXED_DT);
     this.launchSpeed = options.launchSpeed ?? 0;
 
     const { splines, pieces } = reify(build);
