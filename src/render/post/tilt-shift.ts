@@ -1,6 +1,6 @@
 // Tilt-shift — the signature of the whole look (art bible §Camera, PROMPT
 // §5.6/§7.3): a narrow band of focus so the kitchen reads miniature. Built as
-// an honest two-pass separable blur (horizontal then vertical) at half-res in
+// an honest two-pass separable blur (horizontal then vertical) at quarter-res in
 // internal buffers, composited back over the sharp frame by circle of
 // confusion — the blur geometry is separable, the sample cost is not paid
 // twice at full frame.
@@ -137,7 +137,7 @@ void main() {
 // buffers.
 const tiltCompositeShader = /* glsl */ `
 uniform sampler2D tDiffuse;   // sharp full-res frame
-uniform sampler2D uBlurred;   // half-res separable blur result
+uniform sampler2D uBlurred;   // quarter-res separable blur result
 uniform float uBandCenter;
 uniform float uBandHalf;
 
@@ -154,8 +154,8 @@ void main() {
 `
 
 /**
- * One composer stage, three internal draws: separable H at half-res,
- * separable V at half-res, full-res CoC composite. Disabling the stage
+ * One composer stage, three internal draws: separable H at quarter-res,
+ * separable V at quarter-res, full-res CoC composite. Disabling the stage
  * (quality=low) makes the composer skip all three.
  */
 export class TiltShiftPass extends Pass {
@@ -219,7 +219,7 @@ export class TiltShiftPass extends Pass {
   }
 
   setParams(p: TiltShiftParams): void {
-    // the blur buffers are half-res: a full-frame pixel radius is half as
+    // the blur buffers are quarter-res: a full-frame pixel radius is quarter as
     // many blur-buffer pixels
     this.blur.uniforms.uBandCenter!.value = p.bandCenter
     this.blur.uniforms.uBandHalf!.value = p.bandHalf

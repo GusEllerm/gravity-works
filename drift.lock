@@ -198,7 +198,7 @@ sig = "a38e01706f33daf6"
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
 target = "src/render/post/index.ts"
-sig = "a5ef0d99c5b6e94d"
+sig = "62f78226ebf31a56"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"

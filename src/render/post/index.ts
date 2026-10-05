@@ -1,5 +1,5 @@
 // The post stack (PROMPT §8, §5.6): RenderPass → tilt-shift (separable
-// half-res pair + CoC composite) → soft bloom → color grade (with the
+// quarter-res pair + CoC composite) → soft bloom → color grade (with the
 // vignette term and the sRGB encode inside) — one entry point,
 // `createPostStack`, used by the render harness (`?post=on`) and — behind a
 // URL flag only — the game shell in `src/boot.ts`. Post is OFF by default
