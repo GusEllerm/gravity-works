@@ -14,26 +14,32 @@ tags: [reference, levels]
 
 | id | file | teaches | tray (budget) | par pieces | par time | status |
 |---|---|---|---|---|---|---|
-| `feeltrack` | `feeltrack.level.ts` | (test track, not a rung) | — (16) | 9 | 5.0 | the accept-line level, unchanged |
-| `kitchen01` | `kitchen01.level.ts` | the tutorial: three pieces, one gap, launch | 3 (`gapLip`, `drop`, `landing`) | 3 | 2.21 | done — par build finishes headless; "one way" is authoring intent, the gap pieces punish nothing (ask #3) |
-| `kitchen02` | `kitchen02.level.ts` | a CHOICE: two lines across one gap; the lazy one is faster | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 3 | 2.27 | done, **with the curve rung BLOCKED** (ask #1) — the curve is fixture run-out past the cup; both lines finish |
-| `kitchen03` | `kitchen03.level.ts` | the bowl on the set; gap verbs at speed | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 5 | 2.50 | done, **with the bowl line BLOCKED** (ask #1) — rim built + socketed (`bowl.in`/`bowl.out`), timed line runs past it |
-| `kitchen04` | `kitchen04.level.ts` | the tap hazard: affordance before hazard, wet patch halves grip | 5 (`gapLip`, `drop`, `landing`, `straight`×2) | 4 | 2.45 | done, **hazard live** (ask #2a delivered, [[Modules/hazards]]) — par replays bit-identical with the zone (flies the patch, grip-independent to the bit); ground line drives THROUGH it (hash diverges, finishes 0.06 s faster — low-drag plastic) |
-| `kitchen05` | `kitchen05.level.ts` | everything + one forced trade-off (one landing, one booster, two gaps) | 6 (`gapLip`×2, `drop`×2, `landing`, `booster`) | 6 | 2.39 | done — both wrong allocations measured to NOT finish; par beatable, not obvious |
-| `kitchen-sandbox` | `kitchen05.level.ts` | the set unlocked (`sandbox: true`, no budget) | none (all pieces ×99) | 5 | 2.53 | done — reference build finishes |
+| `feeltrack` | `feeltrack.level.ts` | (test track, not a rung) | — (16) | 9 | 3.05 | the accept-line level, unchanged |
+| `feeltrack` | `feeltrack.level.ts` | (test track, not a rung) | — (16) | 9 | 3.05 | the accept-line level, unchanged |
+| `kitchen01` | `kitchen01.level.ts` | the tutorial: three pieces, one gap, launch | 3 (`gapLip`, `drop`, `landing`) | 3 | 2.25 | done — par build finishes headless WITH MARGIN (seed-stable, release-speed-range finish); a build missing any tray piece CANNOT finish against the anchored fixtures (stage-3 promise fix); the one-way ORDER is still authoring intent (ask #3) |
+| `kitchen02` | `kitchen02.level.ts` | a CHOICE: two lines across one gap; the lazy one is faster | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 3 | 2.35 | done, **with the curve rung BLOCKED** (ask #1) — the curve is fixture run-out past the cup; both lines finish |
+| `kitchen03` | `kitchen03.level.ts` | the bowl on the set; gap verbs at speed | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 5 | 2.60 | done, **with the bowl line BLOCKED** (ask #1) — rim built + socketed (`bowl.in`/`bowl.out`), timed line runs past it |
+| `kitchen04` | `kitchen04.level.ts` | the tap hazard: affordance before hazard, wet patch halves grip | 5 (`gapLip`, `drop`, `landing`, `straight`×2) | 4 | 2.60 | done, **hazard live** (ask #2a delivered, [[Modules/hazards]]) — par replays bit-identical with the zone (flies the patch, grip-independent to the bit); ground line drives THROUGH it (hash diverges, finishes 0.06 s faster — low-drag plastic) |
+| `kitchen05` | `kitchen05.level.ts` | everything + one forced trade-off (one landing, one booster, two gaps) | 6 (`gapLip`×2, `drop`×2, `landing`, `booster`) | 6 | 2.40 | done — both wrong allocations measured to NOT finish; par beatable, not obvious; chains the PINNED original gap (the trade-off needs an unforgiving gap) |
+| `kitchen-sandbox` | `kitchen05.level.ts` | the set unlocked (`sandbox: true`, no budget) | none (all pieces ×99) | 5 | 2.65 | done — reference build finishes |
 
 Five other sets: five rungs each at their own stage (stage 4+); the ladder is
 otherwise empty.
 
 ## Pars
 
-**`pars` values above are measured par-build replay times, hand-written into
-the level files. `npm run pars` does not exist yet** — the Systems Engineer's
-pars-regeneration script has not merged as of this writing, so this table's
-`par time` column carries the designer's measurements (2026-10-06, raycast
-car, shipped `ROLL_COEF`, headless `World` via `src/replay/replay.ts`) rather
-than script output. Regenerate every cell (and each `Level.par.time`) the day
-the script lands; until then, do not trust these to survive a physics retune.
+**The `par time` column is now `npm run pars` output** (`src/world/pars.json`,
+measured with the raycast car, shipped `ROLL_COEF`, headless `World` via
+`src/replay/replay.ts`, ceil to 0.05 s; `npm run pars -- --check` guards
+drift). The script landed after this table was first hand-written, and it now
+imports every level file (`scripts/gen-pars.mjs`), so no cell is a designer's
+private measurement any more; each `Level.par.time` in the level file is the
+fallback only. Note `parPieces` in `pars.json` counts the WHOLE reference
+build (fixtures included, e.g. 5 for `kitchen01`), while the tray-based
+`par pieces` column below counts what the PLAYER places (3) — the tray budget
+dominates in-game either way (a L01 run can never exceed 3). Re-derived for
+every rung at the L01 promise fix (stage 3): L01–L04 and the sandbox chain
+the re-authored `KITCHEN_GAP`; `kitchen05` pins the original numbers.
 `par pieces` = pieces of the tray the reference build places (≤ tray total).
 
 ## What is blocked, honestly

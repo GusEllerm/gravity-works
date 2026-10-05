@@ -34,16 +34,32 @@ import {
 
 export const KITCHEN05_ID = 'kitchen05';
 
+/** L05's gap, PINNED to the ORIGINAL tutorial-gap numbers (drop height 0.15,
+ *  angle 40, lead 0.01; landing level 0.18). The shared `KITCHEN_GAP` was
+ *  re-authored for the L01 three-piece promise (see `kitchen01.level.ts`);
+ *  this level's lesson is the OPPOSITE kind of honesty — its two WRONG
+ *  allocations must NOT finish, and they were measured against these numbers.
+ *  A forgiving gap silently un-teaches the trade-off: with the softened
+ *  shared gap the no-booster line STARTED finishing, so rung 5 carries its
+ *  own copy — deliberately unforgiving, because this is the level that
+ *  punishes wrong choices, not the tutorial that forgives first ones.
+ *  Re-measure both wrong answers against any change here
+ *  (`tests/unit/kitchen-levels.test.ts`). */
+const KITCHEN05_GAP = {
+  lip: { length: 0.02, angle: 10, blend: 0.05 },
+  drop: { height: 0.15, angle: 40, radius: 0.02, lead: 0.01 },
+  landing: { level: 0.18, angle: 12, blend: 0.06 },
+} as const;
 function parBuild(): Build {
   return lay(
     [
       { def: 'ramp', params: kitchenRamp(0.3) }, // the books (fixture)
       { def: 'booster', params: { power: 1.1 } }, // tray: the ONE speed purchase
-      { def: 'gapLip', params: KITCHEN_GAP.lip }, // tray: gap 1 launch
-      { def: 'drop', params: KITCHEN_GAP.drop }, // tray: gap 1 + catch
-      { def: 'gapLip', params: KITCHEN_GAP.lip }, // tray: gap 2 launch
-      { def: 'drop', params: KITCHEN_GAP.drop }, // tray: gap 2
-      { def: 'landing', params: KITCHEN_GAP.landing }, // tray: the ONE soft catch
+      { def: 'gapLip', params: KITCHEN05_GAP.lip }, // tray: gap 1 launch
+      { def: 'drop', params: KITCHEN05_GAP.drop }, // tray: gap 1 + catch
+      { def: 'gapLip', params: KITCHEN05_GAP.lip }, // tray: gap 2 launch
+      { def: 'drop', params: KITCHEN05_GAP.drop }, // tray: gap 2
+      { def: 'landing', params: KITCHEN05_GAP.landing }, // tray: the ONE soft catch
       { def: 'finishCup' }, // fixture
     ],
     KITCHEN05_ID,
@@ -58,11 +74,11 @@ export function kitchen05NoBoosterBuild(): Build {
   return lay(
     [
       { def: 'ramp', params: kitchenRamp(0.3) },
-      { def: 'gapLip', params: KITCHEN_GAP.lip },
-      { def: 'drop', params: KITCHEN_GAP.drop },
-      { def: 'gapLip', params: KITCHEN_GAP.lip },
-      { def: 'drop', params: KITCHEN_GAP.drop },
-      { def: 'landing', params: KITCHEN_GAP.landing },
+      { def: 'gapLip', params: KITCHEN05_GAP.lip },
+      { def: 'drop', params: KITCHEN05_GAP.drop },
+      { def: 'gapLip', params: KITCHEN05_GAP.lip },
+      { def: 'drop', params: KITCHEN05_GAP.drop },
+      { def: 'landing', params: KITCHEN05_GAP.landing },
       { def: 'finishCup' },
     ],
     KITCHEN05_ID,
@@ -77,12 +93,12 @@ export function kitchen05LateBoosterBuild(): Build {
   return lay(
     [
       { def: 'ramp', params: kitchenRamp(0.3) },
-      { def: 'gapLip', params: KITCHEN_GAP.lip },
-      { def: 'drop', params: KITCHEN_GAP.drop },
-      { def: 'landing', params: KITCHEN_GAP.landing },
+      { def: 'gapLip', params: KITCHEN05_GAP.lip },
+      { def: 'drop', params: KITCHEN05_GAP.drop },
+      { def: 'landing', params: KITCHEN05_GAP.landing },
       { def: 'booster', params: { power: 1.1 } },
-      { def: 'gapLip', params: KITCHEN_GAP.lip },
-      { def: 'drop', params: KITCHEN_GAP.drop },
+      { def: 'gapLip', params: KITCHEN05_GAP.lip },
+      { def: 'drop', params: KITCHEN05_GAP.drop },
       { def: 'finishCup' },
     ],
     KITCHEN05_ID,
@@ -137,7 +153,7 @@ export const KITCHEN_SANDBOX: KitchenLevel = registerKitchen(
     seed: 1,
     startSocket: startSocketFromBuild(sandboxBuild(), KITCHEN_GEOM.release * KITCHEN_GEOM.rampBlend),
     budget: 999, // no budget; the contract wants a number
-    par: { pieces: 5, time: 2.53 },
+    par: { pieces: 5, time: 2.64 },
     maxTime: 20,
     sandbox: true,
     tray: EVERY_PIECE,

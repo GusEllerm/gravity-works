@@ -77,7 +77,7 @@ describe('juice fires from real run state (L04 par line)', () => {
     const ch = chime[0]!;
     if (ch.kind !== 'chime') throw new Error();
     expect(ch.outcome).toBe('finished');
-    expect(ch.timeS).toBeCloseTo(2.45, 1);
+    expect(ch.timeS).toBeCloseTo(2.57, 1); // re-measured at the L01 promise fix (shared gap geometry moved the L04 par line)
   });
 
   it('the hazard tell drips BEFORE any grip change (ground line)', async () => {
@@ -158,7 +158,8 @@ describe('juice is hash-neutral', () => {
     expect(withJuice.events.length).toBeGreaterThan(5); // feed really ran
     expect(withJuice.hash).toBe(withoutJuice.hash);
     // and it is the shipped par hash, unchanged: the numbers below are the
-    // hazards-round pin
-    expect(withJuice.hash).toBe('7adc07a8');
+    // hazards-round pin, RE-MEASURED at the L01 promise fix (the shared
+    // KITCHEN_GAP geometry moved this par build — see set-wiring.test.ts).
+    expect(withJuice.hash).toBe('c6a63a80');
   });
 });

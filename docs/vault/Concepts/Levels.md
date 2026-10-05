@@ -19,7 +19,7 @@ richer — `KitchenLevel` (`src/world/levels/kitchen01.level.ts`) adds:
   **total IS `budget`** (the contract's number field), so "tray contents =
   budget" holds by construction. This is the per-kind budget the ladder
   tables and the builder UI need until the `Level` shape itself grows one
-  (`npm run pars` will read it).
+  (`npm run pars` now imports every level file and reads these builds).
 - `fixtures` — pieces the level ships BUILT-IN (the book-stack `ramp`, the
   counter `finishCup`, the bowl's rim, the L02 run-out curve). They are part
   of `parBuild`'s geometry but not of the tray.
@@ -46,23 +46,51 @@ happens to stay on that level's very long ramp); kitchen's
 ## The kitchen five (design cards)
 
 **KITCHEN 01 — Book Drop** (`kitchen01.level.ts`, the tutorial). Teaches:
-place three pieces, press launch. Start on a book stack (fixture `ramp`,
-0.22 m), one gap, finish cup on the counter. Tray: `gapLip`, `drop`,
-`landing` — exactly three pieces; the intended fit is lip → drop → landing
-(launch, catch, roll-out) and placing all three finishes in 2.21 s — proven
-by test, per the brief's "must be able to finish by placing all three".
-Common failure: none that ends the run — at this size every permutation of
-the three survives (see Piece/level asks #3: the gap pieces are
-speed-tolerant, so wrongness is not punished; the intended one-way fit is
-currently authoring intent, not physics). Par is the par because there is no
-other way to cross: any build missing all three leaves a hole the car falls
-into.
+place three pieces, press launch — and nothing less than placing all three
+crosses the gap. Start on a book stack (fixture `ramp`, 0.22 m), one gap,
+finish cup on the counter. Tray: `gapLip`, `drop`, `landing` — exactly three
+pieces; the intended fit is lip → drop → landing (launch, catch, roll-out)
+and placing all three finishes in 2.23 s (par 2.25) — proven by test with
+the margins the playtest said were missing: the finish is bit-identical
+across an 8-seed sweep (0 % time spread — the sim is deterministic; the seed
+folds into the hash only) and finishes across the whole release-speed range
+(shipped default 0 up to the kit's full launch speed; the pre-fix geometry
+fell from a 0.2-sim-unit nudge). And it is the ONLY tray fit that finishes:
+replayed the way the shipped builder mounts fixtures (`initialBuild` anchors
+them at their par transforms), every build missing a tray piece falls into
+the hole that piece left (`tests/unit/kitchen-levels.test.ts`).
+
+The gap, measured truth after the stage-3 promise fix: the deck steps down
+**0.12 m** across the gap (`drop` height 0.12, angle 45°, leads 0.05), the
+`drop` spans 0.24 m of which 0.136 m is the empty span, and the soft catch
+is 0.36 m of `landing` deck (`level` 0.24). **Why three pieces close it
+now**: the lip fires the car ballistically at ~1.3 m/s, +10°; a parabola —
+not the catch ARC the old piece sizes assumed — is what actually meets the
+deck plane, 0.24 m past the lip at a shallow approach, which is exactly
+where the drop's exit-lead + landing entry now sit. The old numbers (height
+0.15, angle 40, lead 0.01) put the landing ENTRY plane ~15 mm UNDER that
+parabola by the time the chain reached it — the car arrived beneath its own
+landing and fell ("the gap outran the landing" was physics, not player
+error), and where it did finish it slammed the flat deck at −34° and
+survived on 1-pixel luck (the pass set was fragmented: drop.lead 0.01
+finished, 0.02 fell). Two further numbers carry the promise: the whole
+`drop` span (0.24 m) is longer than a flat roll-off can fly (~0.19 m), so a
+missing drop cannot be skipped on a bounce into the cup; and touchdown
+(~0.25 m into the landing) still has ~0.10 m of deck to the run-out blend,
+so release speed ±10 % moves touchdown by millimetres, not off. The lesson
+re-stated: **every tray piece is load-bearing** — launch (lip), fall and
+catch (drop), run out (landing); the geometry now teaches that by itself,
+without UI hints. Common failure: none that ends the run — in the chained-
+cup data model five of the six tray ORDERS still finish (only landing→drop→
+gapLip falls); the one-way ORDER remains authoring intent (ask #3) — what is
+no longer optional is WHICH three: omit any piece and the hole is geometry,
+not a suggestion.
 
 **KITCHEN 02 — Two Ways** (`kitchen02.level.ts`). Teaches: a choice, and
 that the fast line is not the showy one. One gap, two valid crossings
 (both finish, asserted): the lazy line — the `drop` between two straights, a
-clean catch — 2.27 s; and the arc route — `gapLip` launch + `drop` +
-`landing` — 2.40 s, its own landing blend costs the difference. Common
+clean catch — 2.32 s; and the arc route — `gapLip` launch + `drop` +
+`landing` — 2.49 s, its own landing blend costs the difference. Common
 failure: building the arc because it looks fast. Par is the par because it
 is the lazy line's reference build; 3 of the 5 tray pieces are placed. The
 rung this level was specced to add — a drivable mid-run `curve` — is
@@ -92,7 +120,7 @@ drips land in the patch, the zone stays on the deck the car drives
 (Decision Log 2026-10-07; coordinate-tested in `tests/unit/set-wiring.test.ts`). Two lines, both measured with
 the live zone hook (stage 3): the par line FLIES the sink (`gapLip` →
 `drop` → `landing`, then past the patch — grip-independent to the BIT,
-2.45 s, hash unchanged by the zone), and the ground line decks straight over
+2.57 s, hash unchanged by the zone), and the ground line decks straight over
 the sink with the two loose `straight`s and drives THROUGH the patch — its
 hash diverges and it finishes 0.06 s FASTER (2.350 s dry → 2.292 s wet):
 the honest in-channel manifestation of "halves grip" on a straight is
@@ -111,15 +139,21 @@ booster must be spent EARLY (before the first lip). Wrong answer A: no
 booster, the car is a gram of rolling resistance short of the back gap's far
 rim — `fell`. Wrong answer B: land the front gap and save the booster for
 the back lip — the extra speed overshoots the catch — `fell`. Both wrong
-answers are in the test, so the trade-off is measured, not asserted. Par
-2.39 s; beatable (a between-gaps booster line finishes at 2.50 s, and a
-tighter line is out there), not obvious. Common failure: booster too late.
+answers are in the test, so the trade-off is measured, not asserted. This
+rung chains its OWN pinned copy of the original gap numbers
+(`KITCHEN05_GAP`, `kitchen05.level.ts`): its lesson needs an unforgiving
+_gap_ — when the shared `KITCHEN_GAP` softened for the L01 promise, the
+no-booster line silently started finishing, un-teaching the trade-off; the
+pin restores the measured wrong answers byte-identically (par hash
+unchanged). Par 2.39 s; beatable (a between-gaps booster line finishes at
+2.50 s, and a tighter line is out there), not obvious. Common failure:
+booster too late.
 
 ## Sandbox (per set)
 
 The kitchen sandbox: `sandbox: true`, budget 999 ("no budget"), every piece
 unlocked at 9 copies; the reference build is one clean lap of every drivable
-kitchen verb and finishes in 2.53 s. Other sets' sandboxes follow the same
+kitchen verb and finishes in 2.64 s. Other sets' sandboxes follow the same
 shape in their own files at their own stage.
 
 ## Conventions the Environment Artist builds to
@@ -191,7 +225,13 @@ forgiving in all six orders or unfinishable in all. KITCHEN 01's claim, per
 the brief, is therefore the weaker true one — "a player must be able to
 finish by placing all three" (proved) — and its one-way fit is a
 builder-UI-side ordering hint until a gap piece exists that punishes wrong
-placement (or ask #2b makes a misplaced trio miss the cup).
+placement (or ask #2b makes a misplaced trio miss the cup). **STAGE-3
+UPDATE (L01 promise fix):** the WHICH side of this ask is now closed by
+geometry — the re-authored `KITCHEN_GAP` makes every one- and two-piece
+omission fall against the anchored fixtures (test-asserted), and five of six
+tray ORDERS still finish in the chained-cup model (landing→drop→gapLip
+falls), so the ORDER half of the ask stands: one-way seating remains a
+builder-UI hint pending ask #2b.
 
 ## Blocked rungs
 
@@ -202,6 +242,9 @@ their choice/hazard lessons). See [[Reference/Level Ladder]].
 ## Guarded by
 
 `tests/unit/kitchen-levels.test.ts` — every kitchen parBuild finishes
-headless through `src/replay/replay.ts` (same seam share links use), L02's
-two lines and L04's ground line finish, L05's two wrong allocations do not,
-budgets equal trays, the sandbox exists, and the bowl sockets are exported.
+headless through `src/replay/replay.ts` (same seam share links use), the L01
+three-piece promise (exact fit finishes with margin: seed-stable, release-
+speed-range; every tray-piece omission fails against the anchored fixtures),
+L02's two lines and L04's ground line finish, L05's two wrong allocations do
+not, budgets equal trays, the sandbox exists, and the bowl sockets are
+exported.

@@ -51,11 +51,15 @@ export const AXIS_OFFSET = 0.45;
 /** The kitchen levels whose placement is the standard pure translation.
  *  key -> [counter centre x, counter centre y, counter centre z]. */
 const STANDARD: Record<string, readonly [number, number, number]> = {
-  kitchen01: [0.8691, -0.4156, AXIS_OFFSET],
-  kitchen02: [1.0035, -0.4318, AXIS_OFFSET],
-  kitchen03: [1.2099, -0.4956, AXIS_OFFSET],
-  kitchen05: [1.308, -0.6395, AXIS_OFFSET],
-  'kitchen-sandbox': [1.2349, -0.4956, AXIS_OFFSET],
+  // x/y re-derived when stage 3 re-authored `KITCHEN_GAP` for the L01
+  // three-piece promise (L01 promise fix): L01/02/03 and the sandbox chain
+  // the shared gap, so their counter centres moved with the cup; kitchen05
+  // pins its original gap numbers and its row is byte-for-byte unchanged.
+  kitchen01: [0.9111, -0.3980919, AXIS_OFFSET],
+  kitchen02: [1.0162, -0.4017658, AXIS_OFFSET],
+  kitchen03: [1.2469, -0.4780919, AXIS_OFFSET],
+  kitchen05: [1.308, -0.6395241, AXIS_OFFSET],
+  'kitchen-sandbox': [1.2719, -0.4780919, AXIS_OFFSET],
 };
 
 /** KITCHEN 04 — the tap exception. Yaw −45° and the counter centre solved so
