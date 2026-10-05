@@ -53,3 +53,35 @@ A vs B is a temperature vote; C's glass wall is an engine risk (one transparent 
 sorting against the tilt-shift) and should be decided with the Technical Artist before anything is ratified.
 None of these framings are set cameras yet — Canonical Cameras lists bathroom as unassigned; the real rigs
 land with the production set.
+
+## Round 2 — AD send-back re-render, variant A only (2026-10-08 review, hero-a/close-a re-shot, b/c untouched)
+
+All five numbered fixes, param/data-level in `bath-a` (every change is variant-A-scoped; b/c re-render
+byte-identical to the round-1 files). **1 — ceramic exposure:** A's tile/wall/porcelain bases pulled ~8–10 %
+darker and the ceramic ramp's upper threshold raised 0.62 → 0.72 (the ratified stage-3 three-band fix on
+scene values), grout/wall/background pulled with them: ≥243 coverage **34 % → 1.0 %** hero,
+**39 % → 4.2 %** close (bars < 8 / < 10), with visible bands on the tub flank, the tub rim and the wall tiles.
+**2 — shadow budget:** A's fill pulled deep into the aqua dominant (`fillLow` re-derived, `fillStrength`
+0.16 ceramic / 0.14 wood) and grout dropped to a tinted tile-line dark: p5 **125 → 95** hero, 101 → 93
+close; sub-60 goes **0 → 4,235 px** hero and **0 → 4,958 px** close, every one tinted (min channel-spread
+19–23, zero blackish — the never-list audit stays at zero). **3 — wet patch → film:** the saturated flat
+cyan accent squares (what read as the sticker puddle) are muted to a near-tile tone, and the hazard is now
+a pair of `stainDecal` wetPatch films — tile base tone, soft SDF edge, Fresnel sheen — lifted *above* the
+tile tops (at the film's default 0.6 mm lift it hid inside the floor slab) on open sunlit tile beside the
+drip line and the tunnel mouth. Patch interiors measure 222–226 against ~235-luma surrounding tile (the
+±25 bar) and both close-a drips carry specular streak pixels ≥ 240 (peaks 244/241); the hero keeps the
+hazard detectable by tint, soft edge and wash over the grout lines. **4 — tub flank:** scene side — 4096
+map on a tightened ±0.7 m frustum (0.34 mm/texel), shadowDither 0 on A's materials and PCF radius 1: the
+flank resolves to one clean contiguous band, no speckle in a 300 % crop. **5 — track side walls:** ramp
+softness 0.06 → 0.02, and the mm-scale rail lips stop self-casting (no shadow map at any affordable
+resolution resolves a 6 mm lip without the rejected dither signature — that is TA-1's systemic call);
+the track is grounded instead with the tub's own contact-film trick, so the focus-band crop shows clean
+rails and hard toon car shadows, no speckle.
+
+**Honesty notes / demerits I volunteer:** the film's Fresnel streaks clear 240 at the grazing floor camera
+but structurally cap at ~235–239 in the hero (the shader's `pow(1-steep,4)` term at that camera angle), so
+the hero detectability rides on chroma and the soft edge, not a streak; the drain's chrome ring still
+flares as a bright donut at the track's far end (pre-existing, not in the send-back list — one more bead of
+rim tuning belongs to the TA's chrome class, not this round); the tub-flank band edge is texel-staircased
+(a hard quantized edge, not speckle, but it is not mathematically smooth); and variant A's floor still has
+no sub-40 luma anywhere — the darks are earned tinted-teal, deliberately not black.

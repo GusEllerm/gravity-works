@@ -18,8 +18,9 @@
 import * as THREE from 'three'
 import { ceramic, dieCastPaint, fabric, glass, liquid, paintedWood, trackPlastic } from '../../render/materials.ts'
 import { toyBlock, trackChannel } from '../../render/geometry.ts'
-import { GLOBAL_TOKENS, SET_TOKENS, darken, mixHex, type SetTokens } from '../../render/tokens.ts'
-import { ToonMaterial } from '../../render/toon-material.ts'
+import { GLOBAL_TOKENS, SET_TOKENS, darken, lighten, mixHex, type SetTokens } from '../../render/tokens.ts'
+import { ToonMaterial, type ToonMaterialParams } from '../../render/toon-material.ts'
+import { stainDecal } from '../../render/film.ts'
 import { registerScene, type SceneEntry, type SceneFactory } from '../registry.ts'
 
 type Variant = 'a' | 'b' | 'c'
@@ -61,21 +62,80 @@ interface VariantSpec {
   groutHex: string
   wallHex: string
   porcelain: string
+  /**
+   * Stage-4 send-back (2026-10-08 review, fixes 1/2/4/5), variant A only —
+   * when set these overrides ride the floor/wall/tub ceramics and the track
+   * run: the ratified stage-3 ceramic exposure (third band pushed to a high
+   * threshold so full brightness only lands on truly key-facing walls), a
+   * deeper fill so shadows tint and bite, and shadowDither 0 — the scene-side
+   * half of ticket TA-1, the ramp/shadow dither speckle on grazing faces
+   * (tub flank, track side walls). Undefined for B/C: they render exactly
+   * as committed.
+   */
+  ceramicTune?: Partial<ToonMaterialParams>
+  woodTune?: Partial<ToonMaterialParams>
+  trackTune?: Partial<ToonMaterialParams>
+  /** Grout gets its own diffuseStrength (fix 2: earn darks in the tile lines). */
+  groutDiffuse?: number
+  /** Cool drain shaft (fix 2: tinted darks, never warm near-black). */
+  drainHexes?: [string, string]
+  /** Sunlit window pane tone/exposure (fix 1: brightest region, not blown). */
+  paneHex?: string
+  paneDiffuse?: number
 }
+
+// A's token palette, send-back-adjusted (fix 2): fill pulled deep into the
+// aqua dominant so shadows bite with hue, and the flat background wall held
+// under the blown line — the porcelain-cathedral wash was the background and
+// the wall as much as the ceramic.
+const A_TOKENS: SetTokens = (() => {
+  const base = SET_TOKENS.bathroom
+  return {
+    ...base,
+    fillHigh: mixHex(base.dominant, '#FFFFFF', 0.45),
+    fillLow: mixHex(darken(base.dominant, 0.55), GLOBAL_TOKENS.cream, 0.12),
+    shadowTint: mixHex(darken(base.dominant, 0.22), GLOBAL_TOKENS.cream, 0.08),
+    background: mixHex(lighten(mixHex(base.dominant, GLOBAL_TOKENS.cream, 0.55), 0.18), base.dominant, 0.35),
+  }
+})()
+
+const A_CERAMIC: Partial<ToonMaterialParams> = {
+  ramp: { steps: [0.55, 0.78, 1.0], thresholds: [0.28, 0.72], softness: 0.06 },
+  specular: { size: 0.5, strength: 0.16 },
+  fillStrength: 0.16,
+  shadowDither: 0,
+}
+const A_WOOD: Partial<ToonMaterialParams> = { fillStrength: 0.14, shadowDither: 0 }
+const A_TRACK: Partial<ToonMaterialParams> = {
+  ramp: { steps: [0.66, 1.0], thresholds: [0.36], softness: 0.02 },
+  shadowDither: 0,
+}
+/** Stain-film fill pair, over-white: see the wet drips in variant A. */
+const FILM_FILL = new THREE.Color('#FFFFFF').multiplyScalar(2.2)
 
 const VARIANTS: Record<Variant, VariantSpec> = {
   // A: the token palette itself — aqua dominant, duck-yellow accent kept OUT
   // of the sun (it glows in the shaded pool water and the duck in shade).
   a: {
-    tokens: SET_TOKENS.bathroom,
+    // Send-back round 2 (2026-10-08): bases ~8-10 % darker (fix 1), grout and
+    // drain pulled to tinted darks (fix 2). Key and hues untouched — the same
+    // porcelain cathedral, just not overexposed.
+    tokens: A_TOKENS,
     keyColor: '#DDE9F6',
     keyIntensity: 1.22,
     keyPos: [-0.85, 0.85, 0.7],
     carHex: '#0072BD',
-    tileHex: '#E9F2EF',
-    groutHex: '#BFD6D3',
-    wallHex: '#DCE9E7',
-    porcelain: '#F2F5EE',
+    tileHex: '#DCEAE6',
+    groutHex: '#9DBDBA',
+    wallHex: '#C8DBD8',
+    porcelain: '#E3E8DF',
+    ceramicTune: A_CERAMIC,
+    woodTune: A_WOOD,
+    trackTune: A_TRACK,
+    groutDiffuse: 0.5,
+    drainHexes: ['#1F3E44', '#16303A'],
+    paneHex: '#D8EAF4',
+    paneDiffuse: 1.15,
   },
   // B: warm bathmat — clay-oak dominant (NOT kitchen gold: deeper, redder,
   // and lit by bulbs not sun), accent flipped COOL (teal towels) — the
@@ -252,6 +312,7 @@ function towel(v: VariantSpec, hex: string, w = 0.09): THREE.Group {
 function drain(v: VariantSpec, at: [number, number, number]): THREE.Group {
   const t = v.tokens
   const g = new THREE.Group()
+  const [shaftHex, depthHex] = v.drainHexes ?? ['#33241B', '#241812']
   const chrome = dieCastPaint(t, '#C8CDD2', { rim: { strength: 1.4, size: 0.15 }, toy: 0.4 })
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.021, 0.005, 10, 32), chrome)
   ring.rotation.x = -Math.PI / 2
@@ -260,12 +321,12 @@ function drain(v: VariantSpec, at: [number, number, number]): THREE.Group {
   g.add(ring)
   const shaft = new THREE.Mesh(
     new THREE.CylinderGeometry(0.02, 0.02, 0.07, 28, 1, true),
-    fabric(t, '#33241B', { diffuseStrength: 0.4 }),
+    fabric(t, shaftHex, { diffuseStrength: 0.4 }),
   )
   ;(shaft.material as ToonMaterial).side = THREE.DoubleSide
   shaft.position.y = -0.031
   g.add(shaft)
-  const depth = new THREE.Mesh(new THREE.CircleGeometry(0.02, 24), fabric(t, '#241812', { diffuseStrength: 0.2 }))
+  const depth = new THREE.Mesh(new THREE.CircleGeometry(0.02, 24), fabric(t, depthHex, { diffuseStrength: 0.2 }))
   depth.rotation.x = -Math.PI / 2
   depth.position.y = -0.065
   g.add(depth)
@@ -289,6 +350,7 @@ function tub(v: VariantSpec, waterHex: string, water = true): THREE.Group {
     // keep the CLASS ramp (three bands): a lifted-ramp porcelain shaded as
     // white-as-lit reads as a hole in the floor, not a vessel.
     shadowTint: mixHex(t.shadowTint, t.dominant, 0.28),
+    ...(v.ceramicTune ?? {}),
   })
   mat.side = THREE.DoubleSide
   const R = 0.085, H = 0.095, w = 0.007
@@ -406,7 +468,13 @@ function tiles(
   const span = opts.n * opts.size
   const grout = new THREE.Mesh(
     new THREE.PlaneGeometry(span, span),
-    paintedWood(t, v.groutHex, { grain: 0.12, grainScale: 0.3, diffuseStrength: 0.85 }),
+    paintedWood(t, v.groutHex, {
+      grain: 0.12,
+      grainScale: 0.3,
+      diffuseStrength: 0.85,
+      ...(v.woodTune ?? {}),
+      ...(v.groutDiffuse !== undefined ? { diffuseStrength: v.groutDiffuse } : {}),
+    }),
   )
   if (!wall) grout.rotation.x = -Math.PI / 2
   grout.receiveShadow = true
@@ -415,14 +483,14 @@ function tiles(
   if (!wall) geo.rotateX(Math.PI / 2)
   const base = new THREE.InstancedMesh(
     geo,
-    ceramic(t, v.tileHex, { specular: { size: 0.5, strength: 0.26 } }),
+    ceramic(t, v.tileHex, { specular: { size: 0.5, strength: 0.26 }, ...(v.ceramicTune ?? {}) }),
     opts.n * opts.n,
   )
   base.castShadow = false
   base.receiveShadow = true
   const acc = new THREE.InstancedMesh(
     geo,
-    ceramic(t, opts.accentHex ?? mixHex(t.dominant, t.background, 0.35), {}),
+    ceramic(t, opts.accentHex ?? mixHex(t.dominant, t.background, 0.35), { ...(v.ceramicTune ?? {}) }),
     opts.n,
   )
   acc.receiveShadow = true
@@ -500,7 +568,11 @@ function windowOnWall(v: VariantSpec, at: [number, number, number], cool = true)
   const g = new THREE.Group()
   const pane = new THREE.Mesh(
     new THREE.PlaneGeometry(0.2, 0.26),
-    paintedWood(t, cool ? '#EAF4FA' : '#FFEBC8', { grain: 0, diffuseStrength: 1.5, specular: { strength: 0 } }),
+    paintedWood(t, v.paneHex ?? (cool ? '#EAF4FA' : '#FFEBC8'), {
+      grain: 0,
+      diffuseStrength: v.paneDiffuse ?? 1.5,
+      specular: { strength: 0 },
+    }),
   )
   g.add(pane)
   const frameMat = paintedWood(t, '#F5EFE0', { grain: 0.15 })
@@ -574,22 +646,33 @@ function bathroomScene(variant: Variant): SceneFactory {
     const key = new THREE.DirectionalLight(v.keyColor, v.keyIntensity)
     key.position.set(...v.keyPos)
     key.castShadow = true
-    key.shadow.mapSize.set(2048, 2048)
-    key.shadow.camera.left = -1.2
-    key.shadow.camera.right = 1.2
-    key.shadow.camera.top = 1.2
-    key.shadow.camera.bottom = -1.2
+    const shadowMapSize = variant === 'a' ? 4096 : 2048
+    key.shadow.mapSize.set(shadowMapSize, shadowMapSize)
+    // Fix 4/5 (scene side): the shadow frustum was ±1.2 m — 0.59 mm/texel at
+    // 2048 (2.4 m span), coarser than the track's own mm-scale rail lips, so
+    // the rail-cap and tub-flank shadow lines quantized to per-texel zigzags
+    // that read as dither speckle. Everything that casts near the deck fits
+    // ±0.7 m; at 4096 that is 0.34 mm/texel and those edges go sub-pixel.
+    const sh = variant === 'a' ? 0.7 : 1.2
+    key.shadow.camera.left = -sh
+    key.shadow.camera.right = sh
+    key.shadow.camera.top = sh
+    key.shadow.camera.bottom = -sh
     key.shadow.camera.near = 0.1
     key.shadow.camera.far = 4
-    key.shadow.bias = -0.0004
+    key.shadow.bias = variant === 'a' ? -0.0012 : -0.0004
     key.shadow.normalBias = 0.006
-    key.shadow.radius = 4
+    // Fix 4/5 (scene side): the speckle lives where PCF returns MID-range
+    // coverage (tub-lip line on the flank, rail penumbra on the track deck) —
+    // any per-pixel resolve there reads as dither. A tight radius makes the
+    // tap coverage binary so edges land clean; toon wants a hard edge anyway.
+    key.shadow.radius = variant === 'a' ? 1 : 4
     scene.add(key)
 
     // ground beyond the tiles
     const ground = new THREE.Mesh(
       new THREE.CircleGeometry(1.4, 72),
-      paintedWood(t, darken(t.ground, 0.08), { grain: 0.25, grainScale: 0.25 }),
+      paintedWood(t, darken(t.ground, 0.08), { grain: 0.25, grainScale: 0.25, ...(v.woodTune ?? {}) }),
     )
     ground.rotation.x = -Math.PI / 2
     ground.receiveShadow = true
@@ -598,7 +681,7 @@ function bathroomScene(variant: Variant): SceneFactory {
     // the one wall
     const wall = new THREE.Mesh(
       new THREE.PlaneGeometry(20, 4),
-      paintedWood(t, v.wallHex, { grain: 0.08, grainScale: 0.2, diffuseStrength: 0.9 }),
+      paintedWood(t, v.wallHex, { grain: 0.08, grainScale: 0.2, diffuseStrength: 0.9, ...(v.woodTune ?? {}) }),
     )
     wall.position.set(0, 1.6, -0.45)
     wall.receiveShadow = true
@@ -610,7 +693,7 @@ function bathroomScene(variant: Variant): SceneFactory {
     // the track's line: straight down the room, x drifting +0.04
     const trackA = new THREE.Vector3(0.0, 0.003, 0.34)
     const trackB = new THREE.Vector3(0.04, 0.003, -0.265)
-    const trackMat = trackPlastic(t, GLOBAL_TOKENS.trackOrange, { toy: 0.2 })
+    const trackMat = trackPlastic(t, GLOBAL_TOKENS.trackOrange, { toy: 0.2, ...(v.trackTune ?? {}) })
 
     // hero car on the line — the tilt-shift focus point
     const heroCar = car(v)
@@ -619,7 +702,10 @@ function bathroomScene(variant: Variant): SceneFactory {
 
     if (variant === 'a') {
       // ---- A: porcelain cathedral -------------------------------------
-      const floor = tiles(v, { n: 12, size: 0.075, accentEvery: 3 })
+      // Fix 3 (send-back): the checker accent squares were a saturated flat
+      // cyan that read as stickers/liquid — muted to a near-tile tint tone.
+      // The wet hazard itself is now FILM (stainDecal below), not paint.
+      const floor = tiles(v, { n: 12, size: 0.075, accentEvery: 3, accentHex: mixHex(v.tileHex, t.dominant, 0.22) })
       floor.position.y = 0.001
       set.add(floor)
       const wallTiles = tiles(v, { n: 9, size: 0.075, accentEvery: 0, wall: true })
@@ -638,6 +724,37 @@ function bathroomScene(variant: Variant): SceneFactory {
       towels.rotation.y = 0.4
       set.add(towels)
       set.add(drain(v, [0.065, 0, -0.295]))
+      // Fix 3: the wet hazard is a stain FILM — tile base tone, soft SDF
+      // edge, Fresnel sheen streaks (the ratified mug-ring treatment), not a
+      // flat cyan rectangle. Two drips below the tub rim and beside the
+      // tunnel mouth, both on OPEN SUN LIT TILE — a film half under the
+      // track slab reads as nothing, and the old saturated accent squares
+      // that faked it are muted to a near-tile tone above. The fill pair is
+      // lifted near-white so the film's fill-only shading lands within the
+      // ±25-luma band of the LIT tile it lies on, and it lifts ABOVE the
+      // tile tops (0.0038) — at the film default of 6e-4 it hid in the slab.
+      const drips: Array<[number, number, number]> = [
+        [0.085, 0.1, 0.035],
+        [0.105, -0.075, 0.03],
+      ]
+      for (const [dx, dz, size] of drips) {
+        const drip = stainDecal(t, {
+          kind: 'wetPatch',
+          color: mixHex(v.tileHex, t.dominant, 0.55),
+          opacity: 0.45,
+          size,
+          sheen: 1,
+          lift: 0.0045,
+          // boosted white fill pair: the film's fill-only shading lands on
+          // the LIT tile's luma (the ±25 bar) while the Fresnel streaks ride
+          // past 240 — dark-fill films sank into stickers, and plain-white
+          // fills at alpha ≥ 0.45 blew the ±25 bar on the interior.
+          fillHigh: FILM_FILL,
+          fillLow: FILM_FILL,
+        })
+        drip.position.set(dx, drip.position.y, dz)
+        set.add(drip)
+      }
     } else if (variant === 'b') {
       // ---- B: the warm bathmat -----------------------------------------
       set.add(planks(v))
@@ -755,7 +872,26 @@ function bathroomScene(variant: Variant): SceneFactory {
       set.add(drain(v, [0.062, 0, -0.298]))
     }
 
-    set.add(trackRun(trackA, trackB, trackMat))
+    const trackMesh = trackRun(trackA, trackB, trackMat)
+    if (variant === 'a') {
+      // Fix 5 (scene side): a 6 mm rail lip can't be resolved by ANY shadow
+      // map we can afford — its footprint speckles the deck edge at exactly
+      // the rejected dither signature (ticket TA-1 is the systemic cure).
+      // Variant A therefore grounds the track with the tub's own trick — a
+      // tinted contact FILM — instead of a self-cast shadow.
+      props(trackMesh, false, true)
+      const contact = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.063, trackA.distanceTo(trackB) - 0.004),
+        fabric(t, darken(t.shadowTint, 0.3), { opacity: 0.4, diffuseStrength: 0.12, rim: { strength: 0, size: 1 } }),
+      )
+      contact.geometry.rotateX(-Math.PI / 2)
+      contact.position.copy(trackA).lerp(trackB, 0.5)
+      contact.position.y = 0.0042
+      contact.quaternion.copy(trackMesh.quaternion)
+      contact.receiveShadow = false
+      set.add(contact)
+    }
+    set.add(trackMesh)
 
     // a second car parked where the shot wants a witness
     {
