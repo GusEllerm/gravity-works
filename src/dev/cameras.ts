@@ -46,7 +46,21 @@ export function isCanonicalShot(value: string): value is CanonicalShot {
  * falls back to the provisional kitchen rig above, which stays the shipped
  * framing until the Environment Artist's next round ships set-side rigs.
  */
-const SET_SHOTS: Record<string, Partial<Record<CanonicalShot, CameraRig>>> = {}
+// The GARDEN ships its own canonical rigs (stage 4, Environment Artist —
+// the AD's carry-forward that none of the exploration frames were set
+// rigs). The numbers live in the SET (`src/sets/garden/data.ts CAMERAS`)
+// so this row is a copy-through, not a fork: hero frames the sun disc AND
+// the trellis shadow bars, establishing takes the whole patio to the hedge
+// horizon, floor lives 35 mm over the flush deck (the floor-rig law).
+import { CAMERAS as GARDEN_CAMERAS } from '../sets/garden/data.ts'
+
+const SET_SHOTS: Record<string, Partial<Record<CanonicalShot, CameraRig>>> = {
+  'garden-set': {
+    establishing: { ...GARDEN_CAMERAS.establishing, position: [...GARDEN_CAMERAS.establishing.position], target: [...GARDEN_CAMERAS.establishing.target] },
+    hero: { ...GARDEN_CAMERAS.hero, position: [...GARDEN_CAMERAS.hero.position], target: [...GARDEN_CAMERAS.hero.target] },
+    floor: { ...GARDEN_CAMERAS.floor, position: [...GARDEN_CAMERAS.floor.position], target: [...GARDEN_CAMERAS.floor.target] },
+  },
+}
 
 /** The canonical camera for one set's shot — the set's own rig when the set
  *  ships one, else the provisional kitchen rig (never a forked number). */

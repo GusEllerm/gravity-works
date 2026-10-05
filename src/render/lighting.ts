@@ -11,7 +11,7 @@
 // shadow from unlit angle and swap in the set's shadowTint.
 
 import * as THREE from 'three'
-import { GLOBAL_TOKENS, lighten, mixHex } from './tokens.ts'
+import { GLOBAL_TOKENS, lighten, mixHex, shiftHex } from './tokens.ts'
 import type { SetTokens } from './tokens.ts'
 import { ToonMaterial } from './toon-material.ts'
 
@@ -31,6 +31,23 @@ export interface LightingRigOptions {
   shadowMapSize?: number
   /** Half-extent of the orthographic shadow camera. Default 1.2. */
   shadowExtent?: number
+  /**
+   * Key COLOR (stage 4, garden): the stock key is the warm-neutral
+   * `GLOBAL_TOKENS.keyLight`; an outdoor set passes the SUN's own tint
+   * (golden-hour amber). Omitting this — every indoor set — keeps the key
+   * color byte-identical.
+   */
+  keyColor?: THREE.ColorRepresentation
+  /**
+   * OUTDOOR REGIME (stage 4, garden): the flat sky value. Outdoors the fill
+   * IS the sky, so the sky-side band and the shadow tint derive from the sky,
+   * not (only) the set's dominant hue — the indoor §Light rule made for a sun
+   * (Review 2026-10-08 garden, AD note 2: shadow tint derives from the SKY
+   * value). Omitting this keeps every indoor rig byte-identical.
+   */
+  sky?: string
+  /** How far the shadow tint is pulled toward `sky`, 0..1. Default 0.6. */
+  skyInfluence?: number
 }
 
 export interface LightingRig {
@@ -61,7 +78,7 @@ export function createLightingRig(tokens: SetTokens, opts: LightingRigOptions = 
   const intensity = opts.keyIntensity ?? 1.3
   const [kx, ky, kz] = opts.keyPosition ?? [0.9, 0.55, 0.6]
 
-  const key = new THREE.DirectionalLight(GLOBAL_TOKENS.keyLight, intensity)
+  const key = new THREE.DirectionalLight(opts.keyColor ?? GLOBAL_TOKENS.keyLight, intensity)
   key.position.set(kx, ky, kz)
   key.castShadow = true
   const size = opts.shadowMapSize ?? 2048
@@ -86,15 +103,32 @@ export function createLightingRig(tokens: SetTokens, opts: LightingRigOptions = 
   // the high band kept sky-light bright. This is "soft fill from the set's
   // dominant hue" with the accent *reachable* in shade.
   const mix = opts.accentMix ?? 0.3
-  const fillHigh = lighten(mixHex(tokens.fillHigh, tokens.accent, mix), 0.12)
-  const fillLow = mixHex(tokens.fillLow, tokens.accent, mix * 0.6)
+  let fillHigh = lighten(mixHex(tokens.fillHigh, tokens.accent, mix), 0.12)
+  let fillLow = mixHex(tokens.fillLow, tokens.accent, mix * 0.6)
+  let shadowTint = mixHex(tokens.shadowTint, tokens.dominant, 0.3)
+  // Outdoor substitution ONLY when a sky value is passed: indoors the maths
+  // above is the stage-1..4 indoor rule, byte-for-byte (the kitchen visual
+  // baselines gate it; tests/unit/garden-lighting.test.ts proves it).
+  // Outdoors the sky is the fill and the shade is sky-lit — the high band,
+  // the ground band and the shadow tint all take a cut of the sky value.
+  if (opts.sky !== undefined) {
+    fillHigh = mixHex(fillHigh, opts.sky, 0.55)
+    fillLow = mixHex(fillLow, opts.sky, 0.22)
+    // The SKY'S OWN HUE at shade depth: the flat sky value is a bright
+    // horizon color; a shadow is sky-lit light that LOST its sun, so the
+    // tint is the sky deepened and saturated, not the sky flat (a flat mix
+    // lands neutral and the rendered darks lose their spread — the census
+    // wants TINTED darks in numbers, not grey ones).
+    const skyTint = shiftHex(opts.sky, 0, 0.15, -0.45)
+    shadowTint = mixHex(shadowTint, skyTint, opts.skyInfluence ?? 0.6)
+  }
 
   return {
     key,
     fillHigh,
     fillLow,
     fillStrength: opts.fillStrength ?? 0.32,
-    shadowTint: mixHex(tokens.shadowTint, tokens.dominant, 0.3),
+    shadowTint,
     keyIntensity: intensity,
     dustMotes: () => new THREE.Object3D(),
   }
@@ -109,7 +143,11 @@ export function applyKeyLight(root: THREE.Object3D, rig: LightingRig): void {
     if (obj instanceof THREE.Mesh || obj instanceof THREE.InstancedMesh) {
       const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
       for (const m of mats) {
-        if (m instanceof ToonMaterial) m.setKeyLight(GLOBAL_TOKENS.keyLight, rig.keyIntensity)
+        // the rig's OWN key color — an indoor rig's is always
+        // GLOBAL_TOKENS.keyLight (byte-identical to the old constant), an
+        // outdoor rig's is the sun's tint, so shadowed pixels resolve against
+        // the light that actually casts them.
+        if (m instanceof ToonMaterial) m.setKeyLight(rig.key.color, rig.keyIntensity)
       }
     }
   })

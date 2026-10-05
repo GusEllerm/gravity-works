@@ -31,6 +31,7 @@ import { buildBedroomSet } from './bedroom/index.ts'
 import { bedroomSetPlacement } from '../world/setPlacement.ts'
 import { buildBathroomSet, BATHROOM_TOKENS } from './bathroom/index.ts'
 import { bathroomSetPlacement } from '../world/setPlacement.ts'
+import { buildGardenSet } from './garden/index.ts'
 
 export interface SetInstanceSocket {
   pos: THREE_NS.Vector3
@@ -89,6 +90,19 @@ export const SETS: Record<string, SetRegistration> = {
     // (`bedroomSetPlacement`): the set slides behind/below the level's +x
     // chain so the corridor and the floor-band detail clear the track line.
     placement: bedroomSetPlacement,
+  },
+  garden: {
+    id: 'garden',
+    tokens: SET_TOKENS.garden,
+    build(T, opts = {}) {
+      const set = buildGardenSet(T, opts)
+      return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.ground, staging: set.staging }
+    },
+    // No garden LEVELS exist yet (the garden ladder is a later wave), so the
+    // set mounts at its canonical origin — the null the registry documents
+    // as "no level placements"; the first garden rung will want a table row
+    // in `src/world/setPlacement.ts` exactly like the bedroom's four.
+    placement: () => null,
   },
   bathroom: {
     id: 'bathroom',

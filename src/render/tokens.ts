@@ -48,7 +48,10 @@ const SEEDS: Record<SetId, { dominant: string; accent: string }> = {
   kitchen: { dominant: '#EFAF4B', accent: '#5FB49C' }, // gold / breakfast; mint fridge
   bathroom: { dominant: '#4EB8C9', accent: '#F4C84B' }, // aqua / mid-morning; rubber duck
   bedroom: { dominant: '#5A5FB5', accent: '#FFB454' }, // indigo / nightlight amber
-  garden: { dominant: '#C7567B', accent: '#A8C24E' }, // magenta dusk / chartreuse firefly
+  // garden re-seeded at stage 4 production: the ratified garden is variant B,
+  // paving at GOLDEN HOUR (Review 2026-10-08 garden, AD note 1) — rose-gold
+  // stone dominant; the chartreuse accent survives unchanged as vine/hose.
+  garden: { dominant: '#CD815F', accent: '#A8C24E' }, // golden-hour stone / chartreuse vine
   garage: { dominant: '#87913D', accent: '#C13E2C' }, // olive afternoon / red tool
   porch: { dominant: '#6C8AA6', accent: '#E8A13C' }, // slate storm / lantern amber
 }
