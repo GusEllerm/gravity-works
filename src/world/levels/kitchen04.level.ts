@@ -30,6 +30,21 @@ import {
 
 export const KITCHEN04_ID = 'kitchen04';
 
+/** ONE straight geometry for the level: 0.3 m, the size the GROUND line has
+ *  always decked the sink with. The par line used to chain a 0.35 straight —
+ *  a second geometry for a kind the tray holds twice — and the tray carries
+ *  one geometry per kind (`levelTrayParams` → the builder's held piece), so
+ *  the par line was not placeable: the player's third straight was the ground
+ *  line's 0.3 and the run-out came up 5 cm shorter than the par. The par
+ *  straight is now the ground line's number instead of the other way round,
+ *  deliberately: `wetPatch()` centres the zone on the GROUND build's seam,
+ *  so leaving that build byte-identical leaves the patch, the tap's yaw and
+ *  the par's grip-independence claim (par wet == par dry, bit-for-bit —
+ *  `tests/unit/hazards.test.ts`) exactly where the stage-3 fix put them.
+ *  Measured: par finishes 2.517 s, wet hash == dry hash; ground line 2.292 s
+ *  wet, unchanged bytes. */
+const L04_STRAIGHT = 0.3;
+
 /** Piece indices in the par chain (for the wet-patch placement maths). */
 
 function parBuild(): Build {
@@ -39,7 +54,7 @@ function parBuild(): Build {
       { def: 'gapLip', params: KITCHEN_GAP.lip }, // tray: the sink's edge
       { def: 'drop', params: KITCHEN_GAP.drop }, // tray: the sink
       { def: 'landing', params: KITCHEN_GAP.landing }, // tray
-      { def: 'straight', params: { length: 0.35 } }, // tray: past the wet
+      { def: 'straight', params: { length: L04_STRAIGHT } }, // tray: past the wet
       { def: 'finishCup' }, // fixture
     ],
     KITCHEN04_ID,
@@ -53,8 +68,8 @@ export function kitchen04GroundBuild(): Build {
   return lay(
     [
       { def: 'ramp', params: kitchenRamp(0.26) },
-      { def: 'straight', params: { length: 0.3 } },
-      { def: 'straight', params: { length: 0.3 } },
+      { def: 'straight', params: { length: L04_STRAIGHT } },
+      { def: 'straight', params: { length: L04_STRAIGHT } },
       { def: 'finishCup' },
     ],
     KITCHEN04_ID,
@@ -93,7 +108,7 @@ export const KITCHEN04: KitchenLevel = registerKitchen(
     set: 'kitchen',
     seed: 1,
     startSocket: startSocketFromBuild(parBuild(), KITCHEN_GEOM.release * KITCHEN_GEOM.rampBlend),
-    par: { pieces: 4, time: 2.57 }, // the par line places 4 of the 5 tray pieces (measured — regenerate via pars)
+    par: { pieces: 4, time: 2.52 }, // the par line places 4 of the 5 tray pieces (measured — regenerate via pars)
     maxTime: 12,
     tray: { gapLip: 1, drop: 1, landing: 1, straight: 2 },
     fixtures: { ramp: 1, finishCup: 1 },

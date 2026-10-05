@@ -56,6 +56,19 @@ export const KITCHEN03_BOWL = {
   counter: { radius: 0.12, angle: -120 },
 } as const;
 
+/** ONE straight geometry for the timed line (0.15 m, twice — the same total
+ *  counter deck the old 0.1 + 0.2 pair laid, 0.30 m).
+ *  STAGE-3 LADDER-COHERENCE FIX: with two different straight lengths in the
+ *  par chain the tray could not place the line at all — the tray carries ONE
+ *  geometry per kind (`levelTrayParams` reads the kind's FIRST placement and
+ *  the builder seats every held straight with it), so the run got two 0.1 m
+ *  straights and a par line 0.1 m shorter than the one the cup is anchored
+ *  against. The tray is now the exact multiset the par build places — 2
+ *  `straight`, `gapLip`, `drop`, `landing`, five pieces, budget 5 — and
+ *  `trayParityBuild` is byte-identical to `parBuild`: the bowl line is a
+ *  build, not a brochure. Measured finish 2.617 s (par 2.65). */
+const L03_STRAIGHT = 0.15;
+
 /** The rim fixtures, seated THROUGH the set's sockets (the seam this level's
  *  block comment describes). Each fixture is placed so its OUT-socket lands
  *  on the placed set frame — the same relation the old chain-derived sockets
@@ -84,11 +97,11 @@ function parBuild(): Build {
   const timed = lay(
     [
       { def: 'ramp', params: kitchenRamp(0.3) }, // the books (fixture)
-      { def: 'straight', params: { length: 0.1 } }, // tray
+      { def: 'straight', params: { length: L03_STRAIGHT } }, // tray: the counter lip
       { def: 'gapLip', params: KITCHEN_GAP.lip }, // tray
       { def: 'drop', params: KITCHEN_GAP.drop }, // tray
       { def: 'landing', params: KITCHEN_GAP.landing }, // tray
-      { def: 'straight', params: { length: 0.2 } }, // tray: past the bowl
+      { def: 'straight', params: { length: L03_STRAIGHT } }, // tray: past the bowl
       { def: 'finishCup' }, // fixture: the cup BEFORE the rim line
     ],
     KITCHEN03_ID,
@@ -119,7 +132,7 @@ export const KITCHEN03: KitchenLevel = registerKitchen(
     set: 'kitchen',
     seed: 1,
     startSocket: startSocketFromBuild(parBuild(), KITCHEN_GEOM.release * KITCHEN_GEOM.rampBlend),
-    par: { time: 2.6 }, // measured (regenerate via pars)
+    par: { pieces: 5, time: 2.62 }, // the par line places the WHOLE 5-piece tray (measured — regenerate via pars)
     maxTime: 12,
     tray: { straight: 2, gapLip: 1, drop: 1, landing: 1 },
     fixtures: { ramp: 1, finishCup: 1, bank: 1, curve: 1 },

@@ -422,6 +422,20 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       { def: kind, params: { ...heldParams(kind) }, transform, seq: pieces.length },
     ];
     everPlaced = true;
+    // THE TARGET FOLLOWS THE LINE. The free-exit list is built in piece-array
+    // order and `initialBuild` mounts a level's FIXTURES first, so on a
+    // fixture-anchored level the exit the player just created is NOT at the
+    // index the eye is used to: on kitchen01, after the `gapLip` takes the
+    // ramp's exit, index 1 of [level start, end of finishCup, end of gapLip]
+    // is the CUP's exit, and the next `Place` seats the `drop` on the cup —
+    // the tutorial's own three-piece fit fell (`fell`, hash 0951a819) exactly
+    // this way in the shipped builder while every data-level test stayed
+    // green. Staying on the index is what the arrow keys are FOR; the default
+    // now tracks the piece just placed, and the arrows still go everywhere.
+    const placedExit = transformSocket(PIECES[kind].sockets(heldParams(kind))[1], transform);
+    const after = targets();
+    const next = after.findIndex((t) => t.socket.pos.distanceTo(placedExit.pos) < JOIN_TOL);
+    if (next >= 0) targetIndex = next;
     updateGhost();
     emit();
     return true;

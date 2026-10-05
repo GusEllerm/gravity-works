@@ -126,16 +126,23 @@ export const KITCHEN05: KitchenLevel = registerKitchen(
 export const KITCHEN_SANDBOX_ID = 'kitchen-sandbox';
 
 /** Everything unlocked; the reference build is one clean lap of every
- *  drivable kitchen verb (and it finishes, like every parBuild here). */
+ *  drivable kitchen verb (and it finishes, like every parBuild here). The two
+ *  counter straights share ONE geometry (`SB_STRAIGHT`, 0.15 m each): the
+ *  sandbox tray unlocks every kind at 99 copies but the builder still seats a
+ *  held kind with ONE parameter set (the level's first placement), so a
+ *  0.1 + 0.25 pair was a lap the sandbox itself could not re-place.
+ *  Measured: 2.667 s, tray parity byte-identical. */
+const SB_STRAIGHT = 0.175;
+
 function sandboxBuild(): Build {
   return lay(
     [
       { def: 'ramp', params: kitchenRamp(0.3) },
-      { def: 'straight', params: { length: 0.1 } },
+      { def: 'straight', params: { length: SB_STRAIGHT } },
       { def: 'gapLip', params: KITCHEN_GAP.lip },
       { def: 'drop', params: KITCHEN_GAP.drop },
       { def: 'landing', params: KITCHEN_GAP.landing },
-      { def: 'straight', params: { length: 0.25 } },
+      { def: 'straight', params: { length: SB_STRAIGHT } },
       { def: 'finishCup' },
     ],
     KITCHEN_SANDBOX_ID,
@@ -153,7 +160,7 @@ export const KITCHEN_SANDBOX: KitchenLevel = registerKitchen(
     seed: 1,
     startSocket: startSocketFromBuild(sandboxBuild(), KITCHEN_GEOM.release * KITCHEN_GEOM.rampBlend),
     budget: 999, // no budget; the contract wants a number
-    par: { pieces: 5, time: 2.64 },
+    par: { pieces: 5, time: 2.67 },
     maxTime: 20,
     sandbox: true,
     tray: EVERY_PIECE,

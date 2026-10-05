@@ -77,7 +77,7 @@ describe('juice fires from real run state (L04 par line)', () => {
     const ch = chime[0]!;
     if (ch.kind !== 'chime') throw new Error();
     expect(ch.outcome).toBe('finished');
-    expect(ch.timeS).toBeCloseTo(2.57, 1); // re-measured at the L01 promise fix (shared gap geometry moved the L04 par line)
+    expect(ch.timeS).toBeCloseTo(2.52, 1); // re-measured at the stage-3 LADDER COHERENCE pass: L04's par straight is now the tray's single 0.3 m geometry (was 0.35), which moves the cup 5 cm upstream — see Concepts/Levels §L04 card and the L01 promise-fix note above
   });
 
   it('the hazard tell drips BEFORE any grip change (ground line)', async () => {

@@ -18,7 +18,10 @@
  */
 import { describe, expect, test } from 'vitest';
 import { KITCHEN01, KITCHEN_GEOM, trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
-import type { Build } from '../../src/track/build.ts';
+import { serialize, type Build } from '../../src/track/build.ts';
+import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
+import { PARS } from '../../src/world/stars.ts';
+import type { PieceKind } from '../../src/track/pieces.ts';
 import { KITCHEN02, kitchen02ArcBuild } from '../../src/world/levels/kitchen02.level.ts';
 import { KITCHEN03 } from '../../src/world/levels/kitchen03.level.ts';
 import { KITCHEN04, kitchen04GroundBuild } from '../../src/world/levels/kitchen04.level.ts';
@@ -91,6 +94,80 @@ describe('kitchen ladder — level contracts', () => {
     expect(hazard.gripFactor).toBe(0.5);
     expect(hazard.source).toBe('tap');
   });
+});
+
+describe('kitchen ladder — tray ⊇ parBuild (a level you cannot build is not a level)', () => {
+  /** Every line a level AUTHORS, in the level's own data: the par line plus
+   *  the alternates the cards promise (L02's arc, L04's ground, L05's two
+   *  wrong allocations). The invariant is asserted over all of them, so a
+   *  second line cannot quietly grow a piece the tray does not hold. */
+  const LINES: readonly { level: KitchenLevel; label: string; build: Build }[] = [
+    ...LADDER.map((level) => ({ level, label: 'par build', build: level.parBuild() })),
+    { level: KITCHEN02, label: 'arc line', build: kitchen02ArcBuild() },
+    { level: KITCHEN04, label: 'ground line', build: kitchen04GroundBuild() },
+    { level: KITCHEN05, label: 'no-booster line', build: kitchen05NoBoosterBuild() },
+    { level: KITCHEN05, label: 'late-booster line', build: kitchen05LateBoosterBuild() },
+  ];
+
+  /** Pieces per kind, as a multiset. */
+  function multiset(pieces: Build['pieces']): Map<PieceKind, number> {
+    const counts = new Map<PieceKind, number>();
+    for (const p of pieces) counts.set(p.def, (counts.get(p.def) ?? 0) + 1);
+    return counts;
+  }
+
+  for (const { level, label, build } of LINES) {
+    test(`${level.id} — ${label}: tray ⊇ build (every piece is tray- or fixture-afforded, at the tray's ONE geometry)`, () => {
+      for (const [kind, needed] of multiset(build.pieces)) {
+        const afford = (level.tray[kind] ?? 0) + (level.fixtures?.[kind] ?? 0);
+        expect(
+          afford,
+          `${level.id} ${label}: places ${needed} × ${kind}, tray (${JSON.stringify(level.tray)}) + fixtures (${JSON.stringify(level.fixtures)}) afford ${afford}`,
+        ).toBeGreaterThanOrEqual(needed);
+        // the tray seats a held kind with ONE geometry — the level's declared
+        // `trayParams` for it, else its first placement in the par build
+        // (`levelTrayParams`, what the ghost and the seat actually use). A
+        // line that places the same kind at OTHER parameters is a line the
+        // shipped builder cannot place, however well the tray counts out.
+        const params = levelTrayParams(level, level.tray) ?? {};
+        const geometry =
+          params[kind] ?? level.parBuild().pieces.find((p) => p.def === kind)?.params;
+        for (const p of build.pieces.filter((q) => q.def === kind)) {
+          expect(p.params, `${level.id} ${label}: a second ${kind} geometry`).toEqual(geometry);
+        }
+      }
+    });
+  }
+
+  for (const level of LADDER) {
+    test(`${level.id} — pars.json's par piece count is the same tray-basis number (the panel compares against the tray counter)`, () => {
+      // The deployed panel said "3 pieces — par 5" on a three-piece tutorial:
+      // `scripts/gen-pars.mjs` recorded the WHOLE reference build, fixtures
+      // included, while `Builder.playerCount` counts tray placements only. One
+      // basis, pinned.
+      expect(PARS[level.id]?.pieces).toBe(level.par.pieces);
+    });
+  }
+
+  for (const level of LADDER) {
+    test(`${level.id} — the tray's own seating reproduces the par build byte-for-byte`, () => {
+      // fixtures anchored at their par transforms (initialBuild), tray pieces
+      // seated with the tray's single geometry per kind — what the player can
+      // actually end up with, equal to the build the par was measured on.
+      expect(serialize(trayParityBuild(level))).toBe(serialize(level.parBuild()));
+    });
+  }
+
+  for (const level of LADDER) {
+    test(`${level.id} — budget = tray total, and the level's par piece count is the TRAY basis pars.json records`, () => {
+      const fromTray = level.parBuild().pieces.filter((p) => !(p.def in (level.fixtures ?? {}))).length;
+      // the sandbox is the one level where the tray total is NOT the budget
+      // (it declares "no budget": 999; the tray is everything ×99)
+      if (!level.sandbox) expect(level.budget).toBe(trayCount(level.tray));
+      expect(level.par.pieces).toBe(fromTray); // fixtures are nobody's purchase
+      expect(fromTray).toBeLessThanOrEqual(level.budget);
+    });
+  }
 });
 
 describe('kitchen ladder — the choices and the trade-off are real', () => {
