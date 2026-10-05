@@ -19,14 +19,25 @@
  * etc. The committed set was generated on macOS (Apple M5 Pro, headless
  * Chromium via SwiftShader); a Linux runner's SwiftShader/ANGLE can differ
  * by more than the antialiasing tolerance, so a missing directory is NEVER
- * a pass: the test SKIPS loudly (skip message + console warning) and shows
- * as SKIPPED in the report, not green. To light a platform up, run once
- * with `GQA_UPDATE_BASELINES=1` on it — that regenerates and writes the
- * current platform's directory and skips the assertion — then commit the
- * PNGs. The platform-free cross-check that DOES run everywhere is the
- * exploration comparison below: the harness output of the run is diffed
- * against the ratified docs/explorations/kitchen-set/ renders the Art
- * Director passed (Review 2026-10-07 round 2: 16/15/15, no zero).
+ * a pass: the BASELINE test SKIPS loudly (skip message + console warning)
+ * and shows as SKIPPED in the report, not green. To light a platform up,
+ * run once with `GQA_UPDATE_BASELINES=1` on it — that regenerates and writes
+ * the current platform's directory and skips the assertion — then commit
+ * the PNGs. The platform-free cross-check that DOES run everywhere is the
+ * exploration comparison: the harness output of the run is diffed against
+ * the ratified docs/explorations/kitchen-set/ renders the Art Director
+ * passed (Review 2026-10-07 round 2: 16/15/15, no zero).
+ *
+ * THE SPLIT (stage-3 review fix): baseline and exploration comparisons are
+ * SEPARATE tests per shot. The exploration diff must never ride a code path
+ * a missing platform baseline can abort — one test that `test.skip`s mid-
+ * body would abort the exploration assertion too, making the CI on Linux
+ * (no committed `tests/visual/linux/`) silently run NEITHER. So: one test
+ * per shot asserts the committed baseline (skips per-platform), another
+ * asserts the ratified render (NO skip in its body — it runs on every
+ * platform). Prove the split by simulating a baseline-less platform:
+ * `GQA_BASELINE_DIR=tests/visual/linux npx playwright test visual` — the
+ * baseline tests report SKIPPED, the exploration tests still RUN and pass.
  *
  * Comparison: pixelmatch at threshold 0.1 with antialiasing allowance;
  * gate is <= 0.1 % differing pixels (4,320 of 1,440,000 at 1600x900) —
@@ -74,7 +85,9 @@ const MAX_DIFF_RATIO = 0.001
 const EXPLORATION_MAX_RATIO = 0.02
 
 const PLATFORM = process.platform // 'darwin' | 'linux' | 'win32'
-const BASELINE_DIR = join('tests', 'visual', PLATFORM)
+// Env override simulates a platform with no committed baseline (the CI-truth
+// probe for the split above); unset, this is the platform directory itself.
+const BASELINE_DIR = process.env.GQA_BASELINE_DIR ?? join('tests', 'visual', PLATFORM)
 const REBASE = process.env.GQA_UPDATE_BASELINES === '1'
 
 /**
@@ -123,8 +136,11 @@ const againstExploration = (shotName: string, pngBuf: Buffer): void => {
 
 test.use({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 1 })
 
-for (const shot of ['establishing', 'hero', 'floor'] as const) {
-  test(`canonical kitchen-set ${shot} matches its committed baseline and the ratified render`, async ({ page }) => {
+/** One deterministic canonical frame behind __sceneReady. */
+const captureCanonical = async (
+  page: import('@playwright/test').Page,
+  shot: 'establishing' | 'hero' | 'floor',
+): Promise<Buffer> => {
     await page.goto(`/?harness=1&scene=kitchen-set&shot=${shot}&post=on`)
     await page.waitForFunction(
       () => {
@@ -136,9 +152,22 @@ for (const shot of ['establishing', 'hero', 'floor'] as const) {
     )
     const err = await page.evaluate(() => (window as unknown as HarnessWindow).__sceneError)
     expect(err, `harness scene error: ${err}`).toBeUndefined()
-    const buf = await captureCanvas(page)
-    againstBaseline(shot, buf)
-    againstExploration(shot, buf)
+    return captureCanvas(page)
+}
+
+for (const shot of ['establishing', 'hero', 'floor'] as const) {
+  // Baseline comparison: platform-scoped, LOUD skip where no directory is
+  // committed. Nothing else may live in this body — a test.skip here aborts
+  // only this test.
+  test(`canonical kitchen-set ${shot} matches its committed baseline`, async ({ page }) => {
+    againstBaseline(shot, await captureCanonical(page, shot))
+  })
+
+  // Exploration comparison: platform-independent ratified-render diff. NO
+  // skip path anywhere in this body — it runs (and can fail) on every
+  // platform, including a Linux CI with no committed baselines.
+  test(`canonical kitchen-set ${shot} matches the ratified exploration render`, async ({ page }) => {
+    againstExploration(shot, await captureCanonical(page, shot))
   })
 }
 

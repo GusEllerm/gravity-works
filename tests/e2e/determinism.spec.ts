@@ -9,10 +9,18 @@
  * the honesty matrix that feeds the Decision Log's cross-platform claim:
  *
  *   node <-> node    HARD-ASSERTED (same process, same wasm, must match)
- *   node <-> browser REPORTED, not hard-asserted, until the outcome is known
- *                    (§2.2: if the physics build cannot deliver it, the
- *                    limitation is recorded honestly — this test is where
- *                    "known" happens).
+ *   node <-> browser HARD-ASSERTED since the stage-3 review — the outcome
+ *                    has been KNOWN-GOOD (MATCH / `verified`) on every run
+ *                    since the stage-2 gate (see `Modules/replay`), so the
+ *                    §2.2 "reported, not asserted" allowance is retired.
+ *                    Wiring: the spec's own Node process IS the node side
+ *                    (same `replayRun` import the tools use — no spawn,
+ *                    no fixture file to drift); the browser recomputes
+ *                    independently and compares against the hash embedded
+ *                    in the share fragment, so the assertion below is a
+ *                    genuine two-engine compare. A mismatch on any runner
+ *                    is a REAL cross-engine/cross-platform finding — fail
+ *                    loudly, never skip around it.
  */
 import { test, expect } from '@playwright/test'
 import zlib from 'node:zlib'
@@ -44,7 +52,7 @@ test.describe('stage 2 determinism cross-check (level, build, seed)', () => {
     expect(b.status).toBe(a.status)
   })
 
-  test('node <-> browser: node hash replayed in the page — reported, not hard-asserted', async ({ page }) => {
+  test('node <-> browser: the browser replay must reproduce the node hash (hard gate)', async ({ page }) => {
     const build = FEELTRACK.placeholderBuild()
     const node = await replayRun(FEELTRACK, build)
 
@@ -72,8 +80,12 @@ test.describe('stage 2 determinism cross-check (level, build, seed)', () => {
       type: match ? 'determinism' : 'determinism-MISMATCH',
       description: line,
     })
-    // REPORTED, not asserted — the outcome is an input to the Decision Log,
-    // not a failure of this suite. When it is known-good, a later stage may
-    // promote this to expect(verdict).toBe('verified').
+    // HARD gate (stage-3 review): the outcome has been known-good on every
+    // run since the stage-2 gate, so equality is now asserted — same wasm,
+    // same fixed-point discipline, no tolerance. A failure here is a real
+    // cross-engine/cross-platform nondeterminism finding to investigate,
+    // never a flake to skip.
+    expect(match, line).toBe(true)
+    expect(verdict, `page verdict for ${node.hash}`).toBe('verified')
   })
 })

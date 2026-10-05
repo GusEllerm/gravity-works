@@ -17,7 +17,7 @@ What the hash COVERS, stated precisely (playtest F's "different builds, same has
 
 ## Measured
 
-Node and the built Chromium page produce the same hash for the real kit feel track — same-machine, same-engine verification holds with the shipped rapier3d-compat build (feel-audit retune 2026-10-06: `099403c7` / 361 steps from both sides, page verdict `verified`; earlier quoted runs `9decb4fb`/343 and `074b1ef6`/239 steps belonged to pre-retune constants and are retired). The cross-platform claim (different CPU/OS) is still open ([[Home]] Deferred; QA owns the stage-3 gate).
+Node and the built Chromium page produce the same hash for the real kit feel track — same-machine, same-engine verification holds with the shipped rapier3d-compat build (feel-audit retune 2026-10-06: `099403c7` / 361 steps from both sides, page verdict `verified`; earlier quoted runs `9decb4fb`/343 and `074b1ef6`/239 steps belonged to pre-retune constants and are retired). Since the stage-3 review CI-truth pass the equality is HARD-ASSERTED (`tests/e2e/determinism.spec.ts` node↔browser, promoted from REPORTED because every run since the stage-2 gate has been MATCH/`verified`; the §2.2 allowance is retired). The cross-platform claim (different CPU/OS) remains open — but the assert now runs wherever the suite runs, so a divergence on a CI runner fails the job loudly instead of printing a rumour ([[Home]] Deferred).
 
 ## Guarded by
 

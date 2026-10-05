@@ -9,7 +9,7 @@ tags: [performance, stage-3]
 
 ## Machine note
 
-Measured 2026-10-05 by QA on: **Apple M5 Pro, 20-core integrated GPU, macOS 26.6.2**, Node 22.22.1, headless Chromium via Playwright 1.63 (WebGL through **SwiftShader software GL** — no hardware GPU in the browser process). CI machines will differ; the honest CI gate is the GPU-free one (mode C), per [[Performance Baselines]]. Same caveat as stage 2: a rendered miss here is a statement about the software rasteriser, not an integrated laptop GPU; the hardware-GPU confirmation stays deferred (it was deferred in stage 2 *for exactly this stage* — the integrated-laptop re-measure remains an open item for the stage-6 performance pass).
+Measured 2026-10-05 by QA on: **Apple M5 Pro, 20-core integrated GPU, macOS 26.6.2**, Node 22.22.1, headless Chromium via Playwright 1.63 (WebGL through **SwiftShader software GL** — no hardware GPU in the browser process). CI machines will differ; the GPU-free mode C remains the hard stepping gate, and since the stage-3 review pass the mode-B tier medians are ALSO hard-gated against the documented ceilings below (`TIER_CEILING_MS` in `tests/e2e/perf-stage3.spec.ts`), per [[Performance Baselines]]. Same caveat as stage 2: a rendered miss here is a statement about the software rasteriser, not an integrated laptop GPU; the hardware-GPU confirmation stays deferred (it was deferred in stage 2 *for exactly this stage* — the integrated-laptop re-measure remains an open item for the stage-6 performance pass).
 
 ## Resolution, stated
 
@@ -35,6 +35,8 @@ Scene: **kitchen01, par build** — the real game shell (`/?level=kitchen01&buil
 | high | 23.6–28.9 ms (65.5 under full-suite contention) | 26.9–37.7 ms | 16.7–33.3 ms | ~2.3–2.8 s |
 | medium | 20.4–21.5 ms | 22.8–27.9 ms | 16.7 ms | ~2.0–2.2 s |
 | low | 17.2–19.3 ms | 20.3–26.2 ms | 16.7 ms | ~1.8–1.9 s |
+
+**B is gated since the stage-3 review CI-truth pass** (Decision Log 2026-10-07): the per-tier medians must sit under documented generous ceilings — `TIER_CEILING_MS` **high ≤ 100 ms, medium ≤ 70 ms, low ≤ 55 ms** — ≈ 3.5× the clean medians (2026-10-07 re-measure 27.9/21.6/16.6 ms) and ≥ 1.5× the worst contention row above; a render-cost regression fails the job on any runner, and the human table ships as an attached artefact + annotation in the HTML report instead of stdout alone.
 
 **C — World stepping only** (kitchen01 par build, `visuals: false`, Node, GPU-free; 60-chunk untimed warm-up per the stage-2 lesson):
 

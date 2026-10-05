@@ -14,10 +14,17 @@
 //                   serialised with a blocking readPixels) into
 //                   window.__perfStats() — the frame-cost probe for the
 //                   session log
+//
+// Leak-probe seam (stage-3 review): window.__postCycle(n) builds and
+// disposes a full post stack n times on THIS renderer — the exact cycle
+// src/boot.ts's rebuild runs per placement — and returns renderer.info
+// snapshots before/after plus the per-cycle program counts. It changes no
+// pixels: every URL without perf/post set still renders byte-identically.
 
 import * as THREE from 'three'
 import { canonicalCamera, isCanonicalShot, setCameras, RENDER_DPR, RENDER_HEIGHT, RENDER_WIDTH, type CanonicalShot } from './cameras.ts'
 import { getSceneFactory, sceneNames } from './registry.ts'
+import type { SceneEntry } from './registry.ts'
 import { createPostStack, type PostQuality, type PostStack } from '../render/post/index.ts'
 import { isPostQuality, parseFocusParam } from './post-params.ts'
 
@@ -38,12 +45,28 @@ export interface PerfStats {
   config: { scene: string; shot: string; post: string; quality: string; frames: number }
 }
 
+/** One renderer.info snapshot for the leak probe (programs: count of live
+ * GPU programs; geometries/textures: renderer.info.memory). */
+export interface GpuCounts {
+  programs: number
+  geometries: number
+  textures: number
+}
+
+export interface PostCycleReport {
+  start: GpuCounts
+  end: GpuCounts
+  /** programs count after each build→dispose cycle */
+  trace: number[]
+}
+
 declare global {
   interface Window {
     __sceneReady?: boolean
     __sceneError?: string
     __pixelStats?: () => PixelStats
     __perfStats?: () => PerfStats
+    __postCycle?: (cycles: number) => PostCycleReport
   }
 }
 
@@ -118,9 +141,53 @@ function start(): void {
   requestAnimationFrame(() => {
     renderFrame()
     window.__pixelStats = () => readPixelStats(renderer)
+    window.__postCycle = (cycles: number) => postCycleReport(renderer, entry, cycles)
     if (perfFrames > 0) startPerfProbe(renderer, perfFrames, renderFrame, { scene: sceneName, shot, post: postParam, quality, frames: perfFrames })
     window.__sceneReady = true
   })
+}
+
+/**
+ * GPU-leak cycle probe: rebuild the whole post stack `cycles` times on the
+ * live renderer exactly as the game shell's placement rebuild does (build →
+ * one rendered frame → dispose), reporting renderer.info before, after and
+ * per cycle. A pass whose dispose leaks shows as counts that never return
+ * to the baseline (the stage-3 finding was the grade pass's program).
+ *
+ * The cycles render an EMPTY scene deliberately. Drawing the real set
+ * through the composer makes every SCENE material compile a second,
+ * linear-output program variant (render-to-target colour space): those
+ * variants are held by the scene's own live materials, not by the stack —
+ * one-time, bounded, not a stack leak — and they would sit in the counts
+ * as +N residue either way. With a blank scene the ONLY programs the cycles
+ * can create are the stack's own, so the assertion is exact: a correct
+ * dispose returns every count to its baseline, and any residual program
+ * belongs to an undisposed stack object.
+ */
+function postCycleReport(
+  renderer: THREE.WebGLRenderer,
+  entry: SceneEntry,
+  cycles: number,
+): PostCycleReport {
+  const snap = (): GpuCounts => ({
+    programs: renderer.info.programs?.length ?? -1,
+    geometries: renderer.info.memory.geometries,
+    textures: renderer.info.memory.textures,
+  })
+  const start = snap()
+  const blank = new THREE.Scene()
+  const trace: number[] = []
+  for (let i = 0; i < cycles; i++) {
+    const stack = createPostStack(renderer, entry.camera, {
+      quality: 'high',
+      focus: entry.focus ?? [0, 0.05, 0],
+      tokens: entry.tokens,
+    })
+    stack.render(blank)
+    stack.dispose()
+    trace.push(snap().programs)
+  }
+  return { start, end: snap(), trace }
 }
 
 /**

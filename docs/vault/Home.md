@@ -58,7 +58,7 @@ Staffing is per-stage and recorded in `Sessions/` notes; roles and protocols liv
 - Tile-B integration re-render (Art Director send-back) → first task of stage 3.
 - Material backlog (grain frequency, accent-to-light, decals, ceramic saturation, dither budget, tyre lightness floor) → stage 3, Technical Artist.
 - Tilt-shift/post stack → stage 3; renders are *provisional* until then.
-- Cross-platform determinism claim — the stage-2 harness measured **MATCH** (`npx playwright test determinism`: node `099403c7` = browser `099403c7`, page verdict `verified`; node↔node too). Cross-OS/CPU floating-point equivalence remains open for stage 3; same-machine node↔browser is proven, and the share-replay e2e hard-asserts `verified`.
+- Cross-platform determinism claim — the stage-2 harness measured **MATCH** (`npx playwright test determinism`: node `099403c7` = browser `099403c7`, page verdict `verified`; node↔node too), and since the stage-3 review pass the spec **hard-asserts** node↔browser equality (no more reported-only). Cross-OS/CPU floating-point equivalence remains open — the assert now simply fails the job loudly on any runner where it is false; the share-replay e2e also hard-asserts `verified`.
 - Sound — stage 5 by design.
 - livedocs TS symbol anchoring is `unknown`-heavy; reconciliation is by Documentarian discipline (Decision Log 2026-10-03). Never backtick PNG paths in notes.
 

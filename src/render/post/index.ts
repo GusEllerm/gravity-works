@@ -122,6 +122,11 @@ export function createPostStack(
       composer.dispose()
       stages.tilt.dispose()
       stages.bloom.dispose()
+      // The grade is a plain ShaderPass: dispose releases its material (and
+      // the program it holds) plus its fullscreen quad. Without this the
+      // terminal pass leaked a program reference every time boot's rebuild
+      // cycled the stack (stage-3 review: one per placement with post on).
+      stages.grade.dispose()
     },
   }
   return stack
