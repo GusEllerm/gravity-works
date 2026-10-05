@@ -139,7 +139,14 @@ them; the arc route's time moved with the geometry (2.49 → 2.442 s). The
 rung this level was specced to add — a drivable mid-run `curve` — is
 BLOCKED (see ask #1); the curve is fixture geometry past the cup, built,
 colliding, railable, run-out style, exactly the honesty standard the feel
-track set.
+track set. PLAYTEST E FOLLOW-UP (learnability pass): E never cleared this
+rung, but E's own L02 build (`straight → drop → straight`) finishes at
+2.32 s on the shipped builder's anchored mount (asserted in
+`tests/unit/kitchen-levels.test.ts`) — the lazy line IS discoverable from
+the set alone, and E's failure predates the builder's target-follow fix
+(the same one the L01 promise walk needed), not a level defect. NO fixture
+nudge added: the seam cue the brief asked to evaluate would be text-free
+window-dressing over a bug that is already fixed.
 
 **KITCHEN 03 — The Bowl** (`kitchen03.level.ts`). Teaches: the set's
 signature at speed — the gap verbs back to back beside the cereal bowl. The
@@ -163,33 +170,52 @@ that half of the rung is BLOCKED.
 
 **KITCHEN 04 — The Tap** (`kitchen04.level.ts`). Teaches: the hazard enters;
 affordance (the tap dripping, upstream, visibly) before hazard (its splash
-halves grip on the patch below the sink's far rim). The wet patch is
-`hazards` DATA (see convention below): centre on the ground build's decked-
-sink seam, `gripFactor: 0.5`, source `tap`. The AFFORDANCE reaches the data
+marks the sink the arc must fly). The wet patch is
+`hazards` DATA (see convention below): centre on the ground probe's decked-sink seam, `gripFactor: 0.5`, source `tap`. The AFFORDANCE reaches the data
 through the mount, not a re-model: kitchen04's set placement yaws the whole
 set so the tap's `drip` anchor maps exactly onto that zone centre — the
-drips land in the patch, the zone stays on the deck the car drives
-(Decision Log 2026-10-07; coordinate-tested in `tests/unit/set-wiring.test.ts`).
-Two lines, both measured with
-the live zone hook (stage 3): the par line FLIES the sink (`gapLip` →
-`drop` → `landing`, then past the patch — grip-independent to the BIT,
-2.517 s, hash unchanged by the zone), and the ground line decks straight over
-the sink with the two loose `straight`s and drives THROUGH the patch — its
-hash diverges and it finishes 0.06 s FASTER (2.350 s dry → 2.292 s wet):
-the honest in-channel manifestation of "halves grip" on a straight is
-LOW DRAG, the speed-management question the brief intends. The failure the
-card wanted — sliding wide — is a channel-kinematics NO on a straight (the
-rail carries lateral demand grip-independently; [[Modules/hazards]]);
-the measurable lateral signature is the straddled-patch-edge yaw
-(slip 2.38° → 3.98°, dry → wet). Par is the par because it is the line that
-does not care about the water. STAGE-3 COHERENCE: the par line's run-out is
-the GROUND line's 0.3 m straight (`L04_STRAIGHT`, was 0.35) — the tray holds
-`straight` twice and the builder seats both copies at one geometry, so a
-0.35 in the par chain was the un-placeable second size. The ground build was
-left byte-identical ON PURPOSE: `wetPatch()` centres the zone on ITS seam, so
-the patch, the tap's yaw and the par's bit-identical wet/dry hashes stayed
-exactly where the stage-3 placement fix put them and only the par's own line
-moved (2.567 → 2.517 s, par 2.55).
+drips land in the patch (Decision Log 2026-10-07; coordinate-tested in `tests/unit/set-wiring.test.ts`).
+STAGE-3 LEARNABILITY PASS (Playtest G hard-walled here: nine attempts,
+every tray combo, "nose-first"/"flew off", quit). G's nine builds were
+reproduced headlessly on the mount the SHIPPED builder makes (`initialBuild`
+anchors the fixtures — session log `2026-10-06 Stage 3 - L04 learnability`):
+all fail, and the culprit was the TRAY, not the physics — it held FIVE
+pieces for a FOUR-piece answer (`straight` ×2 for a line that places one),
+so the puzzle was "guess which 4 of 5" and every wrong subset fell into the
+sink. The tray now IS the par line's exact multiset — `gapLip`, `drop`,
+`landing`, `straight`, four pieces, budget 4, all load-bearing. Every kit
+socket seats flat, so a chain's reach is an ORDER-INVARIANT SUM of its
+pieces: **every whole-tray chain lands deck-to-deck at the cup and every
+order finishes** (24/24, 2.47–3.12 s, test-asserted) — eligibility instead
+of guessing, the L01 lesson at sink scale. Par 2.52 s (2.55) is the
+reference ORDER, beatable within the tray: `drop → landing → straight →
+gapLip` runs 2.47 s. Wrong SUBSETS stay real geometry: G's partials
+(`drop`, `drop → landing`, `drop → straight`, `gapLip → landing`,
+`straight`) are pinned to fall — the sink is the `drop`'s span (0.24 m,
+longer than a flat roll-off can fly). The par line FLIES the sink
+(`gapLip` → `drop` → `landing` → run-out) and replays BIT-IDENTICAL wet vs
+dry (grip-independent to the bit, 2.517 s on the pre-pass chain,
+unchanged by the zone). For every line a player can BUILD, the patch is a
+TELLS-not-a-TOLL: the drips mark the sink, and no finishing line touches
+the zone. The zone's grip physics are still measured — on
+`kitchen04GroundBuild()`, which is now explicitly the HAZARD/JUICE PROBE it
+physically always was: two loose `straight`s bridge the sink at ramp height
+and drive THROUGH the patch, the hash diverges and the probe runs 0.06 s
+FASTER wet (2.350 s dry → 2.292 s wet — the honest in-channel
+manifestation of "halves grip" on a straight is LOW DRAG; sliding wide is a
+channel-kinematics NO on a straight, [[Modules/hazards]]; the measurable
+lateral signature is the straddled-patch-edge yaw, slip 2.38° → 3.98°).
+The probe is NOT a route and never was one in the builder: its bridged
+deck ends at the RAMP's deck height — above and 38 cm short of the cup the
+chained par anchors (`fell` at 2.675 s, table below) — and with every
+socket flat, no subset of this tray can bridge the sink AND terminate at
+the low anchored cup. "The tap forces a line choice" is therefore a
+chained-cup claim; ask #2b (`Level.finishSocket`) is what makes it a
+choice. The 0.3 m `L04_STRAIGHT` and the ground build are byte-identical
+FROM the stage-3 coherence/placement fixes: `wetPatch()` centres the zone
+on the probe's seam, so the patch, the tap's yaw and the par's
+bit-identical wet/dry hashes stayed exactly where those fixes put them —
+the learnability pass moved no geometry, only the tray.
 
 **KITCHEN 05 — Sunday Run** (`kitchen05.level.ts`). Teaches: everything,
 with a budget that cannot buy two solutions. Tray: 2 `gapLip`, 2 `drop`,
@@ -251,8 +277,9 @@ as the per-contact grip hook (`src/world/hazards.ts` normalises the
 wheel contact: see [[Modules/hazards]]). The design contract holds and is
 now measured, not assumed: a level's PAR line must be grip-independent,
 and KITCHEN 04's par replays BIT-IDENTICAL with the live zone (its line
-flies the patch), while its ground line's hash DIVERGES (it drives
-through). One placement correction shipped with the hook: `wetPatch()`
+flies the patch), while its ground-build hash DIVERGES (the probe drives
+through) — the probe left the tray ⊇ line roster at the L04 learnability
+pass (it is hazard data replay, not a player route; see the L04 card). One placement correction shipped with the hook: `wetPatch()`
 now centres the patch on the ground build's straight seam (the decked
 sink's middle) — the earlier centre, taken from the PAR rig's landing run,
 sat on the par line's own deck and quietly broke the par's
@@ -330,13 +357,15 @@ seats, the tray's own geometry, fixtures anchored):
 | line | chained (the card's number) | anchored (what a player builds) |
 |---|---|---|
 | L02 arc route | finished 2.442 s | finished **2.242 s — FASTER than the lazy par (2.317 s)** |
-| L04 ground line | finished 2.292 s (wet) | **`fell` at 2.675 s** — two 0.3 m straights stop short of the anchored cup |
+| L04 ground build (hazard probe, not a route since the learnability pass) | finished 2.292 s (wet) | **`fell` at 2.675 s** — two 0.3 m straights stop short of the anchored cup |
 | L05 both wrong allocations | `fell` | `fell` (unchanged: the trade-off holds either way) |
 
 So two card claims are properties of the CHAINED data model, not of the game:
 L02's "the lazy line is the fast one" (a ballistic crossing beats rolling a
-`drop` when both must reach the same fixed cup) and L04's "the ground line is
-a second route" (it cannot reach the cup at all). Both are ask #2b's
+`drop` when both must reach the same fixed cup) and L04's decked-sink
+probe (it cannot reach the cup at all — since the learnability pass the L04
+card claims the anchored truth directly and keeps the probe as hazard
+data). Both are ask #2b's
 (`Level.finishSocket`) — with a level-owned finish point the two lines would
 be measured against the same world position in replay and in the builder, and
 these two claims become testable in the shipped mounting. Until then the
@@ -372,7 +401,10 @@ their choice/hazard lessons). L03's bowl line additionally needs ask #4
 headless through `src/replay/replay.ts` (same seam share links use), the L01
 three-piece promise (exact fit finishes with margin: seed-stable, release-
 speed-range; every tray-piece omission fails against the anchored fixtures),
-L02's two lines and L04's ground line finish, L05's two wrong allocations do
+L02's two lines and L04's ground PROBE finish, L02's Playtest-E lazy build
+finishes anchored, L04's WHOLE-TRAY ORDER SWEEP finishes (all 24 orders of
+the four tray pieces — the Playtest G learnability gate) while G's partial
+builds fall, L05's two wrong allocations do
 not, budgets equal trays, the sandbox exists, and the bowl sockets are
 exported. The stage-3 coherence pass adds the describe **"kitchen ladder —
 tray ⊇ parBuild (a level you cannot build is not a level)"**: per level and

@@ -21,7 +21,9 @@ import { KITCHEN01, KITCHEN_GEOM, trayCount, type KitchenLevel } from '../../src
 import { serialize, type Build } from '../../src/track/build.ts';
 import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
 import { PARS } from '../../src/world/stars.ts';
-import type { PieceKind } from '../../src/track/pieces.ts';
+import { PIECES, type PieceKind } from '../../src/track/pieces.ts';
+import { fitSocket } from '../../src/track/snap.ts';
+import { transformSocket } from '../../src/track/socket.ts';
 import { KITCHEN02, kitchen02ArcBuild } from '../../src/world/levels/kitchen02.level.ts';
 import { KITCHEN03 } from '../../src/world/levels/kitchen03.level.ts';
 import { KITCHEN04, kitchen04GroundBuild } from '../../src/world/levels/kitchen04.level.ts';
@@ -104,7 +106,13 @@ describe('kitchen ladder — tray ⊇ parBuild (a level you cannot build is not 
   const LINES: readonly { level: KitchenLevel; label: string; build: Build }[] = [
     ...LADDER.map((level) => ({ level, label: 'par build', build: level.parBuild() })),
     { level: KITCHEN02, label: 'arc line', build: kitchen02ArcBuild() },
-    { level: KITCHEN04, label: 'ground line', build: kitchen04GroundBuild() },
+    // L04's ground build left this table at the learnability pass (Playtest
+    // G): it is the hazard/juice PROBE (the decked sink the wet patch is
+    // centred on and the divergence the zone hook is measured with), not an
+    // authored ROUTE — its bridged deck ends at the ramp's deck height,
+    // above and short of the anchored cup (measured `fell`), so it is not
+    // tray-affordable and must not be claimed as one. See
+    // kitchen04.level.ts's header; the probe still replays below.
     { level: KITCHEN05, label: 'no-booster line', build: kitchen05NoBoosterBuild() },
     { level: KITCHEN05, label: 'late-booster line', build: kitchen05LateBoosterBuild() },
   ];
@@ -180,9 +188,14 @@ describe('kitchen ladder — the choices and the trade-off are real', () => {
     expect(par.time).toBeLessThan(arc.time);
   }, 30_000);
 
-  test('L04: the ground line through the wet patch also finishes (wet — the zone hook is live, see Modules/hazards)', async () => {
+  test('L04: the ground PROBE through the wet patch finishes (it is hazard data replay, not a player route — the tray does not afford it and the anchored cup would reject it)', async () => {
     const ground = await replayRun(KITCHEN04, kitchen04GroundBuild());
     expect(ground.status).toBe('finished');
+  }, 30_000);
+
+  test('L02: Playtest E’s lazy build (straight→drop→straight) finishes on the BUILDER mount — the line was discoverable; E’s failure predates the target-follow fix', async () => {
+    const run = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, ['straight', 'drop', 'straight']));
+    expect(run.status).toBe('finished'); // measured 2.32 s
   }, 30_000);
 
   test('L05: the two wrong allocations do NOT finish', async () => {
@@ -191,6 +204,93 @@ describe('kitchen ladder — the choices and the trade-off are real', () => {
     expect(noBooster.status).not.toBe('finished');
     expect(lateBooster.status).not.toBe('finished');
   }, 30_000);
+});
+
+/**
+ * THE L04 LEARNABILITY PASS (Playtest G: nine attempts, every tray combo,
+ * "nose-first"/"flew off", quit at this rung). The wall was the TRAY, not
+ * the physics: it held five pieces for a four-piece answer, so the puzzle
+ * was "guess which 4 of 5" and every wrong subset fell into the sink. The
+ * fix is eligibility: the tray IS the par line's multiset (4 = budget), and
+ * because every kit socket seats flat, a chained line's reach is an
+ * order-invariant SUM of its pieces — so EVERY whole-tray chain lands
+ * deck-to-deck at the cup. Asserted here against the mount the shipped
+ * builder makes (fixtures anchored at their par transforms via
+ * `initialBuild`, tray pieces seated with the tray's geometry in the order
+ * the player places them — the same emulation that reproduced G's nine
+ * failures byte-for-failure).
+ */
+function kitchenPlaced(level: KitchenLevel, kinds: readonly PieceKind[]): Build {
+  const par = level.parBuild();
+  const fixtures = new Set(Object.keys(level.fixtures!));
+  const pieces = par.pieces.filter((p) => fixtures.has(p.def)).map((p, i) => ({ ...p, seq: i }));
+  const params = levelTrayParams(level, level.tray)!;
+  const ramp = pieces.find((p) => p.def === 'ramp')!;
+  let cursor = transformSocket(PIECES.ramp.sockets(ramp.params)[1], ramp.transform);
+  for (const def of kinds) {
+    const p = { ...params[def] };
+    const t = fitSocket(cursor, PIECES[def].sockets(p)[0]);
+    pieces.push({ def, params: p, transform: t, seq: pieces.length });
+    cursor = transformSocket(PIECES[def].sockets(p)[1], t);
+  }
+  return { levelId: level.id, pieces, seed: level.seed };
+}
+
+const kitchen04Placed = (kinds: readonly PieceKind[]): Build => kitchenPlaced(KITCHEN04, kinds);
+
+function permutations<T>(items: readonly T[]): T[][] {
+  if (items.length <= 1) return [[...items]];
+  const out: T[][] = [];
+  items.forEach((x, i) =>
+    permutations([...items.slice(0, i), ...items.slice(i + 1)]).forEach((p) => out.push([x, ...p])),
+  );
+  return out;
+}
+
+describe('kitchen04 — learnability: place-everything works, guessing is over', () => {
+  test('the tray is exactly the par line\u2019s multiset (no spare piece to guess with)', () => {
+    const counts = new Map<PieceKind, number>();
+    for (const p of KITCHEN04.parBuild().pieces) counts.set(p.def, (counts.get(p.def) ?? 0) + 1);
+    for (const [kind, n] of counts) {
+      if (kind === 'ramp' || kind === 'finishCup') continue; // fixtures
+      expect(KITCHEN04.tray[kind], `tray ${kind}`).toBe(n);
+    }
+    for (const kind of Object.keys(KITCHEN04.tray) as PieceKind[]) {
+      expect(counts.get(kind) ?? 0, `${kind} is load-bearing`).toBe(KITCHEN04.tray[kind]);
+    }
+    expect(KITCHEN04.par.pieces).toBe(trayCount(KITCHEN04.tray));
+  });
+
+  test('ALL 24 orders of the four tray pieces finish (builder-anchored mount)', async () => {
+    const orders = permutations<PieceKind>(['gapLip', 'drop', 'landing', 'straight']);
+    expect(orders).toHaveLength(24);
+    for (const order of orders) {
+      const run = await replayRun(KITCHEN04, kitchen04Placed(order));
+      expect(run.status, `order ${order.join('>')}`).toBe('finished');
+    }
+  }, 180_000);
+
+  test('Playtest G\u2019s partial builds still fail — the sink is geometry, not a suggestion', async () => {
+    const partials: [string, PieceKind[]][] = [
+      ['drop', ['drop']],
+      ['drop>landing', ['drop', 'landing']],
+      ['drop>straight', ['drop', 'straight']],
+      ['gapLip>landing', ['gapLip', 'landing']],
+      ['straight', ['straight']],
+    ];
+    for (const [label, kinds] of partials) {
+      const run = await replayRun(KITCHEN04, kitchen04Placed(kinds));
+      expect(run.status, `partial ${label}`).not.toBe('finished');
+    }
+  }, 120_000);
+
+  test('the par order is beatable within the tray (an order runs faster than the reference)', async () => {
+    const par = await replayRun(KITCHEN04, kitchen04Placed(['gapLip', 'drop', 'landing', 'straight']));
+    const beat = await replayRun(KITCHEN04, kitchen04Placed(['drop', 'landing', 'straight', 'gapLip']));
+    expect(par.status).toBe('finished');
+    expect(beat.status).toBe('finished');
+    expect(beat.time).toBeLessThan(par.time); // measured 2.47 s vs the 2.52 s par
+  }, 60_000);
 });
 
 /**

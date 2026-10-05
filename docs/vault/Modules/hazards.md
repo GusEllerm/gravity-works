@@ -36,9 +36,10 @@ has; a wet zone scales exactly these:
 
 1. **Rolling resistance magnitude** — `coef × mean contact grip`. The kit's
    "effective mu" law IS a friction coefficient; water lowers it, so the
-   patch is a LOW-DRAG strip. Measured on the KITCHEN 04 ground line:
-   2.350 s dry → 2.292 s wet. The level's "speed-management question" is
-   this effect.
+   patch is a LOW-DRAG strip. Measured on the KITCHEN 04 ground build (the
+   hazard PROBE — not a player route since the L04 learnability pass, see
+   [[Concepts/Levels]] §L04 card):
+   2.350 s dry → 2.292 s wet. On the probe this effect is the whole story.
 2. **Per-wheel drag differential → yaw** — a wheel in-zone drags less than
    a wheel out: the straddled patch edges tank-steer the car toward the
    DRY side (the yaw component only; pitch/roll parts of a drag offset
@@ -79,17 +80,24 @@ as a hash fact).
 landing run, which with the hook live sits ON the par line's own deck and
 contradicts the file's own design claim ("the par line flies past"). The
 centre is now derived from the GROUND build's straight seam — the decked
-sink's middle — where the ground line drives through it. Measured after the
+sink's middle — where the ground probe drives through it. Measured after the
 fix: par wet == par dry bit-for-bit (2.450 s, `7adc07a8`), ground line
 diverges (2.350 → 2.292 s, `772b9e30` → `fce78ea5`), both finish. Flagged
 for Level Designer review.
 
+REVIEWED (L04 learnability pass, Playtest G): the placement stands — the
+learnability pass moved no geometry and no hazard data, only the tray (the
+spare `straight` came out; the tray is now the par line's exact multiset).
+The reviewed card states the anchored truth: no line a player can
+BUILD touches the zone (the sink is flown), so the zone's in-game role is
+the drip TELLS and its grip physics live in the probe replay.
+
 ## Guarded by
 
 `tests/unit/hazards.test.ts` — normalisation, `factorAt`, L04 par bit-
-identity, ground-line hash divergence + finish, untouched-zone bit-nothing,
+identity, ground-probe hash divergence + finish, untouched-zone bit-nothing,
 the half-patch lateral-slip measurement, and both car variants finishing
-the ground line.
+the ground probe.
 
 ## Depends on / used by
 
