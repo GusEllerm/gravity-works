@@ -39,6 +39,7 @@ import {
 } from '../physics/sim.ts';
 import {
   applyRollingResistance,
+  CAR,
   carSpeed,
   carStep,
   spawnCar,
@@ -86,7 +87,19 @@ export const TRACK_GROUP = 0x0001_fffd;
  * mirrored. */
 export const WORLD_ROLL_COEF = ROLL_COEF;
 /** A finish cup captures when the chassis centre comes within this many
- * cup radii (the chassis rides above the deck, so 1x never triggers). */
+ * cup radii (the chassis rides above the deck, so 1x never triggers).
+ *
+ * STAGE 3 (playtest G, the "car sits IN the cup, scored 0" finding): a
+ * car RESTING at the bowl mouth — nose visibly in the cup, centre at the
+ * rim — sits just OUTSIDE the 2x centre sphere (measured: 0.084 m against
+ * a 0.072 m radius in the capture regression below) and was ending the
+ * run `stalled` while the picture said made-it. The stall branch of
+ * `observe` therefore gets a second, half-a-car-length-wider capture test
+ * (`CUP_CAPTURE_FACTOR`·r + the chassis half-length): a STOPPED car whose
+ * nose reaches the cup is in the cup. The moving capture test is
+ * untouched, so every run that finishes in motion — every par line and
+ * the feel track — ends on the exact same step with the exact same hash
+ * (`tests/unit/world.test.ts` pins it). */
 export const CUP_CAPTURE_FACTOR = 2;
 /** Below this world speed, grounded, for `STALL_SECONDS` -> `stalled`.
  *
@@ -525,11 +538,13 @@ export class World {
   /** Outcome checks after the physics step (the contract's "constraints"). */
   private observe(grounded: boolean): void {
     const p = this.carWorldPos();
+    let cupD2 = Infinity;
     if (this.cup) {
       const dx = p.x - this.cup.center.x;
       const dy = p.y - this.cup.center.y;
       const dz = p.z - this.cup.center.z;
-      if (dx * dx + dy * dy + dz * dz < this.cup.radius * this.cup.radius) {
+      cupD2 = dx * dx + dy * dy + dz * dz;
+      if (cupD2 < this.cup.radius * this.cup.radius) {
         this.runStatus = 'finished';
         return;
       }
@@ -542,6 +557,18 @@ export class World {
     if (grounded && speed < this.stallSpeed) this.stallRun += 1;
     else this.stallRun = 0;
     if (this.stallRun > this.stallLimit) {
+      // Playtest G's contradiction, resolved by physics: a car that STOPS
+      // with its nose in the bowl — centre up to a half-car-length beyond
+      // the capture sphere — is seated in the cup, not stalled (see
+      // CUP_CAPTURE_FACTOR). Measured: centre 0.084 m from the cup centre
+      // at the rim-stall step; the pure-centre radius is 0.072 m.
+      if (this.cup) {
+        const reach = this.cup.radius + CAR.halfL / SIM_SCALE;
+        if (cupD2 < reach * reach) {
+          this.runStatus = 'finished';
+          return;
+        }
+      }
       this.runStatus = 'stalled';
       return;
     }

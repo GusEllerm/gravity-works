@@ -143,3 +143,67 @@ describe('stage 3: terminal-status latency (playtest E "result arrives seconds a
     expect(now.steps).toBe(old.steps);
   }, 60_000);
 });
+
+describe('stage 3: cup capture truth (playtest G "car visibly inside the cup, scored 0")', () => {
+  // flat launch deck + finishCup; the launch speed selects where the car
+  // dies — short of the cup (stalled AT the rim) or in it (finished).
+  const CUP_DECK = (() => {
+    const build = chain(['straight', 'finishCup'], {
+      params: { straight: { length: 1.2 }, finishCup: {} },
+      levelId: 'cup-probe',
+      seed: 1,
+    });
+    const [inSocket] = PIECES.straight.sockets(build.pieces[0]!.params);
+    return {
+      level: {
+        id: 'cup-probe',
+        name: 'cup probe',
+        seed: 1,
+        startSocket: inSocket,
+        budget: 0,
+        par: { pieces: 2, time: 1 },
+        maxTime: 6,
+        placeholderBuild: () => build,
+      } satisfies Level,
+      build,
+    };
+  })();
+
+  async function launchAt(worldSpeed: number) {
+    const world = await World.create(CUP_DECK.level, CUP_DECK.build, {
+      visuals: false,
+      launchSpeed: worldSpeed * 10, // sim units
+    });
+    world.launch();
+    let guard = 0;
+    while (world.status === 'running' && guard++ < 6 * 120) world.step();
+    const out = { status: world.status, time: world.time, hash: world.hashHex() };
+    world.dispose();
+    return out;
+  }
+
+  test('a car that STOPS at the bowl mouth (nose in cup, centre at the rim) is captured', async () => {
+    // Measured rig: at launch 1.70 m/s the car reaches the cup and dies
+    // 0.084 m from the bowl centre — 1.2 capture radii out, chassis nose
+    // visibly in the bowl. Before stage 3 this ended `stalled` while the
+    // picture said made-it (playtest G's contradiction, severity-exception
+    // 1/3). The stall branch now tests cup-centre + half a car length.
+    const rim = await launchAt(1.7);
+    expect(rim.status).toBe('finished');
+  }, 30_000);
+
+  test('a car that dies well short of the cup still ends stalled', async () => {
+    const short = await launchAt(1.4); // stops ~0.46 m from the bowl centre
+    expect(short.status).toBe('stalled');
+  }, 30_000);
+
+  test('moving captures are untouched: every run that finished in motion keeps its terminal step', async () => {
+    for (const v of [1.8, 2.4, 3.4]) {
+      const r = await launchAt(v);
+      expect(r.status).toBe('finished');
+    }
+    // and the harness-pinned ladder/feel hashes ride on this branch only
+    // while MOVING — replayRun's feel-track hash comes from
+    // replay.test.ts's pin; the stall branch never opens there.
+  }, 60_000);
+});
