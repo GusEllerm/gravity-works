@@ -39,8 +39,9 @@ import { createResultPanel, createRunRecorder, resultModel } from './ui/result.t
 import { createHelpDrawer } from './ui/help.ts';
 import { firstSight } from './ui/callouts.ts';
 import { downloadBlob, generateShareCard } from './share/card.ts';
-import { buildKitchenSet } from './sets/kitchen/index.ts';
-import { kitchenSetPlacement, placeSet } from './world/setPlacement.ts';
+import { SETS, isRegisteredSet, type SetRegistration } from './sets/index.ts';
+import type { SetInstance } from './sets/index.ts';
+import { placeSet } from './world/setPlacement.ts';
 import { KitRig } from './feel/kittrack.ts';
 import { RunCamera } from './camera/run-camera.ts';
 import type { RunCameraSolid } from './camera/run-camera.ts';
@@ -50,11 +51,13 @@ import type { PieceKind, PieceParams } from './track/pieces.ts';
 // registers it; the feel track stays addressable for the stage-2 specs).
 void [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04, KITCHEN05, KITCHEN_SANDBOX];
 
-/** The set a level declares (`KitchenLevel.set`), structurally — the boot
- *  must not depend on the level modules' types to decide what to mount. */
+/** The set a level declares (`KitchenLevel.set` / any set-carrying level),
+ *  structurally — the boot must not depend on the level modules' types to
+ *  decide what to mount. It must also name a registered set: an unknown id
+ *  mounts nothing (the pre-stage-3 empty-space render), never a wrong set. */
 function levelSet(level: Level): string | null {
   const set = (level as { set?: string }).set;
-  return typeof set === 'string' ? set : null;
+  return typeof set === 'string' && isRegisteredSet(set) ? set : null;
 }
 
 /** The named solid props of a built kitchen set as world-space AABBs — the
@@ -82,7 +85,11 @@ function collectSetBoxes(group: THREE.Group, leaves: boolean): THREE.Box3[] {
   // Box3.setFromObject does not refresh PARENT matrices — a freshly repositioned
   // mount would otherwise box the props at their UNPLACED coordinates
   group.updateMatrixWorld(true);
-  const skip = new Set(['counter', 'wet-patch-films']);
+  // The guard collects from the set's `dress` group by NAMING CONVENTION
+  // (src/sets/index.ts §SetInstance): `counter`/`shell` are the floor/wall
+  // surfaces outside the dress, `wet-patch-films` and anything named *film*
+  // are never solids.
+  const skip = new Set(['counter', 'shell', 'wet-patch-films']);
   const collect = (root: THREE.Object3D): void => {
     for (const child of root.children) {
       if (child.name.includes('film') || skip.has(child.name)) continue;
@@ -320,6 +327,17 @@ function wireShareCard(
 
 async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   root.innerHTML = '<h1>Gravity Works</h1>';
+  const params = new URLSearchParams(window.location.search);
+  // DEV HARNESS ENTRY (stage 4): `?set=<id>` mounts a REGISTERED set in the
+  // game shell in place of the level's own — the set-inspection entry point
+  // (`?set=bedroom`). Without the param the level-driven behavior is exactly
+  // the stage-3 line: a level declaring `set: 'kitchen'` gets the kitchen.
+  const setParam = params.get('set');
+  const setReg: SetRegistration | null = isRegisteredSet(setParam)
+    ? SETS[setParam]
+    : levelSet(level)
+      ? SETS[levelSet(level)!]!
+      : null;
   // The builder ABOVE the canvas: the launch controls must never sit below
   // the fold — clicking a control below the viewport scrolls the focused
   // button into view and pushes the WHOLE world (and the end-of-run panel
@@ -371,18 +389,19 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // the very first canvas bytes and asserts non-black.
   {
     const warm = new THREE.Scene();
-    warm.background = new THREE.Color(SET_TOKENS.kitchen.background);
+    warm.background = new THREE.Color(setReg?.tokens.background ?? SET_TOKENS.kitchen.background);
     renderer.render(warm, camera);
   }
 
-  // Stage 3 wiring: a level that declares a set renders INSIDE it. The set
-  // is mounted under the world root beside the track group as a VISUAL only
-  // — no colliders, no physics reads — per level via `kitchenSetPlacement`.
+  // Stage 3 wiring, stage 4 registry: a level that declares a set (or a
+  // `?set=` dev override) renders INSIDE it. The set is mounted under the
+  // world root beside the track group as a VISUAL only — no colliders, no
+  // physics reads — per level via the registration's placement table.
   // Mounting it cannot perturb a hash: the solver never sees it (proved in
   // tests/unit/set-wiring.test.ts and tests/e2e/set-wiring.spec.ts).
-  const setGroup = levelSet(level) === 'kitchen' ? buildGameKitchenSet(level.id) : null;
-  const setSolids = setGroup ? setPlacementGuard(setGroup) : undefined;
-  const setCamBoxes = setGroup ? setCameraSolids(setGroup) : undefined;
+  const setInstance: SetInstance | null = setReg ? buildGameSet(setReg, level.id) : null;
+  const setSolids = setInstance ? setPlacementGuard(setInstance.group) : undefined;
+  const setCamBoxes = setInstance ? setCameraSolids(setInstance.group) : undefined;
   // the same set boxes the builder guards placement with, in the camera
   // class's plain-array form: the run camera never intersects or looks
   // through a set prop (stage 3 "beige wall" — see src/camera/run-camera.ts)
@@ -394,7 +413,6 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // Stage 3 post-stack hook: the game renders through the composer only when
   // the URL explicitly asks (?post=on); the module is imported dynamically
   // so the default page ships the exact stage-2 render path, untouched.
-  const params = new URLSearchParams(window.location.search);
   const wantPost = params.get('post') === 'on';
   let post: PostStack | null = null;
 
@@ -423,7 +441,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // the result e2e drives the whole loop with, and nothing else reads it
   let launchQueued = params.has('launch');
 
-  if (setGroup) stage.dataset.setMounted = 'kitchen';
+  if (setInstance && setReg) stage.dataset.setMounted = setReg.id;
   // the e2e seam for the hazard status path: the live zone count of the
   // current world (0 for hazard-free levels) — debug surface, not UI
   (window as unknown as Record<string, unknown>).__gwHazardZones = (): number => world?.hazardZones.length ?? 0;
@@ -523,19 +541,19 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     const next = await World.create(level, build, { visuals: true });
     // the set group belongs to the shell, not to any one world — pull it out
     // before dispose() traverses (it disposes every mesh material it finds)
-    setGroup?.removeFromParent();
+    setInstance?.group.removeFromParent();
     world?.dispose();
     world = next;
     post?.dispose();
     post = null;
     if (next.scene) {
-      if (setGroup) {
-        next.scene.add(setGroup);
-        next.scene.background = new THREE.Color(SET_TOKENS.kitchen.background);
+      if (setInstance && setReg) {
+        next.scene.add(setInstance.group);
+        next.scene.background = new THREE.Color(setReg.tokens.background);
       }
       if (wantPost) {
         const { createPostStack } = await import('./render/post/index.ts');
-        post = createPostStack(renderer, camera, { tokens: SET_TOKENS.kitchen });
+        post = createPostStack(renderer, camera, { tokens: setReg?.tokens ?? SET_TOKENS.kitchen });
       }
     }
     builder.setScene(next.scene);
@@ -638,12 +656,13 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   requestAnimationFrame(frame);
 }
 
-/** Build the hero set once per game boot, mounted where this level wants it. */
-function buildGameKitchenSet(levelId: string): THREE.Group | null {
-  const placement = kitchenSetPlacement(levelId);
-  const set = buildKitchenSet(THREE, { tokens: SET_TOKENS.kitchen });
-  if (placement) placeSet(set.group, placement);
-  return set.group;
+/** Build a registered set once per game boot, mounted where this level wants
+ *  it (a null placement = the set's canonical origin). */
+function buildGameSet(reg: SetRegistration, levelId: string): SetInstance {
+  const placement = reg.placement(levelId);
+  const instance = reg.build(THREE);
+  if (placement) placeSet(instance.group, placement);
+  return instance;
 }
 
 /**

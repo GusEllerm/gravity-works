@@ -80,6 +80,13 @@ uniform float uFillStrength;
 uniform float uShadowDither;
 uniform float opacity;
 
+// Punctual-gate flag (22-10-07, bedroom lamp practical). The lights loop
+// below is a faithful copy of <lights_fragment_begin> that sets this flag
+// while a point light is being shaded. RE_Direct_Toon uses it to skip the
+// directional key's shadow-tint swap for punctual lights. Directional-only
+// scenes (every pre-bedroom render) see the exact previous math.
+bool gPunctualLight = false;
+
 struct ToonSurface {
 	vec3 baseColor;
 	vec3 shadowTint;
@@ -156,6 +163,12 @@ void RE_Direct_Toon(
 	float hard = step( 0.7 + weave * 0.6, att );
 	att = mix( hard, att, uShadowDither );
 	vec3 effective = mix( material.shadowTint * uKeyLength * 0.4, directLight.color, att );
+	// The punctual gate: the tint swap above is the DIRECTIONAL key's shadow
+	// contract (a shadowed fragment keeps the set's tint, not black). A
+	// punctual practical must add only its own distance-attenuated color —
+	// never the key-strength tint — or a dim lamp re-adds a lit-level fill
+	// wherever it fails to reach, washing the dusk the moment it is mounted.
+	if ( gPunctualLight ) effective = directLight.color;
 
 	vec3 halfVec = normalize( directLight.direction + geometryViewDir );
 	float ndh = dot( geometryNormal, halfVec );
@@ -206,7 +219,60 @@ void main() {
 
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 
-	#include <lights_fragment_begin>
+	// A faithful copy of <lights_fragment_begin> (point + directional
+	// sections, verbatim from three r186 except the gPunctualLight flag
+	// assignments) — see the flag declaration at the top of this shader.
+	vec3 geometryPosition = - vViewPosition;
+	vec3 geometryNormal = normal;
+	vec3 geometryViewDir = normalize( vViewPosition );
+	vec3 geometryClearcoatNormal = vec3( 0.0 );
+	IncidentLight directLight;
+
+#if ( NUM_POINT_LIGHTS > 0 ) && defined( RE_Direct )
+
+	PointLight pointLight;
+
+	#pragma unroll_loop_start
+	for ( int i = 0; i < NUM_POINT_LIGHTS; i ++ ) {
+
+		pointLight = pointLights[ i ];
+
+		getPointLightInfo( pointLight, geometryPosition, directLight );
+
+		gPunctualLight = true;
+		RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );
+
+	}
+	#pragma unroll_loop_end
+
+#endif
+
+#if ( NUM_DIR_LIGHTS > 0 ) && defined( RE_Direct )
+
+	DirectionalLight directionalLight;
+	#if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
+	DirectionalLightShadow directionalLightShadow;
+	#endif
+
+	#pragma unroll_loop_start
+	for ( int i = 0; i < NUM_DIR_LIGHTS; i ++ ) {
+
+		directionalLight = directionalLights[ i ];
+
+		getDirectionalLightInfo( directionalLight, directLight );
+
+		#if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_DIR_LIGHT_SHADOWS )
+		directionalLightShadow = directionalLightShadows[ i ];
+		directLight.color *= ( directLight.visible && receiveShadow ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowIntensity, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;
+		#endif
+
+		gPunctualLight = false;
+		RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );
+
+	}
+	#pragma unroll_loop_end
+
+#endif
 
 	// two-band directional fill replaces ambient: tinted toward the set's hue
 	// (and its accent, via the lighting rig), scaled by uFillStrength so the

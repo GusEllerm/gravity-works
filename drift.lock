@@ -93,7 +93,7 @@ sig = "cb7dd5d5414784c4"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/boot.ts"
-sig = "b07be87376f32669"
+sig = "e9013a01494412d3"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -144,6 +144,11 @@ sig = "eb7edff0fcbccfaa"
 doc = "docs/vault/Modules/dev.md"
 target = "src/dev/registry.ts"
 sig = "08ebfda14427ef24"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
+target = "src/dev/scenes/bedroom-set.ts"
+sig = "d0214f900a50cb6e"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -328,7 +333,7 @@ sig = "23049e685bb54f7b"
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
 target = "src/render/toon-material.ts"
-sig = "70ac714cea9ffc13"
+sig = "a7c10e602814a4ab"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
@@ -353,7 +358,7 @@ sig = "0f065f90d47289b6"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "src/boot.ts"
-sig = "b07be87376f32669"
+sig = "e9013a01494412d3"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -383,12 +388,17 @@ sig = "c55f143b9eaa05bc"
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/boot.ts"
-sig = "e685eb4121d15314"
+sig = "e9013a01494412d3"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/dev/scenes/kitchen-set.ts"
 sig = "ca72175798caed55"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets-kitchen.md"
+target = "src/sets/index.ts"
+sig = "d991ff871ea63b62"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
@@ -411,6 +421,51 @@ target = "tests/unit/kitchen-set.test.ts"
 sig = "419088dfb08c761f"
 
 [[bindings]]
+doc = "docs/vault/Modules/sets.md"
+target = "docs/explorations/bedroom/production-hero.png"
+sig = "30af55b32a0f0f22"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets.md"
+target = "src/boot.ts"
+sig = "e9013a01494412d3"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets.md"
+target = "src/dev/scenes/bedroom-set.ts"
+sig = "d0214f900a50cb6e"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets.md"
+target = "src/dev/scenes/bedroom.ts"
+sig = "0a888ace48655987"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets.md"
+target = "src/render/toon-material.ts"
+sig = "a7c10e602814a4ab"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets.md"
+target = "src/sets/bedroom/data.ts"
+sig = "7dddd37e7adaea37"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets.md"
+target = "src/sets/bedroom/index.ts"
+sig = "f619bf84287798df"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets.md"
+target = "src/sets/index.ts"
+sig = "d991ff871ea63b62"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets.md"
+target = "tests/e2e/bedroom-set.spec.ts"
+sig = "2b5cfe5d6541e8e3"
+
+[[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "scripts/gen-pars.mjs"
 sig = "50e1e4e590026781"
@@ -418,7 +473,7 @@ sig = "50e1e4e590026781"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/boot.ts"
-sig = "b07be87376f32669"
+sig = "e9013a01494412d3"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -429,6 +484,11 @@ sig = "610e79a40e4f3b0b"
 doc = "docs/vault/Modules/src.md"
 target = "src/main.ts"
 sig = "a38e01706f33daf6"
+
+[[bindings]]
+doc = "docs/vault/Modules/src.md"
+target = "src/sets/index.ts"
+sig = "d991ff871ea63b62"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -503,7 +563,7 @@ sig = "4c5881d646c56a21"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/boot.ts"
-sig = "b07be87376f32669"
+sig = "e9013a01494412d3"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -593,7 +653,7 @@ sig = "50e1e4e590026781"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/boot.ts"
-sig = "b07be87376f32669"
+sig = "e9013a01494412d3"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -688,7 +748,7 @@ sig = "50e1e4e590026781"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/boot.ts"
-sig = "b07be87376f32669"
+sig = "e9013a01494412d3"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
