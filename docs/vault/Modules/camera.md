@@ -13,13 +13,67 @@ tags: [module, camera]
 
 `src/camera/run-camera.ts` — `RunCamera`, constructed from a `RunCameraSource`
 (`railPointAt(s)`, `frameAt(s)`, `length` — the interface `KitRig` in
-`src/feel/kittrack.ts` satisfies via `rail()` / `frameAt()`), and the tuning
-object `RUN_CAMERA`: `LEAD_TIME` 0.4 s (rail distance the camera sits ahead,
-as a speed-scaled look-ahead `speed * LEAD_TIME`), `POS_LAG` 150 ms (the §7.3
-number), `ROT_LAG` 350 ms — deliberately slower, because the gap between the
-two time constants IS the anticipation beat (~0.2 s of "camera already turned,
-car arriving"). `HEIGHT` 0.022 m puts the eye just above the rail line (the
-rail itself sits at wheel height, `RAIL_WHEEL_HEIGHT`).
+`src/feel/kittrack.ts` satisfies via `rail()` / `frameAt()`), an optional
+`{ solids }` list of world-space AABBs (`RunCameraSolid`, the set's prop
+boxes at leaf granularity — `setCameraSolids` in `src/boot.ts`), and the
+tuning object `RUN_CAMERA`: `LEAD_TIME` 0.4 s (how far AHEAD the AIM looks,
+as the speed-scaled look-ahead `speed · LEAD_TIME`, sweep-clamped by
+`TRAIL_MAX_SWEEP` 1.05 rad), `POS_LAG` 150 ms (the §7.3 number), `ROT_LAG`
+350 ms — deliberately slower, because the gap between the two time constants
+IS the anticipation beat (~0.2 s of "camera already turned, car arriving").
+`HEIGHT` 0.022 m + `EYE_UP` 0.05 m put the eye just above the rail line (the
+rail sits at wheel height, `RAIL_WHEEL_HEIGHT`); `TRAIL` 0.25 m is how far
+of TRACK behind the car the EYE rides (stage 3 — see below).
+
+## Stage 3: the beige-wall fix (playtests E/F/G, measured)
+
+Measured on the L01–L04 PAR runs driven exactly as `boot.ts` drives them
+(`World` → `KitRig.nearestArc` → `RunCamera.update` at `FIXED_DT`): the old
+rail-lead eye sat at a rail point `speed · LEAD_TIME` ahead of the car, and
+even with the shell's backward 12 cm offset the EYE was AHEAD of the car for
+**67–72 % of every run** (car behind the camera plane) and out of the 35°
+frustum in ~95 % of steps. That is the "mid-run beige blur / car off-screen"
+finding — not a blur at all, an empty shot.
+
+The class now splits the two jobs §7.3 names:
+
+- **The AIM leads.** Orientation targets the rail point ~`LEAD_TIME` ahead
+  (`railArc` keeps the old lead-arc filter unchanged — every legacy timing
+  assertion holds). On near-level rays the YAW stays on that lead azimuth
+  while the PITCH is set to pass through the car (so the airborne gap
+  flight, a ramp descent, and a lifted eye all keep the car centred); on
+  steep rays (loop walls, horizontal projection < 0.25) the full lead-point
+  aim stays — "loops framed from the side". `AIM_Y_FOLLOW` 0.75 adds the
+  car's height ABOVE its rail point (airborne over the gapLip→landing seam,
+  where the car rides up to ~12 cm over the rail chord at t ≈ 1.4–1.8 s).
+- **The EYE trails.** It rides the rail `TRAIL` 0.25 m of TRACK behind the
+  car through the same `POS_LAG` filter (`eyeArc`). Trailing along the rail,
+  not backward along the local tangent — measured: the lip→drop seam's 45°
+  plunge turned a tangent-back offset into a 0.26 m one-step crane jump.
+  The trail is sweep-clamped (`TRAIL_MAX_SWEEP` ≈ 60°): on the bowl rim's
+  0.12 m radius (L03) an unclamped trail parked the eye on the FAR side of
+  the bowl looking through it; near the rail start the trail clamps at 0
+  and `LAUNCH_PEEP` (0.10 m, fading over `TRAIL`) + a distance-blended aim
+  (`AIM_CAR_BLEND` 0.12 m) keep the release frame a view of the car.
+- **It never touches the SET.** The eye point and the eye→car sightline are
+  cleared every frame against the caller's solid AABBs (`CLEAR_MARGIN`
+  0.04 m): whichever would be intersected lifts the eye above the tallest
+  blocking box top, carried by a `LIFT_LAG` 0.25 s exponential (an ARC
+  over, never a cut) with the unfiltered requirement as a hard floor — a
+  true-intersection frame cannot exist even for one step. The sightline
+  rule skips a box the CAR itself is inside (the L04 tap's leaf boxes sit
+  over the sink lane the deck runs under — the car passes beneath; lifting
+  would only crane the frame away). Leaf granularity matters: the TAP
+  group's single AABB has a bottom face that cuts through the corridor
+  (`setCameraSolids` vs the builder's coarser `setPlacementGuard`).
+
+Measured after (same harness, `tests/unit/camera.test.ts` stage-3 block +
+`.scratch/cam-probe.mjs` lineage): **0 of 1162 run steps** have the car out
+of frame or the eye inside a solid, all four par runs; worst |ndc| ≤ 0.57,
+eye→car distance band 0.15–0.51 m, L04 tap-window lift peaks 0.115 m. The
+e2e filmstrip gate (`tests/e2e/filmstrip.spec.ts`, own port 4210) shoots an
+L02 par run every 250 ms on the built page: 9 frames, worst-frame
+dominance **41.6 %** single colour (bar 60 %).
 
 ## How it works
 
@@ -62,22 +116,19 @@ See [[feel]] (rail-projection honesty) and
 
 ## Integration status (honest)
 
-`RunCamera` is built and headless-tested, and since the shell-readiness pass
-`src/boot.ts` DOES drive it: each rebuild builds a `KitRig` over the live
-build (the `RunCameraSource` — rail, frames, length) and, once a run is
-released, the render loop updates the camera per fixed step
-(`update(FIXED_DT, rig.nearestArc(carPos), speed)`), so during a run the rail
-camera leads the car (§7.3). Two shell-side facts the playtest found (the
-class stayed untouched — framing is the shell's):
-
-- the rail eye sits ~2 cm over a toy-scale deck, which read as an
-  unreadable blur on the game canvas — the shell lifts and backs off the
-  eye by its own `RUN_EYE_OFFSET` in the camera frame (a rigid local
-  offset, the FILTER still comes from the class verbatim);
-- the rail freeze-frame after a run is GONE: at a terminal status the loop
-  hands the transform back to the static track framing — the deployed
-  "camera buried inside the floor" was the run camera's final pose kept
-  forever.
+`RunCamera` is built and headless-tested, and `src/boot.ts` drives it: each
+rebuild builds a `KitRig` over the live build (the `RunCameraSource`) plus
+the set's leaf boxes (`setCameraSolids` → the `solids` option) and, once a
+run is released, the render loop updates the camera per fixed step
+(`update(FIXED_DT, rig.nearestArc(carPos), speed, carPos)` — the car's
+WORLD position enables the airborne vertical follow), so during a run the
+rail camera leads the car (§7.3). Since stage 3 the EYE COMPOSITION lives
+in the class (`EYE_UP`/`TRAIL`, promoted from the shell's old
+`RUN_EYE_OFFSET`, which is deleted): the clearance and in-frame maths must
+see the same point the renderer gets. The rail freeze-frame after a run
+stays GONE: at a terminal status the loop hands the transform back to the
+static track framing — the deployed "camera buried inside the floor" was
+the run camera's final pose kept forever.
 
 The static bounding-box framing owns the table between runs and at run
 end: it boxes the TRACK group alone (named `track` in `buildTrackMeshes`),
@@ -90,12 +141,18 @@ dev-time only once.
 ## Guarded by
 
 `tests/unit/camera.test.ts` — five timing tests on an analytic rail (lead
-distance, step response with tau = 150 ms, rotation lags rotation aimed at the
-lead frame, determinism of the filter over an input sequence), the
+distance, step response with tau = 150 ms, rotation lags rotation aimed at
+the lead frame, determinism of the filter over an input sequence, and the
+`snap` cut landing the eye at `railPoint(carArc − TRAIL)`), the
 straight-line drift regression on the REAL kit rig (`KitRig.railPointAt`
 continuity + the `frameAt + up·h` identity to 1e-12), the seam-continuity
-probe across every socket of two real builds, and the §7.3 lead/63 %
-measurements on the loop rig's real run-out rail.
+probe across every socket of two real builds, the §7.3 lead/63 %
+measurements on the loop rig's real run-out rail, and the stage-3 proof:
+every L01–L04 par run through the boot wiring asserts the car projects
+inside the frustum on EVERY step (|ndc| ≤ 0.95, never behind the eye
+plane) and the eye never sits inside a set solid. `tests/e2e/filmstrip.spec.ts`
+(port 4210, `npm run test:e2e:filmstrip`) repeats the in-frame claim on the
+BUILT page as the 250 ms filmstrip (≤ 60 % single-colour per frame).
 
 ## Depends on / used by
 

@@ -13,7 +13,7 @@ sig = "50e1e4e590026781"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/boot.ts"
-sig = "d0ddb96dbe78c76a"
+sig = "54122b4f45b22acf"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -73,12 +73,12 @@ sig = "13b4636cb503cb29"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/boot.ts"
-sig = "d0ddb96dbe78c76a"
+sig = "54122b4f45b22acf"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/camera/run-camera.ts"
-sig = "710213edb443a6b7"
+sig = "16582051e5b374ca"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -92,13 +92,18 @@ sig = "94a2ee27e5931879"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
+target = "tests/e2e/filmstrip.spec.ts"
+sig = "2a1dc7a25b85c1c2"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/loop.spec.ts"
 sig = "9d39000b0a52da53"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/unit/camera.test.ts"
-sig = "4b534f858e55f855"
+sig = "61f96bcfc29be4f3"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -263,7 +268,7 @@ sig = "0f065f90d47289b6"
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/boot.ts"
-sig = "d0ddb96dbe78c76a"
+sig = "54122b4f45b22acf"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
@@ -298,7 +303,7 @@ sig = "50e1e4e590026781"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/boot.ts"
-sig = "d0ddb96dbe78c76a"
+sig = "54122b4f45b22acf"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -378,7 +383,7 @@ sig = "6cfd5eecd7030f53"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/boot.ts"
-sig = "d0ddb96dbe78c76a"
+sig = "54122b4f45b22acf"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -463,7 +468,7 @@ sig = "50e1e4e590026781"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/boot.ts"
-sig = "d0ddb96dbe78c76a"
+sig = "54122b4f45b22acf"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -558,7 +563,7 @@ sig = "50e1e4e590026781"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/boot.ts"
-sig = "d0ddb96dbe78c76a"
+sig = "54122b4f45b22acf"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"

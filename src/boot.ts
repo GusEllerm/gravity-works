@@ -43,6 +43,7 @@ import { buildKitchenSet } from './sets/kitchen/index.ts';
 import { kitchenSetPlacement, placeSet } from './world/setPlacement.ts';
 import { KitRig } from './feel/kittrack.ts';
 import { RunCamera } from './camera/run-camera.ts';
+import type { RunCameraSolid } from './camera/run-camera.ts';
 import type { PieceKind, PieceParams } from './track/pieces.ts';
 
 // Level registry ids reachable through ?level= (importing each file is what
@@ -61,6 +62,22 @@ function levelSet(level: Level): string | null {
  *  and the counter floor are excluded: a wet patch must never block a piece,
  *  and the deck the track rides on is not an obstacle. */
 export function setPlacementGuard(group: THREE.Group): THREE.Box3[] {
+  return collectSetBoxes(group, false);
+}
+
+/** The same boxes at LEAF-MESH granularity — the run camera's input (stage 3
+ *  "beige wall"). A named group's single AABB is the right placement
+ *  contract ("no piece inside the tap") but too crude for a flypast: the
+ *  TAP group's box spans column→spout-tip as one solid slab, and its
+ *  bottom face cuts right through the sink lane the deck legally runs
+ *  under — the camera would crane over a spout the car passes cleanly
+ *  beneath. Leaf boxes are the actual solids: the column beside the lane,
+ *  the spout above it, none of them on the corridor. */
+export function setCameraSolids(group: THREE.Group): THREE.Box3[] {
+  return collectSetBoxes(group, true);
+}
+
+function collectSetBoxes(group: THREE.Group, leaves: boolean): THREE.Box3[] {
   const boxes: THREE.Box3[] = [];
   // Box3.setFromObject does not refresh PARENT matrices — a freshly repositioned
   // mount would otherwise box the props at their UNPLACED coordinates
@@ -69,7 +86,9 @@ export function setPlacementGuard(group: THREE.Group): THREE.Box3[] {
   const collect = (root: THREE.Object3D): void => {
     for (const child of root.children) {
       if (child.name.includes('film') || skip.has(child.name)) continue;
-      if (child.children.length === 0 || child.name === 'book-stack' || child.name === 'tap') {
+      const namedSolid =
+        child.children.length === 0 || child.name === 'book-stack' || child.name === 'tap';
+      if (leaves ? child.children.length === 0 : namedSolid) {
         boxes.push(new THREE.Box3().setFromObject(child));
         continue;
       }
@@ -337,6 +356,14 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // tests/unit/set-wiring.test.ts and tests/e2e/set-wiring.spec.ts).
   const setGroup = levelSet(level) === 'kitchen' ? buildGameKitchenSet(level.id) : null;
   const setSolids = setGroup ? setPlacementGuard(setGroup) : undefined;
+  const setCamBoxes = setGroup ? setCameraSolids(setGroup) : undefined;
+  // the same set boxes the builder guards placement with, in the camera
+  // class's plain-array form: the run camera never intersects or looks
+  // through a set prop (stage 3 "beige wall" — see src/camera/run-camera.ts)
+  const camSolids: readonly RunCameraSolid[] = (setCamBoxes ?? []).map((b) => ({
+    min: [b.min.x, b.min.y, b.min.z],
+    max: [b.max.x, b.max.y, b.max.z],
+  }));
 
   // Stage 3 post-stack hook: the game renders through the composer only when
   // the URL explicitly asks (?post=on); the module is imported dynamically
@@ -472,18 +499,13 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     // rail to follow (KitRig needs at least one spline), so the static
     // table framing owns those
     rig = build.pieces.length > 0 ? new KitRig(build, SIM_SCALE) : null;
-    runCam = rig && rig.length > 1e-6 ? new RunCamera(rig, 0) : null;
+    runCam = rig && rig.length > 1e-6 ? new RunCamera(rig, 0, { solids: camSolids }) : null;
     runCamActive = false;
     frameCamera(camera, next.scene);
     statusLine.textContent = 'ready';
   }
 
   await rebuild(startBuild);
-
-  // the shell's chase offset over the §7.3 rail eye (world m: up and back
-  // in the camera's own frame — see the follow block in `frame`)
-  const RUN_EYE_OFFSET = new THREE.Vector3(0, 0.05, 0.12);
-  const runEyeOffset = new THREE.Vector3();
 
   let last = performance.now();
   const frame = (now: number): void => {
@@ -505,7 +527,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         recorder.sample(w.state());
         if (runCam && rig) {
           const s = w.state();
-          runCam.update(FIXED_DT, rig.nearestArc(s.car.pos), s.car.speed);
+          runCam.update(FIXED_DT, rig.nearestArc(s.car.pos), s.car.speed, s.car.pos);
         }
         acc -= FIXED_DT;
         steps += 1;
@@ -536,15 +558,15 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     }
     statusLine.textContent = runStatusLine(w, builder.playerCount());
     if (runCamActive && runCam) {
-      // §7.3: during a run (and on the freeze-frame after it) the RUN
-      // CAMERA owns the transform — leading the car along the rail.
-      // The rail eye sits ~2 cm over a toy-scale deck, which reads as an
-      // unreadable blur on the game canvas; the shell lifts the eye and
-      // backs it off in the camera's own frame — the FILTER stays the Feel
-      // Engineer's class, the framing is the shell's.
+      // §7.3: during a run the RUN CAMERA owns the transform — leading the
+      // car along the rail. The eye composition (height, chase distance,
+      // set-prop lift) lives in the class itself since stage 3: the play
+      // test "beige blur" was the rail eye OVERRUNNING the car (a speed-
+      // scaled rail lead put the camera ahead of the car it was looking
+      // for), and the "buried in a grey wall" was that eye inside a set
+      // solid. Both are the class's contract now (CAR_IN_FRONT, solids).
       camera.position.copy(runCam.position);
       camera.quaternion.copy(runCam.rotation);
-      camera.position.add(runEyeOffset.copy(RUN_EYE_OFFSET).applyQuaternion(camera.quaternion));
     }
     if (post) {
       post.setFocus([pose.pos.x, pose.pos.y, pose.pos.z]); // §7.3: band centred on the car
