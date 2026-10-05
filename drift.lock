@@ -68,7 +68,7 @@ sig = "94a2ee27e5931879"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/loop.spec.ts"
-sig = "74ce19d54ef6516d"
+sig = "9d39000b0a52da53"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -323,7 +323,7 @@ sig = "720fc204782c6553"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/loop.spec.ts"
-sig = "74ce19d54ef6516d"
+sig = "9d39000b0a52da53"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -383,7 +383,7 @@ sig = "720fc204782c6553"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/loop.spec.ts"
-sig = "74ce19d54ef6516d"
+sig = "9d39000b0a52da53"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
