@@ -14,7 +14,7 @@ import {
   seenCallouts,
 } from '../../src/ui/callouts.ts';
 import { PIECE_KINDS } from '../../src/track/pieces.ts';
-import { SAVE_KEY, loadSave, memoryStorage } from '../../src/save/save.ts';
+import { SAVE_KEY, SAVE_VERSION, loadSave, memoryStorage } from '../../src/save/save.ts';
 
 describe('callout manifest', () => {
   test('every kit piece has a one-line callout', () => {
@@ -60,7 +60,7 @@ describe('seen tracking in the save', () => {
     markCalloutSeen('bank', store);
     markCalloutSeen('bank', store); // idempotent
     const data = loadSave(store);
-    expect(data.v).toBe(1);
+    expect(data.v).toBe(SAVE_VERSION);
     expect(data.settings.calloutsSeen).toEqual(['bank']);
   });
 

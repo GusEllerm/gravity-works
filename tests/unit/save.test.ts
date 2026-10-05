@@ -9,21 +9,24 @@ import {
   loadSave,
   memoryStorage,
   migrateBlob,
+  recordStars,
   rememberBuild,
   saveFileJson,
   saveSave,
   savedBuild,
 } from '../../src/save/save.ts';
+import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts';
 import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts';
 import { deserialize, serialize } from '../../src/track/build.ts';
 
 describe('save', () => {
-  test('nothing stored migrades v0 -> v1 into a fresh envelope', () => {
+  test('nothing stored migrades through every version into a fresh envelope', () => {
     const store = memoryStorage();
     const data = loadSave(store);
     expect(data.v).toBe(SAVE_VERSION);
     expect(data.builds).toEqual({});
     expect(data.settings).toEqual({});
+    expect(data.progress).toEqual({ stars: {}, reached: {} });
   });
 
   test('a versioned save round-trips through storage', () => {
@@ -47,9 +50,11 @@ describe('save', () => {
     const build = FEELTRACK.placeholderBuild();
     const legacy = JSON.stringify({ builds: { feeltrack: build, junk: 42 } });
     const data = migrateBlob(legacy);
-    expect(data.v).toBe(1);
+    expect(data.v).toBe(SAVE_VERSION);
     expect(Object.keys(data.builds)).toEqual(['feeltrack']);
     expect(data.builds.feeltrack).toBe(serialize(build));
+    // the adopted builds also carry the v1-era `reached` mark (v1 -> v2)
+    expect(data.progress.reached).toEqual({ feeltrack: true });
   });
 
   test('a future version starts clean rather than corrupting', () => {
@@ -81,7 +86,82 @@ describe('save', () => {
   });
 
   test('there is exactly one migrade per version bump', () => {
-    expect(MIGRATIONS.length).toBe(SAVE_VERSION); // v0 -> v1 is the first
+    expect(MIGRATIONS.length).toBe(SAVE_VERSION); // v0 -> v1 and v1 -> v2
+  });
+
+  // ---- stage 4: the v1 -> v2 campaign migrade ------------------------------
+
+  test('a v1 kitchen-only save migrades to v2 WITHOUT relocking the kitchen or opening the bedroom', () => {
+    const build = serialize(KITCHEN01.placeholderBuild());
+    const v1 = JSON.stringify({
+      v: 1,
+      builds: {
+        kitchen01: build,
+        kitchen02: build,
+        kitchen03: build,
+        kitchen04: build,
+        kitchen05: build,
+      },
+      settings: { reducedMotion: true },
+    });
+    const data = migrateBlob(v1);
+    expect(data.v).toBe(2);
+    // every kitchen level the player stood in keeps its build AND its place
+    expect(Object.keys(data.builds).sort()).toEqual([
+      'kitchen01',
+      'kitchen02',
+      'kitchen03',
+      'kitchen04',
+      'kitchen05',
+    ]);
+    expect(data.settings).toEqual({ reducedMotion: true });
+    // `reached` = exactly the levels that HAD a build record — no more
+    expect(data.progress.reached).toEqual({
+      kitchen01: true,
+      kitchen02: true,
+      kitchen03: true,
+      kitchen04: true,
+      kitchen05: true,
+    });
+    // and NO stars are minted from old bytes: the bedroom frontier is
+    // re-earned by finishing kitchen05, never forged by a migration
+    expect(data.progress.stars).toEqual({});
+  });
+
+  test('a v1 save with one kitchen build reached exactly one kitchen level', () => {
+    const v1 = JSON.stringify({
+      v: 1,
+      builds: { kitchen01: serialize(KITCHEN01.placeholderBuild()) },
+      settings: {},
+    });
+    expect(migrateBlob(v1).progress.reached).toEqual({ kitchen01: true });
+  });
+
+  test('a v2 blob without a well-shaped progress record is garbage like any other', () => {
+    const noProgress = JSON.stringify({ v: 2, builds: {}, settings: {} });
+    expect(migrateBlob(noProgress).v).toBe(SAVE_VERSION);
+    expect(migrateBlob(noProgress).progress).toEqual({ stars: {}, reached: {} });
+    const badStars = JSON.stringify({
+      v: 2,
+      builds: {},
+      settings: {},
+      progress: { stars: { kitchen01: 9 }, reached: {} },
+    });
+    expect(migrateBlob(badStars).progress.stars).toEqual({});
+  });
+
+  test('recordStars keeps the best per level, ignores failures, and persists', () => {
+    const store = memoryStorage();
+    recordStars('kitchen01', 2, store);
+    expect(loadSave(store).progress.stars).toEqual({ kitchen01: 2 });
+    recordStars('kitchen01', 1, store); // a worse rerun does not lower the best
+    expect(loadSave(store).progress.stars).toEqual({ kitchen01: 2 });
+    recordStars('kitchen01', 3, store);
+    expect(loadSave(store).progress.stars).toEqual({ kitchen01: 3 });
+    recordStars('kitchen02', 0, store); // a 0-star failure records NOTHING
+    expect(loadSave(store).progress.stars).toEqual({ kitchen01: 3 });
+    // and writing stars never touches the legacy reached record
+    expect(loadSave(store).progress.reached).toEqual({});
   });
 
   test('builds that do not structurally validate are dropped on load', () => {

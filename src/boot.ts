@@ -17,15 +17,15 @@
 import * as THREE from 'three';
 import { FIXED_DT, SIM_SCALE } from './physics/sim.ts';
 import { getLevel } from './world/levels/feeltrack.level.ts';
-import { KITCHEN01, KITCHEN01_ID } from './world/levels/kitchen01.level.ts';
-import { KITCHEN02, KITCHEN02_ID } from './world/levels/kitchen02.level.ts';
-import { KITCHEN03, KITCHEN03_ID } from './world/levels/kitchen03.level.ts';
-import { KITCHEN04, KITCHEN04_ID } from './world/levels/kitchen04.level.ts';
-import { KITCHEN05, KITCHEN05_ID, KITCHEN_SANDBOX } from './world/levels/kitchen05.level.ts';
-import { BEDROOM01, BEDROOM01_ID } from './world/levels/bedroom01.level.ts';
-import { BEDROOM02, BEDROOM02_ID } from './world/levels/bedroom02.level.ts';
-import { BEDROOM03, BEDROOM03_ID } from './world/levels/bedroom03.level.ts';
-import { BEDROOM04, BEDROOM04_ID } from './world/levels/bedroom04.level.ts';
+import { KITCHEN01 } from './world/levels/kitchen01.level.ts';
+import { KITCHEN02 } from './world/levels/kitchen02.level.ts';
+import { KITCHEN03 } from './world/levels/kitchen03.level.ts';
+import { KITCHEN04 } from './world/levels/kitchen04.level.ts';
+import { KITCHEN05, KITCHEN_SANDBOX } from './world/levels/kitchen05.level.ts';
+import { BEDROOM01 } from './world/levels/bedroom01.level.ts';
+import { BEDROOM02 } from './world/levels/bedroom02.level.ts';
+import { BEDROOM03 } from './world/levels/bedroom03.level.ts';
+import { BEDROOM04 } from './world/levels/bedroom04.level.ts';
 import { World, type RunStatus } from './world/world.ts';
 import type { Build } from './track/build.ts';
 import { PIECES } from './track/pieces.ts';
@@ -35,7 +35,7 @@ import type { Level } from './world/level.ts';
 import { createBuilder } from './ui/builder.ts';
 import { parseShareUrl } from './share/share.ts';
 import { replayRun } from './replay/replay.ts';
-import { loadSave, rememberBuild } from './save/save.ts';
+import { loadSave, rememberBuild, recordStars } from './save/save.ts';
 import { SET_TOKENS } from './render/tokens.ts';
 import type { PostStack } from './render/post/index.ts';
 import { parFor, starsFor, type RunOutcome, type RunResult } from './world/stars.ts';
@@ -44,6 +44,8 @@ import { createHelpDrawer } from './ui/help.ts';
 import { firstSight } from './ui/callouts.ts';
 import { downloadBlob, generateShareCard } from './share/card.ts';
 import { SETS, isRegisteredSet, type SetRegistration } from './sets/index.ts';
+import { CAMPAIGN_LADDER, nextInCampaign } from './world/campaign.ts';
+import { createLevelSelect } from './ui/levelselect.ts';
 import type { SetInstance } from './sets/index.ts';
 import { placeSet } from './world/setPlacement.ts';
 import { KitRig } from './feel/kittrack.ts';
@@ -52,7 +54,9 @@ import type { RunCameraSolid } from './camera/run-camera.ts';
 import type { PieceKind, PieceParams } from './track/pieces.ts';
 
 // Level registry ids reachable through ?level= (importing each file is what
-// registers it; the feel track stays addressable for the stage-2 specs).
+// registers it; the feel track stays addressable for the stage-2 specs). The
+// campaign table (`src/world/campaign.ts`) names its rungs; the sandbox and
+// the feel rig are imported here for addressing only.
 void [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04, KITCHEN05, KITCHEN_SANDBOX, BEDROOM01, BEDROOM02, BEDROOM03, BEDROOM04];
 
 /** The set a level declares (`KitchenLevel.set` / any set-carrying level),
@@ -132,25 +136,17 @@ function levelTray(level: Level): Partial<Record<PieceKind, number>> | undefined
   return tray && typeof tray === 'object' ? tray : undefined;
 }
 
-/** The ladder, in order — the order `Next level` walks. Levels outside it
- *  (the sandbox, the feel rig) are reachable by `?level=` but are nobody's
- *  "next". */
-export const LADDER: readonly string[] = [
-  KITCHEN01_ID,
-  KITCHEN02_ID,
-  KITCHEN03_ID,
-  KITCHEN04_ID,
-  KITCHEN05_ID,
-  BEDROOM01_ID,
-  BEDROOM02_ID,
-  BEDROOM03_ID,
-  BEDROOM04_ID,
-];
+/** The ladder, in order — the order `Next level` walks and the level select
+ *  flattens. Since stage 4 it is the CAMPAIGN table (`src/world/campaign.ts`,
+ *  the rooms kitchen → bedroom concatenated): kitchen01..05 → bedroom01..04,
+ *  so `Next` crosses the set boundary at kitchen05 → bedroom01 and bedroom04
+ *  has no next. Levels outside it (the sandbox, the feel rig) are reachable
+ *  by `?level=` but are nobody's "next". */
+export const LADDER: readonly string[] = CAMPAIGN_LADDER;
 
 /** The next rung after `id`, or null (last rung / not on the ladder). */
 export function nextLevelId(id: string): string | null {
-  const i = LADDER.indexOf(id);
-  return i >= 0 && i < LADDER.length - 1 ? LADDER[i + 1]! : null;
+  return nextInCampaign(id);
 }
 
 /** Geometry of the tray pieces: the LEVEL's tuned parameters per kind,
@@ -259,7 +255,14 @@ export function boot(root: HTMLElement): void {
     void bootSharedRun(root);
     return;
   }
-  void bootGame(root, resolveLevel(new URLSearchParams(window.location.search)));
+  const params = new URLSearchParams(window.location.search);
+  // the stage-4 campaign page: `?levels=1` lists the ladder grouped by room
+  // (player surface; `?level=` stays the recorded debug addressing)
+  if (params.has('levels')) {
+    createLevelSelect(root);
+    return;
+  }
+  void bootGame(root, resolveLevel(params));
 }
 
 function paragraph(id: string, parent: HTMLElement, role = 'status'): HTMLParagraphElement {
@@ -341,6 +344,16 @@ function wireShareCard(
 
 async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   root.innerHTML = '<h1>Gravity Works</h1>';
+  // the campaign page link (stage 4): a quiet line above the builder, NEXT
+  // to the h1 — a player surface, never an overlay over the world
+  const levelsNav = document.createElement('p');
+  levelsNav.id = 'gw-levels-nav';
+  const levelsLink = document.createElement('a');
+  levelsLink.id = 'gw-levels-link';
+  levelsLink.href = '?levels=1';
+  levelsLink.textContent = 'All levels';
+  levelsNav.appendChild(levelsLink);
+  root.appendChild(levelsNav);
   const params = new URLSearchParams(window.location.search);
   // DEV HARNESS ENTRY (stage 4): `?set=<id>` mounts a REGISTERED set in the
   // game shell in place of the level's own — the set-inspection entry point
@@ -631,6 +644,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       };
       const model = resultModel(result, parFor(level.id, level.par), recorder.evidence());
       resultPanel.show(model);
+      // §9.2 progress persists: a finished run's stars are the save's best
+      // for this level (a failure records nothing); this is what opens the
+      // next rung on the level select, exactly what `gateNext` just offered
+      recordStars(level.id, model.stars);
       gateNext(model.stars); // §9.2: the ladder advances on STARS, not on trying
       const h = w.hashHex();
       if (lastRun && lastRun.hash === h && lastRun.pieces !== result.piecesUsed) {

@@ -8,13 +8,17 @@
  * `MIGRATIONS[i]` upgrades a save at version `i` to version `i + 1`; loading
  * runs every migrade between the stored version and `SAVE_VERSION`, so any
  * older blob — including "nothing at all", version 0 — lands at the current
- * shape. Anything unparseable falls back to a fresh save rather than
- * crashing the game.
+ * shape. The v1→v2 migrade (stage 4) carries a kitchen-era save's per-level
+ * build records into the campaign `progress.reached` record — see its doc.
+ * Anything unparseable falls back to a fresh save rather than crashing the
+ * game.
  */
 import { deserialize, serialize, type Build } from '../track/build.ts';
 
 export const SAVE_KEY = 'gravity-works.save';
-export const SAVE_VERSION = 1;
+/** v2 (stage 4): the `progress` record (per-level best stars + the legacy
+ *  `reached` carry) joins the envelope; see `MIGRATIONS[1]`. */
+export const SAVE_VERSION = 2;
 
 export interface StorageLike {
   getItem(key: string): string | null;
@@ -34,6 +38,23 @@ export interface SaveSettings {
   calloutsSeen?: string[];
 }
 
+/**
+ * The campaign-progress record (stage 4) — the ONLY data the unlock rule
+ * in `src/world/campaign.ts` reads:
+ *
+ * - `stars[levelId]` — the best star count ever EARNED on that level, written
+ *   by `recordStars` at the end of a RUN (a finished run through any build;
+ *   a 0-star failure records nothing). This is what opens the next rung.
+ * - `reached[levelId]` — a LEGACY carry, written ONLY by the v1→v2 migrade:
+ *   levels the player demonstrably stood in before progress was ever
+ *   counted (their build autosave existed). Placing a piece in a v2-era save
+ *   never adds to it — unlocks are earned by stars, not by visits.
+ */
+export interface SaveProgress {
+  stars: Record<string, number>;
+  reached: Record<string, true>;
+}
+
 export interface SaveData {
   v: number;
   /**
@@ -43,6 +64,7 @@ export interface SaveData {
    */
   builds: Record<string, string>;
   settings: SaveSettings;
+  progress: SaveProgress;
 }
 
 type Migrade = (stored: unknown) => unknown;
@@ -69,6 +91,35 @@ export const MIGRATIONS: readonly Migrade[] = [
       }
     }
     return { v: 1, builds, settings: {} };
+  },
+  /**
+   * v1 -> v2 (stage 4): the campaign era. A v1 save counted no stars — the
+   * ladder's ONLY memory of where a player had been was the per-level build
+   * autosave — so the migrade carries those bytes forward as the `reached`
+   * record: a level whose build record existed is a level the player stood
+   * in, and it must NOT relock after the upgrade (the kitchen-era finisher
+   * would come back to a kitchen re-locked behind kitchen01). It unlocks
+   * nothing that was not already reachable under v1: rooms the player never
+   * opened (a kitchen-only save's bedrooms) gain no `reached` mark and stay
+   * gated on kitchen05's star, exactly as in a fresh save. `stars` starts
+   * empty — the migrade CANNOT know what a v1 run scored, and minting stars
+   * from old build bytes would display trophies nobody earned; the rung
+   * past the frontier is earned by playing, never by migration.
+   */
+  (stored) => {
+    const v1 = stored as { builds?: unknown; settings?: unknown } | null;
+    const reached: Record<string, true> = {};
+    const builds =
+      v1 && typeof v1.builds === 'object' && v1.builds !== null
+        ? (v1.builds as Record<string, unknown>)
+        : {};
+    for (const levelId of Object.keys(builds)) reached[levelId] = true;
+    return {
+      v: 2,
+      builds,
+      settings: v1 && typeof v1.settings === 'object' && v1.settings !== null ? v1.settings : {},
+      progress: { stars: {}, reached },
+    };
   },
 ];
 
@@ -98,7 +149,7 @@ export function memoryStorage(initial: Record<string, string> = {}): StorageLike
 }
 
 export function freshSave(): SaveData {
-  return { v: SAVE_VERSION, builds: {}, settings: {} };
+  return { v: SAVE_VERSION, builds: {}, settings: {}, progress: { stars: {}, reached: {} } };
 }
 
 function isBuild(value: unknown): value is Build {
@@ -144,7 +195,21 @@ function isSaveData(value: unknown): value is SaveData {
   if (typeof s.v !== 'number' || !Number.isInteger(s.v)) return false;
   if (typeof s.builds !== 'object' || s.builds === null) return false;
   if (!Object.values(s.builds as Record<string, unknown>).every(isBuildJson)) return false;
-  return typeof s.settings === 'object' && s.settings !== null;
+  if (typeof s.settings !== 'object' || s.settings === null) return false;
+  // The campaign-era progress record is part of the envelope (every blob
+  // reaching this check has been migraded to v2): one missing or half-shaped
+  // is garbage like any other — migrades always write it, so only
+  // hand-edited or half-written saves land here.
+  const p = s.progress as Record<string, unknown> | undefined;
+  if (typeof p !== 'object' || p === null) return false;
+  const stars = (p as { stars?: unknown }).stars;
+  const reached = (p as { reached?: unknown }).reached;
+  if (typeof stars !== 'object' || stars === null) return false;
+  if (!Object.values(stars as Record<string, unknown>).every((n) => typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= 3)) {
+    return false;
+  }
+  if (typeof reached !== 'object' || reached === null) return false;
+  return Object.values(reached as Record<string, unknown>).every((t) => t === true);
 }
 
 /** Read, migrate and validate. Never throws — garbage becomes a fresh save. */
@@ -206,6 +271,22 @@ export function clearSave(store: StorageLike | null = defaultStorage()): void {
 export function rememberBuild(build: Build, store: StorageLike | null = defaultStorage()): void {
   const data = loadSave(store);
   data.builds[build.levelId] = serialize(build);
+  saveSave(data, store);
+}
+
+/**
+ * Record the star line of a FINISHED-or-not run: the save keeps the BEST
+ * count ever earned on the level and writes nothing when the run did not
+ * beat it (a 0-star failure records nothing — failures are free to forget,
+ * §9.2 gates on stars, not on trying). The one writer of `progress.stars`;
+ * the unlock rule lives in `src/world/campaign.ts`, not here.
+ */
+export function recordStars(levelId: string, stars: number, store: StorageLike | null = defaultStorage()): void {
+  const data = loadSave(store);
+  const best = Math.min(3, Math.max(0, Math.trunc(stars)));
+  if (best < 1) return; // a 0-star failure records nothing
+  if ((data.progress.stars[levelId] ?? -1) >= best) return;
+  data.progress.stars[levelId] = best;
   saveSave(data, store);
 }
 
