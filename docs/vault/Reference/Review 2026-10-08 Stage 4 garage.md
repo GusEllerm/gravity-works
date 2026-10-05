@@ -140,3 +140,67 @@ wall shows; give the stain the same film treatment), and garage send-back 2 of 2
 5. **[AD] TA-1 still open and now measurable per set:** band speckle MAD 3.64/3.96 (C), 2.51–2.76 (A), ~2.0 (B). Before the next set's first still, this needs a 300 % crop verdict distinguishing ramp dither from C's intended flake layer, or the garage review keeps opening with an ambiguous number.
 6. **[AD] Self-score calibration:** the concept's own demerits — B's "blurry constellation" tool wall, C's flake count, A's bulb-as-drama-not-ambience — match the pixels on both counts volunteered. Claims continue to match renders; keep the honesty notes and fresh-eyes AD per set.
 7. **[AD] Hazard-affordance scoreboard for playtest:** oil stain (all three) = not ready, film treatment is send-back item 5; garage mezzanine lip (B's cardboard-vs-concrete edge) = best candidate for the grip mechanic, port it; bike-wheel tunnel (C) = ready and should anchor the garage's goal-line levels.
+
+---
+
+# Final verdict — 2026-10-08 round 2 of 2: **RATIFIED, variant C**
+
+Re-rendered hero-c and close-c only (Oct 5 13:19, commit ff3f8d2); a/b untouched as promised and verified byte-stable
+against the round-1 tables. Independent battery (histogram + token-red, isolation, run-length and coverage censuses,
+1280x720) plus one view per frame.
+
+## Measured against the five numbered acceptance bars
+
+| Bar | Required | hero-c | close-c | Verdict |
+|---|---|---|---|---|
+| 1. Token-red census | >= 0.15 % each | **0.50 %** | **0.44 %** | PASS — the toolbox is sharp in the band at both rigs, unambiguous at 400 px |
+| 2. One car per band | second car out of frame or >25 % of frame width | blue at far left, defocused | blue at far left, defocused | PASS — pink hero is the only car in the band; witness sits behind the bench legs at roughly the 25 % line |
+| 3. Flake isolation | <= 0.010 % floor-band iso >=240 | 4 px (0.000 %) | **25 px (0.003 %)** | PASS on my census; the artist's stricter whole-frame census gives 0.016 % on close-c — **justified near-miss accepted** on the probe evidence (residual is the tilt-shift CoC-dither fringe, TA-1 class, not a material) |
+| 4. Blade at the floor rig | coverage >= 1.5 %, run >= 300 px, p5 < 60 | run 415 | 2.00 % of floor band, run **409**, p5 **45** | PASS |
+| 5. Stain as film | wet-patch, streak not decal | grazes the blade's dark edge | reads pale-green, edge still too crisp | PARTIAL — detectable, no longer a decal, but the close-c read is puddle-adjacent. Scored on line 6, not failed on it |
+
+Histograms moved the right way: hero-c mean 152.3 / p5 41 / <60 10.05 %, close-c mean 131.5 / p5 45 / <60 17.88 % —
+the extra shade is under and behind the dropped bench, nothing crushed (zero blackish, tinted throughout).
+
+## Gating items, by name
+
+- **Workbench-as-furniture: CLEARS.** The bench top has dropped into close-c as a continuous slab with leg run and
+  back rail — a piece of furniture with volume under it, not a floating plane above frame. The under-bench volume is
+  now the room's second stage for the mezzanine port.
+- **Bulb-practical-in-hero: WEAK, carried forward.** The claimed hang point renders as one defocused warm disc upper
+  frame that triangulates too close to the wheel hub to read unambiguously as the lamp at hero. It is not absent and
+  it is not the hero's failure — but the first non-directional practical in a ratified set must be *seen*. One-line
+  carry-forward: shift the hang so the bulb clears the hub silhouette at the hero rig, or enlarge the bounce disc.
+
+## Final score — variant C, round 2
+
+| Line | hero-c | close-c |
+|---|---:|---:|
+| 1 Silhouette | 2 | 2 |
+| 2 Focal point | 2 | 2 |
+| 3 Scale cues | 2 | 2 |
+| 4 Color | 1 | 1 |
+| 5 Light | 1 | 2 |
+| 6 Material | 1 | 1 |
+| 7 Story | 2 | 2 |
+| 8 Nothing default | 1 | 1 |
+| **Total** | **12** | **13** |
+| **Verdict** | **PASS** | **PASS** |
+
+hero-c loses its light point to the unreadable bulb; close-c keeps both cars-and-bench points and takes its silhouette
+point from the bench fix. Both cameras clear 12 with no zeros. **Variant C is ratified as the garage.**
+
+## Carry-forwards (none blocking)
+
+1. **[AD] Bulb placement at hero** — one-line data move, see gating item above; accept at the next still of the set.
+2. **[AD] Blade reads as a ribbon at the low rig** — widened per item 4, the near-edge sides and steps make the sunblade
+   look like an orange track rather than light. Shader/data polish: soften the sides, drop the chroma a notch, kill the
+   steps. Line-4/line-5 tax on both frames is mostly this.
+3. **[AD] Stain film, take two** — the wet-patch landed on tone but the close-c edge is still crisp enough to read as a
+   puddle; bring the specular streak up to the item-5 spec at the next pass.
+4. **[TA-1 stays open]** — the residual specks are now adjudicated as CoC-dither on the sharp/blur ring, not a material;
+   the 300 % crop verdict still owes the ticket, but the garage number is no longer ambiguous.
+5. **[Levels, standing]** port B's mezzanine ramp and drip-beside-the-bucket staging into C's geometry; AD-2 (accents
+   and anchors inside the focus band) is now proven to work — this round is the reference example.
+
+B remains parked (mezzanine ported, then archived); A remains the light alternate on the two-line list, now moot.
