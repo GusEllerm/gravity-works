@@ -40,11 +40,12 @@ test('builder: ghost appears on hover, place and remove move the piece counter',
   await expect(page.locator('#gw-piece-count')).toHaveText(`${laid + 1} of ${budget} pieces used`)
 
   // the R button flips the fit into a reverse seat and back — the VERB
-// TABLE's copy ("seated"/"snapped" never reach the screen; playtest E)
+  // TABLE's copy ("seated"/"snapped" never reach the screen; playtest E),
+  // and since playtest M each press also echoes a passive "rotated" tail
   await page.click('#gw-rotate')
-  await expect(page.locator('#gw-ghost-state')).toHaveText('flipped fit')
+  await expect(page.locator('#gw-ghost-state')).toHaveText('flipped fit · rotated')
   await page.click('#gw-rotate')
-  await expect(page.locator('#gw-ghost-state')).toHaveText('fits here')
+  await expect(page.locator('#gw-ghost-state')).toHaveText('fits here · rotated')
 
   // remove puts it back
   await page.click('#gw-remove-piece')

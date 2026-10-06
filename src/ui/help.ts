@@ -18,7 +18,7 @@
  * on first open, so a closed drawer costs nothing at boot.
  */
 import * as THREE from 'three';
-import { PIECE_KINDS, pieceGeometries } from '../track/pieces.ts';
+import { PIECE_KINDS, pieceGeometries, pieceLabel } from '../track/pieces.ts';
 import { GLOBAL_TOKENS } from '../render/tokens.ts';
 import { calloutManifest } from './callouts.ts';
 
@@ -112,7 +112,13 @@ export function createHelpDrawer(host: HTMLElement, options: HelpOptions = {}): 
   const manifest = calloutManifest().filter((e) => !options.unlocked || options.unlocked.includes(e.id));
   const entries: HelpEntry[] = manifest.map((e) => ({
     id: e.id,
-    title: e.id.startsWith('prop:') ? e.id.slice(5) : e.id,
+    // the title is the PLAYER word (playtest M: raw codenames in the
+    // glossary too); the entry id stays the codename for tests/selectors
+    title: e.id.startsWith('prop:')
+      ? e.id.slice(5)
+      : PIECE_KINDS.includes(e.id as (typeof PIECE_KINDS)[number])
+        ? pieceLabel(e.id as (typeof PIECE_KINDS)[number])
+        : e.id,
     line: e.text,
   }));
   const reduced = options.reducedMotion ?? reducedMotionDefault();

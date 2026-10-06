@@ -49,7 +49,11 @@ runs in the builder, the renderer and a headless Node replay.
   produced with, and nothing physically contacts the deck differently today
   (the raycast chassis is filtered out of track contacts), so unifying
   moved no hash.
-- `src/track/pieces.ts` — `PieceDef`, `PIECES`, `PIECE_KINDS`,
+- `src/track/pieces.ts` — `PieceDef`, `PIECES`, `PIECE_KINDS`, `PIECE_LABELS`
+  (and `pieceLabel`) — the PLAYER word per kind (playtest M: "raw codenames
+  gapLip, sbend, bigCurve in toolbar"); the tray, the Help glossary titles,
+  and every piece word spoken to a player read this map — the codenames stay
+  as ids (registry keys, `data-kind` hooks, saves).
   `pieceSpline`, `pieceSegments`, `pieceGeometries`, `applyImpulse`,
   `captureVolume`, `resolveParams`, `defaultParams`, segment sugar
   (`straight`, `pitchArc`, `yawArc`, `empty`). Piece-local space: the spline

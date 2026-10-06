@@ -49,7 +49,7 @@
  */
 import * as THREE from 'three';
 import { canonicalBuild, fitSocket, snapSocket } from '../track/snap.ts';
-import { PIECES, PIECE_KINDS, pieceGeometries, type PieceKind, type PieceParams } from '../track/pieces.ts';
+import { PIECES, PIECE_KINDS, pieceGeometries, pieceLabel, type PieceKind, type PieceParams } from '../track/pieces.ts';
 import { socketMatrix, transformSocket, type Socket } from '../track/socket.ts';
 import type { Build, PlacedPiece } from '../track/build.ts';
 import type { Level } from '../world/level.ts';
@@ -198,14 +198,17 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   root.appendChild(tray);
   const trayButtons = new Map<PieceKind, HTMLButtonElement>();
   for (const k of PIECE_KINDS) {
-    const b = button(`gw-tray-${k}`, k, tray);
+    // the button SAYS the player word (playtest M: "raw codenames gapLip,
+    // sbend, bigCurve in toolbar") — the codename survives only as the
+    // `data-kind` id and the element id, which are test surfaces, not copy
+    const b = button(`gw-tray-${k}`, pieceLabel(k), tray);
     b.dataset.kind = k;
-    b.setAttribute('aria-label', `Hold the ${k} piece`);
+    b.setAttribute('aria-label', `Hold the ${pieceLabel(k)} piece`);
     b.setAttribute('aria-pressed', 'false');
     b.addEventListener('click', () => {
       // a click on a locked or spent button must EXPLAIN itself
-      if (locked(k)) ghostState.textContent = `the ${k} is not in this level’s tray`;
-      else if (!selectable(k)) ghostState.textContent = `no ${k} left in the tray`;
+      if (locked(k)) ghostState.textContent = `the ${pieceLabel(k)} is not in this level’s tray`;
+      else if (!selectable(k)) ghostState.textContent = `no ${pieceLabel(k)} left in the tray`;
       else setKind(k);
     });
     b.addEventListener('mouseenter', () => {
@@ -361,7 +364,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
           other.piece.seq !== piece.seq &&
           other.sockets.some((s) => s.pos.distanceTo(exit.pos) < JOIN_TOL),
       );
-      if (!taken) out.push({ socket: exit, label: `end of ${piece.def}` });
+      if (!taken) out.push({ socket: exit, label: `end of ${pieceLabel(piece.def).toLowerCase()}` });
     }
     return out;
   }
@@ -451,7 +454,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       const cap = allowance(k);
       const left = cap === null ? null : Math.max(0, cap - placedOf(k));
       // the tray LEGEND decrements: ×N counts what is LEFT to place
-      b.textContent = cap === null ? k : `${k} ×${left}`;
+      b.textContent = cap === null ? pieceLabel(k) : `${pieceLabel(k)} ×${left}`;
       b.setAttribute('aria-pressed', String(k === kind));
       const spent = locked(k) || left === 0;
       b.setAttribute('aria-disabled', String(spent));
@@ -460,7 +463,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       b.title = locked(k)
         ? 'not in this level’s tray'
         : left === 0
-          ? `no ${k} left in the tray (${cap} placed)`
+          ? `no ${pieceLabel(k)} left in the tray (${cap} placed)`
           : '';
     }
     placeBtn.setAttribute(
@@ -511,6 +514,11 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     // `animate` — the flip is the one change the eye must not be able to
     // miss (playtest G: "Rotate (R): clicked it; ghost never visibly changed")
     updateGhost(true);
+    // Playtest M: "R-flip has no visible confirmation text" — a passive
+    // echo line on the press path (the FE flip-echo handoff had not landed
+    // at this pass). Only when the ghost is on screen: with nothing held
+    // there is nothing rotated, and the shell stays truthful (§verb table).
+    if (state !== 'hidden') ghostState.textContent = `${GHOST_LABEL[state]} · rotated`;
   }
 
   function place(): boolean {
@@ -526,7 +534,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     }
     const cap = allowance(kind);
     if (cap !== null && placedOf(kind) >= cap) {
-      ghostState.textContent = `no ${kind} left in the tray`;
+      ghostState.textContent = `no ${pieceLabel(kind)} left in the tray`;
       return false;
     }
     const target = list[targetIndex]!.socket;

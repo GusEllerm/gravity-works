@@ -398,7 +398,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   const hashDetails = document.createElement('details');
   hashDetails.id = 'gw-hash-details';
   const hashSummary = document.createElement('summary');
-  hashSummary.textContent = 'determinism fingerprint — same build, same run, anywhere';
+  // Playtest M: "determinism fingerprint — same build, same run, anywhere"
+  // was uninterpretable copy. The engineering truth is unchanged (the hash
+  // covers the body transforms along the path); it is just one player line.
+  hashSummary.textContent = 'Same pieces, same run, every time — this code proves it.';
   const hashValue = document.createElement('p');
   hashValue.id = 'gw-hash-value';
   const hashNote = document.createElement('p');
@@ -735,7 +738,7 @@ function frameCamera(camera: THREE.PerspectiveCamera, scene: THREE.Scene | null)
 
 /** Plain-text run status; the aria-live line the run reports through. The
  *  hash is NOT here (playtest E: engineer trivia on the player's line) — it
- *  lives in `#gw-hash-value` behind the determinism-fingerprint details. */
+ *  lives in `#gw-hash-value` behind the same-pieces-same-run details. */
 export function runStatusLine(world: World, pieces: number): string {
   const t = `${world.time.toFixed(2)}s`;
   switch (world.status) {

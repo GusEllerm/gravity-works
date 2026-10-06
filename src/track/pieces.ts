@@ -412,6 +412,32 @@ export const PIECE_KINDS: readonly PieceKind[] = [
   'finishCup',
 ];
 
+/** The PLAYER word for each kind (playtest M: "raw codenames in the toolbar"
+ * — gapLip, sbend, bigCurve). Every piece word spoken to a player — tray
+ * button, aria-label, tray legend, Help title, target line — reads this map;
+ * the codenames stay as ids: registry keys, `data-kind` test hooks, saves.
+ * One word or two, never a sentence: these strings live on a button. */
+export const PIECE_LABELS: Record<PieceKind, string> = {
+  straight: 'Straight',
+  curve: 'Curve',
+  bigCurve: 'Wide curve',
+  sbend: 'S-bend',
+  bank: 'Banked turn',
+  loop: 'Loop',
+  drop: 'Drop',
+  ramp: 'Ramp',
+  gapLip: 'Lip',
+  landing: 'Landing',
+  booster: 'Booster',
+  springLauncher: 'Spring',
+  finishCup: 'Cup',
+};
+
+/** The display word for a kind (the catalog's, never the codename). */
+export function pieceLabel(kind: PieceKind): string {
+  return PIECE_LABELS[kind];
+}
+
 /** Centreline of a kind with resolved params. */
 export function pieceSpline(kind: PieceKind, params: PieceParams = {}): TrackSpline {
   return PIECES[kind].spline(params);
