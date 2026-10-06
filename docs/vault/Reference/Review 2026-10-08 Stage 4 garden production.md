@@ -71,3 +71,49 @@ Re-shoot all three stills plus a census round 3. If low hits the ask-1 targets a
 1. **[AD] The rig needs a shadow-darkening budget knob, not a garden patch.** The fill bands derive centrally and each set passes only a gain; the garden is the first set where the *brightness* of the sky fill, not its hue, is the dial that matters. A shade-depth term on the fill (sky hue is already deepened for the tint — the fill band itself is not) would have made ask 1 a data.ts one-liner.
 2. **[AD] TA-1 escalates from carry-forward to gate.** A systemic material demerit that survives a "must close before next set's first still" clause should block that still's review from scoring line 6 above 1 — which it now does, three sets running. Either it closes or the bible records that material tops out at 1 until it does.
 3. **[AD] The census-predicts-the-frame loop is working.** The artist flagged the low-camera delta before the AD saw it and named the mechanism correctly; the review confirms both. The one honest paragraph in a session log is worth a round of renders.
+
+---
+
+# Review 2026-10-08 — Stage 4 garden production FINAL verdict (Art Director, round 2)
+
+> [!abstract] Scope and method
+> Re-shoot after the round-1 send-back above. The artist declined the framing/lawn/sprig asks as already-paid or deferred and moved the one named knob via a per-set `fillShadeDepth` term on the fill (src/sets/garden/data.ts, threaded through createLightingRig in src/render/lighting.ts) — verified present in the shipped code, exactly the data.ts one-liner this note's For the Director asked for. Evidence: ONE census run at this sitting (all three production stills: docs/explorations/garden/production-hero.png, production-side.png, production-low.png), two image views spent (floor cam first, hero second; side judged on census + round-1 record). No code changed, no bible edited.
+
+## Census round 3 (single run)
+
+| frame | px | dark<60 % | tinted % | blackish % | blown >=243 % | outlier % | medTone |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| production-hero | 921600 | 1.841 | 1.841 | 0.000 | 0.000 | 0.502 | 114 |
+| production-side | 921600 | 1.722 | 1.722 | 0.000 | 0.000 | 1.773 | 107 |
+| production-low | 921600 | 1.527 | 1.527 | 0.000 | 0.000 | 1.059 | 133 |
+
+**Ask-1 targets, measured:** production-low dark<60 = 1.527 % (ask >= 0.5), 100 % of the darks tinted, medTone 133 (ask <= 135), blackish 0.000, blown 0.000 — **all met**. The floor camera went from 0.000 % to 1.527 % sub-60 in one number. Guardrails: side dark 0.067 -> 1.722 % with the bars reading harder than ever (deepened, not flattened); hero dark 1.841 % sits inside [0.5, 2.0]. One guardrail lands a hair outside: hero medTone 114 against the 115 floor — one histogram bucket, with the ratified sun-disc-plus-bars composition fully intact. Accepted as a documented deviation, not a send-back cause; recorded as a carry-forward to nudge or to amend the band.
+
+**Viewed evidence:** low now publishes the sun, not the fill — the trellis bars cross into cool grey-blue darks across the paving, the disc sits clean against the hedge, and the lower-third wedge is no longer empty: it carries bar shadows plus the focus band holds the car with the snail and the green brick inside it (ask-2 paid in the frame). Hero carries a wind sprig on the trellis top-left (ask-4 paid where it was asked), the can silhouette and laid pebbles survive the re-balance, and the hedge band's darker olive corner gives the establishing width a non-green break (ask-3 partial, side camera unchanged).
+
+## Score tables (final)
+
+| Line | hero | side | low |
+|---|---:|---:|---:|
+| 1 Silhouette | 2 | 2 | 2 |
+| 2 Focal point | 1 | 1 | 1 |
+| 3 Scale cues | 2 | 2 | 2 |
+| 4 Color | 2 | 1 | 1 |
+| 5 Light | 2 | 2 | 2 |
+| 6 Material | 1 | 1 | 1 |
+| 7 Story | 2 | 2 | 2 |
+| 8 Nothing default | 2 | 2 | 2 |
+| **Total** | **14** | **13** | **13** |
+| **Verdict** | **PASS** | **PASS** | **PASS** |
+
+Deltas from round 1 are all in the low column: light 1 -> 2 (the census delta the ask defined is met), story 1 -> 2 (the dead paving wedge now carries shadow and the focus band holds a beat), and side's color holds at 1 on the lawn field rather than dropping. Focal 1 and material 1 are unchanged everywhere — focal is the inherited car-mass note, material is TA-1, which the artist's own log admits is unfixed and which now gates line 6 exactly as this note's For the Director 2 predicted.
+
+## FINAL VERDICT: **RATIFIED. Hero 14, side 13, low 13 — all three cameras >= 12, no zeros, never-list clean (0.000 blackish, 0.000 blown in all three). The fallback is not invoked. Stage 4 garden set is passed to the Director.**
+
+### Carry-forwards riding to set 5
+
+1. **TA-1 grazing speckle** — now three sets old, visible on the racing-line strip's fuzzy edges in all frames, gating material at 1 studio-wide. It is a set-five pre-condition, not a carry-forward.
+2. **Focal mass of the car** — four review sittings agree the car is never the heaviest object in frame; this is a composition-law question for the Director, not another artist ask.
+3. **Hero medTone 114 vs the 115 guardrail floor** — one bucket; either nudge it back inside on the next re-shoot or amend the band in the bible. Do not let it silently redefine the standard.
+4. **Non-green lawn break** — paid at hero via the hedge corner, unpaid at side's establishing width.
+5. **fillShadeDepth is a rig feature now** — every future set gets it as a first-class dial; this note's For the Director 1 is closed by the artist's fix landing in lighting.ts, not in a garden patch.
