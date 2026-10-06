@@ -106,3 +106,13 @@ Instrumented (`tools/histogram.mjs`, 1280×720, post=on): hero-c mean 152.3, p5 
 <60 17.9 %, token-red 0.44 %, iso 0.016 %, run 409 px (baseline 139). The <60 share rose
 with the dropped bench — the extra shade is under and behind it; p5 says nothing new crushed
 to black.
+
+## Production pass (census, post-ON, 1280×720)
+
+| frame | dark<60 % | tinted | blackish | blown | medTone |
+|---|---:|---:|---:|---:|---:|
+| production-hero | 6.720 | 6.651 | 0.069 | 2.193 | 153 |
+| production-side | 2.779 | 2.764 | 0.014 | 0.846 | 121 |
+| production-low | 6.186 | 5.901 | 0.285 | 0.915 | 122 |
+
+The ratified look's earned tinted darks survive production (darkest room in the house holds: hero 6.7 % tinted, blackish ~0). Carried-forwards honored: bulb practical visible in hero framing, sunblade-as-ribbon shading on the slab, soft stain edge (film, not decal), B's mezzanine ported.

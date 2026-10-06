@@ -33,6 +33,7 @@ import { buildBathroomSet, BATHROOM_TOKENS } from './bathroom/index.ts'
 import { bathroomSetPlacement } from '../world/setPlacement.ts'
 import { buildGardenSet } from './garden/index.ts'
 import { gardenSetPlacement } from '../world/setPlacement.ts'
+import { buildGarageSet, GARAGE_TOKENS } from './garage/index.ts'
 
 export interface SetInstanceSocket {
   pos: THREE_NS.Vector3
@@ -120,6 +121,23 @@ export const SETS: Record<string, SetRegistration> = {
     // (`bathroomSetPlacement`): the disc centres on the run, 25 cm behind
     // the corridor, floor under the lowest authored deck.
     placement: bathroomSetPlacement,
+  },
+  garage: {
+    id: 'garage',
+    // the RATIFIED variant-C tokens (resin-olive dominant, the red spent
+    // twice — token data in `src/sets/garage/data.ts`; the shell's
+    // background reads this row, the bathroom pattern for a variant palette)
+    tokens: GARAGE_TOKENS,
+    build(T, opts = {}) {
+      const set = buildGarageSet(T, opts)
+      return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.floor, staging: set.staging }
+    },
+    // NO garage levels exist yet (the set wave ships set + staging only),
+    // so every lookup returns null and the set mounts at its canonical
+    // origin — the registry's documented no-placement fallback, the same
+    // surface `?set=garage` inspects. The ladder's table row lands with
+    // the garage rungs.
+    placement: () => null,
   },
 }
 
