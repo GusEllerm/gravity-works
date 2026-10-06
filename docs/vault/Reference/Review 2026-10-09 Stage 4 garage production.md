@@ -108,3 +108,17 @@ zero blade floor-contact in the band) with the last confetti cluster. One knob, 
    the hang exists (visible at side) but the hero frame must show it. Accept at the next hero still.
 3. **[AD carry-forward, unchanged] Ribbon blade polish** — soften the sides, drop chroma a notch, kill the stair-step
    on the near edge; it is now the main line-4/line-6 tax at all three rigs.
+
+## Final verdict — 2026-10-09 re-render (side only)
+
+One census + one view of the re-rendered production-side (hero and low byte-identical, verified via git diff).
+Measured: p5 47 (was 59–74), darks 4.29 % with tinted 4.27 % (blackish 0.018 %), blade floor-contact run 280 px
+in the lower band (was 0), floor bright coverage 3.89 % (was 0.00). View: the blade now touches down and reads as
+light on concrete; the mid-frame confetti cluster is gone — the remaining specks sit inside the contact band. Only
+line 5 and line 4 unchanged issues remain (blade chroma still hot).
+
+Re-score, production-side: 1 Silhouette 2, 2 Focal 2, 3 Scale 2, 4 Color 1, 5 Light 2 (blade contact in band,
+p5 47), 6 Material 1, 7 Story 1, 8 Nothing default 1 = **12 — PASS**, no zeros.
+
+**Production ACCEPTED — 3 of 3 cameras pass.** The side rig stays in the set reference; no fallback invoked.
+Carry-forwards 2 (bulb at hero) and 3 (blade polish) roll to the next still unchanged.
