@@ -330,28 +330,50 @@ no longer optional is WHICH three: omit any piece and the hole is geometry,
 not a suggestion.
 
 **KITCHEN 02 — Two Ways** (`kitchen02.level.ts`). Teaches: a choice, and
-that the fast line is not the showy one. One gap, two valid crossings
-(both finish, asserted): the lazy line — the `drop` between two straights, a
-clean catch — 2.317 s (par 2.35); and the arc route — `gapLip` launch +
-`drop` + `landing` — 2.442 s, its own landing blend costs the difference.
-Common failure: building the arc because it looks fast. Par is the par
-because it is the lazy line's reference build; 3 of the 5 tray pieces are
-placed. STAGE-3 COHERENCE: the two counter straights are now ONE 0.18 m
-geometry (was 0.12 + 0.25 — a second geometry the tray could not seat, so the
-player's lazy line fell 13 cm short of the anchored cup), and `gapLip` /
-`landing` are declared in `trayParams` because the lazy par line never places
-them; the arc route's time moved with the geometry (2.49 → 2.442 s). The
-rung this level was specced to add — a drivable mid-run `curve` — is
-BLOCKED (see ask #1); the curve is fixture geometry past the cup, built,
-colliding, railable, run-out style, exactly the honesty standard the feel
-track set. PLAYTEST E FOLLOW-UP (learnability pass): E never cleared this
-rung, but E's own L02 build (`straight → drop → straight`) finishes at
-2.32 s on the shipped builder's anchored mount (asserted in
-`tests/unit/kitchen-levels.test.ts`) — the lazy line IS discoverable from
-the set alone, and E's failure predates the builder's target-follow fix
-(the same one the L01 promise walk needed), not a level defect. NO fixture
-nudge added: the seam cue the brief asked to evaluate would be text-free
-window-dressing over a bug that is already fixed.
+that the fast line is not the showy one. STAGE-4 DISCOVERABILITY PASS (the
+Playtest H + K wall): H never cleared this rung in 4 tries (three deaths
+~2.39–2.47 s, “fell off after a long jump — the gap outran the landing”) and
+K quit after 3 builds (3.06/3.10/3.14 s, all “fell off the set”). Replaying
+every chain their reports describe on the mount the SHIPPED builder makes
+reproduced both death classes on the OLD tray: chains whose drop sat late
+launched long and fell INTO the hole (~2.4 s — H), and chains that summed
+past the anchored cup — the `landing` route’s reach exceeded the lazy
+line’s by a whole 0.36 m of overshoot — rolled/flew PAST the cup and fell off
+the far end (~3.0–3.1 s — K; the E-pass claim “the line was discoverable,
+the failure predates the target-follow fix” was only ever true of ONE
+ordering, and the wall was the level, not the UI). The finding was the wall
+because the 5-piece tray made the answer “which 3–4 of 5, in what order?” —
+L04’s disease on a rail where order MOVES the hole (only flat, hole-free
+lines are order-invariant sums).
+The fix is the tray + the reach law, not the difficulty. THE TRAY IS THE
+UNION OF THE TWO LINES — {`straight`×2, `gapLip`, `drop`} = 4, none spare:
+the LAZY line is `straight → drop → straight` (the par, measured 2.17 s, par
+2.20) and the ARC line is `gapLip → drop → straight` (2.19 s) — the swap of
+ONE straight FOR the lip IS the choice. The law that made this possible:
+flat sockets ⇒ a chain’s reach is the SUM of its spans, so the level’s ONE
+`straight` geometry was set to 0.09 m = the `gapLip`’s span, and L02’s lip
+(12°) and `drop` (leads 0.07 m) are re-tuned LOCALLY — the level’s one
+deviation from the KITCHEN_GAP-chain convention, declared in `trayParams`.
+Both lines then sum EXACTLY to the anchored cup. Measured on the builder
+mount (all test-gated like bedroom04’s gate): EVERY order of the WHOLE tray
+finishes — 12/12 distinct orders, 2.17–3.10 s — so K’s place-everything
+fallback can no longer die; the two lines finish in every internal order;
+`drop` first runs 2.17 against the 2.20 par (beatable — order, not subset,
+is the speed question); and the obvious straight route (`straight →
+straight`, 0.18 m of deck across a 0.44 m gap) fails EARLY and FAST at
+2.35 s, the drama that replaces the mystery. All 1–2-piece builds fail.
+Known measured edge, pinned by test so it stays falsifiable: the
+three-piece fluke `straight → straight → gapLip` catapults over the hole
+WITHOUT the `drop` (2.20 s) — the old “no build missing the drop crosses”
+law needed the big gap the two lines could not share. The lesson as shipped
+is now true IN THE GAME, not just in the chained model: lazy wins by 0.02 s
+— small, measured, honest (the bedroom03 precedent). The “seam cue” option
+(prop placement at the table edge) was NOT needed once no reachable build
+dies far from the cup; the callout `drop` line was rewritten first-line
+(“the line crosses where the drop is”) but teaches placement, not the
+lesson — geometry carries that. The curve run-out past the cup is unchanged
+fixture geometry (the mid-run `curve` rung stays BLOCKED, ask #1), and the
+counter row in the set-wiring table re-derived with the shortened rail.
 
 **KITCHEN 03 — The Bowl** (`kitchen03.level.ts`). Teaches: the set's
 signature at speed — the gap verbs back to back beside the cereal bowl. The
@@ -733,19 +755,21 @@ seats, the tray's own geometry, fixtures anchored):
 
 | line | chained (the card's number) | anchored (what a player builds) |
 |---|---|---|
-| L02 arc route | finished 2.442 s | finished **2.242 s — FASTER than the lazy par (2.317 s)** |
+| L02 arc route | finished 2.19 s | finished 2.19 s — the card's claim now HOLDS on this mount (stage-4 discoverability pass: both lines sum to the anchored cup by the reach law; the lazy par runs 2.17 s here) |
 | L04 ground build (hazard probe, not a route since the learnability pass) | finished 2.292 s (wet) | **`fell` at 2.675 s** — two 0.3 m straights stop short of the anchored cup |
 | L05 both wrong allocations | `fell` | `fell` (unchanged: the trade-off holds either way) |
 
-So two card claims are properties of the CHAINED data model, not of the game:
-L02's "the lazy line is the fast one" (a ballistic crossing beats rolling a
-`drop` when both must reach the same fixed cup) and L04's decked-sink
+So one card claim is a property of the CHAINED data model, not of the game:
+L04's decked-sink
 probe (it cannot reach the cup at all — since the learnability pass the L04
 card claims the anchored truth directly and keeps the probe as hazard
-data). Both are ask #2b's
+data). That is ask #2b's
 (`Level.finishSocket`) — with a level-owned finish point the two lines would
 be measured against the same world position in replay and in the builder, and
-these two claims become testable in the shipped mounting. Until then the
+these claims become testable in the shipped mounting. (L02's was the other
+one until the stage-4 discoverability pass re-authored its tray and gap so
+the two lines' reaches SUM equal — the anchored table row and the chained
+card now agree by construction, on every order of the tray.) Until then the
 cards state the chained number and this table states the other one.
 
 **And the tutorial's target walk (fixed at this pass).** The shipped

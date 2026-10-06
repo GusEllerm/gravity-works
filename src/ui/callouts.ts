@@ -25,7 +25,7 @@ export const PIECE_CALLOUTS: Record<PieceKind, string> = {
   sbend: 'Two turns that cancel — the line shifts, the heading does not.',
   bank: 'A banked turn: the tilted wall does the steering, not friction.',
   loop: 'Up, over, down — arrive too slow and it drops at the top.',
-  drop: 'A gap with a catch ramp — flying is easy, landing is the trick.',
+  drop: 'A gap with a catch ramp — the line crosses where the drop is.',
   ramp: 'Turns height into speed — the engine of every track.',
   gapLip: 'A launch lip sets the angle of the jump, never its speed.',
   landing: 'A sloped catcher — match it to the flight, not to the floor.',

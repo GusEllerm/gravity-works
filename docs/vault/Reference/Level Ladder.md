@@ -16,7 +16,7 @@ tags: [reference, levels]
 |---|---|---|---|---|---|---|
 | `feeltrack` | `feeltrack.level.ts` | (test track, not a rung) | — (16) | 9 | 3.05 | the accept-line level, unchanged |
 | `kitchen01` | `kitchen01.level.ts` | the tutorial: three pieces, one gap, launch | 3 (`gapLip`, `drop`, `landing`) | 3 | 2.25 | done — par build finishes headless WITH MARGIN (seed-stable, release-speed-range finish); a build missing any tray piece CANNOT finish against the anchored fixtures (stage-3 promise fix); the one-way ORDER is still authoring intent (ask #3) |
-| `kitchen02` | `kitchen02.level.ts` | a CHOICE: two lines across one gap; the lazy one is faster | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 3 | 2.35 | done, **with the curve rung BLOCKED** (ask #1) — the curve is fixture run-out past the cup; both lines finish (par 2.317 s, arc 2.442 s). Stage-3 coherence: ONE 0.18 m `straight` geometry (the tray seats both copies identically) and `trayParams` for the two kinds the lazy par never places |
+| `kitchen02` | `kitchen02.level.ts` | a CHOICE: two lines across one gap; the lazy one is faster | 4 (`straight`×2, `gapLip`, `drop`) — the UNION of the two lines, none spare | 3 | 2.20 | done, **with the curve rung BLOCKED** (ask #1) — the curve is fixture run-out past the cup; both lines finish on the BUILDER mount (lazy 2.17 s par, arc 2.19 s — the stage-4 discoverability pass fixed the lesson inversion the anchored table used to flag) and EVERY order of the whole tray finishes (12/12, 2.17–3.10 s, test-gated — the H/K two-stranger wall). One 0.09 m `straight` geometry = the L02 `gapLip` span (the reach-sum law); L02-local lip/drop tuning declared in `trayParams` |
 | `kitchen03` | `kitchen03.level.ts` | the bowl on the set; gap verbs at speed | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 5 | 2.65 | done, **with the bowl line BLOCKED** (ask #1 + ask #4) — the tray IS the par build's multiset (5/5 placeable, one 0.15 m straight geometry), rim built + socketed (`bowl.in`/`bowl.out`), timed line runs past it; par 2.617 s |
 | `kitchen04` | `kitchen04.level.ts` | the tap hazard: affordance before hazard — the drips mark the sink the arc must fly | 4 (`gapLip`, `drop`, `landing`, `straight`) | 4 | 2.55 | done, **hazard live** (ask #2a delivered, [[Modules/hazards]]) — tray = the par line's exact multiset (learnability pass: the spare `straight` ×2 was Playtest G's "which 4 of 5" wall); ALL 24 whole-tray orders finish builder-anchored (2.47–3.12 s, test-gated), par ORDER beatable at 2.47 s; par replays bit-identical with the zone (flies the patch, 2.517 s); the patch is a TELLS-not-a-TOLL on every buildable line — grip physics measured on the ground build as HAZARD PROBE (hash diverges, wet faster — low-drag plastic), the probe is not a route (its bridged deck can't reach the anchored cup, `fell`; ask #2b) |
 | `kitchen05` | `kitchen05.level.ts` | everything + one forced trade-off (one landing, one booster, two gaps) | 6 (`gapLip`×2, `drop`×2, `landing`, `booster`) | 6 | 2.40 | done — both wrong allocations measured to NOT finish; par beatable, not obvious; chains the PINNED original gap (the trade-off needs an unforgiving gap). Coherence-checked unchanged: tray = the par build's exact multiset (6/6) |
@@ -132,8 +132,11 @@ unified every level's `straight` geometry (a tray seats one geometry per kind)
   the end of whatever build replays, so routing cannot fail in replay; in
   the real builder it must. This is also why L01's wrong-order experiments
   all finish. Stage-3 coherence measured what the anchored mounting does to
-  the second lines: L02's arc route reaches the fixed cup and is then FASTER
-  than the lazy par (2.242 s vs 2.317 s), and L04's ground build (hazard
+  the second lines: L02's arc route no longer FASTER-beats the lazy par on
+  the fixed cup — the stage-4 discoverability pass re-authored its tray to
+  the two lines' union so their reaches sum equal (both lines reach the
+  anchored cup, lazy wins 2.17 s to 2.19 s, and all 12 orders of the whole
+  tray finish) — and L04's ground build (hazard
   probe since the learnability pass) does not
   reach it at all (`fell`) — see [[Concepts/Levels]] §The same data replayed
   the way the BUILDER mounts it.

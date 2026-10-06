@@ -195,8 +195,66 @@ describe('kitchen ladder — the choices and the trade-off are real', () => {
 
   test('L02: Playtest E’s lazy build (straight→drop→straight) finishes on the BUILDER mount — the line was discoverable; E’s failure predates the target-follow fix', async () => {
     const run = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, ['straight', 'drop', 'straight']));
-    expect(run.status).toBe('finished'); // measured 2.32 s
+    expect(run.status).toBe('finished'); // measured 2.17 s (stage-4 re-author)
   }, 30_000);
+
+  /**
+   * THE L02 DISCOVERABILITY PASS (stage 4). Playtest H (4 tries, three ends
+   * “fell off after a long jump”, ~2.4 s) and Playtest K (3 builds, all
+   * “fell off the set”, ~3.1 s) hit the same wall from opposite sides: the
+   * 5-piece tray held two 3–4-piece lines whose chains split into finishes,
+   * flyovers PAST the anchored cup, and launches into the hole — all with no
+   * visible cue which rail a chain rides. Replaying their reported builds on
+   * the builder’s anchored mount reproduced both death classes; the fix is
+   * the tray (the union of the two lines, no spare) plus a gap geometry that
+   * makes the reach sums agree — so EVERY order of the whole tray finishes
+   * (the bedroom04 pattern), the two lines are the only three-piece routes
+   * worth wanting, and no reachable build dies far past the cup anymore.
+   */
+  test('L02: EVERY order of the whole tray finishes on the builder mount (no stranger’s wall)', async () => {
+    const orders = permutations<PieceKind>(['straight', 'straight', 'gapLip', 'drop']);
+    expect(orders).toHaveLength(24); // 12 DISTINCT orders (the two straights are identical pieces)
+    for (const order of orders) {
+      const run = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, order));
+      expect(run.status, `order ${order.join('>')}`).toBe('finished');
+    }
+  }, 120_000);
+
+  test('L02: the arc line finishes on the BUILDER mount and loses the clock to the lazy par', async () => {
+    const arc = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, ['gapLip', 'drop', 'straight']));
+    const lazy = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, ['straight', 'drop', 'straight']));
+    expect(arc.status).toBe('finished'); // measured 2.19 s
+    expect(lazy.status).toBe('finished'); // measured 2.17 s
+    expect(lazy.time).toBeLessThan(arc.time); // the lazy line wins — in the GAME, not just the chained model
+    // and the par ORDER is beatable within the tray (the L04 pattern): drop
+    // first runs at/below the 2.20 s par line
+    const early = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, ['drop', 'straight', 'straight']));
+    expect(early.status).toBe('finished');
+    expect(early.time).toBeLessThanOrEqual(PARS[KITCHEN02.id]!.time);
+  }, 90_000);
+
+  test('L02: the builds short of the two lines fail — near the gap, and NEVER past the cup', async () => {
+    // the obvious straight route and every 1–2-piece build fall (fast, at or
+    // before the cup’s x — the drama that replaces the old 3.1 s flyovers)
+    const fails: [string, PieceKind[]][] = [
+      ['straight>straight (the obvious straight route)', ['straight', 'straight']],
+      ['straight>gapLip', ['straight', 'gapLip']],
+      ['straight>drop', ['straight', 'drop']],
+      ['gapLip>drop', ['gapLip', 'drop']],
+      ['straight', ['straight']],
+      ['gapLip', ['gapLip']],
+      ['drop', ['drop']],
+    ];
+    for (const [label, kinds] of fails) {
+      const run = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, kinds));
+      expect(run.status, `partial ${label}`).not.toBe('finished');
+    }
+    // …and the three-piece fluke that catapults over the hole WITHOUT the
+    // drop (straight>straight>gapLip, 2.20 s) is pinned to FINISH, so the
+    // card’s “one measured exception” claim stays falsifiable, not folklore.
+    const fluke = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, ['straight', 'straight', 'gapLip']));
+    expect(fluke.status).toBe('finished');
+  }, 120_000);
 
   test('L05: the two wrong allocations do NOT finish', async () => {
     const noBooster = await replayRun(KITCHEN05, kitchen05NoBoosterBuild());
