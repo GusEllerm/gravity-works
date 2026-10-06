@@ -34,6 +34,7 @@ import { bathroomSetPlacement } from '../world/setPlacement.ts'
 import { buildGardenSet } from './garden/index.ts'
 import { gardenSetPlacement } from '../world/setPlacement.ts'
 import { buildGarageSet, GARAGE_TOKENS } from './garage/index.ts'
+import { garageSetPlacement } from '../world/setPlacement.ts'
 
 export interface SetInstanceSocket {
   pos: THREE_NS.Vector3
@@ -132,12 +133,14 @@ export const SETS: Record<string, SetRegistration> = {
       const set = buildGarageSet(T, opts)
       return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.floor, staging: set.staging }
     },
-    // NO garage levels exist yet (the set wave ships set + staging only),
-    // so every lookup returns null and the set mounts at its canonical
-    // origin — the registry's documented no-placement fallback, the same
-    // surface `?set=garage` inspects. The ladder's table row lands with
-    // the garage rungs.
-    placement: () => null,
+    // the garage rungs mount through the stage-4 garage table
+    // (`garageSetPlacement`): the slab/ground disc centres on the run,
+    // 37 cm behind the corridor (the family-tightest offset that still
+    // clears the cardboard/lid dress), slab 5 mm under the LOWEST authored
+    // deck, yaw 0 (the ratified wheel, blade and films all sit behind the
+    // set-origin line). The `?set=garage` inspection entry still gets the
+    // canonical-origin fallback.
+    placement: garageSetPlacement,
   },
 }
 

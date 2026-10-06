@@ -30,8 +30,8 @@ const P = (over: Partial<SaveProgress> = {}): SaveProgress => ({
 });
 
 describe('campaign table', () => {
-  test('the ladder is the rooms concatenated: kitchen01..05, bedroom01..04, bathroom01..04, then garden01..04', () => {
-    expect(CAMPAIGN.map((r) => r.id)).toEqual(['kitchen', 'bedroom', 'bathroom', 'garden']);
+  test('the ladder is the rooms concatenated: kitchen01..05, bedroom01..04, bathroom01..04, garden01..04, then garage01..04', () => {
+    expect(CAMPAIGN.map((r) => r.id)).toEqual(['kitchen', 'bedroom', 'bathroom', 'garden', 'garage']);
     expect(CAMPAIGN_LADDER).toEqual([
       'kitchen01',
       'kitchen02',
@@ -50,24 +50,31 @@ describe('campaign table', () => {
       'garden02',
       'garden03',
       'garden04',
+      'garage01',
+      'garage02',
+      'garage03',
+      'garage04',
     ]);
     expect(CAMPAIGN.flatMap((r) => [...r.levelIds])).toEqual([...CAMPAIGN_LADDER]);
   });
 
-  test('the boundary is a normal step: next after kitchen05 is bedroom01, none after garden04', () => {
+  test('the boundary is a normal step: next after kitchen05 is bedroom01, none after garage04', () => {
     expect(nextInCampaign('kitchen05')).toBe('bedroom01');
     expect(previousInCampaign('bedroom01')).toBe('kitchen05');
     expect(nextInCampaign('bedroom04')).toBe('bathroom01'); // the bedroom era hands off to the bathroom
     expect(previousInCampaign('bathroom01')).toBe('bedroom04');
     expect(nextInCampaign('bathroom04')).toBe('garden01'); // the bathroom era hands off to the garden
     expect(previousInCampaign('garden01')).toBe('bathroom04');
-    expect(nextInCampaign('garden04')).toBeNull();
+    expect(nextInCampaign('garden04')).toBe('garage01'); // the garden era hands off to the garage — the campaign's last room
+    expect(previousInCampaign('garage01')).toBe('garden04');
+    expect(nextInCampaign('garage04')).toBeNull(); // the campaign ends in the garage
     expect(previousInCampaign('kitchen01')).toBeNull();
     expect(nextInCampaign('feeltrack')).toBeNull();
     expect(campaignIndex('kitchen-sandbox')).toBe(-1);
     expect(campaignRoomOf('bedroom03')!.id).toBe('bedroom');
     expect(campaignRoomOf('bathroom03')!.id).toBe('bathroom');
     expect(campaignRoomOf('garden01')!.id).toBe('garden');
+    expect(campaignRoomOf('garage01')!.id).toBe('garage');
     expect(campaignRoomOf('feeltrack')).toBeNull();
   });
 });
@@ -126,6 +133,9 @@ describe('levelUnlock — the rule surfaces share', () => {
     // and neither does the garden: the rule is ONE rule, not a per-room rule
     expect(levelUnlock(save.progress, 'garden01').unlocked).toBe(false);
     expect(levelUnlock(save.progress, 'garden01').requires).toBe('bathroom04');
+    // and neither does the garage, the campaign's last room
+    expect(levelUnlock(save.progress, 'garage01').unlocked).toBe(false);
+    expect(levelUnlock(save.progress, 'garage01').requires).toBe('garden04');
   });
 
   test('off-campaign ids are outside the rule (debug addressing is recorded elsewhere)', () => {

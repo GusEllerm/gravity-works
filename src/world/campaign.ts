@@ -45,6 +45,10 @@ import { GARDEN01_ID } from './levels/garden01.level.ts';
 import { GARDEN02_ID } from './levels/garden02.level.ts';
 import { GARDEN03_ID } from './levels/garden03.level.ts';
 import { GARDEN04_ID } from './levels/garden04.level.ts';
+import { GARAGE01_ID } from './levels/garage01.level.ts';
+import { GARAGE02_ID } from './levels/garage02.level.ts';
+import { GARAGE03_ID } from './levels/garage03.level.ts';
+import { GARAGE04_ID } from './levels/garage04.level.ts';
 
 /** One room of the campaign: an ordered run of rung ids under a heading. */
 export interface CampaignRoom {
@@ -76,6 +80,11 @@ export const CAMPAIGN: readonly CampaignRoom[] = [
     id: 'garden',
     label: 'Garden',
     levelIds: [GARDEN01_ID, GARDEN02_ID, GARDEN03_ID, GARDEN04_ID],
+  },
+  {
+    id: 'garage',
+    label: 'Garage',
+    levelIds: [GARAGE01_ID, GARAGE02_ID, GARAGE03_ID, GARAGE04_ID],
   },
 ];
 

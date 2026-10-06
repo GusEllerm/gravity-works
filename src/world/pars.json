@@ -45,6 +45,26 @@
     "parTime": 3.05
   },
   {
+    "levelId": "garage01",
+    "parPieces": 3,
+    "parTime": 2.25
+  },
+  {
+    "levelId": "garage02",
+    "parPieces": 3,
+    "parTime": 2.4
+  },
+  {
+    "levelId": "garage03",
+    "parPieces": 4,
+    "parTime": 2.7
+  },
+  {
+    "levelId": "garage04",
+    "parPieces": 4,
+    "parTime": 2.7
+  },
+  {
     "levelId": "garden01",
     "parPieces": 3,
     "parTime": 2.25

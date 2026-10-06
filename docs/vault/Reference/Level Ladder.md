@@ -24,9 +24,9 @@ tags: [reference, levels]
 
 The other sets follow at their own stage (the bedroom shipped FOUR rungs
 at stage 4 — below — and the bathroom FOUR right after it; the garden
-ladder is the garden set's later wave, now shipped — also FOUR, below;
-the garage exploration is ratified and its ladder is a later wave); the
-ladder is otherwise empty.
+ladder is the garden set's later wave, also FOUR, below; and the garage —
+the RATIFIED variant-C room — is the campaign's LAST room, FOUR rungs,
+below). The ladder is otherwise empty.
 
 ## The bedroom ladder (stage 4 — four rungs)
 
@@ -87,6 +87,32 @@ bathroom's verbatim (same ramps, same `KITCHEN_GAP`, same sweep seating),
 so the garden clocks ARE the bathroom clocks — stated openly, with the
 lessons, hazards and the sun regime as the new thing
 (`Sessions/2026-10-08 Stage 4 - garden ladder.md`).
+
+## The garage ladder (stage 4 — four rungs, the campaign's last room)
+
+| id | file | teaches | tray (budget) | par pieces | par time | status |
+|---|---|---|---|---|---|---|
+| `garage01` | `garage01.level.ts` | the OIL-STAIN grip hazard enters: the film halves grip, and the patch is flown AROUND, not driven through — the stain itself is the lesson | 3 (`gapLip`, `drop`, `landing`) | 3 | 2.25 | done — par = the L01 flight over the film, BIT-IDENTICAL wet vs dry (measured 2.233); every omission `fell` anchored; 5 of 6 whole-tray orders finish (`landing>drop>gapLip` pinned falling); the THROUGH line is the tray-unbuyable probe (diverges wet, wet FASTER 2.250 < 2.383 — low drag, the honest in-channel delta); `prop:oilStain` callout registered BY THE LEVEL FILE (the set module carries no `PROP_CALLOUTS` row — ask #8a) |
+| `garage02` | `garage02.level.ts` | the CHOICE of the AD's ported mezzanine: the HIGH workbench line vs the FLOOR line — a real trade-off, and the lazy-high line is the fast one | 5 (`straight`×3, `drop`, `landing`) | 3 | 2.40 | done — high 2.367 beats floor 2.575 chained (both finish — the trade-off is real in the tray); ANCHORED only the high line reaches the cup (floor `fell` 2.925 — bedroom02's plateau property, ask #2b, pinned); sampled orders: the pure-high subset finishes and one beats the par clock (2.250), the mixed ones `fell` (choice tray, not whole-order-invariant); `trayParams` seats `drop`/`landing` the par never places |
+| `garage03` | `garage03.level.ts` | the TRADE-OFF the tunnel FORCES: the speed line flies the goal line dry; the oil-film lane costs time | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 4 | 2.70 | done — par 2.667 flies the film (wet == dry bit-for-bit); the lane chained 2.675 finishes and `fell` anchored (ask #2b); lane WET 2.675 beats its own dry 2.708 yet STILL loses the speed line — bathroom03's tightest margin re-flowed; the zone is centred deep on the lane's own deck (bathroom03's fix verbatim); whole tray finishes every order sampled (best 2.483); **the ride THROUGH the wheel is STAGING** — variant C declares no sockets; a bore ride needs a lane-crossing tunnel anchor (ask #8b) behind ask #4/#1 |
+| `garage04` | `garage04.level.ts` | everything, one tray, stain + HEIGHT combined, a live film under the flight (capstone; the campaign's last rung) | 4 (`straight`, `gapLip`, `drop`, `landing`) | 4 | 2.70 | done — ALL 24 whole-tray orders finish (2.467–3.300, sweep seating inherited — the lesson IS the order-invariant sum) AND sampled orders replay BIT-IDENTICAL wet vs dry; par ORDER beatable at 2.467 s; decked probe diverges wet-faster (2.583 vs 2.717); starts at the 0.26 bench height — the two garage verbs on one line, `nextInCampaign('garage04') === null` |
+
+The garage rungs join the ladder after `garden04`
+(`nextInCampaign('garden04') === 'garage01'`, and `garage04` is the
+campaign's LAST rung — no Next beyond it); `garageSetPlacement` mounts
+the ratified variant-C set UNDER the run on the bedroom rule (x = rail
+midpoint, −37 cm off the corridor — the family-tightest offset that keeps
+the forward-most dress solid, the flattened CARDBOARD at set z +0.261, a
+full 10 cm clear — the flush slab 5 mm under the LOWEST authored
+finish deck, yaw 0 so the ratified wheel, blade and stain films stay
+behind the set-origin line as reviewed; rows re-derived, the dress-box
+sweep derived from the live group boxes, and the wheel tunnel's
+behind-the-lane honesty pinned, by `tests/unit/garage-levels.test.ts`).
+The geometry economy is the bathroom's verbatim (same ramps,
+same `KITCHEN_GAP` as `SHOP_GAP`, same sweep seating), so the garage
+clocks ARE the bathroom clocks — stated openly, with the oil stain, the
+ported mezzanine and the goal-line wheel as the new thing
+(`Sessions/2026-10-09 Stage 4 - garage ladder.md`).
 
 ## Pars
 
@@ -174,7 +200,9 @@ bathroom's `drain`/`splash` alternates and the garden's `bore`/`wet
 shortcut` alternates ride
 in the same roster (the bathroom and garden hazard PROBES, like kitchen04's ground
 build, are NOT in the line roster — hazard replay, not tray-affordable
-routes).
+routes); since the garage pass it spans FIVE — the garage's `floor`/`oil
+lane` alternates join the roster and the pars/parity/budget trio of
+checks now covers the garage rungs too.
 
 ## Notes
 
@@ -189,16 +217,18 @@ routes).
   ground PROBE finishing, L04's whole-tray order sweep finishing — the
   Playtest G learnability gate — and L05's wrong allocations NOT
   finishing).
-- `getLevel` now resolves 19 ids once the level modules are imported (feel
-  rig, kitchen six, bedroom four, bathroom four, garden four); the kitchen
+- `getLevel` now resolves 23 ids once the level modules are imported (feel
+  rig, kitchen six, bedroom four, bathroom four, garden four, garage four); the kitchen
   files self-register via `registerLevel` on import
   (`feeltrack.level.ts`'s registry), the bedroom files do the same
   (`registerBedroom` wraps it), the bathroom files likewise
-  (`registerBathroom`), and the garden files likewise (`registerGarden`).
+  (`registerBathroom`), the garden files likewise (`registerGarden`), and
+  the garage files likewise (`registerGarage`).
   `src/boot.ts` imports every rung (the
   kitchen wiring since stage 2, the bedroom wiring added at the stage-4
   ladder pass, the bathroom wiring at the stage-4 bathroom pass, the garden
-  wiring at the stage-4 garden pass — a file outside the level designer's
+  wiring at the stage-4 garden pass, the garage wiring at the stage-4 garage
+  pass — a file outside the level designer's
   lane, touched only to
   register and extend the `void [...]` list; `LADDER` itself is the
   campaign table).

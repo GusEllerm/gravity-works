@@ -251,6 +251,99 @@ is progression, and it now says FOUR rooms honestly, garden last because
 its first rung opens with bathroom04's star). `tests/unit/garden-levels.test.ts` is the rung gate; the cross-
 ladder tray ⊇ parBuild roster spans FOUR ladders.
 
+## The garage four (design cards)
+
+The garage ladder (stage 4) is four rungs on the RATIFIED variant-C set
+(`src/sets/garage/data.ts` — epoxy sparkle, door-gap sunblade, the
+bike-wheel tunnel goal line, 12/13 at both production cameras,
+`Reference/Review 2026-10-08 Stage 4 garage.md`), entering the campaign
+after `garden04` as the campaign's LAST room. The geometry economy is the
+bathroom's verbatim (one 0.20 m `straight` geometry for 01–03, the 0.30 m
+sweep seating on 04, `KITCHEN_GAP` as `SHOP_GAP`, ramps 0.22/0.28/0.30/
+0.26), so the garage clocks ARE the bathroom clocks — the rung LESSONS are
+the new thing and the tests pin relationships, not folklore. Set mounting
+is the bedroom rule (`garageSetPlacement`): slab centred on the run,
+37 cm BEHIND the corridor (`GARAGE_AXIS_OFFSET` — the family-tightest
+offset, set by the forward-most dress solid, the flattened cardboard at
+set z +0.261, and swept from the live group boxes by the ladder test),
+the flush slab 5 mm under the LOWEST authored finish deck, yaw 0 (the
+ratified wheel, blade corridor and stain films all sit behind the set-
+origin line; the AD's own goal-line composition is the reason, the
+bathroom/garden lesson re-measured). The room's lessons trace to its own
+reviewed physics: the stain's FILM treatment (round-2 fix 5), variant B's
+ported mezzanine beat (carry-forward 4), and the AD's hazard-affordance
+scoreboard ("bike-wheel tunnel = ready and should anchor the garage's
+goal-line levels").
+
+**GARAGE 01 — The Stain** (`garage01.level.ts`, the hazard enters). Teaches:
+the OIL-STAIN grip hazard — the patch IS the lesson, and the AD's round-2
+film treatment is what makes the tell honest (a sheen on the epoxy, not a
+decal): `gripFactor` 0.5 on a live `wetPatch` (`source: 'oilStain'`,
+centred by `wetPatchOverSeam` on the decked probe's seam, the kitchen04
+convention). The physics is the kitchen-L01/bathroom01 flight (ramp 0.22,
+tray = the exact multiset, par 3, 2.25 — measured 2.233 s, builder-mount
+byte-identical, wet == dry to the bit, every omission `fell` anchored,
+five of six orders finish with `landing→drop→gapLip` pinned). The THROUGH
+line is the tray-unbuyable PROBE: it diverges wet and runs wet-FASTER
+(2.250 < 2.383 — the low-drag truth, not folk physics). The first-sight
+line `prop:oilStain` is registered by THIS rung's file — the ratified set
+module carries no `PROP_CALLOUTS` row (ask #8a; the bathroom
+`prop:wetPatch` precedent is where the line should live).
+
+**GARAGE 02 — Mezzanine** (`garage02.level.ts`). Teaches: the CHOICE the
+AD's carry-forward 4 ported into C's geometry — the workbench HEIGHT line
+vs the garage FLOOR line, a real trade-off with both routes in one tray
+(5 pieces, the union, none spare). The HIGH line is the par and the fast
+one (pure rolling, 3 of 5, 2.40 — measured 2.367); the FLOOR line
+(`garage02FloorBuild`: the `drop` off the bench edge, the soft `landing`
+catch, the floor run) finishes chained at 2.575 and `fell` against the
+ANCHORED cup (2.925 — bedroom02's plateau property, ask #2b, pinned and
+stated on the card). Sampled whole-tray orders: the pure-high subset
+finishes and one beats the par clock (2.250); mixed orders `fell` — the
+choice tray is not whole-order-invariant (the capstone's gate is).
+`trayParams` seats the `drop`/`landing` the par never places; every other
+tray kind seats automatically from its first `parBuild` placement.
+
+**GARAGE 03 — Wheel Tunnel** (`garage03.level.ts`). Teaches: the
+TRADE-OFF the ratified goal line FORCES — the tunnel is on the straight,
+so the straight is the speed line; the oil-film LANE costs time. The par
+(4 of 5, 2.70 — measured 2.667) launches down the corridor with the hard
+DRY `drop` catch and flies the film (wet == dry bit-for-bit); the LANE
+(the soft `landing` twin declared in `trayParams`, chained 2.675) is
+legitimately wet — its hash diverges and it beats its own dry (2.708) yet
+STILL loses to the speed line, bathroom03's tightest margin re-flowed —
+and `fell` anchored (ask #2b). The zone sits deep on the lane's own deck
+(the bathroom03 centring fix verbatim). THE TUNNEL THAT IS NOT: variant C
+declares no sockets — the wheel is a goal-line STORY, not a bore — so the
+ride THROUGH it is staging (the bathroom drain / garden bore pattern);
+the live box test pins the wheel entirely behind the corridor at every
+mount, and a bore ride needs a lane-crossing tunnel anchor (ask #8b)
+behind ask #4's prop-socket seating and ask #1 as always. The whole tray
+finishes every order sampled (best 2.483; the choice tray is not whole-
+order-invariant).
+
+**GARAGE 04 — Last Lap** (`garage04.level.ts`, the capstone AND the
+campaign's final rung). Every garage verb on one line at bench HEIGHT
+(ramp 0.26, rung 02's lesson under the wheels) with the oil film LIVE
+under the flight window (centred by the bathroom04 rule: the par's
+landing-entry x at the decked (probe) y) — the brief's stain + height
+combination, not a re-run. The tray IS the par's exact multiset, ALL 24
+whole-tray orders finish (2.467–3.300, the sweep seating inherited
+deliberately — your ORDERING is the line choice, the par ORDER beatable
+at 2.467 s), and the dry sweep IS a wet sweep: par and the sampled orders
+replay BIT-IDENTICAL wet vs dry; the decked probe (one 0.62 m bridge the
+tray cannot seat) diverges and runs wet-faster (2.583 vs 2.717). After
+this rung `nextInCampaign('garage04') === null` — the campaign ends in
+the garage, under the door-gap blade with the wheel standing at the end
+of the straight.
+
+The garage rungs join the campaign after `garden04`
+(`nextInCampaign('garden04') === 'garage01'`), making the room order
+kitchen → bedroom → bathroom → garden → GARAGE and closing the campaign:
+garage04 is the last rung on the ladder and the last `nextInCampaign`
+step (null beyond it). `tests/unit/garage-levels.test.ts` is the rung
+gate; the cross-ladder tray ⊇ parBuild roster spans FIVE ladders.
+
 
 Pieces are laid per-instance by `lay` (the kitchen helper in `kitchen01`):
 the kit's `chain` keys params by KIND, so any level that reuses one kind more
@@ -744,6 +837,34 @@ garden03/04 ship the always-wet sprawl (`source: 'sprinkler'`) and claim
 no timing. Owner split as written: (a) is one prop and an anchor, (b) is
 one hazard normaliser.
 
+**Ask #8 — the garage's callout row and the garage's goal-line anchor
+(from the garage ladder, stage 4).** Two one-line asks from the garage
+four, Environment Artist unless noted. **(a) THE CALLOUT ROW (blocking:
+nothing; weakening: the rung-01 first-sight seam).** The ratified set
+module (`src/sets/garage/index.ts`) registers NO `PROP_CALLOUTS` row —
+the STAIN row in the set DATA is decoration and no first-sight line came
+with it, so `garage01.level.ts` registers `prop:oilStain` itself (the
+bathroom `prop:wetPatch` precedent is a set-module row, and boot imports
+levels only, so the manifest line exists either way). Moving the one line
+into the set module makes registration authorship match every other set;
+the ladder test pins EXISTENCE, not authorship, so the move needs no test
+edit. **(b) THE TUNNEL ANCHOR (blocking: a future bore-ride rung, not
+garage03 — which ships its trade-off honest).** The AD's scoreboard says
+the bike-wheel tunnel "is ready and should anchor the garage's goal-line
+levels", and it DOES anchor them visually — but variant C declares no
+sockets (`SOCKETS = {}` in `src/sets/garage/data.ts`), the wheel stands
+behind the +x lane at every shipped mount (test-pinned from the live
+boxes), and the level's oil zones are seam-derived LEVEL data while the
+stain FILMS stay set-space decoration tens of cm off the lane (the ask #6
+shape, unfixed here). What a bore ride needs is one lane-crossing anchor
+pair on the SetInstance surface (`wheel.in`/`wheel.out`, ask #5's shape,
+the bowl's in-then-through tangent convention) — with ask #4 (prop-socket
+seating) and ask #1 (drivable yaw) still standing between the frames and
+a ride; and what rung 01's affordance precision wants is one `STAIN` row
+moved so that at the four shipped mounts its film lands inside a zone
+footprint (one data value, ask #6 verbatim). Owners: one socket pair and
+one moved row, both Environment Artist.
+
 ## The same data replayed the way the BUILDER mounts it
 
 Every claim above is a `lay`/`chain` build: the cup rides at the end of
@@ -810,7 +931,14 @@ both mountings, wet/dry hashes pinned), with two honest caveats stated at
 the cards: garden02's SHOWY half points at a bore that is staging, not a
 ride (the bowl turn proper is ask #7a behind ask #1/#4, kitchen L03's
 pattern), and garden03's SPRINKLER is a clockless sprawl until ask #7b
-gives the hazard model a timed kind. See
+gives the hazard model a timed kind. The garage four (stage 4) also ship
+UNBLOCKED on the same evidence (par finishes, the mezzanine choice
+measured on both mountings, wet/dry hashes pinned, the 24/24 capstone
+sweep), with two honest caveats stated at the cards: garage03's ride
+THROUGH the wheel is staging, not a bore (the tunnel anchor is ask #8b
+behind ask #4/#1, the garden bore's pattern), and garage01's film tell
+lands near-but-not-exactly on its zone footprint at these mounts (the
+callout row and the film anchor are ask #8a/#8b). See
 [[Reference/Level Ladder]].
 
 ## Guarded by
@@ -859,4 +987,17 @@ surface rides the lowest authored deck) and a DERIVED dress sweep: every
 rung's mount (the hose coil in its forward sun stripe is why the garden
 offset is 52 cm, the widest of the four sets) — and extends the cross-
 ladder describe to FOUR ladders (kitchen, bedroom, bathroom, garden; the
-garden bore line and wet shortcut ride the roster).
+garden bore line and wet shortcut ride the roster). The stage-4 garage
+pass adds `tests/unit/garage-levels.test.ts` — the same gates for the
+garage four (pars finish, contracts, 01's exact fit + omission table +
+pinned order + the stain's wet/dry probe pair, 02's mezzanine choice on
+both mountings with the anchored fall pinned, 03's oil-lane hashes and
+the speed line's win, 04's 24/24 sweep that is its own wet sweep + the
+probe) PLUS the flush-slab placement derivation (no `DECK_Y` row — the
+epoxy surface IS the set origin plane, the mount y is the deck line
+minus clearance), the derived dress-box sweep (the flattened cardboard
+is what sets the 37 cm offset), the bike-wheel-tunnel behind-the-lane
+staging check, and the `prop:oilStain` manifest pin — and extends the
+cross-ladder describe to FIVE ladders (kitchen, bedroom, bathroom,
+garden, garage; the garage floor line and oil lane ride the roster, and
+the pars/parity/budget checks now cover the garage rungs too).

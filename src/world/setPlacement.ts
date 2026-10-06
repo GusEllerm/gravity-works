@@ -197,6 +197,47 @@ export function gardenSetPlacement(levelId: string): SetPlacement | null {
   return row ? { position: [row[0], row[1], row[2]], yaw: 0 } : null;
 }
 
+/** ---- garage (stage 4) ----------------------------------------------------
+ * The garage set is dressed around its epoxy slab and beyond-slab ground
+ * disc (`FLOOR` in `src/sets/garage/data.ts`, both surfaces flush at set
+ * y = 0), so the mount rule is the bedroom/bathroom/garden rule one more
+ * time: the level chains along +x from the world origin, and the set
+ * slides UNDER the lane — centred on the run (x = the par rail's midpoint;
+ * the 1 m slab holds the driveable MIDDLE of every rail and the flush
+ * ground disc carries the ends — flush deck, so the crossing is a look,
+ * never a bump), BACK (−z) by `GARAGE_AXIS_OFFSET` and DOWN so the slab
+ * surface sits 5 mm below the LOWEST authored line's finish deck (the
+ * same `DECK_CLEARANCE` contract; the rows are recomputed from the live
+ * builds by `tests/unit/garage-levels.test.ts`).
+ * The offset (0.37 m) is the family minimum that clears the dress: the
+ * forward-most guard solid is the flattened cardboard at set z +0.261
+ * (the lid and the nail spill next), so at 0.37 its near edge lands at
+ * −0.109 — just outside the 10 cm corridor-clearance rule, with the slab
+ * front edge at +0.13 keeping the lane itself on poured epoxy. Yaw 0 on
+ * every rung: the ratified frame's goal line (the stood-up wheel), the
+ * door-gap blade corridor and the stain films all live BEHIND the set-
+ * origin line, and a yaw that swung the blade across the lane would undo
+ * the ratified composition for no geometry gain (the bathroom/garden
+ * lesson, re-measured). The oil-stain FILMS stay set-space decoration —
+ * the live zones are seam-derived LEVEL data (the bathroom ask #6 shape);
+ * lining a film exactly onto a zone footprint across these mounts is the
+ * garage ladder's ask (session log). */
+export const GARAGE_AXIS_OFFSET = 0.37;
+
+const GARAGE_ROWS: Record<string, readonly [number, number, number]> = {
+  garage01: [0.97115, -0.40809, -GARAGE_AXIS_OFFSET],
+  garage02: [1.07272, -0.47419, -GARAGE_AXIS_OFFSET],
+  garage03: [1.1825, -0.42567, -GARAGE_AXIS_OFFSET],
+  garage04: [1.21654, -0.44809, -GARAGE_AXIS_OFFSET],
+};
+
+/** The mount transform for one garage level id (null = no placement — the
+ *  canonical-origin fallback the `?set=garage` inspection entry uses). */
+export function garageSetPlacement(levelId: string): SetPlacement | null {
+  const row = GARAGE_ROWS[levelId];
+  return row ? { position: [row[0], row[1], row[2]], yaw: 0 } : null;
+}
+
 /** The rigid transform of a placement (three users: the scene mount, the
  *  L03 socket seating, the guard boxes). */
 export function placementMatrix(p: SetPlacement): THREE.Matrix4 {
