@@ -114,7 +114,19 @@ describe('physicsNote (coverage map of src/ui/result.ts)', () => {
   });
 
   test('fell after a long flight -> the jump outran the landing', () => {
-    expect(physicsNote(run('fell'), ev({ finalAirtime: 0.8 }))).toMatch(/^fell off .*jump/);
+    // the long-jump line needs BOTH witnesses: a long flight AND a deck
+    // that launched it upward (stage-4 note matrix, playtest K)
+    expect(
+      physicsNote(run('fell'), ev({ finalAirtime: 0.8, finalTakeoffVy: 1.2 })),
+    ).toMatch(/^fell off .*jump/);
+  });
+
+  test('fell airborne-but-not-launched -> no "long jump" lie (playtest K)', () => {
+    // every fall off a counter is airborne ~0.4 s; a drive-off (no rise)
+    // must get the honest line, not the launched-jump one
+    expect(
+      physicsNote(run('fell'), ev({ finalAirtime: 0.433, finalTakeoffVy: -0.13 })),
+    ).toMatch(/^fell off the set/);
   });
 
   test('fell otherwise -> fell off the set', () => {

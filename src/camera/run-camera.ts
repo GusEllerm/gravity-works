@@ -123,6 +123,28 @@ export const RUN_CAMERA = {
    *  `TRAIL`: the launch dolly-up that keeps the release frame a view of
    *  the car instead of a deck close-up while the trail winds out. */
   LAUNCH_PEEP: 0.1,
+  /** Rail arc (world m) before the finish where the FINISH framing fades
+   *  in (stage 4, playtest J+K: at run end the low chase eye buries itself
+   *  in the tabletop — measured on the L01 par run the last second before
+   *  the panel held frames 88 % ONE flat colour (the cream table filling
+   *  the shot, "buried halfway in a wall, only the car's roof", "a wall of
+   *  woodgrain"). At the rail END the eye sits `HEIGHT + EYE_UP` = 7.2 cm
+   *  over the deck with the lead aim reading the rail terminus — a few
+   *  centimetres above an endless table plane. The fade window covers the
+   *  last ≈0.5 s of a finishing run at 1:10 line speeds. */
+  FINISH_ARC: 0.5,
+  /** Eye lift (world m) fully faded in at the rail end — a finish-clip
+   *  crane-up that puts the tabletop seen from ABOVE (cup, props, floor
+   *  variation) in frame instead of the table seen from 7 cm above it. The
+   *  lift rides the same `LIFT_LAG` filter as the prop clearance, so it is
+   *  an arc, not a cut; measured worst single-colour share of the L01 final
+   *  second drops from 88 % to ≤ 60 % with this much lift. */
+  FINISH_LIFT: 0.22,
+  /** How much of the lead-aim is traded for an aim at the CAR as the finish
+   *  fades in (0..1 at the rail end): the §7.3 anticipation has nothing
+   *  left to anticipate past the last rail point, and a lead clamped at the
+   *  terminus turns the aim into a stare at the wall past the finish. */
+  FINISH_LEAD_TAPER: 0.6,
 } as const;
 
 export class RunCamera {
@@ -182,11 +204,15 @@ export class RunCamera {
     // prop instead of cutting to it — but an ACTUAL intersection is never
     // filtered: the unfiltered requirement acts as a floor, so the
     // "camera inside a grey wall" frame cannot exist even for one step.
-    this.liftFiltered += (this.requiredLift() - this.liftFiltered) *
+    // The finish crane-up rides the SAME filter as a target term, so the
+    // end-of-run rise is an arc, not a cut (FINISH_ARC — playtest J+K).
+    const wFinish = this.finishWeight(clampedCar);
+    this.liftFiltered +=
+      (this.requiredLift() + RUN_CAMERA.FINISH_LIFT * wFinish - this.liftFiltered) *
       (1 - Math.exp(-dt / RUN_CAMERA.LIFT_LAG));
     this.lift = Math.max(this.liftFiltered, this.requiredLift());
     this.ensureClearance();
-    this.buildQuatTarget(lead);
+    this.buildQuatTarget(lead, wFinish);
     this.pos.copy(this.eyeBase).addScaledVector(UP, this.lift);
     this.quat.slerp(this.targetQuat, 1 - Math.exp(-dt / RUN_CAMERA.ROT_LAG));
   }
@@ -200,10 +226,11 @@ export class RunCamera {
     this.trailArc = this.clampArc(clampedCar - this.effectiveTrail(clampedCar));
     this.setEyeBase(clampedCar);
     this.carPoint.copy(this.railAtCar);
-    this.lift = this.requiredLift();
+    const wFinish = this.finishWeight(clampedCar);
+    this.lift = this.requiredLift() + RUN_CAMERA.FINISH_LIFT * wFinish;
     this.liftFiltered = this.lift;
     this.ensureClearance();
-    this.buildQuatTarget(this.arc);
+    this.buildQuatTarget(this.arc, wFinish);
     this.quat.copy(this.targetQuat);
     this.pos.copy(this.eyeBase).addScaledVector(UP, this.lift);
   }
@@ -221,6 +248,15 @@ export class RunCamera {
   /** Rail arc the AIM reads ahead at (lead-filtered; tests / debug). */
   get railArc(): number {
     return this.arc;
+  }
+
+  /** The finish fade weight for a car at rail arc `s`: 0 until the last
+   *  `FINISH_ARC` of track, 1 at the rail end (linear between). Pure so the
+   *  filter, the hard floor and the aim taper all read the SAME number. */
+  private finishWeight(carArc: number): number {
+    const start = this.source.length - RUN_CAMERA.FINISH_ARC;
+    if (this.source.length <= 1e-6) return 0;
+    return THREE.MathUtils.clamp((carArc - start) / (this.source.length - start), 0, 1);
   }
 
   /** Rail arc the EYE rides — carArc − TRAIL, filtered (tests/debug). */
@@ -301,7 +337,7 @@ export class RunCamera {
     this.railAtCar.copy(this.source.railPointAt(carArc));
   }
 
-  private buildQuatTarget(leadS: number): void {
+  private buildQuatTarget(leadS: number, wFinish = 0): void {
     // Look from the eye toward the lead RAIL point: the azimuth anticipates
     // the coming corner exactly like the old tangent-at-lead (on a straight
     // the azimuths are identical), the pitch carries the car into frame
@@ -330,6 +366,19 @@ export class RunCamera {
       this.vC.set(fx * dF, this.carPoint.y - eye.y, fz * dF).normalize();
     }
     if (this.vC.lengthSq() < 1e-12) this.vC.copy(this.source.frameAt(leadS).tangent);
+    // FINISH taper: past the last rail point the lead has nothing to
+    // anticipate, and a lead clamped AT the terminus aims past the finish
+    // into whatever wall stands beyond it (playtest K's "wall of
+    // woodgrain"). Blend the view direction toward the CAR as the finish
+    // fades in — the anticipation is kept where the rail still has track
+    // ahead, and the last frames centre the car, not the backdrop.
+    if (wFinish > 0) {
+      this.vB.set(this.carPoint.x - eye.x, this.carPoint.y - eye.y, this.carPoint.z - eye.z);
+      if (this.vB.lengthSq() > 1e-12) {
+        this.vB.normalize().lerp(this.vC.normalize(), 1 - RUN_CAMERA.FINISH_LEAD_TAPER * wFinish);
+        if (this.vB.lengthSq() > 1e-12) this.vC.copy(this.vB).normalize();
+      }
+    }
     this.vC.normalize();
     const dCar = this.carPoint.distanceTo(eye);
     const w = THREE.MathUtils.clamp(

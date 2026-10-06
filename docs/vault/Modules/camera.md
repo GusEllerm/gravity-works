@@ -162,3 +162,19 @@ BUILT page as the 250 ms filmstrip (≤ 60 % single-colour per frame).
 Depends on `three` math only. Consumed by `tests/unit/camera.test.ts`; the
 rail sources live in `src/feel/kittrack.ts` and `src/track/spline.ts`
 (`railPoints`). See [[feel]] for the camera-side findings.
+
+## Stage 4 round 2: the end-of-run bury (playtests J+K, measured)
+
+Mid-run framing was fixed but J+K both hit the camera buried in a wall AT
+the run's end — the trailing eye kept its launch altitude while the last
+metres duck along the table edge INTO a set solid. The eye now carries a
+`lift` state: `requiredLift()` is the smallest raise that keeps the eye out
+of the corridor solids (filtered by `liftFiltered` so it never dips below
+its recent maximum mid-run), a `LAUNCH_PEEP` blend lifts the aim over the
+trail at release (distance-blended, `TRAIL`), and `FINISH_LIFT` (0.22)
+fades in as the car crosses the finish witness so the terminal frames arc
+OVER the end furniture instead of through it. The filmstrip gate
+(`tests/e2e/filmstrip.spec.ts`, own config + port) samples EVERY 100 ms of
+the FINAL second of the L01+L04 par runs — no frame may be >60 % single
+colour — which is the assertion that was missing when "mid-run fixed"
+still shipped a wall at the end.

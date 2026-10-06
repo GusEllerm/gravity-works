@@ -128,6 +128,26 @@ export const STALL_SPEED = 0.05;
 /** Grounded-slow seconds before `observe` concludes `stalled` (see
  *  `STALL_SPEED`). 0.5 s ≈ 60 steps of the 120 Hz stall counter. */
 export const STALL_SECONDS = 0.5;
+/** Below this world speed, NOT grounded, for `SLOW_AIR_SECONDS` -> `stalled`.
+ *
+ * STAGE 4 CAMERA/LATENCY ROUND 2 (playtest J+K: "the result lands 2-3 s
+ * after the failure is visible"). The stage-3 stall window reads
+ * `grounded && speed < STALL_SPEED` — a car WEDGED off the deck (resting
+ * against a prop-side wall, wheels hanging just off the deck edge, the
+ * suspension rays finding nothing) reads grounded FALSE and speed ~0
+ * forever, so the counter never fills and the dead run rides the 12 s
+ * TIMEOUT: the exact "timeout wait" suspect the J+K reopen named. The
+ * window is outcome-only like the stage-3 pair, and deliberately slower
+ * (1.0 s vs 0.5 s): a genuine launch, hop or gap flight passes 0.05 m/s in
+ * well under 0.1 s (measured: every airborne sample of every L01-L05 and
+ * feel-track par run reads >= 0.3 m/s), so no real run's terminal step
+ * moves — the feel-track and par-run hashes are pinned unchanged in
+ * `tests/unit/world.test.ts`. The 1.0 s bar is the same ≤ 1 s ledger
+ * promise a resting car already meets on the grounded path. */
+export const SLOW_AIR_SPEED = 0.05;
+/** Slow-while-airborne seconds before `observe` concludes `stalled` (see
+ *  `SLOW_AIR_SPEED`). 1.0 s ≈ 120 steps of the 120 Hz airborne-slow counter. */
+export const SLOW_AIR_SECONDS = 1.0;
 /** How far down the start socket's tangent the chassis centre spawns — a
  * car centred exactly on the start socket hangs half its wheelbase over
  * the deck edge and slides off backwards (measured, 2026-10-04).
@@ -246,6 +266,7 @@ export class World {
   private readonly maxTime: number;
   private readonly stallSpeed: number;
   private readonly stallLimit: number;
+  private readonly slowAirLimit: number;
   private readonly launchSpeed: number;
   private readonly variant: CarVariant;
   /** The level's hazard zones (empty for hazard-free levels — the common
@@ -258,6 +279,7 @@ export class World {
   private steps: number;
   private runStatus: RunStatus;
   private stallRun: number;
+  private slowAirRun: number;
   private prev: WorldState;
   private current: WorldState;
 
@@ -274,6 +296,7 @@ export class World {
     this.maxTime = options.maxTime ?? level.maxTime;
     this.stallSpeed = options.stallSpeed ?? STALL_SPEED;
     this.stallLimit = Math.round((options.stallSeconds ?? STALL_SECONDS) / FIXED_DT);
+    this.slowAirLimit = Math.round(SLOW_AIR_SECONDS / FIXED_DT);
     this.launchSpeed = options.launchSpeed ?? 0;
 
     const { splines, pieces } = reify(build);
@@ -355,6 +378,7 @@ export class World {
     this.steps = 0;
     this.runStatus = 'idle';
     this.stallRun = 0;
+    this.slowAirRun = 0;
     this.car = this.spawnCar();
     this.prev = this.snapshot();
     this.current = this.prev;
@@ -379,6 +403,7 @@ export class World {
     this.hashValue = seededHash(this.build.seed);
     this.steps = 0;
     this.stallRun = 0;
+    this.slowAirRun = 0;
     this.runStatus = 'idle';
     this.prev = this.snapshot();
     this.current = this.prev;
@@ -556,6 +581,12 @@ export class World {
     const speed = carSpeed(this.car) / SIM_SCALE;
     if (grounded && speed < this.stallSpeed) this.stallRun += 1;
     else this.stallRun = 0;
+    // stage-4 (J+K): a wedged car whose rays find no deck reads "airborne"
+    // forever — a 12 s timeout is the wrong verdict for a car that is
+    // visibly resting off-track; 1.0 s of airborne-slow concludes `stalled`
+    // (see SLOW_AIR_SPEED; launches/hops stay far outside the window).
+    if (!grounded && speed < SLOW_AIR_SPEED) this.slowAirRun += 1;
+    else this.slowAirRun = 0;
     if (this.stallRun > this.stallLimit) {
       // Playtest G's contradiction, resolved by physics: a car that STOPS
       // with its nose in the bowl — centre up to a half-car-length beyond
@@ -569,6 +600,10 @@ export class World {
           return;
         }
       }
+      this.runStatus = 'stalled';
+      return;
+    }
+    if (this.slowAirRun > this.slowAirLimit) {
       this.runStatus = 'stalled';
       return;
     }
