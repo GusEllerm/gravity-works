@@ -166,11 +166,24 @@ test('the run camera follows on the live path', async ({ page }) => {
   await page.goto('/?build=par&launch=1')
   await expect(page.locator('#gw-status')).toContainText('running', { timeout: 60_000 })
   const a = await cameraPose(page)
-  await page.waitForTimeout(600)
-  const b = await cameraPose(page)
   // §7.3: the render camera must travel while the car travels — a static
-  // wide shot through a 2.2 s run is exactly what the players saw
-  expect(Math.hypot(...b.map((v, i) => v - a[i]!))).toBeGreaterThan(0.05)
+  // wide shot through a 2.2 s run is exactly what the players saw.
+  // Measured by POLLING for the farthest pose seen, not by one fixed
+  // 600 ms wall window: the run is rAF-paced (a stalled software-GL frame
+  // — swiftshader — can put the whole window inside one frame, which is
+  // how this read went deterministically ~0 under forced SwiftShader);
+  // the max-across-polls keeps the claim true even when the run ENDS and
+  // the camera hands the view back to the static framing (see the
+  // end-bury lift in src/camera/run-camera.ts).
+  let seen = 0
+  await expect
+    .poll(() => {
+      return cameraPose(page).then((b) => {
+        seen = Math.max(seen, Math.hypot(...b.map((v, i) => v - a[i]!)))
+        return seen
+      })
+    }, { timeout: 60_000 })
+    .toBeGreaterThan(0.05)
 
   expect(errors).toEqual([])
 })

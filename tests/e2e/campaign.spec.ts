@@ -21,6 +21,17 @@
  */
 import { test, expect } from '@playwright/test'
 
+// Budget: this spec plays TWO full build-and-run cycles (kitchen05 + the
+// bedroom rung) through the real UI in one test. The every-other-wait budget
+// here is 60 s (see `ready` / `#gw-result` above); the default TEST timeout
+// would silently cut that intent at 30 s. Measured wall clocks: 8–12 s on
+// local Chromium (real GPU AND under `--use-angle=swiftshader` + 20x CPU
+// throttle — every `#gw-*` element the raw reads target appears < 2 s into
+// the boot-to-`ready` line, far before either budget); 17–28 s on CI
+// software rendering. `slow()` carries the 60 s the 60_000 waits document
+// (systems engineer, garage-era CI reds at 28.0/30.3 s).
+test.slow()
+
 const ready = (page: import('@playwright/test').Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
 

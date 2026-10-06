@@ -20,21 +20,33 @@
  *   shell by NAME (`counter`, `shell`) and the dress group by the name
  *   `dress` — a naming convention, not data. It is documented at both ends
  *   and every future set must read this paragraph.
+ *
+ * LAZY BUILDERS (stage 4 payload fix): `build` is async and imports the
+ * set's builder module DYNAMICALLY. The eager chain — every `buildXSet`
+ * imported at the top of this file — put all five geometry modules into
+ * boot's module graph, so EVERY page load evaluated them even though
+ * exactly one set mounts per boot; the CI boot-time diff (every boot-heavy
+ * e2e ~2x slower once the garage row landed) is the player-side first-paint
+ * regression the same fix pays for. Tokens and placement tables stay
+ * static (small, data-only); the mounted set's module fetch rides the
+ * already-async boot (after the warm frame, before `World.create`).
  */
 import type * as THREE_NS from 'three'
 import type { SetTokens } from '../render/tokens.ts'
 import type { SetPlacement } from '../world/setPlacement.ts'
-import { buildKitchenSet } from './kitchen/index.ts'
-import { kitchenSetPlacement } from '../world/setPlacement.ts'
 import { SET_TOKENS } from '../render/tokens.ts'
-import { buildBedroomSet } from './bedroom/index.ts'
-import { bedroomSetPlacement } from '../world/setPlacement.ts'
-import { buildBathroomSet, BATHROOM_TOKENS } from './bathroom/index.ts'
-import { bathroomSetPlacement } from '../world/setPlacement.ts'
-import { buildGardenSet } from './garden/index.ts'
-import { gardenSetPlacement } from '../world/setPlacement.ts'
-import { buildGarageSet, GARAGE_TOKENS } from './garage/index.ts'
-import { garageSetPlacement } from '../world/setPlacement.ts'
+// the token rows stay STATIC imports: they live in the sets' data-only
+// modules (no three import, no geometry) so the warm first frame and the
+// post grade read them before the mounted set's module has even fetched
+import { BATHROOM_TOKENS } from './bathroom/data.ts'
+import { GARAGE_TOKENS } from './garage/data.ts'
+import {
+  kitchenSetPlacement,
+  bedroomSetPlacement,
+  bathroomSetPlacement,
+  gardenSetPlacement,
+  garageSetPlacement,
+} from '../world/setPlacement.ts'
 
 export interface SetInstanceSocket {
   pos: THREE_NS.Vector3
@@ -65,8 +77,10 @@ export interface SetRegistration {
   id: string
   /** The set's tokens — the shell's background and post grade read these. */
   tokens: SetTokens
-  /** Build the set. Pure function of its inputs, like every set builder. */
-  build(T: typeof THREE_NS, opts?: { rig?: import('../render/lighting.ts').LightingRig }): SetInstance
+  /** Build the set. Pure function of its inputs, like every set builder.
+   *  Async by design: the builder module is dynamically imported inside,
+   *  keeping the four unmounted sets out of boot's module graph (header). */
+  build(T: typeof THREE_NS, opts?: { rig?: import('../render/lighting.ts').LightingRig }): Promise<SetInstance>
   /** Where the set mounts for one level id (null = canonical origin). */
   placement(levelId: string): SetPlacement | null
 }
@@ -75,7 +89,8 @@ export const SETS: Record<string, SetRegistration> = {
   kitchen: {
     id: 'kitchen',
     tokens: SET_TOKENS.kitchen,
-    build(T, opts = {}) {
+    async build(T, opts = {}) {
+      const { buildKitchenSet } = await import('./kitchen/index.ts')
       const set = buildKitchenSet(T, opts)
       // the one adapter: kitchen's floor surface is the counter
       return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.counter, staging: set.staging }
@@ -85,7 +100,8 @@ export const SETS: Record<string, SetRegistration> = {
   bedroom: {
     id: 'bedroom',
     tokens: SET_TOKENS.bedroom,
-    build(T, opts = {}) {
+    async build(T, opts = {}) {
+      const { buildBedroomSet } = await import('./bedroom/index.ts')
       const set = buildBedroomSet(T, opts)
       return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.floor, staging: set.staging }
     },
@@ -97,7 +113,8 @@ export const SETS: Record<string, SetRegistration> = {
   garden: {
     id: 'garden',
     tokens: SET_TOKENS.garden,
-    build(T, opts = {}) {
+    async build(T, opts = {}) {
+      const { buildGardenSet } = await import('./garden/index.ts')
       const set = buildGardenSet(T, opts)
       return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.ground, staging: set.staging }
     },
@@ -114,7 +131,8 @@ export const SETS: Record<string, SetRegistration> = {
     // the RATIFIED variant-A tokens (the deep tinted-aqua fill is token
     // data — `src/sets/bathroom/data.ts`; the shell's background reads it)
     tokens: BATHROOM_TOKENS,
-    build(T, opts = {}) {
+    async build(T, opts = {}) {
+      const { buildBathroomSet } = await import('./bathroom/index.ts')
       const set = buildBathroomSet(T, opts)
       return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.floor, staging: set.staging }
     },
@@ -129,7 +147,8 @@ export const SETS: Record<string, SetRegistration> = {
     // twice — token data in `src/sets/garage/data.ts`; the shell's
     // background reads this row, the bathroom pattern for a variant palette)
     tokens: GARAGE_TOKENS,
-    build(T, opts = {}) {
+    async build(T, opts = {}) {
+      const { buildGarageSet } = await import('./garage/index.ts')
       const set = buildGarageSet(T, opts)
       return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.floor, staging: set.staging }
     },

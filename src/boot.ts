@@ -438,7 +438,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // physics reads — per level via the registration's placement table.
   // Mounting it cannot perturb a hash: the solver never sees it (proved in
   // tests/unit/set-wiring.test.ts and tests/e2e/set-wiring.spec.ts).
-  const setInstance: SetInstance | null = setReg ? buildGameSet(setReg, level.id) : null;
+  // the registry builder awaits the mounted set's dynamically-imported
+  // module (stage 4 payload fix, see src/sets/index.ts) — this await rides
+  // the boot's existing async line (after the warm frame, before World.create)
+  const setInstance: SetInstance | null = setReg ? await buildGameSet(setReg, level.id) : null;
   const setSolids = setInstance ? setPlacementGuard(setInstance.group) : undefined;
   const setCamBoxes = setInstance ? setCameraSolids(setInstance.group) : undefined;
   // the same set boxes the builder guards placement with, in the camera
@@ -706,9 +709,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
 
 /** Build a registered set once per game boot, mounted where this level wants
  *  it (a null placement = the set's canonical origin). */
-function buildGameSet(reg: SetRegistration, levelId: string): SetInstance {
+async function buildGameSet(reg: SetRegistration, levelId: string): Promise<SetInstance> {
   const placement = reg.placement(levelId);
-  const instance = reg.build(THREE);
+  const instance = await reg.build(THREE);
   if (placement) placeSet(instance.group, placement);
   return instance;
 }
