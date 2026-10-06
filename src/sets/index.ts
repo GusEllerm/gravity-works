@@ -32,6 +32,7 @@ import { bedroomSetPlacement } from '../world/setPlacement.ts'
 import { buildBathroomSet, BATHROOM_TOKENS } from './bathroom/index.ts'
 import { bathroomSetPlacement } from '../world/setPlacement.ts'
 import { buildGardenSet } from './garden/index.ts'
+import { gardenSetPlacement } from '../world/setPlacement.ts'
 
 export interface SetInstanceSocket {
   pos: THREE_NS.Vector3
@@ -98,11 +99,13 @@ export const SETS: Record<string, SetRegistration> = {
       const set = buildGardenSet(T, opts)
       return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.ground, staging: set.staging }
     },
-    // No garden LEVELS exist yet (the garden ladder is a later wave), so the
-    // set mounts at its canonical origin — the null the registry documents
-    // as "no level placements"; the first garden rung will want a table row
-    // in `src/world/setPlacement.ts` exactly like the bedroom's four.
-    placement: () => null,
+    // the garden rungs mount through the stage-4 garden table
+    // (`gardenSetPlacement`): the patio disc centres on the run, 45 cm back
+    // (the widest offset of the four sets — the hose coil stands forward of
+    // the set origin in a sun stripe), the flush paving 5 mm under the
+    // LOWEST authored deck, yaw 0 (the set's own off-axis bore yaw is the
+    // ratified focal fix; the shadow bars must keep crossing the lane).
+    placement: gardenSetPlacement,
   },
   bathroom: {
     id: 'bathroom',

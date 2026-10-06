@@ -57,7 +57,11 @@ The bathroom rungs (stage 4) mirror it a third time as `BathroomLevel`
 `bathroomLevel`/`registerBathroom`) and add one authoring helper, `wetPatchOverSeam`
 — a wet-patch zone centred on a build's own deck SEAM (the kitchen04
 convention made reusable), used by rungs 01/04; rung 03 centres its zone
-directly on the SOFT line's landing deck.
+directly on the SOFT line's landing deck. The garden rungs (stage 4) mirror
+it a fourth time as `GardenLevel`
+(`src/world/levels/garden01.level.ts`, `set: 'garden'`,
+`gardenLevel`/`registerGarden`), reusing `wetPatchOverSeam`'s rule from the
+bathroom file rather than restating it.
 
 ## The bathroom four (design cards)
 
@@ -147,6 +151,105 @@ landing-entry x, not the probe seam — the first draft's seam-centred zone
 let the par's step-top graze the band (measured wet != dry; the probe's
 deck is still high and wet at the shipped centre, so the bite claim
 survives the move).
+
+## The garden four (design cards)
+
+The garden ladder (stage 4) is four rungs on the RATIFIED variant-B set
+(`src/sets/garden/data.ts`, paving slabs at golden hour — sun disc, trellis
+shadow bars, sky-derived shade, 14/13/13 at the three production cameras,
+`Reference/Review 2026-10-08 Stage 4 garden*.md`), entering the campaign
+after `bathroom04`. Every rung rides the same authoring kit and the same
+invariants as the three earlier ladders; the geometry economy is the
+bathroom's verbatim (one 0.20 m `straight` geometry for 01–03, the 0.30 m
+sweep seating on 04, the shared `KITCHEN_GAP` numbers as `BORE_GAP`) — the
+rung LESSONS are the new thing, and because the seats are identical the
+garden clocks are the bathroom clocks, which the tests pin as
+relationships, not folklore. Set mounting follows the bedroom rule with the
+widest offset of the four sets — `gardenSetPlacement` centres the patio disc (radius 1.15 m) on the run, 52 cm BEHIND the corridor (`GARDEN_AXIS_OFFSET`,
+variant B dresses all around its deck and the hose coil stands in a forward
+sun stripe at set z +0.39), the flush paving's finish surface (`DECK_Y`,
+the floor-camera law) 5 mm under the LOWEST authored deck, yaw 0 (the
+set's own off-axis bore yaw is the ratified focal fix). The two prop
+callouts (`prop:shadowBars`, `prop:sprinkler`) register in the set module,
+the bathroom `prop:wetPatch` precedent.
+
+**GARDEN 01 — Shadow Bars** (`garden01.level.ts`, the ladder opens with the
+EYE, not the wheel). Teaches: the SUN-SHADOW LINE — the shaded strip is
+cooler because outdoors the shade is sky-lit (the first rig where the tint
+provably derives from the sky value), and that difference is VISUAL: the
+trellis bars are read-only rhythm, the concept's law kept literally — the
+set ships `HAZARDS` empty and the rung ships no live zone at all, so the
+honest wet-side assertion is that there is nothing to be wet about. The
+physics is the kitchen-L01/bathroom01 flight (`gapLip`→`drop`→`landing`,
+ramp 0.22, tray = the exact multiset, par 3, 2.25 — measured 2.233 s,
+builder-mount byte-identical, every omission `fell` anchored, five of six
+whole-tray orders finish with `landing→drop→gapLip` pinned falling). What
+is new is only where the camera teaches the player to LOOK, and
+`prop:shadowBars` says it in one line.
+
+**GARDEN 02 — Slab or Bore** (`garden02.level.ts`). Teaches: the CHOICE —
+the lazy slab line vs the showy launch toward the drain-pipe mouth — and
+that the fast line is the lazy one, bathroom02 re-staged under the sun. The
+bowl half of the brief ran into the ratified set: variant B has NO birdbath
+(the exploration deliberately left the bowl out so the garden would not
+spend its signature on the kitchen's), and the set's one socketed
+signature is the BORE. So the bore carries the SHOWY half as STAGING — the
+mouth pair (`PIPE_SOCKET_FRAMES`, `pipe.in`/`pipe.out`) sits ~77 cm behind
+the +x lane at every shipped mount (test-pinned), nothing on the lane can
+chain through it, and the bowl TURN itself is blocked behind the same stack
+kitchen L03 named (ask #1's drivable yaw + ask #4's prop-socket seating)
+plus ask #7a (a birdbath prop with a lane-crossing socket pair). The RUNG
+is not blocked: par (3 of 5, 2.35 — measured 2.350) beats the chained bore
+line 2.550, on the builder mount BOTH lines reach the cup and the lazy one
+still wins (2.350 vs 2.367, ask #2b biting LESS here, exactly as on
+bathroom02), and whole-tray orders finish every order the test samples
+(2.292–2.392, best beats the par clock; swept at authoring 78 of 120
+permutations — the same choice-tray property as bathroom02's 39 of 60).
+
+**GARDEN 03 — The Sprinkler** (`garden03.level.ts`). Teaches: the
+TRADE-OFF in the garden's own hazard verb — grip vs time, the sprinkler's
+sprawl instead of the bathroom's puddle. The par (4 of 5, 2.70 — measured
+2.667) takes the high DRY route and flies the sprawl: bit-identical wet vs
+dry. The WET SHORTCUT (the soft `landing` twin, declared in `trayParams`,
+chained 2.708) finishes chained, does NOT reach the anchored cup (ask #2b,
+pinned), and is legitimately wet: hash diverges, and the honest delta is
+the low-drag one again — sprinkler-wet 2.675 beats sprinkler-dry 2.708 yet
+STILL loses to the dry high line. What the brief's SPRINKLER really wants
+is a TIMED gate (the concept's "pure vertical motion in a set of
+straights") — the data model has one hazard kind, `WetPatch`, so what
+ships is the always-wet sprawl (`source: 'sprinkler'`) and the rung makes
+no timing claim; the cycling head is ask #7b. Zone centring inherits the
+bathroom03 fix verbatim (deep on the soft line's own deck). Whole tray
+finishes every order sampled (best 2.483); choice tray, not
+order-invariant whole (84 of 120 swept).
+
+**GARDEN 04 — Golden Hour** (`garden04.level.ts`, the capstone). Every
+garden verb on one line — deck run, launch, gap dip-and-catch, soft
+run-out — with the sprinkler's sprawl LIVE under the flight window
+(centred by the bathroom04 rule: the par's landing-entry x at the decked
+(probe) y). The line choice the brief asks a capstone to combine is the
+one this economy honestly affords: the tray IS the par's exact multiset,
+ALL 24 whole-tray orders finish (2.467–3.300, the sweep seating inherited
+deliberately), so your ORDERING is the line you pick and the clock is the
+reward — the par ORDER is beatable at 2.467 s. The dry sweep IS a wet
+sweep: par and the sampled orders replay BIT-IDENTICAL wet vs dry, and the
+decked probe (one 0.62 m bridge the tray cannot seat) diverges and runs
+wet-faster (2.583 vs 2.717). The brief's HILL half stays where the AD
+re-homed variant C's ramps — the track system's elevation profile (Track
+Kit backlog), not faked by a `drop` — and the stepping stones are variant
+C's props: the ratified deck's laid gravel crossing stands in as pure
+staging, which is the sentence this ladder keeps making — what READS
+differently need not DRIVE differently (the shadow bars), and what DRIVES
+differently says so (the sprawl is live; the stones never were).
+
+The garden rungs join the campaign after `bathroom04`
+(`nextInCampaign('bathroom04') === 'garden01'`), making the room order
+kitchen → bedroom → bathroom → garden — the play order the bathroom pass
+handoff was already walking toward (the registry lists sets in arrival
+order, which put garden's ROW in before the bathroom's; the campaign table
+is progression, and it now says FOUR rooms honestly, garden last because
+its first rung opens with bathroom04's star). `tests/unit/garden-levels.test.ts` is the rung gate; the cross-
+ladder tray ⊇ parBuild roster spans FOUR ladders.
 
 
 Pieces are laid per-instance by `lay` (the kitchen helper in `kitchen01`):
@@ -485,7 +588,11 @@ review. The bathroom ladder (stage 4) generalises the convention into
 build's entry-frame seam — and states the split explicitly: the bathroom
 SET carries wet-patch FILMS as decoration (`DRIPS` in
 `src/sets/bathroom/data.ts`), the LEVELS carry the live zones; lining a
-film up with a zone centre across a mounted set is ask #6.
+film up with a zone centre across a mounted set is ask #6. The garden
+ladder (stage 4) keeps the convention and changes only the SOURCE tag: the
+sprinkler sprawl of garden03/04 is a plain `WetPatch` disc whose `source:
+'sprinkler'` names the head it belongs to — the cycling head itself is a
+NEW KIND (ask #7b), and until it lands no rung makes a timing claim.
 
 ## Piece requests / asks (one paragraph each)
 
@@ -588,6 +695,33 @@ onto a lane-centred zone swings the TUB shell across the corridor guard
 boxes — the same finding that keeps `bathroomSetPlacement` at yaw 0.
 Owner: Environment Artist (one data row).
 
+**Ask #7 — the garden's bowl and the garden's clock (from the garden
+ladder, stage 4).** Two asks from the garden four, one per blocked idea.
+**(a) THE BIRDBATH (Environment Artist, blocking: a future bowl-turn rung,
+not garden02 — which ships its choice honest).** The brief asked the
+garden ladder for a bowl moment; the ratified variant-B set has no birdbath
+(the exploration deliberately skipped the bowl so the garden would not
+repeat the kitchen hero), and its one socketed signature, the drain-pipe
+bore, never crosses the +x lane at any mount that keeps the dress off the
+corridor (`tests/unit/garden-levels.test.ts` pins the mouth ≥ 70 cm behind
+the lane; a set yaw that brought it across would undo the ratified off-
+axis bore fix and swing the can onto the corridor — the bathroom lesson,
+re-measured). What a bowl turn needs is one bowl WITH a lane-crossing
+socket pair — a birdbath prop placed (or a second placement anchor carried
+on the SetInstance surface, ask #5's shape) whose `birdbath.in`/`birdbath.
+out` frames follow the rim's in-then-through tangent convention — and then
+ask #1 (drivable yaw) and ask #4 (prop-socket seating) still stand between
+the frames and a rideable turn. **(b) THE SPRINKLER KIND (Systems
+Engineer / Technical Artist, blocking: nothing — garden03 ships its trade-
+off without the clock).** The concept's sprinkler is a TIMED gate — "pure
+vertical motion in a set of straights" — and `src/world/hazards.ts` has
+one kind, the static `WetPatch` disc. A `sprinkler` hazard kind — centre,
+radius, `dutyCycle`/`phase`, normalising to the same per-contact grip
+field — would let a rung teach grip-vs-WAITING instead of grip-vs-time;
+garden03/04 ship the always-wet sprawl (`source: 'sprinkler'`) and claim
+no timing. Owner split as written: (a) is one prop and an anchor, (b) is
+one hazard normaliser.
+
 ## The same data replayed the way the BUILDER mounts it
 
 Every claim above is a `lay`/`chain` build: the cup rides at the end of
@@ -646,7 +780,13 @@ gates measure, and 02's anchored truth is the ladder's rare case where ask
 caveat there is the grip one: on channel straights "rides around, not
 through" is a TELLS-not-a-TOLL lesson whose toll half waits on ask #1's
 lateral authority (the wet-zone low-drag and step-grazing numbers are
-pinned in `tests/unit/bathroom-levels.test.ts`). See
+pinned in `tests/unit/bathroom-levels.test.ts`). The garden four (stage 4)
+also ship UNBLOCKED on the same evidence (par finishes, choice measured on
+both mountings, wet/dry hashes pinned), with two honest caveats stated at
+the cards: garden02's SHOWY half points at a bore that is staging, not a
+ride (the bowl turn proper is ask #7a behind ask #1/#4, kitchen L03's
+pattern), and garden03's SPRINKLER is a clockless sprawl until ask #7b
+gives the hazard model a timed kind. See
 [[Reference/Level Ladder]].
 
 ## Guarded by
@@ -684,4 +824,15 @@ runs wet-FASTER (the low-drag truth, not folk physics), 03's wet splash
 still loses to the dry high line, 04's sampled whole-tray orders replay
 wet == dry, and the placement table (rail midpoint, −25 cm offset, lowest-
 deck floor) is re-derived from the live builds with every prop's lane
-clearance asserted analytically.
+clearance asserted analytically. The stage-4 garden pass adds
+`tests/unit/garden-levels.test.ts` — the same gates for the garden four
+(pars finish, contracts, 01's exact fit + omission table + pinned order,
+02's choice on both mountings + the bore-stays-off-the-lane geometry check,
+03's wet-shortcut hashes, 04's 24/24 sweep that is its own wet sweep + the
+probe) PLUS the flush-deck placement derivation (the paving's `DECK_Y`
+surface rides the lowest authored deck) and a DERIVED dress sweep: every
+`dress` mesh's live group box must clear the corridor by 10 cm at every
+rung's mount (the hose coil in its forward sun stripe is why the garden
+offset is 52 cm, the widest of the four sets) — and extends the cross-
+ladder describe to FOUR ladders (kitchen, bedroom, bathroom, garden; the
+garden bore line and wet shortcut ride the roster).

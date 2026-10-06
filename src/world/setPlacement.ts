@@ -148,6 +148,51 @@ export function bathroomSetPlacement(levelId: string): SetPlacement | null {
   return row ? { position: [row[0], row[1], row[2]], yaw: 0 } : null;
 }
 
+/** ---- garden (stage 4) ---------------------------------------------------
+ * The garden set is dressed around its own patio disc (`DECK` in
+ * `src/sets/garden/data.ts`), so the mount rule is the bedroom/bathroom
+ * rule one step further along: the level chains along +x from the world
+ * origin exactly as the other rungs do, and the set slides to sit UNDER
+ * the lane — centred on the run (x = the par rail's midpoint; the 1.15 m
+ * deck radius holds the driveable MIDDLE of every rail — on the longest
+ * rung's ends the flush lawn stands in for the paving, which the flat-deck
+ * law makes a look, never a bump), BACK (−z) by `GARDEN_AXIS_OFFSET` and
+ * DOWN so the paving's finish surface (`DECK_Y` above the set origin, the
+ * flush-deck floor-camera law) sits 5 mm below the LOWEST authored line's
+ * finish deck — same `DECK_CLEARANCE` contract as the counter/floor/tile
+ * rows, with the deck's own 6 mm surface height carried explicitly so the
+ * derivation stays readable. Rows recomputed from the live builds by
+ * `tests/unit/garden-levels.test.ts`.
+ * The offset is the widest of the four sets (0.52 m) because variant B's
+ * dress stands all AROUND the deck, including a hose coil coiled in a sun
+ * stripe FORWARD of the set origin (set z +0.24, its torus reaching +0.39):
+ * at this row the hose's near edge lands at world z −0.13 and every other
+ * guard solid clears ≥ 37 cm (measured from the live group boxes by
+ * `tests/unit/garden-levels.test.ts`). The paving's forward edge lands at
+ * +0.06 — just outside the drive corridor, so the car rolls on slabs the
+ * whole way across (flush deck: the floor-camera law holds at any offset;
+ * this one is chosen for the guard boxes, not the pixels).
+ * Yaw 0 on every rung: the ratified hero frames the sun disc and the
+ * trellis bars in one composition, the bore is deliberately yawed OFF the
+ * track axis by the set itself (the AD's focal fix — a level yaw would undo
+ * it and swing the can onto the corridor), and the shadow bars must keep
+ * running ACROSS the lane exactly as the ratified floor camera frames them. */
+export const GARDEN_AXIS_OFFSET = 0.52;
+
+const GARDEN_ROWS: Record<string, readonly [number, number, number]> = {
+  garden01: [0.97115, -0.41409, -GARDEN_AXIS_OFFSET],
+  garden02: [1.09123, -0.47409, -GARDEN_AXIS_OFFSET],
+  garden03: [1.1825, -0.43167, -GARDEN_AXIS_OFFSET],
+  garden04: [1.21654, -0.45409, -GARDEN_AXIS_OFFSET],
+};
+
+/** The mount transform for one garden level id (null = no placement — the
+ *  canonical-origin fallback the `?set=garden` inspection entry uses). */
+export function gardenSetPlacement(levelId: string): SetPlacement | null {
+  const row = GARDEN_ROWS[levelId];
+  return row ? { position: [row[0], row[1], row[2]], yaw: 0 } : null;
+}
+
 /** The rigid transform of a placement (three users: the scene mount, the
  *  L03 socket seating, the guard boxes). */
 export function placementMatrix(p: SetPlacement): THREE.Matrix4 {

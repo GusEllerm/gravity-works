@@ -23,8 +23,9 @@ tags: [reference, levels]
 | `kitchen-sandbox` | `kitchen05.level.ts` | the set unlocked (`sandbox: true`, no budget) | none (all pieces ×99) | 5 | 2.70 | done — reference build finishes (2.667 s), on one 0.175 m straight geometry |
 
 The other sets follow at their own stage (the bedroom shipped FOUR rungs
-at stage 4 — below — and the bathroom FOUR right after it; the garden and
-garage explorations are ratified but their ladders are later waves); the
+at stage 4 — below — and the bathroom FOUR right after it; the garden
+ladder is the garden set's later wave, now shipped — also FOUR, below;
+the garage exploration is ratified and its ladder is a later wave); the
 ladder is otherwise empty.
 
 ## The bedroom ladder (stage 4 — four rungs)
@@ -62,6 +63,30 @@ The set is the RATIFIED porcelain cathedral ported from the dev scene by
 the Level Designer as a minimal art port — the ramp/material friction that
 implies is stated in `Sessions/2026-10-08 Stage 4 - bathroom ladder.md`,
 not tuned away.
+
+## The garden ladder (stage 4 — four rungs)
+
+| id | file | teaches | tray (budget) | par pieces | par time | status |
+|---|---|---|---|---|---|---|
+| `garden01` | `garden01.level.ts` | the SUN-SHADOW line: shaded = cooler, purely visual — read the camera, shadows are never hazards | 3 (`gapLip`, `drop`, `landing`) | 3 | 2.25 | done — the L01 flight under the trellis bars, NO live zone at all (the rung's whole lesson is that the bars are read-only rhythm — the set's `HAZARDS` empty BY LAW); every omission `fell` anchored; 5 of 6 whole-tray orders finish (`landing>drop>gapLip` pinned); `prop:shadowBars` callout |
+| `garden02` | `garden02.level.ts` | the CHOICE: lazy slab line vs the showy launch at the drain-pipe bore (the garden's bowl moment re-homed — the set has NO birdbath) | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 3 | 2.35 | done — lazy 2.350 beats bore 2.550 chained; ANCHORED both reach, lazy still wins 2.350 vs 2.367 (ask #2b bites LESS, the bathroom02 pattern); whole tray finishes every order sampled (2.292–2.392; 78 of 120 swept — choice tray, not order-invariant whole); the BORE RIDE is blocked (staging: mouth frames ~77 cm behind the lane, test-pinned; bowl turn = ask #7a behind ask #1/#4, kitchen L03's pattern) |
+| `garden03` | `garden03.level.ts` | the TRADE-OFF, garden flavor: dry high line vs the SPRINKLER sprawl (grip vs time — wet beats its own dry yet still loses to height) | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 4 | 2.70 | done — par 2.667 flies the sprawl (wet == dry bit-for-bit); shortcut chained 2.708, `fell` anchored (ask #2b); shortcut WET 2.675 beats its own dry 2.708 yet loses the par — low drag, the honest delta; the TIMED head is a hazard-KIND ask (#7b), shipped as an always-wet `wetPatch` sprawl (`source: 'sprinkler'`); 84 of 120 swept (choice tray) |
+| `garden04` | `garden04.level.ts` | everything, one tray, a live sprawl under the flight (capstone; ordering IS the line choice) | 4 (`straight`, `gapLip`, `drop`, `landing`) | 4 | 2.70 | done — ALL 24 whole-tray orders finish (2.467–3.300, sweep seating inherited — the lesson IS the order-invariant sum) AND sampled orders replay BIT-IDENTICAL wet vs dry; par ORDER beatable at 2.467 s; decked probe diverges wet-faster (2.583 vs 2.717); the hill half of the brief stays Track Kit backlog (the AD's re-home of variant C's ramps), the stepping stones are the gravel crossing's standing in — staging, never fake verbs |
+
+The garden rungs join the ladder after `bathroom04`
+(`nextLevelId('bathroom04') === 'garden01'`); `gardenSetPlacement` mounts
+the ratified golden-hour set UNDER the run on the bedroom rule with the
+WIDEST offset of the four sets (x = rail midpoint, −52 cm — variant B
+dresses all around its deck and the hose coil stands in a forward sun
+stripe — flush paving (`DECK_Y`, the floor-camera law) 5 mm under the
+LOWEST authored deck, yaw 0 so the ratified bore yaw and the cross-lane
+shadow bars stay as reviewed; rows re-derived, and every `dress` mesh's
+live group box swept against the corridor, by
+`tests/unit/garden-levels.test.ts`). The geometry economy is the
+bathroom's verbatim (same ramps, same `KITCHEN_GAP`, same sweep seating),
+so the garden clocks ARE the bathroom clocks — stated openly, with the
+lessons, hazards and the sun regime as the new thing
+(`Sessions/2026-10-08 Stage 4 - garden ladder.md`).
 
 ## Pars
 
@@ -141,8 +166,10 @@ assertions run over EVERY authored level of the shipped ladders in
 `tests/unit/bedroom-levels.test.ts` ("ladders (kitchen + bedroom +
 bathroom) — tray ⊇ parBuild on EVERY authored level") — the rule covers
 the whole shipped ladder, kitchen rungs included; since the bathroom pass
-it spans THREE ladders and the bathroom's `drain`/`splash` alternates ride
-in the same roster (the bathroom hazard PROBES, like kitchen04's ground
+it spans FOUR ladders — kitchen, bedroom, bathroom, garden — and the
+bathroom's `drain`/`splash` alternates and the garden's `bore`/`wet
+shortcut` alternates ride
+in the same roster (the bathroom and garden hazard PROBES, like kitchen04's ground
 build, are NOT in the line roster — hazard replay, not tray-affordable
 routes).
 
@@ -159,14 +186,17 @@ routes).
   ground PROBE finishing, L04's whole-tray order sweep finishing — the
   Playtest G learnability gate — and L05's wrong allocations NOT
   finishing).
-- `getLevel` now resolves 15 ids once the level modules are imported (feel
-  rig, kitchen six, bedroom four, bathroom four); the kitchen files self-register via
-  `registerLevel` on import
+- `getLevel` now resolves 19 ids once the level modules are imported (feel
+  rig, kitchen six, bedroom four, bathroom four, garden four); the kitchen
+  files self-register via `registerLevel` on import
   (`feeltrack.level.ts`'s registry), the bedroom files do the same
-  (`registerBedroom` wraps it), and the bathroom files likewise
-  (`registerBathroom`). `src/boot.ts` imports every rung (the
+  (`registerBedroom` wraps it), the bathroom files likewise
+  (`registerBathroom`), and the garden files likewise (`registerGarden`).
+  `src/boot.ts` imports every rung (the
   kitchen wiring since stage 2, the bedroom wiring added at the stage-4
-  ladder pass, the bathroom wiring at the stage-4 bathroom pass — a file outside the level designer's lane, touched only to
+  ladder pass, the bathroom wiring at the stage-4 bathroom pass, the garden
+  wiring at the stage-4 garden pass — a file outside the level designer's
+  lane, touched only to
   register and extend the `void [...]` list; `LADDER` itself is the
   campaign table).
 - Nothing on this rung-blocking blocks stage 3 integration; the blocked

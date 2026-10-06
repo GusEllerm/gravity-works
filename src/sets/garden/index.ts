@@ -36,6 +36,7 @@
  */
 
 import * as THREE_NS from 'three'
+import { PROP_CALLOUTS } from '../../ui/callouts.ts'
 import { ceramic, dieCastPaint, fabric, paintedWood, trackPlastic } from '../../render/materials.ts'
 import { toyBlock } from '../../render/geometry.ts'
 import { applyKeyLight, fillFromRig } from '../../render/lighting.ts'
@@ -67,6 +68,17 @@ import {
 } from './data.ts'
 
 export * from './data.ts'
+
+// The garden's prop callouts, registered the way `src/ui/callouts.ts`
+// documents (added by the garden LADDER pass, the bathroom pass's precedent
+// for `prop:wetPatch`). Rung 01's whole lesson is the CAMERA reading the
+// trellis bars teach — the ratified set's own law is that a shadow is
+// read-only rhythm (`HAZARDS` ships empty) — and rung 03's is the
+// sprinkler's sprawl, the garden's variant of the wet patch (a timed head
+// is a hazard-KIND ask, stated in the ladder's session log; the always-wet
+// sprawl is what the solver runs). One line each, on the record.
+PROP_CALLOUTS['prop:shadowBars'] = "Cool strips are the sun's shadow — same stone, same grip. Read them, never fear them."
+PROP_CALLOUTS['prop:sprinkler'] = "Sprinkler spray halves grip, not speed — the dry line still wins."
 
 export interface GardenSetOptions {
   tokens?: SetTokens

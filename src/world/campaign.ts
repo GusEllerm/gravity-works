@@ -41,6 +41,10 @@ import { BATHROOM01_ID } from './levels/bathroom01.level.ts';
 import { BATHROOM02_ID } from './levels/bathroom02.level.ts';
 import { BATHROOM03_ID } from './levels/bathroom03.level.ts';
 import { BATHROOM04_ID } from './levels/bathroom04.level.ts';
+import { GARDEN01_ID } from './levels/garden01.level.ts';
+import { GARDEN02_ID } from './levels/garden02.level.ts';
+import { GARDEN03_ID } from './levels/garden03.level.ts';
+import { GARDEN04_ID } from './levels/garden04.level.ts';
 
 /** One room of the campaign: an ordered run of rung ids under a heading. */
 export interface CampaignRoom {
@@ -67,6 +71,11 @@ export const CAMPAIGN: readonly CampaignRoom[] = [
     id: 'bathroom',
     label: 'Bathroom',
     levelIds: [BATHROOM01_ID, BATHROOM02_ID, BATHROOM03_ID, BATHROOM04_ID],
+  },
+  {
+    id: 'garden',
+    label: 'Garden',
+    levelIds: [GARDEN01_ID, GARDEN02_ID, GARDEN03_ID, GARDEN04_ID],
   },
 ];
 

@@ -17,7 +17,7 @@ tags: [module, camera]
 `{ solids }` list of world-space AABBs (`RunCameraSolid`, the set's prop
 boxes at leaf granularity — `setCameraSolids` in `src/boot.ts`, fed by
 whichever set the level MOUNTS through the registry walk — a new set needs
-no camera-code edit, which is how the stage-4 bathroom dresses ride the
+no camera-code edit, which is how the stage-4 bathroom and garden dresses ride the
 same clearing), and the
 tuning object `RUN_CAMERA`: `LEAD_TIME` 0.4 s (how far AHEAD the AIM looks,
 as the speed-scaled look-ahead `speed · LEAD_TIME`, sweep-clamped by

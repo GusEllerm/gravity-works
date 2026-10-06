@@ -30,8 +30,8 @@ const P = (over: Partial<SaveProgress> = {}): SaveProgress => ({
 });
 
 describe('campaign table', () => {
-  test('the ladder is the rooms concatenated: kitchen01..05, bedroom01..04, then bathroom01..04', () => {
-    expect(CAMPAIGN.map((r) => r.id)).toEqual(['kitchen', 'bedroom', 'bathroom']);
+  test('the ladder is the rooms concatenated: kitchen01..05, bedroom01..04, bathroom01..04, then garden01..04', () => {
+    expect(CAMPAIGN.map((r) => r.id)).toEqual(['kitchen', 'bedroom', 'bathroom', 'garden']);
     expect(CAMPAIGN_LADDER).toEqual([
       'kitchen01',
       'kitchen02',
@@ -46,21 +46,28 @@ describe('campaign table', () => {
       'bathroom02',
       'bathroom03',
       'bathroom04',
+      'garden01',
+      'garden02',
+      'garden03',
+      'garden04',
     ]);
     expect(CAMPAIGN.flatMap((r) => [...r.levelIds])).toEqual([...CAMPAIGN_LADDER]);
   });
 
-  test('the boundary is a normal step: next after kitchen05 is bedroom01, none after bathroom04', () => {
+  test('the boundary is a normal step: next after kitchen05 is bedroom01, none after garden04', () => {
     expect(nextInCampaign('kitchen05')).toBe('bedroom01');
     expect(previousInCampaign('bedroom01')).toBe('kitchen05');
     expect(nextInCampaign('bedroom04')).toBe('bathroom01'); // the bedroom era hands off to the bathroom
     expect(previousInCampaign('bathroom01')).toBe('bedroom04');
-    expect(nextInCampaign('bathroom04')).toBeNull();
+    expect(nextInCampaign('bathroom04')).toBe('garden01'); // the bathroom era hands off to the garden
+    expect(previousInCampaign('garden01')).toBe('bathroom04');
+    expect(nextInCampaign('garden04')).toBeNull();
     expect(previousInCampaign('kitchen01')).toBeNull();
     expect(nextInCampaign('feeltrack')).toBeNull();
     expect(campaignIndex('kitchen-sandbox')).toBe(-1);
     expect(campaignRoomOf('bedroom03')!.id).toBe('bedroom');
     expect(campaignRoomOf('bathroom03')!.id).toBe('bathroom');
+    expect(campaignRoomOf('garden01')!.id).toBe('garden');
     expect(campaignRoomOf('feeltrack')).toBeNull();
   });
 });
@@ -116,6 +123,9 @@ describe('levelUnlock — the rule surfaces share', () => {
     // star-gated the same way (the rule is ONE rule, not a per-room rule)
     expect(levelUnlock(save.progress, 'bathroom01').unlocked).toBe(false);
     expect(levelUnlock(save.progress, 'bathroom01').requires).toBe('bedroom04');
+    // and neither does the garden: the rule is ONE rule, not a per-room rule
+    expect(levelUnlock(save.progress, 'garden01').unlocked).toBe(false);
+    expect(levelUnlock(save.progress, 'garden01').requires).toBe('bathroom04');
   });
 
   test('off-campaign ids are outside the rule (debug addressing is recorded elsewhere)', () => {

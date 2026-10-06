@@ -45,6 +45,26 @@
     "parTime": 3.05
   },
   {
+    "levelId": "garden01",
+    "parPieces": 3,
+    "parTime": 2.25
+  },
+  {
+    "levelId": "garden02",
+    "parPieces": 3,
+    "parTime": 2.35
+  },
+  {
+    "levelId": "garden03",
+    "parPieces": 4,
+    "parTime": 2.7
+  },
+  {
+    "levelId": "garden04",
+    "parPieces": 4,
+    "parTime": 2.7
+  },
+  {
     "levelId": "kitchen-sandbox",
     "parPieces": 5,
     "parTime": 2.7

@@ -33,6 +33,10 @@ import { BATHROOM01 } from '../../src/world/levels/bathroom01.level.ts';
 import { BATHROOM02, bathroom02DrainBuild } from '../../src/world/levels/bathroom02.level.ts';
 import { BATHROOM03, bathroom03SplashBuild } from '../../src/world/levels/bathroom03.level.ts';
 import { BATHROOM04 } from '../../src/world/levels/bathroom04.level.ts';
+import { GARDEN01 } from '../../src/world/levels/garden01.level.ts';
+import { GARDEN02, garden02BoreBuild } from '../../src/world/levels/garden02.level.ts';
+import { GARDEN03, garden03SprinklerBuild } from '../../src/world/levels/garden03.level.ts';
+import { GARDEN04 } from '../../src/world/levels/garden04.level.ts';
 import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
 import { PARS } from '../../src/world/stars.ts';
 import { PIECES, type PieceKind } from '../../src/track/pieces.ts';
@@ -143,11 +147,12 @@ describe('bedroom ladder — level contracts', () => {
   });
 });
 
-describe('ladders (kitchen + bedroom + bathroom) — tray ⊇ parBuild on EVERY authored level', () => {
-  /** Every line ALL THREE ladders author, in the level files' own data. */
+describe('ladders (kitchen + bedroom + bathroom + garden) — tray ⊇ parBuild on EVERY authored level', () => {
+  /** Every line ALL FOUR ladders author, in the level files' own data. */
   const BATHROOM_LADDER: readonly Rung[] = [BATHROOM01, BATHROOM02, BATHROOM03, BATHROOM04];
+  const GARDEN_LADDER: readonly Rung[] = [GARDEN01, GARDEN02, GARDEN03, GARDEN04];
   const LINES: readonly { level: Rung; label: string; build: Build }[] = [
-    ...[...KITCHEN_LADDER, ...LADDER, ...BATHROOM_LADDER].map((level) => ({
+    ...[...KITCHEN_LADDER, ...LADDER, ...BATHROOM_LADDER, ...GARDEN_LADDER].map((level) => ({
       level,
       label: 'par build',
       build: level.parBuild(),
@@ -157,6 +162,8 @@ describe('ladders (kitchen + bedroom + bathroom) — tray ⊇ parBuild on EVERY 
     { level: BEDROOM03, label: 'soft catch line', build: bedroom03SoftBuild() },
     { level: BATHROOM02, label: 'drain line', build: bathroom02DrainBuild() },
     { level: BATHROOM03, label: 'splash line', build: bathroom03SplashBuild() },
+    { level: GARDEN02, label: 'bore line', build: garden02BoreBuild() },
+    { level: GARDEN03, label: 'wet shortcut', build: garden03SprinklerBuild() },
   ];
 
   function multiset(pieces: Build['pieces']): Map<PieceKind, number> {

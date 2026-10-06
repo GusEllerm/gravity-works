@@ -62,6 +62,10 @@ await import('../src/world/levels/bathroom01.level.ts');
 await import('../src/world/levels/bathroom02.level.ts');
 await import('../src/world/levels/bathroom03.level.ts');
 await import('../src/world/levels/bathroom04.level.ts');
+await import('../src/world/levels/garden01.level.ts');
+await import('../src/world/levels/garden02.level.ts');
+await import('../src/world/levels/garden03.level.ts');
+await import('../src/world/levels/garden04.level.ts');
 const { LEVELS } = await import('../src/world/levels/feeltrack.level.ts');
 const { replayRun } = await import('../src/replay/replay.ts');
 
