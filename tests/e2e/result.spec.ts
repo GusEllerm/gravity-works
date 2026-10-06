@@ -15,6 +15,10 @@ import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts'
  *    unlocked pieces, and the shared mini-harness canvas renders non-black
  *    track geometry (orange pixels in a warm-paper field), proving the
  *    scissor-per-cell renders actually draw.
+ * 3. Playtest J (2026-10-08), at the viewport that FAILED (~960x540): the
+ *    panel is viewport-safe — Retry AND Next both sit inside the window
+ *    with nothing scrolled — and a re-run of an already-starred level
+ *    verdicts the par (`beat par ✓ / over par`) instead of aiming at it.
  */
 
 test('finishing the feel track shows the result panel with stars and time', async ({ page }) => {
@@ -45,6 +49,79 @@ test('finishing the feel track shows the result panel with stars and time', asyn
   expect(FEELTRACK.par.pieces).toBe(FEEL_TRACK_KINDS.length)
 
   expect(errors).toEqual([])
+})
+
+test.describe('the panel at 960x540 (playtest J: the Next button was cut off)', () => {
+  test.use({ viewport: { width: 960, height: 540 } })
+
+  test('the panel is viewport-safe: Retry AND Next are both inside the window without scrolling', async ({ page }) => {
+    const errors: string[] = []
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') errors.push(msg.text())
+    })
+    page.on('pageerror', (err) => errors.push(String(err)))
+
+    // the BOTH-BUTTONS case: kitchen01's par build finishes with a star and
+    // the ladder has a next rung, so the panel shows Retry AND Next level
+    await page.goto('/?level=kitchen01&build=par&launch=1')
+    await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
+    await expect(page.locator('#gw-result-stars')).toContainText('★')
+    await expect(page.locator('#gw-result-retry')).toBeVisible()
+    await expect(page.locator('#gw-result-next')).toBeVisible()
+
+    // "without scrolling": the page never had to move — nothing was
+    // scrolled by anyone, and the panel's own scrollback is unused — and
+    // every part of the button row sits fully inside the 960x540 window
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+    expect(await page.evaluate(() => {
+      const p = document.querySelector('#gw-result')!
+      return p.scrollHeight <= p.clientHeight && p.scrollTop === 0
+    })).toBe(true)
+    for (const sel of ['#gw-result', '#gw-result-retry', '#gw-result-next']) {
+      const box = await page.locator(sel).boundingBox()
+      expect(box).not.toBeNull()
+      expect(box!.y).toBeGreaterThanOrEqual(0)
+      expect(box!.y + box!.height).toBeLessThanOrEqual(540)
+      expect(box!.x).toBeGreaterThanOrEqual(0)
+      expect(box!.x + box!.width).toBeLessThanOrEqual(960)
+    }
+
+    expect(errors).toEqual([])
+  })
+
+  test('a re-run of an already-starred level leads with its own numbers and verdicts the par', async ({ page }) => {
+    const errors: string[] = []
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') errors.push(msg.text())
+    })
+    page.on('pageerror', (err) => errors.push(String(err)))
+
+    // FIRST finish (nothing earned yet): the par is the genuine target —
+    // the target lines with their per-line marks ride the panel
+    await page.goto('/?level=feeltrack&build=par&launch=1')
+    await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
+    await expect(page.locator('#gw-result-pieces')).toHaveText(
+      new RegExp(`^${FEEL_TRACK_KINDS.length} pieces — par ${FEELTRACK.par.pieces} ✓$`),
+    )
+
+    // RE-run the SAME build (Retry returns it as-built, Launch plays it):
+    // the star is already in the save, so the panel leads with the run's
+    // own numbers and the par reads as a clean verdict, not a target
+    await page.click('#gw-result-retry')
+    await expect(page.locator('#gw-status')).toContainText('ready')
+    await page.click('#gw-launch')
+    await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
+    await expect(page.locator('#gw-result-pieces')).toHaveText(
+      new RegExp(`^${FEEL_TRACK_KINDS.length} pieces — beat par ✓ \\(par ${FEELTRACK.par.pieces}\\)$`),
+    )
+    await expect(page.locator('#gw-result-time')).toHaveText(
+      /^\d+\.\d{2} s — beat par ✓ \(par [\d.]+ s\)$/,
+    )
+    // the stale TARGET phrasing is gone on the replay
+    await expect(page.locator('#gw-result-pieces')).not.toContainText('pieces — par')
+
+    expect(errors).toEqual([])
+  })
 })
 
 test('the help drawer lists the unlocked pieces and its renders are not black', async ({ page }) => {

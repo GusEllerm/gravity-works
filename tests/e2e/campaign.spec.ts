@@ -109,6 +109,18 @@ test('bedroom01 is locked until kitchen05 earns a star, and the locked button sa
   await expect(page.locator('#gw-level-kitchen01')).toBeVisible()
   expect(await page.getAttribute('#gw-level-kitchen01', 'aria-disabled')).toBeNull()
   await expect(page.locator('#gw-level-bedroom01')).toHaveAttribute('aria-disabled', 'true')
+
+  // playtest K ("taught nothing about what's unlocked or why"): the rule is
+  // INLINE in every locked button, not only on the page line or a click —
+  // and a locked rung never shows ☆☆☆ (that readout belongs to unlocked
+  // rungs; playtest K read plain-text ☆☆☆ as "merely unstarred")
+  await expect(page.locator('#gw-level-kitchen02')).toContainText('Earn a star on Book Drop to open this')
+  await expect(page.locator('#gw-level-bedroom01')).toContainText('Earn a star on Sunday Run to open this')
+  expect(((await page.textContent('#gw-level-bedroom01')) ?? '').includes('☆')).toBe(false)
+  // at a glance the three states differ: locked = lock glyph + rule; open
+  // and unplayed = ☆☆☆ (kitchen01, first rung, nothing earned yet)
+  await expect(page.locator('#gw-level-kitchen01')).toContainText('☆☆☆')
+
   // the locked button is aria-disabled (greyed, honest) but FOCUSABLE and
   // ANSWERS a click — dispatched past the disabled-actionability wait
   await page.locator('#gw-level-bedroom01').dispatchEvent('click')
@@ -118,6 +130,9 @@ test('bedroom01 is locked until kitchen05 earns a star, and the locked button sa
   expect(page.url()).toContain('levels=1') // a locked rung never navigates
 
   // earn the star for real, then the frontier opens — with the ★ tally shown
+  // (kitchen05 itself got its star through the ?level= doctrine while still
+  // gated behind kitchen04: an EARNED star stays visible even on a locked
+  // rung — hiding a real trophy is as big a lie as a fake ☆)
   await finishKitchen05(page)
   await page.goto('/?levels=1')
   expect(await page.getAttribute('#gw-level-bedroom01', 'aria-disabled')).toBeNull()

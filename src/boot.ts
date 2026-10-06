@@ -650,7 +650,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         piecesUsed: builder.playerCount(),
         hazardsTouched,
       };
-      const model = resultModel(result, parFor(level.id, level.par), recorder.evidence());
+      // Replay honesty (playtest J): the star the save ALREADY held before
+      // this run decides whether the par lines aim or verdict — read HERE,
+      // before recordStars below writes this run's best, so a re-run in the
+      // same session counts as one (see outcomeLines in src/ui/result.ts).
+      const bestStarsBefore = loadSave().progress.stars[level.id] ?? 0;
+      const model = resultModel(result, parFor(level.id, level.par), recorder.evidence(), bestStarsBefore);
       resultPanel.show(model);
       // §9.2 progress persists: a finished run's stars are the save's best
       // for this level (a failure records nothing); this is what opens the

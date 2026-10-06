@@ -31,7 +31,49 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
 #gw-tray-hint[hidden] { display: none; }
 #gw-tray-reason { font-size: 12px; color: #6a5636; margin: 2px 0 4px; }
 #gw-help-list { background: #fff8ec; border: 1px solid #d8c49a; border-radius: 6px; padding: 8px; }
-#gw-result { background: #fff8ec; border: 1px solid #d8c49a; border-radius: 6px; padding: 10px 14px; }
+/* THE END-OF-RUN PANEL over the world (see src/ui/result.ts). Playtest J:
+ * at ~960x540 the panel outran the fold and the Next button was cut off —
+ * the panel is viewport-safe now: never taller than the stage box or the
+ * window (internal scroll is only the backstop), and at short viewports the
+ * layout goes COMPACT so both buttons sit inside the window with nothing
+ * scrolled (asserted at 960x540 in tests/e2e/result.spec.ts). The panel's
+ * styles live here, not inline, so the media query can actually win. */
+#gw-result {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 12px;
+  background: rgba(62, 46, 32, 0.88);
+  color: #fdf2e0;
+  font: 14px/1.4 system-ui, sans-serif;
+  max-width: 380px;
+  max-height: min(calc(100% - 16px), calc(100vh - 16px));
+  overflow-y: auto;
+}
+#gw-result-stars, #gw-result-time, #gw-result-pieces { margin: 0; }
+#gw-result-stars { font-size: 20px; letter-spacing: 2px; }
+#gw-result-rules { margin: 2px 0 0; font-size: 11px; opacity: 0.85; }
+#gw-result-note { margin: 4px 0 0; font-style: italic; }
+#gw-result-buttons { display: flex; gap: 6px; margin-top: 6px; }
+#gw-result-buttons button {
+  font: inherit; font-size: 13px; padding: 4px 10px; border-radius: 4px;
+  border: 1px solid #fdf2e0; background: transparent; color: #fdf2e0; cursor: pointer;
+}
+@media (max-height: 620px) {
+  #gw-result { padding: 5px 9px; font-size: 12px; }
+  #gw-result-stars { font-size: 15px; }
+  #gw-result-rules { font-size: 10px; }
+  #gw-result-buttons { margin-top: 4px; }
+  #gw-result-buttons button { font-size: 11px; padding: 3px 8px; }
+}
+/* THE LEVEL SELECT (playtest K: locked rungs "taught nothing about what's
+ * unlocked or why", and in plain-text view a locked ☆☆☆ read as merely
+ * unstarred). A locked rung carries a lock glyph and states its rule IN THE
+ * BUTTON, dimmed — locked, unlocked-unplayed (☆☆☆) and earned (★) differ
+ * at a glance. See src/ui/levelselect.ts. */
+.gw-levelselect button[aria-disabled='true'] { opacity: 0.55; }
+.gw-level-lockline { display: block; font-size: 11px; font-weight: 400; color: #6a5636; }
 /* the tray legend decrements (×N counts what is LEFT) — the label is set
  * from code; keep the spent buttons visually distinct without removing them
  * from the tab order (aria-disabled, not disabled) */

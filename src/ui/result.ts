@@ -226,10 +226,21 @@ export interface ResultModel {
    * tallies so the star rules are legible, not folklore (playtest B: "the
    * rules behind the stars are opaque"). */
   par: Par;
+  /** The best star count the save ALREADY held on this level before this
+   * run (playtest J: "N pieces — par M" is meaningless on a re-run of a
+   * level whose stars are earned — the par is no longer a target there).
+   * `>= 1` marks the run a replay; the shell reads it from the save BEFORE
+   * `recordStars` writes this run's best (see `Modules/ui`). */
+  bestStarsBefore: number;
 }
 
 /** Stars + note for one finished-or-not run: the panel's whole content. */
-export function resultModel(result: RunResult, par: Par, ev: RunEvidence): ResultModel {
+export function resultModel(
+  result: RunResult,
+  par: Par,
+  ev: RunEvidence,
+  bestStarsBefore = 0,
+): ResultModel {
   return {
     stars: starsFor(result, par),
     time: result.time,
@@ -237,22 +248,43 @@ export function resultModel(result: RunResult, par: Par, ev: RunEvidence): Resul
     note: physicsNote(result, ev),
     status: result.status,
     par,
+    bestStarsBefore,
   };
 }
+
+const STAR_RULES = 'Stars: finish the run · stay at or under par pieces · stay at or under par time';
 
 /**
  * The panel's three explanatory lines, pure (unit-tested): the piece tally
  * and the time against their par lines, and the static star rule. The ✓/✗
  * marks appear only on a finished run — an unfinished one has 0 stars by
  * rule 1 and the note already says why (the marks would be noise).
+ *
+ * REPLAY HONESTY (playtest J: "N pieces — par M" meaningless on a re-run of
+ * an already-starred level; playtest K: the numbers read half-true next to
+ * the run's own story). On a FINISHED run of a level whose stars are already
+ * earned, the par is not a target anymore — the lines lead with the run's
+ * own numbers and mark the par as a clean verdict, `beat par ✓` / `over par`
+ * (the par stays visible in parentheses: a verdict one cannot check is not
+ * honest). A FAILURE keeps the failure rules exactly as written — unmarked
+ * tallies plus the note, replay or not: on a failed run par is still the
+ * target the NEXT attempt aims at.
  */
 export function outcomeLines(model: ResultModel): { pieces: string; time: string; rules: string } {
   const finished = model.status === 'finished';
+  if (finished && model.bestStarsBefore >= 1) {
+    const verdict = (ok: boolean): string => (ok ? 'beat par ✓' : 'over par');
+    return {
+      pieces: `${model.piecesUsed} pieces — ${verdict(model.piecesUsed <= model.par.pieces)} (par ${model.par.pieces})`,
+      time: `${formatTime(model.time)} — ${verdict(model.time <= model.par.time)} (par ${formatTime(model.par.time)})`,
+      rules: STAR_RULES,
+    };
+  }
   const mark = (ok: boolean): string => (finished ? (ok ? ' ✓' : ' ✗') : '');
   return {
     pieces: `${model.piecesUsed} pieces — par ${model.par.pieces}${mark(model.piecesUsed <= model.par.pieces)}`,
     time: `${formatTime(model.time)} — par ${formatTime(model.par.time)}${mark(model.time <= model.par.time)}`,
-    rules: 'Stars: finish the run · stay at or under par pieces · stay at or under par time',
+    rules: STAR_RULES,
   };
 }
 
@@ -276,8 +308,10 @@ function panelButton(id: string, label: string, parent: HTMLElement): HTMLButton
   b.id = id;
   b.type = 'button';
   b.textContent = label;
-  b.style.cssText =
-    'font:inherit;font-size:13px;padding:4px 10px;border-radius:4px;border:1px solid #fdf2e0;background:transparent;color:#fdf2e0;cursor:pointer';
+  // no inline style: the panel's whole look lives in `src/ui/shell.css`,
+  // where a `@media (max-height: …)` rule can actually shrink it (inline
+  // styles outrank the stylesheet, and the playtest J viewport-safe pass
+  // needs the compact-at-small-heights override to win).
   parent.appendChild(b);
   return b;
 }
@@ -302,26 +336,24 @@ function makePanel(): {
   // scrolled into view on show — pinned to a stage corner, the panel landed
   // off-viewport whenever the reader had scrolled to look at the world
   // (the deployed-page "invisible result" finding, 3/3 playtesters).
-  root.style.cssText =
-    'position:absolute;top:8px;left:50%;transform:translateX(-50%);padding:8px 12px;background:rgba(62,46,32,0.88);color:#fdf2e0;font:14px/1.4 system-ui,sans-serif;max-width:380px';
+  // VIEWPORT-SAFE (playtest J: at ~960x540 the panel outran the fold and
+  // the Next button was cut off): every pixel of the panel is styled in
+  // `src/ui/shell.css`, which caps it with max-height + overflow (the
+  // scroll is a backstop) and switches to a compact layout at short
+  // viewports, so BOTH buttons sit inside the window WITHOUT scrolling —
+  // asserted at 960x540 in `tests/e2e/result.spec.ts`.
   const stars = document.createElement('p');
   stars.id = 'gw-result-stars';
-  stars.style.cssText = 'margin:0;font-size:20px;letter-spacing:2px';
   const time = document.createElement('p');
   time.id = 'gw-result-time';
-  time.style.cssText = 'margin:0';
   const pieces = document.createElement('p');
   pieces.id = 'gw-result-pieces';
-  pieces.style.cssText = 'margin:0';
   const rules = document.createElement('p');
   rules.id = 'gw-result-rules';
-  rules.style.cssText = 'margin:2px 0 0;font-size:11px;opacity:0.85';
   const note = document.createElement('p');
   note.id = 'gw-result-note';
-  note.style.cssText = 'margin:4px 0 0;font-style:italic';
   const buttons = document.createElement('div');
   buttons.id = 'gw-result-buttons';
-  buttons.style.cssText = 'display:flex;gap:6px;margin-top:6px';
   const retry = panelButton('gw-result-retry', 'Retry', buttons);
   retry.setAttribute('aria-label', 'Retry this build from the start');
   const next = panelButton('gw-result-next', 'Next level', buttons);

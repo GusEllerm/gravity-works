@@ -13,7 +13,7 @@ sig = "6c241c0777449045"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/boot.ts"
-sig = "2ecf7e4b5184cb16"
+sig = "a5f9887ad551f925"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -138,7 +138,7 @@ sig = "cb7dd5d5414784c4"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/boot.ts"
-sig = "2ecf7e4b5184cb16"
+sig = "a5f9887ad551f925"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -403,7 +403,7 @@ sig = "0f065f90d47289b6"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "src/boot.ts"
-sig = "2ecf7e4b5184cb16"
+sig = "a5f9887ad551f925"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -433,7 +433,7 @@ sig = "c55f143b9eaa05bc"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "src/boot.ts"
-sig = "2ecf7e4b5184cb16"
+sig = "a5f9887ad551f925"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
@@ -468,7 +468,7 @@ sig = "6c241c0777449045"
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/boot.ts"
-sig = "2ecf7e4b5184cb16"
+sig = "a5f9887ad551f925"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
@@ -518,7 +518,7 @@ sig = "30af55b32a0f0f22"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/boot.ts"
-sig = "2ecf7e4b5184cb16"
+sig = "a5f9887ad551f925"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -603,7 +603,7 @@ sig = "6c241c0777449045"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/boot.ts"
-sig = "2ecf7e4b5184cb16"
+sig = "a5f9887ad551f925"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -638,17 +638,17 @@ sig = "a096d1258217ce9a"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/ui/levelselect.ts"
-sig = "32ecdc68a7398ec4"
+sig = "6870f5d3fc47013a"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/ui/result.ts"
-sig = "12618348ff8333c9"
+sig = "fc86186bcce6bb83"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/ui/shell.css"
-sig = "9f299240a05b8237"
+sig = "827f5d478ee0bbca"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -673,7 +673,7 @@ sig = "dd5b2e35197671a3"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/campaign.spec.ts"
-sig = "bede3c6b18a155af"
+sig = "8b404d7be43dfedd"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -683,7 +683,7 @@ sig = "a7f4276e784a1474"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/result.spec.ts"
-sig = "5b34c91454d2dbdb"
+sig = "1a9df7373b0a5782"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -708,7 +708,7 @@ sig = "4c5881d646c56a21"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/boot.ts"
-sig = "2ecf7e4b5184cb16"
+sig = "a5f9887ad551f925"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -743,17 +743,17 @@ sig = "a096d1258217ce9a"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/levelselect.ts"
-sig = "32ecdc68a7398ec4"
+sig = "6870f5d3fc47013a"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/result.ts"
-sig = "12618348ff8333c9"
+sig = "fc86186bcce6bb83"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/shell.css"
-sig = "9f299240a05b8237"
+sig = "827f5d478ee0bbca"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -768,7 +768,7 @@ sig = "dd5b2e35197671a3"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/campaign.spec.ts"
-sig = "bede3c6b18a155af"
+sig = "8b404d7be43dfedd"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -778,7 +778,7 @@ sig = "a7f4276e784a1474"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/result.spec.ts"
-sig = "5b34c91454d2dbdb"
+sig = "1a9df7373b0a5782"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -808,7 +808,7 @@ sig = "4c5881d646c56a21"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/result.test.ts"
-sig = "315d9e31da4d0d73"
+sig = "9ec2585b0b6af23f"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -833,7 +833,7 @@ sig = "6c241c0777449045"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/boot.ts"
-sig = "2ecf7e4b5184cb16"
+sig = "a5f9887ad551f925"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -953,7 +953,7 @@ sig = "6c241c0777449045"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/boot.ts"
-sig = "2ecf7e4b5184cb16"
+sig = "a5f9887ad551f925"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
