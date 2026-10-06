@@ -64,7 +64,12 @@ const LADDER: readonly KitchenLevel[] = [KITCHEN01, KITCHEN02, KITCHEN03, KITCHE
  *  `2026-10-05 Stage 3 - ladder coherence`. */
 const PINNED: Record<string, string> = {
   kitchen01: 'd32417dc',
-  kitchen02: '8e06206a',
+  // kitchen02 re-pinned at the stage-4 L02 DISCOVERABILITY pass: the tray is
+  // now the two lines' union (0.09 m straights, L02-local lip/drop geometry,
+  // shorter gap), so its par replay legitimately moved. `kitchen01`/`04`/`05`
+  // are untouched controls. See the session log
+  // `2026-10-08 Stage 4 - L02 discoverability`.
+  kitchen02: '276f101d',
   kitchen03: '25e3e828',
   kitchen04: 'c6a63a80',
   kitchen05: '1d8d1713',
