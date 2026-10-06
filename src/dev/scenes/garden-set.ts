@@ -24,7 +24,7 @@ import { dieCastPaint, fabric, trackPlastic } from '../../render/materials.ts'
 import { toyBlock, trackChannel } from '../../render/geometry.ts'
 import { GLOBAL_TOKENS, SET_TOKENS, clampLightness } from '../../render/tokens.ts'
 import { applyKeyLight, createLightingRig } from '../../render/lighting.ts'
-import { buildGardenSet, SKY, SKY_INFLUENCE, STAGING, SUN, FILL_STRENGTH } from '../../sets/garden/index.ts'
+import { buildGardenSet, SKY, SKY_FILL_MIX, SKY_FILL_SHADE, SKY_INFLUENCE, STAGING, SUN, FILL_SHADE_DEPTH, FILL_STRENGTH } from '../../sets/garden/index.ts'
 import { registerScene, type SceneEntry, type SceneFactory } from '../registry.ts'
 
 const tokens = SET_TOKENS.garden
@@ -38,6 +38,9 @@ const rig = createLightingRig(tokens, {
   keyColor: SUN.color,
   sky: SKY,
   skyInfluence: SKY_INFLUENCE,
+  skyFillMix: SKY_FILL_MIX,
+  skyFillShade: SKY_FILL_SHADE,
+  fillShadeDepth: FILL_SHADE_DEPTH,
   accentMix: 0.22,
   fillStrength: FILL_STRENGTH,
   shadowRadius: SUN.shadowRadius,
@@ -62,7 +65,7 @@ const TYRE_BROWN = clampLightness('#4A3527')
  *  exploration's palette call, nothing in the orange family). */
 function car(hex: string): THREE.Group {
   const g = new THREE.Group()
-  const fill = { fillHigh: rig.fillHigh, fillLow: rig.fillLow, shadowTint: rig.shadowTint, fillStrength: rig.fillStrength }
+  const fill = { fillHigh: rig.fillHigh, fillLow: rig.fillLow, shadowTint: rig.shadowTint, fillStrength: rig.fillStrength, fillShadeDepth: rig.fillShadeDepth }
   const body = new THREE.Mesh(toyBlock(0.075, 0.028, 0.034, 0.01, 0.004), dieCastPaint(tokens, hex, { ...fill, toy: 0.4 }))
   props(body)
   g.add(body)
@@ -112,6 +115,7 @@ function gardenSetScene(): SceneFactory {
       fillLow: rig.fillLow,
       shadowTint: rig.shadowTint,
       fillStrength: rig.fillStrength,
+      fillShadeDepth: rig.fillShadeDepth,
       toy: 0.2,
     })
     const run = new THREE.Mesh(trackChannel(RUN_A.distanceTo(RUN_B) - 0.008), runMat)

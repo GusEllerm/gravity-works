@@ -348,7 +348,7 @@ sig = "0e4e78212a50e506"
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
 target = "src/render/lighting.ts"
-sig = "0f44d434a7edb272"
+sig = "492743f87f45cb80"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
@@ -358,12 +358,12 @@ sig = "608391146d0569b3"
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
 target = "src/render/tokens.ts"
-sig = "23049e685bb54f7b"
+sig = "0abdb9a10e2cf1ec"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
 target = "src/render/toon-material.ts"
-sig = "a7c10e602814a4ab"
+sig = "fb99a3c4beafa1af"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
@@ -518,7 +518,7 @@ sig = "0a888ace48655987"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/render/toon-material.ts"
-sig = "a7c10e602814a4ab"
+sig = "fb99a3c4beafa1af"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -539,6 +539,16 @@ sig = "7dddd37e7adaea37"
 doc = "docs/vault/Modules/sets.md"
 target = "src/sets/bedroom/index.ts"
 sig = "f619bf84287798df"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets.md"
+target = "src/sets/garden/data.ts"
+sig = "85fea3da970c0e69"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets.md"
+target = "src/sets/garden/index.ts"
+sig = "647700481f2962a4"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"

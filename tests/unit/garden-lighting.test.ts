@@ -21,13 +21,18 @@
  */
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { createLightingRig, applyKeyLight } from '../../src/render/lighting.ts';
+import { createLightingRig, applyKeyLight, fillFromRig } from '../../src/render/lighting.ts';
 import { ToonMaterial } from '../../src/render/toon-material.ts';
-import { GLOBAL_TOKENS, SET_TOKENS, hexToRgb, lighten, mixHex } from '../../src/render/tokens.ts';
+import { GLOBAL_TOKENS, SET_TOKENS, hexToRgb, lighten, mixHex, shiftHex } from '../../src/render/tokens.ts';
 import {
   DECK,
+  FILL_SHADE_DEPTH,
+  FILL_STRENGTH,
   PIPE_SOCKET_FRAMES,
   SKY,
+  SKY_FILL_MIX,
+  SKY_FILL_SHADE,
+  STONE_FILL_SCALE,
   SUN,
   buildGardenSet,
   insideDeck,
@@ -106,6 +111,76 @@ describe('garden lighting gate 2: the sun regime tints shade sky-side', () => {
     expect(src).toContain('gPunctualLight = false');
     expect(src).toContain('gPunctualLight = true');
     expect(src).toContain('if ( gPunctualLight ) effective = directLight.color;');
+  });
+});
+
+describe('garden round 1: the fill-gain knobs are opt-in and default-inert', () => {
+  // Round 1 added three rig dials (skyFillMix, skyFillShade, fillShadeDepth)
+  // and one material parameter (fillShadeDepth -> uFillShadeDepth). Every
+  // default must be the pre-round-1 number, INDOOR AND OUTDOOR: this is the
+  // unit half of the kitchen/bedroom/bathroom byte-identity gate (the visual
+  // baselines are the pixel half).
+  it('defaults reproduce the first production renders exactly, sky included', () => {
+    const tokens = SET_TOKENS.garden;
+    const base = lighten(mixHex(tokens.fillHigh, tokens.accent, 0.22), 0.12);
+    const rig = createLightingRig(tokens, {
+      accentMix: 0.22,
+      sky: SKY,
+      skyInfluence: 0.6,
+      fillStrength: FILL_STRENGTH,
+    });
+    // the 0.55 flat-sky mix the round-0 production frames shipped
+    expect(rig.fillHigh).toBe(mixHex(base, SKY, 0.55));
+    expect(rig.fillShadeDepth).toBe(1); // fill behaves exactly as before
+    rig.key.dispose();
+  });
+
+  it('the set keeps the sky-fill MIX/SHADE defaults and spends only depth', () => {
+    // the sweep that preceded this commit proved mix and shade cannot hit
+    // the floor-camera ask without dragging every frame's median; the set
+    // therefore ships the flat sky (mix 0.55, shade 0) and a shade DEPTH.
+    expect(SKY_FILL_MIX).toBe(0.55);
+    expect(SKY_FILL_SHADE).toBe(0);
+    expect(FILL_SHADE_DEPTH).toBeGreaterThan(0);
+    expect(FILL_SHADE_DEPTH).toBeLessThan(1);
+    expect(STONE_FILL_SCALE).toBeGreaterThan(0);
+    expect(STONE_FILL_SCALE).toBeLessThanOrEqual(1);
+    expect(FILL_STRENGTH).toBe(0.3); // the global gain did NOT move
+  });
+
+  it('skyFillMix / skyFillShade only exist in the outdoor branch', () => {
+    const tokens = SET_TOKENS.garden;
+    const indoor = createLightingRig(tokens, { accentMix: 0.22, skyFillMix: 0.4, skyFillShade: 0.35 });
+    // indoors the sky branch never runs: the dials are inert, bands unchanged
+    expect(indoor.fillHigh).toBe(lighten(mixHex(tokens.fillHigh, tokens.accent, 0.22), 0.12));
+    indoor.key.dispose();
+    const base = lighten(mixHex(tokens.fillHigh, tokens.accent, 0.22), 0.12);
+    const mix = createLightingRig(tokens, { accentMix: 0.22, sky: SKY, skyFillMix: 0.4 });
+    expect(mix.fillHigh).toBe(mixHex(base, SKY, 0.4));
+    mix.key.dispose();
+    const shade = createLightingRig(tokens, { accentMix: 0.22, sky: SKY, skyFillShade: 0.35 });
+    expect(shade.fillHigh).toBe(mixHex(base, shiftHex(SKY, 0, 0.15, -0.35), 0.55));
+    // deepened, not rotated: the hue still LEANS sky (b above r) like the flat mix
+    const [sr, , sb] = rgbSpread(shade.fillHigh);
+    expect(sb).toBeGreaterThan(sr);
+    shade.key.dispose();
+  });
+
+  it('fillShadeDepth reaches the shader, defaults to an exact 1, gates punctual', () => {
+    const mat = new ToonMaterial();
+    expect(mat.uniforms.uFillShadeDepth!.value).toBe(1);
+    const src = String(mat.fragmentShader);
+    // lit fragments multiply by an EXACT 1 (mix(1, depth, 1-1) = 1) — the
+    // indoor/outdoor split the kitchen baselines gate
+    expect(src).toContain('gFillShade = mix( gFillShade, uFillShadeDepth, 1.0 - att )');
+    // directional-only: the punctual pass never writes the factor
+    expect(src).toContain('if ( ! gPunctualLight ) gFillShade');
+    expect(src).toContain('* uFillStrength * gFillShade;');
+    const rig = createLightingRig(SET_TOKENS.garden, { sky: SKY, fillShadeDepth: 0.6 });
+    expect(rig.fillShadeDepth).toBe(0.6);
+    expect(fillFromRig(rig).fillShadeDepth).toBe(0.6);
+    rig.key.dispose();
+    mat.dispose();
   });
 });
 

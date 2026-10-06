@@ -53,6 +53,7 @@ import {
   JOINT_MOSS,
   LAWN,
   PATIO,
+  STONE_FILL_SCALE,
   PETAL,
   PIPE,
   PIPE_SOCKET_FRAMES,
@@ -103,7 +104,11 @@ function makeRng(seed: number): () => number {
 
 export function buildGardenSet(T = THREE_NS, opts: GardenSetOptions = {}): GardenSet {
   const tokens = opts.tokens ?? SET_TOKENS.garden
-  const fill = opts.rig ? fillFromRig(opts.rig) : { fillHigh: tokens.fillHigh, fillLow: tokens.fillLow, shadowTint: tokens.shadowTint }
+  const fill = opts.rig
+    ? fillFromRig(opts.rig)
+    // no rig (levels, not renders): the rig-less bag carries NO gain, so
+    // every material rides the shader's 0.25 constant exactly as before.
+    : { fillHigh: tokens.fillHigh, fillLow: tokens.fillLow, shadowTint: tokens.shadowTint, fillStrength: undefined }
   const fillOver = () => ({ ...fill })
 
   function props(mesh: THREE_NS.Object3D, cast = true, receive = true): void {
@@ -123,6 +128,9 @@ export function buildGardenSet(T = THREE_NS, opts: GardenSetOptions = {}): Garde
   function stone(hex: string, toy = 0.1): THREE_NS.ShaderMaterial {
     return ceramic(tokens, hex, {
       ...fillOver(),
+      // Round 1: the stone class spends its own share of the sky fill (see
+      // STONE_FILL_SCALE in data.ts); 1 rides the rig gain byte-identically.
+      fillStrength: (fill.fillStrength ?? 0.25) * STONE_FILL_SCALE,
       specular: { size: 0.6, strength: 0.07 },
       rim: { strength: 0.1, size: 0.5 },
       toy,

@@ -77,6 +77,7 @@ uniform float uTime;
 uniform float uDiffuseStrength;
 uniform float uKeyLength;
 uniform float uFillStrength;
+uniform float uFillShadeDepth;
 uniform float uShadowDither;
 uniform float opacity;
 
@@ -86,6 +87,15 @@ uniform float opacity;
 // directional key's shadow-tint swap for punctual lights. Directional-only
 // scenes (every pre-bedroom render) see the exact previous math.
 bool gPunctualLight = false;
+
+// Fill SHADE-FACTOR (stage 4 garden round 1, AD note 1): the fraction of the
+// fill a fragment keeps IN SHADOW. The directional pass of RE_Direct writes
+// it from the shadow attenuation it already computed; lit fragments keep it
+// at exactly 1 (mix(1, depth, 1-1) = 1) and every pre-round-1 rig defaults
+// uFillShadeDepth to 1, where mix(1, 1, s) = 1 for any s — so the kitchen,
+// bedroom and bathroom pixels are untouched (the multiply by an exact 1.
+// is bit-identical; the visual baselines gate it).
+float gFillShade = 1.0;
 
 struct ToonSurface {
 	vec3 baseColor;
@@ -169,6 +179,11 @@ void RE_Direct_Toon(
 	// never the key-strength tint — or a dim lamp re-adds a lit-level fill
 	// wherever it fails to reach, washing the dusk the moment it is mounted.
 	if ( gPunctualLight ) effective = directLight.color;
+	// The shade-depth contract: the DARK half of this light's coverage dims
+	// the fill too (a shadow is sky light that lost its sun — the sun's
+	// absence should not be replaced at full sky gain). Directional only:
+	// punctual passes leave the factor alone, same gate as the tint swap.
+	if ( ! gPunctualLight ) gFillShade = mix( gFillShade, uFillShadeDepth, 1.0 - att );
 
 	vec3 halfVec = normalize( directLight.direction + geometryViewDir );
 	float ndh = dot( geometryNormal, halfVec );
@@ -279,7 +294,7 @@ void main() {
 	// fill gain is a material parameter, not a shader constant (2026-10-04
 	// backlog: the fill must be able to reach the set accent). The 0.25
 	// default keeps every pre-stage-3 render byte-identical.
-	vec3 fill = mix( uFillLow, uFillHigh, upness ) * uFillStrength;
+	vec3 fill = mix( uFillLow, uFillHigh, upness ) * uFillStrength * gFillShade;
 
 	float ndv = clamp( dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 );
 	float rim = pow( 1.0 - ndv, mix( 5.5, 1.8, uRimSize ) ) * uRimStrength;
@@ -341,6 +356,13 @@ export interface ToonMaterialParams {
   diffuseStrength?: number
   /** Two-band fill gain; default 0.25 (the pre-stage-3 constant). */
   fillStrength?: number
+  /**
+   * How much of the fill a SHADOWED fragment keeps, 0..1 (directional key
+   * only — see the shader note). Default 1: fill behaves as it always has
+   * (byte-identical); an outdoor set may pass < 1 to stop the sky filling
+   * its own shadows at full gain.
+   */
+  fillShadeDepth?: number
   /** Shadow-dither budget 0..1 (see the shader note); default 0.35. */
   shadowDither?: number
   opacity?: number
@@ -385,6 +407,7 @@ export class ToonMaterial extends THREE.ShaderMaterial {
         uGrain: { value: params.grain ?? 0 },
         uGrainScale: { value: params.grainScale ?? 1 },
         uFillStrength: { value: params.fillStrength ?? 0.25 },
+        uFillShadeDepth: { value: params.fillShadeDepth ?? 1 },
         uShadowDither: { value: params.shadowDither ?? 0.3 },
         uLiquid: { value: params.liquid ?? 0 },
         uTime: { value: 0 },

@@ -161,3 +161,57 @@ Pixel census (node tools/census.mjs):
   moss authored at named joint crossings, resolvable at hero (3), galvanized can ramp band and a
   die-cast pipe collar (4), trellis post feet (5), and the garden's own camera row with the ratified
   disc-and-bars hero (6).
+
+## Round 3 — floor-camera rebalance (AD send-back 2026-10-08 production review; census round 3)
+
+The round-1 send-back named one knob (the sky-fill gain) and one reframing (the floor rig). Both shipped;
+the sweep behind them said more than either ask, and it is reported honestly.
+
+**What the sweep found.** A 3×7 grid over the sanctioned path (FILL_STRENGTH 0.12..0.30, rig sky-mix
+0.15..1.0 — the `skyFillMix` dial — and deepened-sky fill 0..0.5 — the `skyFillShade` dial) plus a
+stone-class fill sweep (0.55..1.0 — `STONE_FILL_SCALE`) could NOT deliver ask 1 inside the hero
+guardrails: the floor bars' tone is fill-dominated but so is the hero median (the frames share the same
+sunlit stone), and no combination put ≥0.5 % of the low frame under 60 luma before hero's medTone fell
+under 115 (best: floor 0.31 % dark at hero medTone 103). The fill the sky pushes into shadows needed a
+dial the rig did not have — exactly AD note 1: a shade-depth term on the fill.
+
+**The shipped fix (AD note 1 engineered in).** `fillShadeDepth` → `uFillShadeDepth`
+(`src/render/lighting.ts`, `src/render/toon-material.ts`): a SHADOWED directional fragment keeps only
+this fraction of the sky fill (recovered from the same attenuation the tint swap uses; punctual passes
+never touch it, lit fragments multiply by an exact 1, default 1 everywhere = byte-identical — kitchen
+visual baselines 0.0000 % differing, unit gate in `tests/unit/garden-lighting.test.ts`). The garden set
+spends it at 0.6 (`FILL_SHADE_DEPTH` in `src/sets/garden/data.ts`) plus a stone-class spend of 0.75
+(`STONE_FILL_SCALE`) where the bars lie; the global `FILL_STRENGTH` stays at 0.3 and `SKY_FILL_MIX`/
+`SKY_FILL_SHADE` keep the round-0 defaults (the sweep showed mix moves the WRONG way — the token fill
+band is brighter than the sky — and shade is a global dim in disguise). The floor rig also pays ask 2:
+position [0.1, 0.035, 0.34], target [-0.07, 0.028, -0.04] — the empty paving wedge lost its third of the
+frame, and the focus band now carries the car, the snail-and-petal beat, the rim-lit can against the sun
+disc, and the bore mouth. Hero and side cameras did not move; SUN, SKY, SKY_INFLUENCE and the disc did
+not move.
+
+Pixel census, all three production stills re-rendered (1280×720, post ON, round-3 run):
+
+| frame | px | dark<60 % | tinted % | blackish % | blown ≥243 % | outlier % | medTone |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| production-hero | 921 600 | 1.841 | 1.841 | 0.000 | 0.000 | 0.502 | 114 |
+| production-side | 921 600 | 1.722 | 1.722 | 0.000 | 0.000 | 1.773 | 107 |
+| production-low | 921 600 | 1.527 | 1.527 | 0.000 | 0.000 | 1.059 | 133 |
+
+- **Ask 1: HIT.** Low went 0.000 → 1.527 % darks, 100 % tinted (min spread ≥18 by census definition),
+  medTone 148 → 133 (≤ 135), blackish and blown still 0.000 in all three frames. The trellis bars now
+  cross the census floor where they cross the deck.
+- **Guardrails: held with one honest near-miss.** Hero darks 0.675 → 1.841 % (in the [0.5, 2.0] band,
+  comfortably clear of both ends), medTone 121 → 114 — ONE point under the 115 band floor: the depth
+  dial costs hero ~2 points through the snapped-penumbra pixels, and recovering that last point bought
+  back floor darks below 0.5 %. Side darks rose 0.067 → 1.722 % (allowed to rise; its bars now read as
+  dark, not hue). Nothing went blackish or blown anywhere; every dark is tinted in every frame.
+- **Channel-lean note (the census-adjacent truth):** the sub-60 pixels average ~48,45,8 — G ≥ R ≫ B,
+  the same hedge/contact-green dark signature the round-2 log reported (48,58,19). The bar DARKS the
+  census now counts come mostly from those deep contact/occlusion pockets, not from a blue-lit bar
+  interior — the bar interiors lifted ~25 luma (into the 60–90 tinted band) but their census max-channel
+  tops out near 60-75 warm stone. If the successor measures channel order on the census darks, this
+  delta is where it will bite; the fix did NOT go through a warm-olive door (tint terms untouched), but
+  blue-above-red darks at census depth were not physically available in this regime.
+- **Asks status:** ask 1 HIT (dark budget + medTone), ask 2 PAID (framing/focus band), asks 3-5 NOT
+  in this round's scope (lawn break, hero/low wind sprig, TA-1 strip edge) — they ride to the successor
+  unchanged.

@@ -88,6 +88,50 @@ export const SUN = {
  *  fill — under every shadow. */
 export const FILL_STRENGTH = 0.3
 
+/** Sky-FILL MIX (round 1 dial, Review 2026-10-08 garden production ask 1):
+ *  how far the rig's sky-side fill band is pulled toward the flat sky value
+ *  (`skyFillMix` in `createLightingRig`). The round-1 sweep measured this
+ *  dial to be the WRONG direction for the ask — the token fill band it
+ *  mixes FROM (#f1efe4) is BRIGHTER than the sky, so lowering the mix
+ *  lightens shadows — and raising it past ~0.75 buys nothing the hero
+ *  guardrails can afford. The set therefore keeps the round-0 0.55 (the
+ *  rig default) and spends the ask on FILL_SHADE_DEPTH below. */
+export const SKY_FILL_MIX = 0.55
+
+/** Sky-FILL SHADE DEPTH (round 1 dial, AD note 1 — `skyFillShade` in
+ *  `createLightingRig`): deepens the sky VALUE the fill band mixes before
+ *  mixing, like the shadow tint's deepened-sky term. It works (it moved the
+ *  floor median 148→134) but only as a GLOBAL dimming of the fill — hero's
+ *  median fell with it, out of its ratified 115–125 band. Kept wired for a
+ *  future set, shipped at 0 = the flat horizon sky, byte-identical. */
+export const SKY_FILL_SHADE = 0
+
+/** Stone-class FILL gain multiplier (round 1, same knob spent where the sky
+ *  does the damage): the long bright-stone run under the floor camera IS the
+ *  patio/gravel class, and the AD's own arithmetic (fill gain alone darkens
+ *  every hero pixel too) showed a global gain cannot cross 60 luma inside
+ *  the hero guardrails. Scaling the stone class's share of the rig's fill
+ *  spends the SAME sky-fill gain only on the driveable run the bars lie on
+ *  — hedges, props and the can keep the ratified fill (`stone(...)` in
+ *  `src/sets/garden/index.ts` is the only consumer). 1 = every material
+ *  rides the rig gain exactly (all pre-round-1 renders). */
+export const STONE_FILL_SCALE = 0.75
+
+/** Fill SHADE DEPTH (round 1's true knob, AD note 1 — `fillShadeDepth` on
+ *  the rig, `uFillShadeDepth` in the shader): the fraction of the sky fill
+ *  a SHADOWED fragment keeps. The census bar under the floor camera is not
+ *  shadow-geometry that failed to darken — it is shadow lit AT SKY GAIN:
+ *  the trellis bars block the sun but the rig's sky fill steps straight
+ *  back in at full strength, so the band never crosses 60 luma. Sweeping
+ *  the gains (FILL_STRENGTH 0.12..0.30 × sky mix 0.15..1.0 × shade 0..0.5)
+ *  proved no global gain crosses the bars WITHOUT dragging hero's median
+ *  under its 115 floor — the lit run and the shaded bars drink the same
+ *  fill. This dial spends the gain only where the sun is absent (lit
+ *  pixels bit-identical), which is the ask's exact wording: "lower the
+ *  fill the sky pushes into SHADOWS". 1 = shadows drink at full sky gain
+ *  (every pre-round-1 render, byte-identical). */
+export const FILL_SHADE_DEPTH = 0.6
+
 /** How far the shadow tint and the sky band take the sky value. 0.6 is the
  *  number that makes the AD's claim measurable: the 40–90 luma band must
  *  lean sky (blue up, red down), not warm-olive like variant-B's pixels.
@@ -302,9 +346,15 @@ export const STAGING = {
  * - hero: THE ratified composition — the sun disc AND the trellis shadow
  *   bars in one frame with the car on the focus band (hero-b, now a rig);
  * - floor: 35 mm off the deck, a car in the tilt-shift band, the slab joints
- *   and the laid gravel resolving. */
+ *   and the laid gravel resolving. Round 1 (production review ask 2): the
+ *   rig yawed/dropped a few centimetres so the focus band carries the car,
+ *   the snail-and-petal beat, the rim-lit can and the bore mouth, and the
+ *   empty paving wedge lost its third of the frame. */
 export const CAMERAS = {
   establishing: { position: [0.75, 0.5, 0.95], target: [0, 0.04, -0.08], fov: 35, near: 0.01, far: 12 },
   hero: { position: [0.3, 0.15, 0.36], target: [0.02, 0.04, -0.02], fov: 35, near: 0.01, far: 12 },
-  floor: { position: [0.16, 0.035, 0.3], target: [0, 0.03, -0.02], fov: 35, near: 0.005, far: 12 },
+  // round 1: [0.16, 0.035, 0.3] → [0.1, 0.035, 0.34], target [0, 0.03, -0.02]
+  // → [-0.07, 0.028, -0.04] (ask 2 — same rig family, dead-center on the
+  // ratified floor laws: 35 mm high, flush deck, car in the focus band).
+  floor: { position: [0.1, 0.035, 0.34], target: [-0.07, 0.028, -0.04], fov: 35, near: 0.005, far: 12 },
 } as const

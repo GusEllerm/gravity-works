@@ -48,6 +48,39 @@ export interface LightingRigOptions {
   sky?: string
   /** How far the shadow tint is pulled toward `sky`, 0..1. Default 0.6. */
   skyInfluence?: number
+  /**
+   * Sky-FILL GAIN (stage 4 garden round 1): how far the sky-side fill band
+   * is pulled toward the flat sky value, 0..1. Default 0.55 — the number the
+   * first garden production renders shipped, so omitting this keeps both the
+   * indoor branch (which never reaches it) and the outdoor branch
+   * byte-identical. An outdoor set passes a lower value to spend LESS of the
+   * sky's brightness inside shadows — the AD's shadow-darkening budget knob
+   * (Review 2026-10-08 garden production, AD note 1); it moves the fill's
+   * BRIGHTNESS, never its hue path, which stays the sky's.
+   */
+  skyFillMix?: number
+  /**
+   * Sky-FILL SHADE DEPTH (stage 4 garden round 1, AD note 1): how far the
+   * sky VALUE used for the fill band is deepened before mixing, in the
+   * same spirit as the shadow tint's deepened-sky term — the flat sky is a
+   * bright horizon color and a shadow is sky light that lost its sun, so a
+   * set may want the fill to carry the sky at shade depth. Default 0 — the
+   * flat sky value, byte-identical to the first outdoor renders. The hue
+   * path stays the sky's (deepened, not rotated), so the census tint stays
+   * blue-above-red.
+   */
+  skyFillShade?: number
+  /**
+   * Fill SHADE DEPTH (stage 4 garden round 1, AD note 1 — the rig-side half
+   * of the shader's `uFillShadeDepth`): the fraction of the sky fill a
+   * shadowed fragment keeps. Default 1 — every indoor rig and every
+   * pre-round-1 render byte-identical (the multiply is an exact 1);
+   * an outdoor set passes < 1 when the sky has replaced the sun INSIDE its
+   * shadows (the fill's BRIGHTNESS dial, hue untouched, lit pixels fully
+   * unaffected — which is why it can darken the long bars without moving
+   * any frame's median tone).
+   */
+  fillShadeDepth?: number
 }
 
 export interface LightingRig {
@@ -58,6 +91,8 @@ export interface LightingRig {
   fillLow: string
   /** Fill gain — feed into every material's `fillStrength`. */
   fillStrength: number
+  /** Fill shade depth — feed into every material's `fillShadeDepth`. */
+  fillShadeDepth: number
   /** Shadow tint — the material-side half of the tinted-shadow contract. */
   shadowTint: string
   keyIntensity: number
@@ -112,7 +147,11 @@ export function createLightingRig(tokens: SetTokens, opts: LightingRigOptions = 
   // Outdoors the sky is the fill and the shade is sky-lit — the high band,
   // the ground band and the shadow tint all take a cut of the sky value.
   if (opts.sky !== undefined) {
-    fillHigh = mixHex(fillHigh, opts.sky, 0.55)
+    // The fill's sky VALUE at shade depth when the set asks for it (AD note
+    // 1): deepened like the shadow tint; at the default 0 this is the flat
+    // sky, byte-identical.
+    const skyFill = opts.skyFillShade ? shiftHex(opts.sky, 0, 0.15, -opts.skyFillShade) : opts.sky
+    fillHigh = mixHex(fillHigh, skyFill, opts.skyFillMix ?? 0.55)
     fillLow = mixHex(fillLow, opts.sky, 0.22)
     // The SKY'S OWN HUE at shade depth: the flat sky value is a bright
     // horizon color; a shadow is sky-lit light that LOST its sun, so the
@@ -128,6 +167,7 @@ export function createLightingRig(tokens: SetTokens, opts: LightingRigOptions = 
     fillHigh,
     fillLow,
     fillStrength: opts.fillStrength ?? 0.32,
+    fillShadeDepth: opts.fillShadeDepth ?? 1,
     shadowTint,
     keyIntensity: intensity,
     dustMotes: () => new THREE.Object3D(),
@@ -158,12 +198,14 @@ export function fillFromRig(rig: LightingRig): {
   fillHigh: string
   fillLow: string
   fillStrength: number
+  fillShadeDepth: number
   shadowTint: string
 } {
   return {
     fillHigh: rig.fillHigh,
     fillLow: rig.fillLow,
     fillStrength: rig.fillStrength,
+    fillShadeDepth: rig.fillShadeDepth,
     shadowTint: rig.shadowTint,
   }
 }
