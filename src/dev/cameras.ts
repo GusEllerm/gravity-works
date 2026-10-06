@@ -55,6 +55,22 @@ export function isCanonicalShot(value: string): value is CanonicalShot {
 import { CAMERAS as GARDEN_CAMERAS } from '../sets/garden/data.ts'
 
 const SET_SHOTS: Record<string, Partial<Record<CanonicalShot, CameraRig>>> = {
+  // The GARAGE ships only its SIDE rig (stage 4 production round — the AD's
+  // one knob on Review 2026-10-09: re-aim the establishing rig). The old rig
+  // was the borrowed kitchen establishing (pos 0.62/0.42/0.78, flat p5 74,
+  // zero blade floor-contact in the census band). This one drops to floor
+  // height a hand-span nearer the same corner and pitches UP onto the bench
+  // line, so the
+  // blade's white floor contact runs INTO the lower-45 % band (2.3 % cover,
+  // run 276), the wheel's tunnel mass and the bench silhouette re-enter as
+  // darks (p5 47, inside the ratified band), and the mid-frame flake
+  // cluster slides off the bottom edge into defocus instead of sitting
+  // confetti-bright mid-frame. hero/floor deliberately stay on the
+  // canonical fallback — the ratified hero/low stills re-render byte-
+  // identical; only this row moves.
+  'garage-set': {
+    establishing: { position: [0.56, 0.17, 0.4], target: [0, 0.14, -0.14], fov: 35, near: 0.01, far: 12 },
+  },
   'garden-set': {
     establishing: { ...GARDEN_CAMERAS.establishing, position: [...GARDEN_CAMERAS.establishing.position], target: [...GARDEN_CAMERAS.establishing.target] },
     hero: { ...GARDEN_CAMERAS.hero, position: [...GARDEN_CAMERAS.hero.position], target: [...GARDEN_CAMERAS.hero.target] },

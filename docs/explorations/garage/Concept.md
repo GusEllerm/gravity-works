@@ -114,5 +114,6 @@ to black.
 | production-hero | 6.720 | 6.651 | 0.069 | 2.193 | 153 |
 | production-side | 2.779 | 2.764 | 0.014 | 0.846 | 121 |
 | production-low | 6.186 | 5.901 | 0.285 | 0.915 | 122 |
+| production-side (re-shot 2026-10-09: side rig re-aimed in `src/dev/cameras.ts`; census.mjs mean 145.9, p5 47, blade floor-contact in band 2.34 % / run 276; hero/low re-render byte-identical) | 4.290 | 4.272 | 0.018 | 1.024 | 150 |
 
 The ratified look's earned tinted darks survive production (darkest room in the house holds: hero 6.7 % tinted, blackish ~0). Carried-forwards honored: bulb practical visible in hero framing, sunblade-as-ribbon shading on the slab, soft stain edge (film, not decal), B's mezzanine ported.
