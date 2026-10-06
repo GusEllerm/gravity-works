@@ -26,7 +26,7 @@ The note's coverage map — every line is a function of evidence that exists tod
 | any + `hazardsTouched > 0` | the count itself | "a hazard took the run" (which one, once props name themselves) |
 | `fell` | touchdown pitch < −20° (`pitchOfQuat` at the air→ground transition) | "landed nose first" |
 | `fell`/`stalled` | climb > 2 cm AND apex speed < `sqrt(g · climb/2)` — the contact-at-apex floor with the ring radius read off the climb: a computed bound, not a tuned knob | "too slow at the top of the loop" |
-| `fell` | final airtime > 0.35 s | "flew off after a long jump — the gap outran the landing" |
+| `fell` | final airtime > 0.35 s **AND** takeoff rise `finalTakeoffVy > JUMP_MIN_TAKEOFF_VY` (the deck launched it upward — airtime alone lies: every fall off a counter is airborne ~0.4 s; playtest K) | "flew off after a long jump — the gap outran the landing"; airborne-but-not-launched gets "fell off the set — the line let go before the cup" |
 | `fell` otherwise | — | "fell off the set" |
 | `stalled` | last-grounded pitch > +10° | "ran out going uphill" |
 | `stalled` | a recorded speed gain exists (the last-force-locates witness: the last time speed rose) | "ran out of speed after its last push" |

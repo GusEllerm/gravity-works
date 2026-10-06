@@ -10,7 +10,7 @@
  *    happened (finished / fell / stalled / timeout — `hazard` joins when the
  *    stage-3 hazards ship) but not WHY, and the why must come from state we
  *    actually have. The recorder therefore samples the interpolable
- *    `WorldState` stream during the run and keeps five honestly-derived
+ *    `WorldState` stream during the run and keeps seven honestly-derived
  *    witnesses (docs/vault/Modules/ui.md carries this coverage map):
  *
  *    - apex witness — the highest point reached and the speed there. For a
@@ -21,8 +21,10 @@
  *    - touchdown witness — chassis pitch (from the quaternion) at the last
  *      air-to-ground transition. Nose-down past the deck's tolerance is a
  *      nose-first landing (brief §1's own example).
- *    - airborne witness — duration of the final flight segment: a long
- *      flight before a fall is a jump that outran its landing.
+ *    - airborne witness — duration of the final flight segment, plus the
+ *      takeoff seam: when it began and its VERTICAL speed (a one-step rate
+ *      of the same position stream). A long flight before a fall is only a
+ *      jump if the car left the deck RISING (stage-4 note fix, playtest K).
  *    - pitch-at-rest witness — chassis pitch on the last grounded sample:
  *      a car stopped nose-high ran out going uphill.
  *    - last-push witness — the time of the last speed GAIN (any gain: a
@@ -64,6 +66,22 @@ export interface RunEvidence {
   lastGroundedPitch: number | null;
   /** Duration of the final airborne segment (s). */
   finalAirtime: number;
+  /** Time the final airborne segment BEGAN (s), or null if the run ended
+   *  grounded. Stage-4 note derivation (playtest K, "'flew off — a long
+   *  jump' on a run that never crossed the gap"): the long-jump line needs
+   *  to know WHEN the car went quiet, not just that it was quiet for long —
+   *  every fall off any counter-height deck is airborne ~0.4 s, so airtime
+   *  alone calls every drive-off a jump (measured: the bare-kitchen01 rerun
+   *  of playtest K, air 0.433 s, rise 0.000 m, takeoff vy −0.13 m/s —
+   *  indistinguishable from a real lip jump by duration). */
+  finalTakeoffTime: number | null;
+  /** Vertical speed at the FIRST sample of the final airborne segment
+   *  (world m/s, +=up), or null. Derived from the same position stream the
+   *  apex witness already reads (one step's y delta across the FIXED_DT the
+   *  recorder is fed) — no new state. The ballistic identity
+   *  `vy² = 2 g · rise` makes it the rise witness's twin: a launched jump
+   *  leaves the deck RISING, a drive-off is already falling. */
+  finalTakeoffVy: number | null;
   /** Time of the last speed increase (s), or null if the car never gained. */
   lastPushTime: number | null;
 }
@@ -76,8 +94,22 @@ export const APEX_MIN_CLIMB = 0.02;
 export const NOSE_FIRST_PITCH = -(20 * Math.PI) / 180;
 /** Pitch above which a stopped car was "going uphill" (rad, ~10 deg). */
 export const UPHILL_PITCH = (10 * Math.PI) / 180;
-/** A final flight this long means the fall followed a jump, not a gap edge (s). */
+/** Airtime precondition of the long-jump line — never the whole of it (see
+ *  `JUMP_MIN_TAKEOFF_VY`): every fall from counter height is airborne ~0.4 s,
+ *  so duration alone printed "a long jump" on cars that never crossed a gap
+ *  (playtest K). */
 export const LONG_FLIGHT = 0.35;
+/** Takeoff-rise floor of the long-jump line (world m/s, vertical speed at
+ *  the airborne seam). Computed from the estimator's own noise, not tuned:
+ *  the witness is a one-step position rate, so a dead-level drive-off reads
+ *  0 ± g·FIXED_DT ≈ 0.08 m/s; the floor sits at 1.5× that. Measured: every
+ *  kitchen fall replays (bare kitchen01 = playtest K's rerun, L03/L04
+ *  drive-offs, gapLip-no-landing sink deaths) reads −0.13…−0.24 — the kit
+ * *flattens every piece's exit tangent (pieces.ts `gapLip`), so nothing in
+ *  the shipped game can honestly claim "the gap outran the landing" on a
+ *  RISELESS flight, and no shipped build should print the line. A future
+ *  piece that launches upward crosses the floor honestly. */
+export const JUMP_MIN_TAKEOFF_VY = 0.12;
 
 /** Pitch of a chassis quaternion: the local +x axis, in radians, +=nose-up. */
 export function pitchOfQuat(q: { w: number; x: number; y: number; z: number }): number {
@@ -97,6 +129,8 @@ export function emptyEvidence(startY = 0): RunEvidence {
     lastTouchdownPitch: null,
     lastGroundedPitch: null,
     finalAirtime: 0,
+    finalTakeoffTime: null,
+    finalTakeoffVy: null,
     lastPushTime: null,
   };
 }
@@ -128,7 +162,18 @@ export function createRunRecorder(): RunRecorder {
         ev.apexSpeed = s.car.speed;
       }
       const dt = p ? Math.max(0, s.time - p.time) : 0;
-      if (!s.car.grounded) ev.finalAirtime += dt;
+      if (!s.car.grounded) {
+        if (p && p.car.grounded) {
+          // the grounded -> airborne seam marks the START of the final
+          // flight: when it began and how fast it was RISING (one-step y
+          // rate of the same position stream the apex witness reads — zero
+          // new state). A mid-flight touch re-marks it, so the witnesses
+          // always describe the FINAL airborne segment.
+          ev.finalTakeoffTime = s.time;
+          ev.finalTakeoffVy = dt > 0 ? (s.car.pos.y - p.car.pos.y) / dt : 0;
+        }
+        ev.finalAirtime += dt;
+      }
       if (s.car.grounded) {
         ev.lastGroundedPitch = pitchOfQuat(s.car.quat);
         if (p && !p.car.grounded) ev.lastTouchdownPitch = pitchOfQuat(s.car.quat);
@@ -151,7 +196,7 @@ export function createRunRecorder(): RunRecorder {
  *   hazard touched        -> "a hazard took the run" (which one, once props report it)
  *   fell, nose-down touchdown -> fell off nose-first
  *   any slow-at-apex      -> fell off / stalled — too slow at the top of the loop
- *   fell after a long flight -> fell off after a long jump
+ *   fell after a long flight that ROSE off the deck -> fell off after a long jump
  *   fell otherwise        -> fell off the set
  *   stalled nose-high     -> stalled going uphill
  *   stalled after a push  -> stalled after its last push
@@ -191,7 +236,14 @@ export function physicsNote(result: RunResult, ev: RunEvidence): string {
       return 'fell off nose-first — flatten the landing or lower the lip';
     }
     if (tooSlowAtApex) return 'fell off — too slow at the top of the loop; give it more height before it';
-    if (ev.finalAirtime > LONG_FLIGHT) return 'fell off after a long jump — the gap outran the landing';
+    // Stage-4 (playtest K: "'flew off — a long jump' on a run that never
+    // crossed the gap"): airtime alone cannot tell a launched jump from a
+    // drive-off — every fall off a counter is airborne ~0.4 s. The line
+    // needs the rise witness too: a flight only "outran a landing" if the
+    // deck LAUNCHED it upward (see JUMP_MIN_TAKEOFF_VY for the measurement).
+    if (ev.finalAirtime > LONG_FLIGHT && ev.finalTakeoffVy !== null && ev.finalTakeoffVy > JUMP_MIN_TAKEOFF_VY) {
+      return 'fell off after a long jump — the gap outran the landing';
+    }
     return 'fell off the set — the line let go before the cup';
   }
   if (result.status === 'stalled') {
