@@ -71,6 +71,11 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
 #gw-result {
   position: absolute;
   top: 8px;
+  /* ABOVE the sticky toolbar (z-index 5): playtest Z round7 at 1280x633 —
+   * a page taller than the window puts the toolbar OVER the stage when the
+   * page is scrolled, and the Next-level click reported
+   * `covered by <p#gw-piece-count>`. The panel owns the top layer. */
+  z-index: 6;
   left: 50%;
   transform: translateX(-50%);
   padding: 8px 12px;
@@ -100,7 +105,27 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
   font: inherit; font-size: 13px; padding: 4px 10px; border-radius: 4px;
   border: 1px solid #fdf2e0; background: transparent; color: #fdf2e0; cursor: pointer;
 }
-@media (max-height: 620px) {
+/* SHORT-WINDOW COMPACT (playtest Z round7: at a 1280x633 window the result
+ * panel and the failure caption rendered below the fold — the old 620 px
+ * threshold never fired at 633 and the page (chrome + a 540 px canvas + the
+ * status lines) measured 962 px tall, so ANY fold-respecting scroll pushed
+ * everything off screen). Under ~700 px of viewport height: the page chrome
+ * tightens, the canvas CAPS ITS WIDTH so its height (aspect kept — the
+ * camera renders 960x540 and a squashed buffer would skew aiming) is exactly
+ * the room the window has left, and the panel goes compact — every panel
+ * control and the caption lines sit inside the window with NOTHING scrolled
+ * (asserted at 1280x633 in tests/e2e/result.spec.ts). */
+@media (max-height: 700px) {
+  h1 { font-size: 16px; margin: 2px 0 6px; }
+  #gw-levels-nav { margin: 0 0 4px; font-size: 12px; }
+  #gw-builder { margin-top: 4px; }
+  #gw-builder-host { padding-top: 2px; }
+  #app { padding-bottom: 12px; }
+  /* canvas height = width × 540/960, and the width cap makes that height
+   * (100vh − 380 px) — 380 = the compact chrome above the canvas plus the
+   * status/callout/hash lines below it (measured at 1280x633 and 960x540). */
+  #gw-stage canvas { max-width: min(960px, calc((100vh - 380px) * 960 / 540)); }
+  #gw-status, #gw-callout { margin: 4px 0; }
   #gw-result { padding: 5px 9px; font-size: 12px; }
   #gw-result-stars { font-size: 15px; }
   #gw-result-rules { font-size: 10px; }

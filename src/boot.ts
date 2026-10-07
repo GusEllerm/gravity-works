@@ -496,9 +496,11 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   hashDetails.id = 'gw-hash-details';
   const hashSummary = document.createElement('summary');
   // Playtest M: "determinism fingerprint — same build, same run, anywhere"
-  // was uninterpretable copy. The engineering truth is unchanged (the hash
+  // was uninterpretable copy; playtest Z round7: "this code proves it"
+  // proved WHAT to WHOM — the summary is now the plain question the
+  // disclosure answers (the engineering truth is unchanged: the hash
   // covers the body transforms along the path); it is just one player line.
-  hashSummary.textContent = 'Same pieces, same run, every time — this code proves it.';
+  hashSummary.textContent = 'Why the same build always runs the same way';
   const hashValue = document.createElement('p');
   hashValue.id = 'gw-hash-value';
   const hashNote = document.createElement('p');

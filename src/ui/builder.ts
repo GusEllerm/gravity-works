@@ -371,7 +371,13 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   // are placed (playtest G: "×2 stayed ×2")
   const trayReason = document.createElement('p');
   trayReason.id = 'gw-tray-reason';
-  trayReason.textContent = 'Greyed pieces are not in this level · ×N counts the pieces left to place';
+  // WHICH pieces the player owns (playtest Z round7: "a piece listed with
+  // no ×N, yet 4 of 4 used — which pieces did I actually own?"): the line
+  // states all three ways a piece appears — greyed (not stocked), ×N
+  // (stocked, counts down as placed), and BUILT IN (already on the track,
+  // never in the tray, never counted).
+  trayReason.textContent =
+    'Greyed pieces are not in this level · ×N counts pieces left to place · pieces already on the track came with the level';
   root.appendChild(trayReason);
   const count = document.createElement('p');
   count.id = 'gw-piece-count';
@@ -594,6 +600,14 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     // label line names its socket — held piece or not (playtest Q: the
     // white rings were mute; the ring is always the answer to "where will
     // it go", so it is never silent).
+    // AIM-vs-GOAL PHRASING (playtest Z round7: "target: the car's start
+    // point" WHILE HOLDING a piece read as "a place to put it" — the word
+    // `target` was doing double duty as the star rules' GOAL (par, the cup)
+    // and the ring's AIM). While a piece is held the line says the verb it
+    // means — `place drop at: …`; empty-handed the ring keeps the neutral
+    // `target:` (the ring-hint line already teaches it as "where it will
+    // land"). The socket labels are unchanged; tie tails unchanged.
+    const aimVerb = kind === null ? 'target' : `place ${pieceLabel(kind).toLowerCase()} at`;
     targetLabel.textContent =
       list.length > 0
         ? aimTies.length > 1 && targetIndex === aimTies[aimTieCursor]
@@ -608,9 +622,9 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
             // both — so `]` looked dead; the counter tail now also speaks
             // from the second pick onward, the states differ in the words).
             aimTies.length === 2 && aimTieCursor === 0
-              ? `target: ${list[targetIndex]!.label} · two spots fit here — press ] for the other one`
-              : `target: ${list[targetIndex]!.label} · ${aimTies.length} spots fit here — press ] for the next one (${aimTieCursor + 1} of ${aimTies.length})`
-          : `target: ${list[targetIndex]!.label}`
+              ? `${aimVerb}: ${list[targetIndex]!.label} · two spots fit here — press ] for the other one`
+              : `${aimVerb}: ${list[targetIndex]!.label} · ${aimTies.length} spots fit here — press ] for the next one (${aimTieCursor + 1} of ${aimTies.length})`
+          : `${aimVerb}: ${list[targetIndex]!.label}`
         : '';
     if (list.length === 0 || !scene) {
       state = 'hidden';
@@ -838,14 +852,29 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
 
   function removeLast(): boolean {
     stuckNote = null;
-    if (pieces.length === 0) return false;
+    // REMOVE SAYS WHAT IT DID (playtest Z round7: two clicks "eaten" with
+    // the counter unmoved and no line — the button looked like a MODE that
+    // quietly turned itself off; it is one SHOT per click, and every shot
+    // now speaks, success or refusal — never silent state drift).
+    if (pieces.length === 0) {
+      ghostState.textContent = 'nothing to remove — the track is empty';
+      return false;
+    }
     let i = pieces.length - 1;
     if (trayKinds) {
       while (i >= 0 && !trayKinds.has(pieces[i]!.def)) i -= 1;
-      if (i < 0) return false;
+      if (i < 0) {
+        // only the level's own fixtures remain: nothing the button owns
+        ghostState.textContent = 'nothing to remove — only the level’s own pieces are on the track';
+        return false;
+      }
     }
+    const removed = pieceLabel(pieces[i]!.def).toLowerCase();
     pieces = pieces.filter((_, j) => j !== i).map((p, j) => ({ ...p, seq: j }));
     everPlaced = trayPlaced() > 0;
+    // a one-shot line that survives the rebuild the emit triggers (the
+    // same stuckNote channel the other refusal lines use)
+    stuckNote = `removed the ${removed}`;
     updateGhost();
     emit();
     return true;

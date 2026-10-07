@@ -14,7 +14,7 @@ import { test, expect } from '@playwright/test'
  *    canvas rect, identical scroll) — playtest M: "Help panel pushes the
  *    world entirely off-screen".
  * 3. The determinism disclosure reads one human line:
- *    "Same pieces, same run, every time — this code proves it." with the
+ *    "Why the same build always runs the same way" with the
  *    hash value still behind the details.
  * 4. The R/Flip press prints a passive "rotated" echo (playtest M: "R-flip
  *    has no visible confirmation text").
@@ -106,7 +106,7 @@ test('the fingerprint disclosure reads one human line (hash still behind it)', a
   await page.goto('/?level=kitchen01')
   await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
   await expect(page.locator('#gw-hash-details > summary')).toHaveText(
-    'Same pieces, same run, every time — this code proves it.',
+    'Why the same build always runs the same way',
   )
   await expect(page.locator('body')).not.toContainText('same build, same run, anywhere')
   // the engineering truth survives: the details still carry the hash value

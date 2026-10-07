@@ -422,7 +422,12 @@ test.describe('Y matrix, below-fold release at canvas coords (1280x633)', () => 
     await grabViaDom(page, 'drop')
     const s = await live(page)
     const y = Math.min(s.box.y + s.box.height - 10, 700)
-    expect(y, 'canvas rect must reach past the fold for this case').toBeGreaterThan(633)
+    // the shipped short-window layout (playtest Z round7) caps the canvas to
+    // the window height under ~700 px: at 1280x633 the canvas now fits
+    // inside the fold and this below-fold case is STRUCTURALLY GONE — skip
+    // it the way T6b skips its variant (the guard stays live on any viewport
+    // where a canvas still reaches past the fold).
+    test.skip(y <= 633, 'canvas fits inside the fold at this viewport — no below-fold release exists')
     const cdp = await cdpInput(page)
     await cdp.down(s.box.x + 400, y)
     await cdp.up(s.box.x + 400, y)

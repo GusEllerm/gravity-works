@@ -124,6 +124,78 @@ test.describe('the panel at 960x540 (playtest J: the Next button was cut off)', 
   })
 })
 
+test.describe('the panel at 1280x633 (playtest Z round7: stars/Retry/Next and the failure caption rendered below the fold)', () => {
+  test.use({ viewport: { width: 1280, height: 633 } })
+
+  test('every panel control is the thing under its own pixel, and nothing needed scrolling', async ({ page }) => {
+    const errors: string[] = []
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') errors.push(msg.text())
+    })
+    page.on('pageerror', (err) => errors.push(String(err)))
+
+    await page.goto('/?level=kitchen01&build=par&launch=1')
+    await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
+    await expect(page.locator('#gw-result-next')).toBeVisible()
+
+    // the page NEVER moved: the whole layout fits the short window (the
+    // compact variant under ~700 px height caps the canvas to the room left)
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+
+    // HIT TEST (Z’s Next click died as `covered by <p#gw-piece-count>`):
+    // each panel button must be the frontmost element at its own centre
+    const covered = await page.evaluate(() =>
+      ['#gw-result-retry', '#gw-result-next'].filter((sel) => {
+        const el = document.querySelector(sel)!
+        const r = el.getBoundingClientRect()
+        const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+        return top !== el && !el.contains(top ?? null)
+      }),
+    )
+    expect(covered).toEqual([])
+
+    // panel, buttons and the caption lines sit FULLY inside the 633 window
+    for (const sel of ['#gw-result', '#gw-result-retry', '#gw-result-next', '#gw-status', '#gw-callout']) {
+      const box = await page.locator(sel).boundingBox()
+      expect(box).not.toBeNull()
+      expect(box!.y, sel).toBeGreaterThanOrEqual(0)
+      expect(box!.y + box!.height, sel).toBeLessThanOrEqual(633)
+    }
+
+    // and the real Next-level click walks the ladder (a live intercept
+    // would fail Playwright’s own actionability check)
+    await page.click('#gw-result-next')
+    await expect(page).toHaveURL(/level=kitchen02/)
+
+    expect(errors).toEqual([])
+  })
+
+  test('the failure caption renders inside the window with nothing scrolled', async ({ page }) => {
+    const errors: string[] = []
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') errors.push(msg.text())
+    })
+    page.on('pageerror', (err) => errors.push(String(err)))
+
+    // the fixture-only launch falls off (Z’s line: "fell off — the line let
+    // go before the cup"); the note lives IN the panel, and the status and
+    // callout caption lines ride right under the shrunken canvas
+    await page.goto('/?level=kitchen01&launch=1')
+    await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
+    await expect(page.locator('#gw-result-note')).toBeVisible()
+    await expect(page.locator('#gw-result-note')).toContainText('fell off')
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+    for (const sel of ['#gw-result', '#gw-result-note', '#gw-status', '#gw-callout']) {
+      const box = await page.locator(sel).boundingBox()
+      expect(box).not.toBeNull()
+      expect(box!.y, sel).toBeGreaterThanOrEqual(0)
+      expect(box!.y + box!.height, sel).toBeLessThanOrEqual(633)
+    }
+
+    expect(errors).toEqual([])
+  })
+})
+
 test('the help drawer lists the unlocked pieces and its renders are not black', async ({ page }) => {
   const errors: string[] = []
   page.on('console', (msg) => {

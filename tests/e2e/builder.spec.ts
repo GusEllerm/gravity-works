@@ -95,3 +95,39 @@ test('builder: empty-handed R says what it did, once (playtest R\u2019s K4 wall)
 
   expect(errors).toEqual([])
 })
+
+test('builder: remove is one spoken shot per click — round-trip, never silent (playtest Z round7)', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (err) => errors.push(String(err)))
+
+  // Z's finding: two Remove clicks "eaten" with the counter unmoved and the
+  // mode "quietly off". Remove is ONE-SHOT per click, and every click now
+  // SPEAKS — success names the piece, refusal names why. No silent drift.
+  await page.goto('/?level=kitchen01')
+  await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
+  await expect(page.locator('#gw-piece-count')).toHaveText('0 of 3 pieces used')
+
+  // place one, then the round-trip back
+  await page.click('#gw-tray-gapLip')
+  await page.click('#gw-place')
+  await expect(page.locator('#gw-piece-count')).toHaveText('1 of 3 pieces used')
+
+  await page.click('#gw-remove-piece')
+  await expect(page.locator('#gw-piece-count')).toHaveText('0 of 3 pieces used')
+  await expect(page.locator('#gw-ghost-state')).toHaveText('removed the lip')
+
+  // the Z variant: a click with nothing left to remove says SO (only the
+  // level's own fixture ramp remains) instead of vanishing into silence
+  await page.click('#gw-remove-piece')
+  await expect(page.locator('#gw-ghost-state')).toContainText('nothing to remove')
+  await expect(page.locator('#gw-piece-count')).toHaveText('0 of 3 pieces used')
+
+  // and the keyboard twin speaks the same line
+  await page.keyboard.press('Delete')
+  await expect(page.locator('#gw-ghost-state')).toContainText('nothing to remove')
+
+  expect(errors).toEqual([])
+})

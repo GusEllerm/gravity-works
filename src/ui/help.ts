@@ -108,6 +108,13 @@ function frameCamera(center: THREE.Vector3, radius: number): THREE.PerspectiveCa
   return cam;
 }
 
+/** The player word for a prop codename (playtest Z round7: raw camelCase
+ *  "oilStain" in Help — the prop title must read as prose, the same rule
+ *  the piece labels follow; the entry id stays the codename for selectors). */
+export function propWord(name: string): string {
+  return name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase();
+}
+
 export function createHelpDrawer(host: HTMLElement, options: HelpOptions = {}): HelpDrawer {
   const manifest = calloutManifest().filter((e) => !options.unlocked || options.unlocked.includes(e.id));
   const entries: HelpEntry[] = manifest.map((e) => ({
@@ -115,7 +122,7 @@ export function createHelpDrawer(host: HTMLElement, options: HelpOptions = {}): 
     // the title is the PLAYER word (playtest M: raw codenames in the
     // glossary too); the entry id stays the codename for tests/selectors
     title: e.id.startsWith('prop:')
-      ? e.id.slice(5)
+      ? propWord(e.id.slice(5))
       : PIECE_KINDS.includes(e.id as (typeof PIECE_KINDS)[number])
         ? pieceLabel(e.id as (typeof PIECE_KINDS)[number])
         : e.id,
