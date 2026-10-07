@@ -68,3 +68,15 @@ full e2e suite green on 4260; filmstrip gate green on 4270. Notes updated, not a
 bodies changed: `Modules/ui` (labels, blocked/fell copy, R+S gate), `Modules/src` (sticky
 toolbar, restore), `Modules/save` (savedBuild is load-facing), `Modules/world`,
 `Modules/track`, `Modules/dev`, `Modules/replay` (fixture signal, committed separately).
+
+## Follow-up (K4 handoff, same day, ports 4275+)
+
+The empty-handed R now says what it did: the FIRST press that arms the reversal with
+nothing held states `REVERSING_WHY` — "reversing — track runs backwards this way (press R
+unless you want a coaster)" — once per page session on `#gw-ghost-state` (FLIP_WHY's
+once-discipline applied to the ARM, playtest R's silent-arming wall; the next action, the
+first place included, retires it and the held ghost's own copy takes the line over),
+pinned in `tests/e2e/builder.spec.ts`. The Remove counter check gained its PANEL-OPEN
+variant: a Remove that succeeds BEHIND the open result card must refresh BOTH count lines
+— the idle status line and the builder tally (`tests/e2e/playtest-rs.spec.ts`), S's
+"4 of 5 vs 3 of 5" fault pinned in its panel-open shape.

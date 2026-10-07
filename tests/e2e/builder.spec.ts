@@ -59,3 +59,39 @@ test('builder: ghost appears on hover, place and remove move the piece counter',
 
   expect(errors).toEqual([])
 })
+
+test('builder: empty-handed R says what it did, once (playtest R\u2019s K4 wall)', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (err) => errors.push(String(err)))
+
+  await page.goto('/?level=feeltrack')
+  await expect(page.locator('#gw-piece-count')).toBeVisible({ timeout: 30_000 })
+  // nothing held: the line is silent before the first press
+  await expect(page.locator('#gw-ghost-state')).toHaveText('')
+
+  // The FIRST press that ARMS the reversal with nothing held states what
+  // it did (playtest R: one stray R silently reversed every later mount —
+  // with no ghost there was nothing to echo onto, so nothing said so).
+  await page.click('#gw-rotate')
+  await expect(page.locator('#gw-ghost-state')).toHaveText(
+    'reversing \u2014 track runs backwards this way (press R unless you want a coaster)',
+  )
+  // flipping back is the silent half (the flag is off; nothing to teach)
+  await page.click('#gw-rotate')
+  await expect(page.locator('#gw-ghost-state')).toHaveText('')
+  // a SECOND arm stays silent too — one-time line, retired for the session
+  await page.click('#gw-rotate')
+  await expect(page.locator('#gw-ghost-state')).toHaveText('')
+
+  // and the line retires at the FIRST PLACE: the held reversed ghost
+  // takes the line over with its own copy (the FLIP_WHY tail)
+  await page.click('#gw-tray button[data-kind="straight"]')
+  await page.click('#gw-place')
+  await expect(page.locator('#gw-ghost-state')).not.toContainText('reversing')
+  await expect(page.locator('#gw-ghost-state')).toContainText('flipped fit')
+
+  expect(errors).toEqual([])
+})

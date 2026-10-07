@@ -7,8 +7,9 @@ import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts'
  * 1. NOTHING blocks the toolbar while the result panel is open (R: "Remove
  *    clicks died behind the result card" — she replayed identical builds
  *    unknowingly). The panel root is pointer-transparent and its buttons are
- *    hittable THROUGH the open panel; Remove works behind it and dismisses
- *    it; and no element on the page intercepts a toolbar hit.
+ *    hittable THROUGH the open panel; Remove works behind it, dismisses
+ *    it, and refreshes BOTH count lines (the panel-open variant of item 4);
+ *    and no element on the page intercepts a toolbar hit.
  * 2. A reload preserves the WORKING build (S: reload "silently wiped my
  *    in-progress build") — and starts fresh exactly where the save rules say
  *    fresh (?build=par recorded addressing).
@@ -73,6 +74,12 @@ test('the open result panel blocks NOTHING: tray selects and Remove works behind
   await page.click('#gw-remove-piece')
   await expect(page.locator('#gw-piece-count')).toHaveText('0 of 3 pieces used')
   await expect(page.locator('#gw-result')).toBeHidden()
+
+  // The PANEL-OPEN variant of S's counter check: the Remove that succeeds
+  // behind the card must refresh BOTH count lines, not just the builder
+  // tally — the idle line returns to the SAME tally the tally already
+  // shows (S's "4 of 5 vs 3 of 5" wearing the panel-open shape).
+  await expect(page.locator('#gw-status')).toHaveText('ready — 0 of 3 pieces used')
 
   expect(errors).toEqual([])
 })

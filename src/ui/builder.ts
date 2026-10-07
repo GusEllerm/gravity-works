@@ -66,6 +66,12 @@
  *                                           — it rides backwards; fine for
  *                                           a coaster, not for a launch
  *                                           (press R again to flip back)"
+ *   the FIRST empty-handed reverse-arm      says what the press DID, once:
+ *   of a session (nothing held)             "reversing — track runs
+ *                                           backwards this way (press R
+ *                                           unless you want a coaster)"
+ *                                           — retired by the next action,
+ *                                           the first place included
  *   a tray kind's stock                     "drop ×1" → "drop ×0" (counts LEFT)
  *   car events (notes, camera)             the Feel Engineer's lines only
  *
@@ -102,6 +108,18 @@ export const ROTATE_MS = 150;
  *  the same status line, never nagging after the first flip. */
 export const FLIP_WHY =
   'it rides backwards; fine for a coaster, not for a launch (press R again to flip back)';
+
+/** The once-per-session line for the EMPTY-HANDED flip (playtest R's K4
+ *  wall: an R press with nothing held toggled the reversal SILENTLY — with
+ *  no ghost on screen there was no "· rotated" to echo onto — and the flag
+ *  persisted, so one stray press reversed EVERY later mount; she saw it
+ *  only in the diagnosis). The flag-setting press now says what it did,
+ *  once per page session, on the same status line — FLIP_WHY's discipline
+ *  applied to the arm instead of the fit; the next action (the first
+ *  place included) retires the line and the held ghost's own copy takes
+ *  the line over. */
+export const REVERSING_WHY =
+  'reversing — track runs backwards this way (press R unless you want a coaster)';
 
 export type GhostState = 'hidden' | 'snapped' | 'reversed' | 'invalid' | 'blocked';
 
@@ -619,6 +637,10 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
    *  tail exactly once (the flag is per page session — a reload re-teaches,
    *  which is the right scope for "once per session"). */
   let flipWhyShown = false;
+  // the empty-handed sibling of the same once-per-session flag (playtest
+  // R's K4 wall): the FIRST press that ARMS the reversal with nothing
+  // held says so once; later arms and every un-arm stay quiet.
+  let reversingShown = false;
   function ghostCopy(echo: boolean): string {
     const verb = echo && state !== 'hidden' ? `${GHOST_LABEL[state]} · rotated` : GHOST_LABEL[state];
     const why = state === 'reversed' && !flipWhyShown;
@@ -672,6 +694,15 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     // FIRST reversed result the same line also carries the once-per-
     // session WHY tail (playtest Q: "flipped fit" vs "fits here" could not
     // be interpreted).
+    // EMPTY-HANDED R SAYS WHAT IT DID (playtest R's K4 wall): with no
+    // ghost on screen the toggle used to be invisible; the first press
+    // that arms the reversal of a session states it once on the same
+    // line (REVERSING_WHY), and the next action — the first place
+    // included — retires it.
+    if (flipped && kind === null && !reversingShown) {
+      stuckNote = REVERSING_WHY;
+      reversingShown = true;
+    }
     updateGhost(true, true);
   }
 
