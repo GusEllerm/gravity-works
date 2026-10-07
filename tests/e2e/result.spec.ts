@@ -196,6 +196,45 @@ test.describe('the panel at 1280x633 (playtest Z round7: stars/Retry/Next and th
   })
 })
 
+test('the panel Next agrees with the level select for already-starred rungs (close-review F5)', async ({ page }) => {
+  // Same save, two surfaces, ONE answer about whether the next rung is
+  // open. Before the fix the gate read only THIS RUN's stars
+  // (`gateNext(model.stars)`): replay a banked-star level, fail the
+  // replay, and the panel showed Retry only while `?levels=1` said
+  // kitchen02 was open. `gateNext` now takes the max of the run and the
+  // save's prior best — deterministic from the save, no sim impact.
+  // Both directions in one context (the star must exist in the save the
+  // failure is judged against):
+  await page.goto('/?level=kitchen01&launch=1')
+  // DIRECTION 1 — a fresh save, a failed run: Retry only, and the level
+  // select agrees kitchen02 is locked.
+  await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
+  await expect(page.locator('#gw-result-stars')).toHaveText('☆☆☆')
+  await expect(page.locator('#gw-result-retry')).toBeVisible()
+  await expect(page.locator('#gw-result-next')).toBeHidden()
+  await page.goto('/?levels=1')
+  await expect(page.locator('#gw-level-kitchen02')).toHaveAttribute('aria-disabled', 'true')
+
+  // bank the star with the par line (real physics, real recordStars)
+  await page.goto('/?level=kitchen01&build=par&launch=1')
+  await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
+  await expect(page.locator('#gw-result-stars')).toContainText('★')
+
+  // DIRECTION 2 — replay the starred level and FAIL (0 stars this run):
+  // the panel must show Next, because the SAVE says kitchen02 is open —
+  // verified against the level select on the same save.
+  await page.goto('/?level=kitchen01&launch=1')
+  await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
+  await expect(page.locator('#gw-result-stars')).toHaveText('☆☆☆') // this run earned nothing
+  await expect(page.locator('#gw-result-next')).toBeVisible()
+  // the panel's Next actually walks there, and the SAME save opens that
+  // rung on the level select — one answer
+  await page.click('#gw-result-next')
+  await expect(page).toHaveURL(/level=kitchen02/)
+  await page.goto('/?levels=1')
+  await expect(page.locator('#gw-level-kitchen02')).not.toHaveAttribute('aria-disabled', 'true')
+})
+
 test('the help drawer lists the unlocked pieces and its renders are not black', async ({ page }) => {
   const errors: string[] = []
   page.on('console', (msg) => {

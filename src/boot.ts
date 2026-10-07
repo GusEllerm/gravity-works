@@ -775,8 +775,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   };
 
   /** Star-gated progression (§9.2, playtest E/F/G): `Next level` appears
-   *  only when the level EARNED at least one star; a failed run gets Retry
-   *  only. The ladder walk stays the shell's (`nextLevelId`). */
+   *  only when the level HAS a star to its name — this run's OR the
+   *  save's already-earned best (close-review F5: replay a level whose
+   *  star is banked, fail this run, and the panel used to show Retry only
+   *  while the level select said the next rung open — same save, two
+   *  surfaces, two answers; `levelUnlock` reads the saved best, so the
+   *  gate must too). The ladder walk stays the shell's (`nextLevelId`). */
   function gateNext(stars: number): void {
     const show = nextId !== null && stars >= 1;
     resultPanel.next.hidden = !show;
@@ -977,7 +981,11 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // for this level (a failure records nothing); this is what opens the
       // next rung on the level select, exactly what `gateNext` just offered
       recordStars(level.id, model.stars);
-      gateNext(model.stars); // §9.2: the ladder advances on STARS, not on trying
+      // the gate agrees with the level select (close-review F5): the next
+      // rung is offered iff the SAVE says it is unlocked — this run's star
+      // or the already-banked best, deterministic from the save, no sim
+      // impact (§9.2's ladder still advances on STARS, not on trying).
+      gateNext(Math.max(model.stars, bestStarsBefore));
       const h = w.hashHex();
       if (lastRun && lastRun.hash === h && lastRun.pieces !== result.piecesUsed) {
         hashNote.textContent = 'same run — your extra piece never touched the road';
