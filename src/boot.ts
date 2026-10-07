@@ -49,6 +49,7 @@ import { createBuilder, type Builder } from './ui/builder.ts';
 import { parseShareUrl } from './share/share.ts';
 import { replayRun } from './replay/replay.ts';
 import { createBuildAutosave, loadSave, rememberBuild, recordStars, savedBuild } from './save/save.ts';
+import { createSound, upAxisYOfQuat } from './sound/sound.ts';
 import { SET_TOKENS } from './render/tokens.ts';
 import type { PostStack } from './render/post/index.ts';
 import { parFor, starsFor, type RunOutcome, type RunResult } from './world/stars.ts';
@@ -509,6 +510,72 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   hashDetails.append(hashSummary, hashValue, hashNote);
   root.appendChild(hashDetails);
 
+  // ---- SOUND (stage 5) -------------------------------------------------
+  // The mix is event-driven ONLY: every voice is fired from a boot/UI hook
+  // below (a button, an edit, the terminal edge of a run) or from the
+  // throttled read-only `sound.frame` sink at the foot of the frame loop.
+  // The engine reads NO sim state beyond what the screen already renders,
+  // touches NO world object, and the sim/hash never see it (the import
+  // graph is asserted in tests/unit/sound.test.ts). The AudioContext is
+  // built on the FIRST gesture only (autoplay policy) — see `unlockSound`.
+  const sound = createSound();
+  const unlockSound = (): void => sound.unlock();
+  window.addEventListener('pointerdown', unlockSound, { capture: true });
+  window.addEventListener('keydown', unlockSound, { capture: true });
+  document.addEventListener('visibilitychange', () =>
+    sound.setVisible(document.visibilityState === 'visible'),
+  );
+  // the per-set ambience bed (kitchen clock, garden birds — sparse, all
+  // synthesized; see src/sound/voices.ts)
+  sound.setBed(setReg?.id ?? null);
+  // mute + volume, persisted under `settings.sound` (no schema bump — the
+  // optional-key round-trip documented in src/save/save.ts)
+  const soundWrap = document.createElement('div');
+  soundWrap.id = 'gw-sound';
+  // ABSOLUTELY positioned in the page's top-right corner: zero layout
+  // flow (the committed shell baseline is a canvas-element screenshot; a
+  // reflow that nudges the canvas rect by a fraction of a pixel is enough
+  // to break it), and outside the canvas box so it can never land inside
+  // a rendered frame
+  soundWrap.style.cssText =
+    'position:absolute;top:8px;right:12px;z-index:4;display:flex;gap:6px;align-items:center;font:12px system-ui,sans-serif';
+  const soundToggle = document.createElement('button');
+  soundToggle.id = 'gw-sound-toggle';
+  soundToggle.type = 'button';
+  soundToggle.setAttribute('aria-pressed', String(!sound.muted));
+  soundToggle.textContent = sound.muted ? 'Sound: off' : 'Sound: on';
+  soundToggle.style.cssText =
+    'pointer-events:auto;font:12px system-ui,sans-serif;padding:2px 8px;border-radius:4px;border:1px solid rgba(185,163,124,0.7);background:rgba(255,248,236,0.78);color:#6a5636;cursor:pointer';
+  const soundVolume = document.createElement('input');
+  soundVolume.id = 'gw-sound-volume';
+  soundVolume.type = 'range';
+  soundVolume.min = '0';
+  soundVolume.max = '100';
+  soundVolume.step = '5';
+  soundVolume.value = String(Math.round(sound.volume * 100));
+  soundVolume.setAttribute('aria-label', 'Sound volume');
+  soundVolume.style.cssText = 'pointer-events:auto;width:72px;accent-color:#b9915a';
+  soundToggle.addEventListener('click', () => {
+    sound.setMuted(!sound.muted);
+    soundToggle.textContent = sound.muted ? 'Sound: off' : 'Sound: on';
+    soundToggle.setAttribute('aria-pressed', String(!sound.muted));
+    if (document.activeElement === soundToggle) soundToggle.blur(); // playtests P+Q focus policy
+  });
+  soundVolume.addEventListener('input', () => {
+    sound.setVolume(Number(soundVolume.value) / 100);
+  });
+  soundWrap.append(soundToggle, soundVolume);
+  root.appendChild(soundWrap); // page-corner absolute: zero layout flow
+  // the e2e seams (debug surface, not UI): engine state for the mute-
+  // across-reload and repetition-guard specs, and the offline loudness
+  // renderer the loudness spec measures through the SAME master chain
+  (window as unknown as Record<string, unknown>).__gwSound = () => sound.state();
+  void import('./sound/bus.ts').then((bus) => {
+    (window as unknown as Record<string, unknown>).__gwSoundRender = (
+      name: Parameters<typeof bus.renderVoice>[1],
+    ) => bus.renderVoice(OfflineAudioContext, name);
+  });
+
   // preserveDrawingBuffer: the QA seam the e2e canvas probe reads pixels
   // through (same convention as the help drawer's and the harness's
   // renderers — a non-presentable buffer reads back black under Chrome).
@@ -738,8 +805,11 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       autosave.edit(build);
       // first-time callout (§9.3): the first piece of a kind ever PLACED
       if (build.pieces.length > placedCount) {
+        sound.voice('snap'); // the socket click — an EDIT event, not a sim one
         const line = firstSight(build.pieces[build.pieces.length - 1]!.def);
         if (line) calloutLine.textContent = line;
+      } else if (build.pieces.length < placedCount) {
+        sound.voice('blipUndo');
       }
       placedCount = build.pieces.length;
       resultPanel.hide(); // an edited build invalidates the last result
@@ -748,6 +818,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   }));
   builder.attachCanvas(renderer.domElement, camera);
   builder.elements.launch.addEventListener('click', startRun);
+  // the UI blips live on the BUTTONS (canvas placement already sounds the
+  // snap through onChange — one voice per event, never two per action)
+  builder.elements.place.addEventListener('click', () => sound.voice('blipPlace'));
+  builder.elements.remove.addEventListener('click', () => sound.voice('blipUndo'));
   // the progression loop closed on the buttons (§9.1 retry, ladder next):
   // Retry = as-built, one click back to Launch; Next = the following rung,
   // only when this level HAS one; Reset (permanent, beside Launch) walks
@@ -795,6 +869,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     const w = world;
     if (!w) return;
     w.reset();
+    sound.stopRun(); // a walked-home car is not running; close the roll
     acc = 0;
     hazardsTouched = 0;
     runCamActive = false;
@@ -810,7 +885,11 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     endHold = null; // a fresh release owns the framing again
     const w = world;
     if (!w) return;
+    sound.stopRun(); // idempotent: a re-launch never stacks a second roll
     w.launch();
+    sound.voice('launch');
+    sound.beginRun();
+    prevMeshPos = null; // the roll's speed reads motion, not the teleport home
     if (runCam && rig) {
       runCam.snap(rig.nearestArc(w.state().car.pos));
       runCamActive = true;
@@ -880,6 +959,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // line: equal hashes on DIFFERENT builds mean the added piece never
   // entered the hashed body set (statics off the path do not perturb it)
   let lastRun: { hash: string; pieces: number } | null = null;
+
+  // the SOUND frame adapter's only memory: the car mesh's last drawn
+  // position (screen motion, not sim state) — see the frame hook below
+  let prevMeshPos: { x: number; y: number; z: number } | null = null;
 
   let last = performance.now();
   const frame = (now: number): void => {
@@ -977,6 +1060,15 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         placedKindsFor(currentBuild),
       );
       resultPanel.show(model);
+      // the run's OUTCOME is an audio event exactly once per run: the
+      // engine hears the same fields the panel prints (status, stars,
+      // new-best, hazard tally) and nothing else
+      sound.finishRun({
+        status: result.status,
+        stars: model.stars,
+        newBest: model.stars > bestStarsBefore,
+        hazardsTouched: result.hazardsTouched,
+      });
       // §9.2 progress persists: a finished run's stars are the save's best
       // for this level (a failure records nothing); this is what opens the
       // next rung on the level select, exactly what `gateNext` just offered
@@ -1000,6 +1092,28 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     if (w.carMesh) {
       w.carMesh.position.set(pose.pos.x, pose.pos.y, pose.pos.z);
       w.carMesh.quaternion.set(pose.quat.x, pose.quat.y, pose.quat.z, pose.quat.w);
+    }
+    // SOUND adapter (stage 5): READ-ONLY and OUTSIDE the stepping loop —
+    // the two continuous sounds are driven by what the SCREEN shows: the
+    // car mesh's own on-screen speed (position delta / wall dt, fed to the
+    // roll at <=20 Hz by the engine's throttle) and how visibly inverted
+    // the car is (the ring ping's edge). The engine pulls NOTHING.
+    {
+      const here = pose.pos;
+      let screenSpeed = 0;
+      if (prevMeshPos && dt > 0.001) {
+        const dx = here.x - prevMeshPos.x;
+        const dy = here.y - prevMeshPos.y;
+        const dz = here.z - prevMeshPos.z;
+        screenSpeed = Math.sqrt(dx * dx + dy * dy + dz * dz) / dt;
+      }
+      prevMeshPos = { x: here.x, y: here.y, z: here.z };
+      sound.frame({
+        dtMs: dt * 1000,
+        running: w.status === 'running',
+        screenSpeed,
+        upY: upAxisYOfQuat(pose.quat),
+      });
     }
     statusLine.textContent = runStatusLine(w, builder.playerCount(), level.budget);
     if (w.status !== 'idle') hashValue.textContent = w.hashHex(); // live under the details
