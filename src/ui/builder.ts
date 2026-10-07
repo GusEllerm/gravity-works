@@ -31,10 +31,17 @@
  *   start socket stays a target — the arrows and hover still walk there.
  * - HOVERING the canvas moves the target to the nearest open socket on
  *   screen (projection-nearest, within `HOVER_PX`), so the ghost always
- *   shows the socket a click would use BEFORE the click.
+ *   shows the socket a click would use BEFORE the click. Under orbit,
+ *   sockets OVERLAP in screen space — among near-ties (within `AIM_TIE_PX`
+ *   of the nearest screen distance) the socket NEARER the eye wins, and
+ *   the alternates are walkable with `[` `]` / Tab; the target label names
+ *   the tie count and which one the ring marks (playtest S K3: the landing
+ *   "always snapped onto the chain BEHIND the cup").
  * - CLICKING the canvas (a track end, the ghost, anywhere) places the held
  *   piece at the hovered socket — click = place. A CLICK is a press whose
- *   release stayed within `CANVAS_DRAG_PX` (6 px) of its press: a LEFT
+ *   release stayed within `CANVAS_DRAG_PX` (20 px — raised from 6 by
+ *   playtest R: at 6 px an ordinary click with a little finger travel
+ *   silently placed NOTHING) of its press: a LEFT
  *   DRAG that travels is a VIEW gesture (it pans the framing) and places
  *   NOTHING — the old press-move-release counted as a click and
  *   misfire-placed pieces (playtest Q item 6: "left-drag on canvas PLACES
@@ -87,6 +94,13 @@ import type { Level } from '../world/level.ts';
 export const JOIN_TOL = 0.004;
 /** Screen radius (CSS px) in which a canvas hover/click claims a socket. */
 export const HOVER_PX = 120;
+/** Screen px of separation two sockets must exceed to be DIFFERENT aims.
+ *  Within it they are NEAR-TIES: screen space cannot tell them apart, so
+ *  depth decides (the nearer to the eye wins — playtest S K3: orbiting
+ *  made the landing "always snap onto the chain BEHIND the cup"), and the
+ *  alternates are walkable with [ ] / Tab (the choice is EXPOSED, never a
+ *  silent coin-flip). */
+export const AIM_TIE_PX = 28;
 /** The flip animation length — short enough to feel instant, long enough
  *  to be SEEN (playtest G: "clicked R; ghost never visibly changed"). */
 export const ROTATE_MS = 150;
@@ -162,8 +176,17 @@ export interface Builder {
    *  GESTURES are owned by `attachBuildView` (`src/camera/build-camera.ts`),
    *  which calls `aimAt` on hover and `clickPlaceAt` on a clean click. */
   attachCanvas(canvas: HTMLElement, camera?: THREE.Camera): void;
-  /** Hover aims the target ring at the socket nearest this screen point. */
+  /** Hover aims the target ring at the socket nearest this screen point.
+   *  Among screen-space near-ties the NEARER socket (camera distance)
+   *  wins, and the tie list becomes walkable (`cycleAim`). */
   aimAt(clientX: number, clientY: number): void;
+  /** Walk the ring among the near-ties of the last aim point ([ / ] /
+   *  Tab): when screen space cannot separate two sockets, the player —
+   *  not the projector — picks which one the ghost means. */
+  cycleAim(delta: number): void;
+  /** The open target sockets in list order — the e2e seam the aim-depth
+   *  proof reads to find screen-space near-ties. */
+  openSockets(): Socket[];
   /** A clean click (no drag travel — the gesture gate upstream decides):
    *  aim, then place the held piece at the aimed socket. */
   clickPlaceAt(clientX: number, clientY: number): void;
@@ -308,7 +331,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   const hint = document.createElement('p');
   hint.id = 'gw-tray-hint';
   hint.setAttribute('aria-live', 'polite');
-  hint.textContent = 'Aim: hover the world or ←→ · Place: click the world or Enter · Flip: R · Look: right-drag';
+  hint.textContent = 'Aim: hover the world or ←→ · Place: click the world or Enter · Flip: R · Look: right-drag · Home: Esc Esc';
   hint.hidden = true;
   root.appendChild(hint);
   // the VISIBLE reason behind every greyed/spent tray button — one counter,
@@ -515,7 +538,14 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     // label line names its socket — held piece or not (playtest Q: the
     // white rings were mute; the ring is always the answer to "where will
     // it go", so it is never silent).
-    targetLabel.textContent = list.length > 0 ? `target: ${list[targetIndex]!.label}` : '';
+    targetLabel.textContent =
+      list.length > 0
+        ? aimTies.length > 1 && targetIndex === aimTies[aimTieCursor]
+          ? // THE CHOICE IS VISIBLE: the ring names how many sockets the
+            // pointer could mean and which one it currently marks
+            `target: ${list[targetIndex]!.label} · ${aimTieCursor + 1} of ${aimTies.length} near — [ ] to pick the other`
+          : `target: ${list[targetIndex]!.label}`
+        : '';
     if (list.length === 0 || !scene) {
       state = 'hidden';
       anim = null;
@@ -641,6 +671,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   function cycleTarget(delta: number): void {
     const n = targets().length;
     if (n === 0) return;
+    aimTies = []; // the arrows walk the socket list, leaving the pointer's ties
     targetIndex = (targetIndex + delta + n) % n;
     updateGhost();
   }
@@ -662,7 +693,14 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   function place(): boolean {
     const list = targets();
     stuckNote = null;
-    if (!kind || list.length === 0) return false;
+    aimTies = []; // a mutation retires the last aim point's ties
+    if (list.length === 0) {
+      // NEVER SILENT (playtest R: "fits here shown, click = nothing") — a
+      // place-intent with nowhere to land says so on the status line
+      ghostState.textContent = 'no open socket to place at — the line has no free end';
+      return false;
+    }
+    if (!kind) return false;
     if (trayPlaced() >= level.budget) {
       // nothing left ANYWHERE — a hold here is a stranded hold; release it
       if (!selectable(kind)) setKind(null);
@@ -737,11 +775,38 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   // ---- canvas aiming (hover aims, click places — gestured upstream) -------
   let canvasEl: HTMLElement | null = null;
   let camera: THREE.Camera | null = null;
+  /** The near-tie candidates of the LAST aim point, ordered NEAR-DEPTH
+   *  first (screen space cannot separate them, depth can — playtest S K3);
+   *  `cycleAim` walks the player through this list so the choice is never
+   *  a silent projection coin-flip. Emptied by any mutation or arrow-walk
+   *  (the ties belong to a screen point, not to the build). */
+  let aimTies: number[] = [];
+  let aimTieCursor = 0;
 
   function aimAt(clientX: number, clientY: number): void {
-    const hit = socketAtPoint(clientX, clientY);
-    if (hit >= 0 && hit !== targetIndex) {
-      targetIndex = hit;
+    const cands = socketCandidates(clientX, clientY);
+    if (cands.length === 0) {
+      aimTies = [];
+      return; // nowhere to aim here — the ring keeps the last real target
+    }
+    aimTies = cands;
+    aimTieCursor = 0;
+    const pick = cands[0]!;
+    targetIndex = pick;
+    // ALWAYS refresh: a tie changes the LABEL even when it keeps the index
+    updateGhost();
+  }
+
+  function cycleAim(delta: number): void {
+    if (aimTies.length < 2) {
+      // no ambiguity to walk: the keys stay the arrow keys' story
+      cycleTarget(delta);
+      return;
+    }
+    aimTieCursor = (aimTieCursor + delta + aimTies.length) % aimTies.length;
+    const idx = aimTies[aimTieCursor]!;
+    if (idx < targets().length) {
+      targetIndex = idx;
       updateGhost();
     }
   }
@@ -751,24 +816,31 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     if (kind) place();
   }
 
-  /** Nearest open socket to a pointer position (CSS px in the canvas box),
-   *  or -1 when every socket is farther than HOVER_PX. */
-  function socketAtPoint(clientX: number, clientY: number): number {
-    if (!camera || !canvasEl) return -1;
+  /** The open sockets a pointer position could mean, ordered NEAR-DEPTH
+   *  first: everything within `HOVER_PX` on screen, reduced to the
+   *  near-ties of the screen-nearest one (within `AIM_TIE_PX` of its
+   *  screen distance), then sorted by CAMERA distance ascending — the
+   *  nearer depth wins a screen-space tie (playtest S K3: the landing
+   *  "always snapped onto the chain BEHIND the cup" because the far
+   *  socket happened to project a few px closer). Empty when every open
+   *  socket is farther than `HOVER_PX`. */
+  function socketCandidates(clientX: number, clientY: number): number[] {
+    if (!camera || !canvasEl) return [];
     const rect = canvasEl.getBoundingClientRect();
     const v = new THREE.Vector3();
-    let best = -1;
-    let bestD = HOVER_PX;
+    const near: { i: number; dPx: number; dCam: number }[] = [];
     targets().forEach((t, i) => {
       v.copy(t.socket.pos).project(camera!);
       if (v.z > 1) return; // behind the camera
       const d = Math.hypot((v.x * 0.5 + 0.5) * rect.width - (clientX - rect.left), (0.5 - v.y * 0.5) * rect.height - (clientY - rect.top));
-      if (d < bestD) {
-        bestD = d;
-        best = i;
-      }
+      if (d <= HOVER_PX) near.push({ i, dPx: d, dCam: camera!.position.distanceTo(t.socket.pos) });
     });
-    return best;
+    if (near.length === 0) return [];
+    const best = Math.min(...near.map((c) => c.dPx));
+    return near
+      .filter((c) => c.dPx <= best + AIM_TIE_PX)
+      .sort((a, b) => a.dCam - b.dCam || a.i - b.i)
+      .map((c) => c.i);
   }
 
   // ---- wiring ------------------------------------------------------------
@@ -800,6 +872,17 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       ArrowLeft: () => cycleTarget(-1),
       ArrowUp: () => cycleKind(1),
       ArrowDown: () => cycleKind(-1),
+      // depth-disambiguation keys (playtest S K3): walk the ring among the
+      // screen-space near-ties of the last aim point — the ring and the
+      // label say which one the ghost means
+      BracketRight: () => cycleAim(1),
+      BracketLeft: () => cycleAim(-1),
+      Tab: () => {
+        // Tab cycles the near-ties ONLY while the WORLD holds focus; over
+        // a control it stays the browser's focus walk (never stolen)
+        if (onWorld) cycleAim(1);
+        else return;
+      },
       r: rotate,
       R: rotate,
       Enter: () => {
@@ -815,6 +898,10 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     // a focused <button> keeps its native Enter activation — preventing the
     // default there would CANCEL the click, not just the page action
     if (onButton && ev.key === 'Enter') return;
+    // Tab over a control is the browser's focus walk — the world's tie
+    // cycle above already returned for that case; be sure the default is
+    // not prevented either way
+    if (ev.key === 'Tab' && !onWorld) return;
     ev.preventDefault();
     fn();
   });
@@ -847,9 +934,13 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     setKind,
     cycleKind,
     cycleTarget,
+    cycleAim,
     rotate,
     place,
     removeLast,
+    /** The open target sockets in list order (world positions) — the e2e
+     *  seam the aim-depth proof reads to find screen-space near-ties. */
+    openSockets: () => targets().map((t) => t.socket),
     playerCount: () => trayPlaced(),
     kind: () => kind,
     ghost: () => state,

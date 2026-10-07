@@ -165,7 +165,7 @@ booted page so the coverage counts clock from the run, not the page (stage
 4 round 4 — see the stale-floor note below). The build view is guarded by
 `tests/unit/build-camera.test.ts` (zero-state bit-identity, clamps, yaw-only
 invariance, damping) and `tests/e2e/build-view.spec.ts` (orbit turns without
-placing; pan never places; a <6 px click places; Space+drag orbits).
+placing; pan never places; a ≤20 px click places; Space+drag orbits).
 
 ## Depends on / used by
 
@@ -230,13 +230,24 @@ camera never frames the cup". Four fixes, all camera-side:
   now shoots BOTH L02 lines (`?build=alt` = `kitchen02ArcBuild`, addressed
   by boot's `ALT_LINES` table — level DATA untouched).
 
-Framing lives with `frameCamera` (`src/boot.ts`, exported for the proof):
+framing lives with `frameCamera` (`src/boot.ts`, exported for the proof):
 the static/table/load framing biases its look-at 35 % toward the cup's
 capture centre (cup |ndc| ≤ 0.28 vs 0.43/0.46 cornering when N could not
 find the goal; every track corner still ≤ 0.49) and the RUN-END (end-hold)
 pass unions the car's FINAL position — clamped to the track's ±0.6 m
 neighbourhood — into the subject, so the verdict panel lands over a frame
-that CONTAINS the death spot (M item 6). Proved per-line in
+that CONTAINS the death spot (M item 6). Since playtest R round 3 the
+FAILURE branch (fell/stalled/timed out) takes `frameDeathHold`
+(`src/camera/build-camera.ts`) instead of the cup-biased solve: same table
+family but widened (span × 1.5, floor 1.4), the look-at biased 55 % toward
+the car's LAST SEEABLE point (the death is the story of a failed run, not
+the launch framing R got), and the composed eye cleared over the set
+solids by the run camera's own rule — eye out of every box, sightline over
+every box whose top it crosses, target-inside excepted (the sink case).
+Boot keeps the witness in `endHold` so the build-view damping tick
+re-solves the SAME cleared pose instead of overwriting the eye lift;
+Retry/Launch/edit clear it and success keeps the cup framing unchanged.
+Proved per-line in
 `tests/unit/camera.test.ts` (goal-framing + end-hold block).
 
 ## Stage 4 round 4: the build view (playtest Q, "one fixed angle")
@@ -266,20 +277,43 @@ answer is `src/camera/build-camera.ts`, the RESTRICTED build orbit:
   the framing home (`reset()` zeroes the targets).
 - **`attachBuildView(canvas, view, {onHover, onPlace})`** is the app's ONE
   canvas gesture owner, and the click-vs-drag disambiguation is explicit:
-  hover AIMS; a press released within `CANVAS_DRAG_PX` (6 CSS px) PLACES
-  at the aimed socket; a press that TRAVELS is a framing gesture — left
-  pans, RIGHT-drag (or SPACE+drag) orbits — and places NOTHING; the wheel
-  is unwired (there is no build zoom) and the canvas menu is suppressed
-  (right-drag is the orbit, not a menu). The builder registers no pointer
-  listeners of its own any more (`aimAt`/`clickPlaceAt` are its verbs),
-  which makes Q's press-move-release place structurally impossible.
+  hover AIMS; a press released within `CANVAS_DRAG_PX` (**20** CSS px —
+  raised from 6 by playtest R round 3, where an ordinary click with a
+  little finger travel latched as a drag and SILENTLY placed nothing)
+  PLACES at the aimed socket; a press that TRAVELS is a framing gesture —
+  left pans, RIGHT-drag (or SPACE+drag) orbits — and places NOTHING; the
+  wheel is unwired (there is no build zoom) and the canvas menu is
+  suppressed (right-drag is the orbit, not a menu). The builder registers
+  no pointer listeners of its own any more (`aimAt`/`clickPlaceAt` are its
+  verbs), which makes Q's press-move-release place structurally
+  impossible. **STATE ROBUSTNESS** (playtests R+S round 3: orbit "worked
+  once, then dead permanently"; the camera "zombied into a parts-bin
+  void"): a press whose release is LOST (up off the window, capture
+  stolen) used to leave the recogniser believing the button was down, so
+  every later HOVER moved the framing until the yaw pinned at its clamp.
+  Three defences, none trusting one event: every `pointermove` reconciles
+  the physical `ev.buttons` mask against the pressed button (a lost
+  release dies on the next hover — hover can NEVER move the framing);
+  `pointerup`/`pointercancel` are decided on `window` (a release the
+  canvas misses still ends the press); and **`Escape Escape`
+  recenters** — `view.reset()` from ANY state, the damping walk bringing
+  the pose home (the recovery hatch by construction). A `click` with no
+  pointer sequence behind it (`detail 0`, a synthetic/automation click)
+  routes to the place verb too, deduped against the pointer path — a
+  click is a place INTENT whoever sent it. A second button joining an
+  open press makes the verb ORBIT (right wins) without re-anchoring the
+  click origin, and a held Space is released on window blur.
 - **Proofs**: `tests/unit/build-camera.test.ts` (zero-state bit-identity
   with `frameCamera`; yaw/pan clamps; yaw-only invariances — eye distance,
   elevation and roll frozen, pan a pure translation; 63 % step response
   within one τ) and `tests/e2e/build-view.spec.ts` on the BUILT page
   (right-drag turns the CAMERA — `__gwCameraPose` + `__gwBuildView` seams —
   and places nothing; left-drag pans, quaternion unchanged, places nothing;
-  a <6 px click still places; Space+drag orbits).
+  a ≤20 px click still places; Space+drag orbits) and
+  `tests/e2e/camera-torture.spec.ts` (a lost-release drag is reconciled —
+  hover NEVER moves the framing; 20 randomized pointer operations leave
+  the state finite, clamped and responsive, and double-Escape brings the
+  pose home).
 - **THE FILMSTRIP'S COVERAGE FLOOR WAS STALE** (fixed here, level data
   untouched): the L02 redesign shortened the line to ~1.01 s, and both
   sampling gates still counted wall-clock boundaries from PAGE start —

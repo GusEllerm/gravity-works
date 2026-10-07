@@ -63,7 +63,7 @@ import { placeSet } from './world/setPlacement.ts';
 import { KitRig, finishCapture } from './feel/kittrack.ts';
 import { RunCamera } from './camera/run-camera.ts';
 import type { RunCameraSolid } from './camera/run-camera.ts';
-import { BuildCamera, attachBuildView } from './camera/build-camera.ts';
+import { BuildCamera, attachBuildView, frameDeathHold } from './camera/build-camera.ts';
 import type { PieceKind, PieceParams } from './track/pieces.ts';
 
 // Level registry ids reachable through ?level= (importing each file is what
@@ -546,6 +546,11 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // = pan, and a click that TRAVELLED places NOTHING (the one gesture
   // contract lives in `attachBuildView`, src/camera/build-camera.ts)
   const buildView = new BuildCamera();
+  // the FAILURE end-hold's witness (playtest R round3, see the frame loop):
+  // the car's last seeable point while the wide death-hold owns the static
+  // framing after a failed run; null whenever any other framing owns the
+  // pose (idle, a run, a success end-hold, a rebuild, Retry)
+  let endHold: { x: number; y: number; z: number } | null = null;
   // stage-3 run-end layer: the evidence recorder feeds the physics note, the
   // panel only shows on a TERMINAL status (§5.11: no panels during a run)
   const recorder = createRunRecorder();
@@ -600,6 +605,20 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     yawTarget: buildView.yawTarget,
     panTarget: [buildView.panTargetX, buildView.panTargetY],
   });
+  // the e2e seam for the AIM-DEPTH proof (playtest S K3): the open target
+  // sockets' world positions — the test projects them to find a screen-
+  // space near-tie and asserts which one the ring took (debug surface)
+  (window as unknown as Record<string, unknown>).__gwOpenSockets = (): number[][] =>
+    builder.openSockets().map((s) => [s.pos.x, s.pos.y, s.pos.z]);
+  // the e2e seam for the FAILURE end-hold: the car's settled world
+  // position — the death site the wide hold must keep in frame (debug
+  // surface, not UI)
+  (window as unknown as Record<string, unknown>).__gwCarPos = (): number[] | null => {
+    const w = world;
+    if (!w) return null;
+    const p = w.carPose(0).pos;
+    return [p.x, p.y, p.z];
+  };
 
   createHelpDrawer(stage, { reducedMotion: loadSave().settings.reducedMotion ?? undefined });
   // quiet, focusable, TOP-RIGHT of the world (playtest A+F: “Help = collapsed
@@ -681,6 +700,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     acc = 0;
     hazardsTouched = 0;
     runCamActive = false;
+    endHold = null;
     buildView.reset();
     if (w.scene) frameCamera(camera, w.scene, framingFocus, null, buildView);
     resultPanel.hide();
@@ -689,6 +709,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   function startRun(): void {
     acc = 0;
     hazardsTouched = 0;
+    endHold = null; // a fresh release owns the framing again
     const w = world;
     if (!w) return;
     w.launch();
@@ -740,6 +761,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
           })
         : null;
     runCamActive = false;
+    endHold = null; // an edited build retires the last death witness
     frameCamera(camera, next.scene, framingFocus, null, buildView)
     // the same tally line the frame loop writes (ONE counter, ONE verb —
     // never a bare "ready" that skips the number the tray already shows)
@@ -800,7 +822,28 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // so the wide end-of-run shot keeps car and cup in one frame under
       // the verdict panel — never a chase cut-out that hides the death
       // spot the player most needs to read (playtest M/N item 7).
-      frameCamera(camera, w.scene, framingFocus, w.carPose(0).pos, buildView);
+      //
+      // FAILURE takes the WIDE DEATH-HOLD (playtest R round3: "buried in
+      // a peach wall on fail — never saw the marble fall"): on fell /
+      // stalled / timed-out the framing biases toward the car's LAST
+      // SEEABLE point, not the cup side, widens past the table solve, and
+      // clears the eye over the set solids the way the run camera does —
+      // a wall-bury frame of a death the player must read is not a legal
+      // end pose. Success keeps the cup-biased framing (it frames well,
+      // R's own words). `endHold` keeps the witness live for the damping
+      // tick below, so a settling view re-solves the SAME cleared pose
+      // instead of overwriting the eye lift with the raw table framing.
+      if (w.status === 'finished') {
+        endHold = null;
+        frameCamera(camera, w.scene, framingFocus, w.carPose(0).pos, buildView);
+      } else {
+        endHold = { ...w.carPose(0).pos };
+        frameDeathHold(camera, w.scene, {
+          death: endHold,
+          solids: camSolids,
+          view: buildView,
+        });
+      }
       const result: RunResult = {
         status: w.status,
         time: w.time,
@@ -857,8 +900,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       camera.quaternion.copy(runCam.rotation);
     } else if (buildView.step(dt)) {
       // the BUILD VIEW damping tick (playtest Q): an orbit/pan gesture
-      // damps to its target outside a run; stillness costs nothing
-      buildView.apply(camera);
+      // damps to its target outside a run; stillness costs nothing. A
+      // pending failure end-hold RE-SOLVES its cleared wide pose through
+      // the damped view state instead of the raw apply (the lift must not
+      // be overwritten by a settling frame — playtest R round3).
+      if (endHold) frameDeathHold(camera, w.scene, { death: endHold, solids: camSolids, view: buildView });
+      else buildView.apply(camera);
     }
     if (post) {
       post.setFocus([pose.pos.x, pose.pos.y, pose.pos.z]); // §7.3: band centred on the car
