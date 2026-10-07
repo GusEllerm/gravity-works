@@ -424,49 +424,53 @@ not a suggestion.
 
 **KITCHEN 02 — Two Ways** (`kitchen02.level.ts`). Teaches: a choice, and
 that the fast line is not the showy one. STAGE-4 DISCOVERABILITY PASS (the
-Playtest H + K wall): H never cleared this rung in 4 tries (three deaths
-~2.39–2.47 s, “fell off after a long jump — the gap outran the landing”) and
-K quit after 3 builds (3.06/3.10/3.14 s, all “fell off the set”). Replaying
-every chain their reports describe on the mount the SHIPPED builder makes
-reproduced both death classes on the OLD tray: chains whose drop sat late
-launched long and fell INTO the hole (~2.4 s — H), and chains that summed
-past the anchored cup — the `landing` route’s reach exceeded the lazy
-line’s by a whole 0.36 m of overshoot — rolled/flew PAST the cup and fell off
-the far end (~3.0–3.1 s — K; the E-pass claim “the line was discoverable,
-the failure predates the target-follow fix” was only ever true of ONE
-ordering, and the wall was the level, not the UI). The finding was the wall
-because the 5-piece tray made the answer “which 3–4 of 5, in what order?” —
-L04’s disease on a rail where order MOVES the hole (only flat, hole-free
-lines are order-invariant sums).
-The fix is the tray + the reach law, not the difficulty. THE TRAY IS THE
-UNION OF THE TWO LINES — {`straight`×2, `gapLip`, `drop`} = 4, none spare:
-the LAZY line is `straight → drop → straight` (the par, measured 2.17 s, par
-2.20) and the ARC line is `gapLip → drop → straight` (2.19 s) — the swap of
-ONE straight FOR the lip IS the choice. The law that made this possible:
-flat sockets ⇒ a chain’s reach is the SUM of its spans, so the level’s ONE
-`straight` geometry was set to 0.09 m = the `gapLip`’s span, and L02’s lip
-(12°) and `drop` (leads 0.07 m) are re-tuned LOCALLY — the level’s one
-deviation from the KITCHEN_GAP-chain convention, declared in `trayParams`.
-Both lines then sum EXACTLY to the anchored cup. Measured on the builder
-mount (all test-gated like bedroom04’s gate): EVERY order of the WHOLE tray
-finishes — 12/12 distinct orders, 2.17–3.10 s — so K’s place-everything
-fallback can no longer die; the two lines finish in every internal order;
-`drop` first runs 2.17 against the 2.20 par (beatable — order, not subset,
-is the speed question); and the obvious straight route (`straight →
-straight`, 0.18 m of deck across a 0.44 m gap) fails EARLY and FAST at
-2.35 s, the drama that replaces the mystery. All 1–2-piece builds fail.
-Known measured edge, pinned by test so it stays falsifiable: the
-three-piece fluke `straight → straight → gapLip` catapults over the hole
-WITHOUT the `drop` (2.20 s) — the old “no build missing the drop crosses”
-law needed the big gap the two lines could not share. The lesson as shipped
-is now true IN THE GAME, not just in the chained model: lazy wins by 0.02 s
-— small, measured, honest (the bedroom03 precedent). The “seam cue” option
-(prop placement at the table edge) was NOT needed once no reachable build
-dies far from the cup; the callout `drop` line was rewritten first-line
-(“the line crosses where the drop is”) but teaches placement, not the
-lesson — geometry carries that. The curve run-out past the cup is unchanged
-fixture geometry (the mid-run `curve` rung stays BLOCKED, ask #1), and the
-counter row in the set-wiring table re-derived with the shortened rail.
+Playtest H + K wall) fixed WHICH builds finish — the tray is now the UNION
+of the two lines ({`straight`×2, `gapLip`, `drop`} = 4, none spare), one
+`straight` geometry EQUAL to the `gapLip`'s span (the reach-sum law: flat
+sockets ⇒ a chain's reach is the SUM of its spans), and EVERY order of the
+whole tray finishes. STAGE-4 FAIL-TIMING PASS (this pass) fixed what the
+WRONG builds teach. Every later playtest died INVISIBLE and IDENTICAL: nine
+distinct wrong builds and first tries all ended at ~2.2–2.4 s, "car vanished
+out of sight" — because the shared `kitchenRamp(0.28)` (−12°, a 1.43 m
+crawl) spends ~1.8 s of clock before any chain can discover its mistake,
+then all cover a similar flight to a similar near-cup death. The standing
+finding — "the ramp's angle is the CLUSTERING ENGINE; sweep steeper launch
+ramps × void sizes" — was executed as ~25 000 headless worlds on the shipped
+mount; the sweep's verdict: THE DEATH CLOCK IS RAMP-END ARRIVAL + A CONSTANT
+~0.4 s FALL (angle moves it only through height), a belly hop across a flat
+air gap dies at ≥ 0.10 m of gap (no hop distance at all), and no
+flat-socket void size separates a lip catapult from a drop catch — so
+separation must come from the CLOCK, by steering the release line straight
+into the void. THE GEOMETRY NOW: a short steep chute (`angle −29`, 0.16 m —
+a stated deviation from the ladder's −12° ramp convention, like L04's gap),
+blend 0.12 m (its own knob: the 0.08 blend left the run camera pitched down
+the chute while the car was at the drop — car at |ndc| 0.99 past the 0.95
+frustum gate; 0.12 eases it to 0.89, and 0.14, though camera-clean, stalls
+one whole-tray order); one `straight` = the lip's span = 0.11 m (doubled
+with the lip's deck length 0.0405, law intact); the `drop` deviates again —
+0.10 m step (below the ladder's 0.12) with 0.125 m leads: at 0.12 of step
+NO lead stopped the `gapLip → drop` pair wedge-capturing the cup lip at par
+speed; at 0.10 the pair-belly and the pop-catch thresholds coexist and
+every 2-piece build dies. WHAT FAILING NOW TEACHES (every chainable build
+enumerated on the shipped mount, test-pinned — 34 builds): wrong builds die
+in THREE VISIBLE FAMILIES — ~0.9 s bare/flat builds fly off the ramp end
+into the void AT the rail; ~1.05 s bridged decks land IN the void a
+rail-length out; ~1.15 bridge+lip catapults; ~1.25 s drop-pairs cross the
+visible catch and fall off its far deck ("the deck must REACH the cup").
+Nothing flies past the cup any more — the fail gate samples the last point
+ABOVE the rail deck plane (the old x-check sampled cars already sliding on
+the floor, whose x drifts ~0.5 m, and could not see flyovers). Both lines
+still finish and still order their lesson: lazy `straight → drop →
+straight` 1.01 s vs arc `gapLip → drop → straight` 1.07 s (the pop costs
+the hop — honest, measured, the bedroom03 precedent), par 1.05, BEATABLE by
+`drop → straight → straight` at 1.00, and all 12 whole-tray orders finish
+1.00–1.13 s. NO WRONG BUILD FINISHES: both former pinned exceptions are
+dead at this geometry — the `straight → straight → gapLip` catapult (once a
+2.20 s finisher) falls in the void at ~1.15 s, and the `gapLip → drop`
+wedge-capture falls at ~1.27 s. Robust across seeds 1–6 and launch speeds
+×1.0–1.1. The curve run-out past the cup is unchanged fixture geometry (the
+mid-run `curve` rung stays BLOCKED, ask #1); the counter row in the
+set-wiring table re-derived with the shorter, higher rail.
 
 **KITCHEN 03 — The Bowl** (`kitchen03.level.ts`). Teaches: the set's
 signature at speed — the gap verbs back to back beside the cereal bowl. The
@@ -876,7 +880,7 @@ seats, the tray's own geometry, fixtures anchored):
 
 | line | chained (the card's number) | anchored (what a player builds) |
 |---|---|---|
-| L02 arc route | finished 2.19 s | finished 2.19 s — the card's claim now HOLDS on this mount (stage-4 discoverability pass: both lines sum to the anchored cup by the reach law; the lazy par runs 2.17 s here) |
+| L02 arc route | finished 1.07 s | finished 1.07 s — the card's claim HOLDS on this mount (stage-4 fail-timing pass: both lines sum to the anchored cup by the reach law at the new 0.11 m span; the lazy par runs 1.01 s here and every whole-tray order 1.00–1.13 s) |
 | L04 ground build (hazard probe, not a route since the learnability pass) | finished 2.292 s (wet) | **`fell` at 2.675 s** — two 0.3 m straights stop short of the anchored cup |
 | L05 both wrong allocations | `fell` | `fell` (unchanged: the trade-off holds either way) |
 
