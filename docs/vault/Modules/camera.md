@@ -387,3 +387,21 @@ answer is `src/camera/build-camera.ts`, the RESTRICTED build orbit:
   window sits entirely inside a drawn, running run: shipped worst frames
   L01 40.1 %, L04 52.1 %, L02-par 37.9 %, L02-alt 36.2 % (bar 60 %), the
   250 ms strip five gap-checked frames, both gates green twice.
+
+## Stage 5: the same grammar inside the replay follow shot
+
+`RunCamera` has a second consumer: the cinematic replay's FOLLOW shot
+(`src/replay/cinematic.ts` `stepAndRecord`, `Modules/replay`) drives a fresh
+instance at the sim's own `FIXED_DT` while recording, so the rail lead,
+trail, prop-clearance lift and finish crane the game camera does ride the
+share page with zero new camera code — the poses are stored per step and
+played back as recorded, which is why playback speed (1×/2×/4×) cannot
+rescale the filters. The solids list is the same `setCameraSolids` walk the
+game page feeds, mounted from the share payload's level. The replay's WIDE
+and FINISH shots are analytic (bbox-fit and cup-capture framing, fov
+`REPLAY_FOV` 28° per §7.3), not `RunCamera` — a camera that FRAMES over one
+that follows, the follow kept for the middle act. `tests/unit/cinematic.test.ts`
+asserts the recorded follow pose at a mid-shot time IS the follow state the
+same-step game driving would show (same source, same dt); the seek proofs in
+`tests/e2e/share-replay.spec.ts` keep the STATE (not the camera) exactly the
+sim's.

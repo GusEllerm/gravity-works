@@ -242,3 +242,16 @@ has 5, the four stage-4 rooms have 4 each — trimmed deliberately for design de
 ladder notes). Porch lands as a 5-rung set -> 26 levels. The acceptance is honoured in substance:
 `tools/replay-all` (or the e2e equivalent) verifies the replay hash of EVERY registered level's par
 build, and the count is stated honestly in the session log rather than padding rungs to hit a number.
+
+## 2026-10-09 — Stage 5 replay seek model: pre-record, don't re-sim on seek `[agent decision]` (Feel Engineer)
+Two shapes for "drag-to-seek on a deterministic run": (a) keep a live World and STEP it forward
+per seek, re-launching from scratch for a backward seek; (b) fast-forward the one deterministic
+sim ONCE before the first frame — storing every step's `state()` plus the follow-camera poses
+advanced at `FIXED_DT` — and make playback/seek pure reads (`floor(t/dt)` into the record).
+Chose (b): the invariant the brief demands ("state at t is the sim's state at t") is true BY
+CONSTRUCTION rather than by an O(t) re-run that would stutter on every backward scrub, and the
+record doubles as the test surface — Node's `replayRun({record:true})` yields the identical list,
+asserted step-for-step with zero difference. Cost: ~15·120 steps of upfront sim (well under a
+second) and ~200 KB of doubles for a capped run. Alternatives rejected: keyframe + interpolation
+(forbidden — invented states), live re-stepping (a); recorded video of a first playthrough
+(a second source of truth).

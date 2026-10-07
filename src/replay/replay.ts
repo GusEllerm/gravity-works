@@ -18,6 +18,22 @@ export interface ReplayOptions {
   maxSteps?: number;
   /** Forward release speed (sim units) passed to the World. */
   launchSpeed?: number;
+  /** Record the per-step car transforms alongside the hash (stage 5 seek
+   * proof: the page's recorded cinematic trace must equal THIS list step for
+   * step). Off by default — a plain replay stays exactly the stage-2 call. */
+  record?: boolean;
+}
+
+/** One post-step sample of the car (world metres, quaternion x,y,z,w). The
+ * step index is the sample index: sample k is the state after step k+1, so
+ * state at sim time t is sample `floor(t / FIXED_DT)` — never an
+ * interpolation of two samples. */
+export interface TraceSample {
+  t: number;
+  pos: [number, number, number];
+  quat: [number, number, number, number];
+  speed: number;
+  grounded: boolean;
 }
 
 export interface ReplayResult {
@@ -28,6 +44,8 @@ export interface ReplayResult {
   steps: number;
   time: number;
   status: RunStatus;
+  /** Per-step car transforms when `record` was set (see `TraceSample`). */
+  trace?: TraceSample[];
 }
 
 export async function replayRun(
@@ -40,14 +58,28 @@ export async function replayRun(
     launchSpeed: options.launchSpeed,
   });
   const cap = options.maxSteps ?? 15 * 120;
+  const trace: TraceSample[] | undefined = options.record ? [] : undefined;
   world.launch();
-  while (world.stepCount < cap && world.status === 'running') world.step();
+  while (world.stepCount < cap && world.status === 'running') {
+    world.step();
+    if (trace) {
+      const s = world.state();
+      trace.push({
+        t: world.time,
+        pos: [s.car.pos.x, s.car.pos.y, s.car.pos.z],
+        quat: [s.car.quat.x, s.car.quat.y, s.car.quat.z, s.car.quat.w],
+        speed: s.car.speed,
+        grounded: s.car.grounded,
+      });
+    }
+  }
   const result: ReplayResult = {
     hash: world.hashHex(),
     hashValue: world.hash(),
     steps: world.stepCount,
     time: world.time,
     status: world.status,
+    ...(trace ? { trace } : {}),
   };
   world.dispose();
   return result;

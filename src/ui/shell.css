@@ -163,3 +163,40 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
  * from code; keep the spent buttons visually distinct without removing them
  * from the tab order (aria-disabled, not disabled) */
 #gw-tray button[aria-disabled='true'] { opacity: 0.45; }
+/* THE CINEMATIC REPLAY (stage 5): the share link opens INTO the replay — a
+ * quiet bar under the canvas (bible §5.11: UI is a thin layer, no game-UI),
+ * the scrub track carrying the run's event beats as ticks, and the honest
+ * verification hash pushed BELOW the fold. See src/boot.ts bootSharedRun. */
+#gw-replay-title { margin: 4px 0 0; }
+#gw-replay-tagline { font-size: 13px; color: #6a5636; margin: 2px 0 8px; }
+#gw-replay-badge { display: inline-block; font-size: 12px; color: #2c2013; background: #f0d9a8; border: 1px solid #8a7040; border-radius: 999px; padding: 2px 10px; margin: 0 0 8px; }
+#gw-replay-badge[hidden] { display: none; }
+#gw-replay-bar { display: flex; align-items: center; gap: 8px; margin: 8px 0 2px; flex-wrap: wrap; }
+#gw-replay-bar[hidden] { display: none; }
+#gw-replay-play, .gw-replay-speed {
+  font: 13px system-ui, sans-serif;
+  color: #2c2013;
+  background: #fff8ec;
+  border: 1px solid #8a7040;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.gw-replay-speed[aria-pressed='true'] { background: #f0d9a8; font-weight: 600; }
+#gw-replay-time { font-size: 12px; color: #6a5636; font-variant-numeric: tabular-nums; }
+#gw-replay-timeline {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: 180px;
+  height: 22px;
+  background: #e6d3b3;
+  border: 1px solid #d8c49a;
+  border-radius: 4px;
+  cursor: pointer;
+  touch-action: none;
+}
+#gw-replay-head { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1px; background: #8a7040; border-radius: 2px; pointer-events: none; }
+.gw-replay-tick { position: absolute; top: 3px; bottom: 3px; width: 3px; margin-left: -1px; background: #c46a2b; border-radius: 2px; }
+#gw-replay-build { font-size: 13px; color: #2c2013; border: 1px solid #8a7040; border-radius: 6px; padding: 4px 10px; text-decoration: none; background: #fff8ec; }
+#gw-replay-verify { font-size: 12px; color: #6a5636; margin-top: 40px; }
+#gw-replay-verify p { margin: 4px 0; }

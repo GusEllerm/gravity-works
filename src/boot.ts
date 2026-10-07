@@ -46,8 +46,9 @@ import { fitSocket } from './track/snap.ts';
 import { transformSocket } from './track/socket.ts';
 import type { Level } from './world/level.ts';
 import { createBuilder, type Builder } from './ui/builder.ts';
-import { parseShareUrl } from './share/share.ts';
+import { parseShareUrl, type SharePayload } from './share/share.ts';
 import { replayRun } from './replay/replay.ts';
+import { stepAndRecord, ReplayDirector, cupView, REPLAY_FOV } from './replay/cinematic.ts';
 import { createBuildAutosave, loadSave, rememberBuild, recordStars, savedBuild } from './save/save.ts';
 import { SET_TOKENS } from './render/tokens.ts';
 import type { PostStack } from './render/post/index.ts';
@@ -384,24 +385,89 @@ function paragraph(id: string, parent: HTMLElement, role = 'status'): HTMLParagr
 }
 
 // ---- shared-run page --------------------------------------------------------
+//
+// Stage 5: a share link OPENS INTO the replay. The verification half is
+// unchanged and still honest (`parseShareUrl` → `replayRun` → compare →
+// `verified`/`mismatch` in `#gw-replay-status`, now in the section BELOW the
+// fold); above it the page is a cinematic player — the same deterministic
+// run recorded step-for-step by `stepAndRecord` (`src/replay/cinematic.ts`)
+// and rendered through a three-shot camera sequence with the house post
+// stack, scrubber and all. Playback reads recorded sim states only: seeking
+// never invents a state between two steps.
 
 async function bootSharedRun(root: HTMLElement): Promise<void> {
-  root.innerHTML = '<h1>Gravity Works — shared run</h1>';
-  const status = paragraph('gw-replay-status', root);
-  const computed = paragraph('gw-replay-hash', root, 'text');
-  const embedded = paragraph('gw-replay-embedded', root, 'text');
+  root.innerHTML = '';
+  const title = document.createElement('h1');
+  title.id = 'gw-replay-title';
+  title.textContent = 'Watch this run';
+  root.appendChild(title);
+  const tagline = document.createElement('p');
+  tagline.id = 'gw-replay-tagline';
+  tagline.textContent = 'One build, one release — this page re-runs it here and rolls the tape.';
+  root.appendChild(tagline);
+  const badge = document.createElement('p');
+  badge.id = 'gw-replay-badge';
+  badge.hidden = true;
+  root.appendChild(badge);
+
+  const stage = document.createElement('div');
+  stage.id = 'gw-stage';
+  stage.style.position = 'relative';
+  root.appendChild(stage);
+  const bar = document.createElement('div');
+  bar.id = 'gw-replay-bar';
+  bar.hidden = true;
+  root.appendChild(bar);
+
+  // the honest half, BELOW the fold: the verdict and the two hashes, exactly
+  // the strings the stage-2/3/4 specs read
+  const verify = document.createElement('section');
+  verify.id = 'gw-replay-verify';
+  const verifyHeading = document.createElement('h2');
+  verifyHeading.textContent = 'How this link verifies';
+  verify.appendChild(verifyHeading);
+  const status = paragraph('gw-replay-status', verify);
+  const computed = paragraph('gw-replay-hash', verify, 'text');
+  const embedded = paragraph('gw-replay-embedded', verify, 'text');
+  const verifyNote = document.createElement('p');
+  verifyNote.id = 'gw-replay-verify-note';
+  verifyNote.textContent =
+    'The link carries the final state hash of the run; this page replays the level, build and seed on this machine and compares. Same machine, same engine, the same run — cross-platform equality is still an open question (see the Determinism notes).';
+  verify.appendChild(verifyNote);
+  root.appendChild(verify);
+
   status.textContent = 'replaying…';
+  let payload;
+  let level: Level;
   try {
-    const payload = await parseShareUrl(window.location.href);
-    const level = getLevel(payload.levelId);
-    embedded.textContent = `link hash ${payload.hash}`;
-    const run = await replayRun(level, payload.build);
-    computed.textContent = `replay hash ${run.hash}`;
-    const verified = run.hash === payload.hash;
-    status.textContent = verified ? 'verified' : 'mismatch';
-    wireShareCard(root, payload, level, run, verified);
+    payload = await parseShareUrl(window.location.href);
+    level = getLevel(payload.levelId);
   } catch {
     status.textContent = 'invalid share link';
+    return;
+  }
+  embedded.textContent = `link hash ${payload.hash}`;
+  let verified = false;
+  let runInfo: { time: number; status: RunStatus } = { time: 0, status: 'timeout' };
+  try {
+    const run = await replayRun(level, payload.build);
+    runInfo = { time: run.time, status: run.status };
+    computed.textContent = `replay hash ${run.hash}`;
+    verified = run.hash === payload.hash;
+    status.textContent = verified ? 'verified' : 'mismatch';
+    badge.hidden = false;
+    badge.textContent = verified ? '✓ verified on this machine' : '⚠ differs on this machine';
+  } catch {
+    status.textContent = 'mismatch';
+  }
+  wireShareCard(verify, payload, level, runInfo, verified);
+
+  // the cinematic layer — a failed WebGL build must never eat the verdict
+  // the specs (and the visitor) came for
+  try {
+    await startReplayPlayer({ stage, bar }, level, payload, verified);
+  } catch {
+    bar.hidden = true;
   }
 }
 
@@ -447,6 +513,272 @@ function wireShareCard(
         cardStatus.textContent = 'card failed';
       });
   });
+}
+
+// ---- cinematic replay player (stage 5) ---------------------------------------
+
+/**
+ * The replay half of the shared-run page: mount the level's set and build in
+ * a visual `World`, record the run step-for-step (`stepAndRecord` — the whole
+ * sim fast-forward happens here, before the first painted frame), then hand
+ * the trace to the shot-sequence director and a scrubber. Playback reads ONLY
+ * recorded sim states (`stepAt` floors to a step, never blends two); the
+ * camera poses are functions of sim time alone, so 1×/2×/4× and any seek
+ * cannot perturb what is shown. The build-view gesture stack is untouched —
+ * nothing here attaches to the game page.
+ */
+async function startReplayPlayer(
+  host: { stage: HTMLElement; bar: HTMLElement },
+  level: Level,
+  payload: SharePayload,
+  verified: boolean,
+): Promise<void> {
+  const { stage, bar } = host;
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  renderer.setSize(960, 540, false);
+  renderer.domElement.id = 'gw-canvas';
+  stage.appendChild(renderer.domElement);
+  const camera = new THREE.PerspectiveCamera(REPLAY_FOV, 960 / 540, 0.01, 24);
+  const setReg = levelSet(level) ? SETS[levelSet(level)!] : null;
+  // warm frame before the wasm await (the game page's rule, same reason)
+  {
+    const warm = new THREE.Scene();
+    warm.background = new THREE.Color(setReg?.tokens.background ?? SET_TOKENS.kitchen.background);
+    renderer.render(warm, camera);
+  }
+  const setInstance = setReg ? await buildGameSet(setReg, level.id) : null;
+  const solids: readonly RunCameraSolid[] = setInstance
+    ? setCameraSolids(setInstance.group).map((b) => ({
+        min: [b.min.x, b.min.y, b.min.z],
+        max: [b.max.x, b.max.y, b.max.z],
+      }))
+    : [];
+  const world = await World.create(level, payload.build, { visuals: true });
+  const scene = world.scene;
+  if (!scene) throw new Error('replay player: world has no scene');
+  if (setInstance && setReg) {
+    scene.add(setInstance.group);
+    scene.background = new THREE.Color(setReg.tokens.background);
+  }
+  const trace = stepAndRecord(world, payload.build, { solids });
+  const track = scene.getObjectByName('track');
+  const box = track ? new THREE.Box3().setFromObject(track) : new THREE.Box3();
+  const reducedMotion = loadSave().settings.reducedMotion ?? false;
+  const director = new ReplayDirector({
+    trace,
+    box,
+    cup: cupView(payload.build),
+    fov: REPLAY_FOV,
+    aspect: 960 / 540,
+    reducedMotion,
+  });
+  // the house look rides along: the quarter-res tilt-shift stack, focus band
+  // centred on the car at the step being shown (the game page's §7.3 rule)
+  const { createPostStack } = await import('./render/post/index.ts');
+  const post = createPostStack(renderer, camera, { tokens: setReg?.tokens ?? SET_TOKENS.kitchen });
+
+  const duration = Math.max(trace.duration, 0.1);
+  const stepAt = (t: number): number =>
+    Math.min(trace.steps - 1, Math.max(0, Math.floor(t / trace.dt + 1e-6)));
+  let time = 0;
+  let playing = !reducedMotion; // reduced motion opens on the wide shot, paused
+  let rate = 1;
+  let dragging = false;
+  let resumeAfterDrag = false;
+
+  const renderAt = (t: number): void => {
+    const k = stepAt(t);
+    const px = trace.pos[k * 3]!;
+    const py = trace.pos[k * 3 + 1]!;
+    const pz = trace.pos[k * 3 + 2]!;
+    if (world.carMesh) {
+      world.carMesh.position.set(px, py, pz);
+      world.carMesh.quaternion.set(
+        trace.quat[k * 4]!,
+        trace.quat[k * 4 + 1]!,
+        trace.quat[k * 4 + 2]!,
+        trace.quat[k * 4 + 3]!,
+      );
+    }
+    director.poseAt(t);
+    camera.position.copy(director.position);
+    camera.quaternion.copy(director.quaternion);
+    post.setFocus([px, py, pz]);
+    post.render(scene);
+  };
+
+  // ---- the replay bar: play/pause, time, scrub track with event ticks,
+  // speed, and the obvious way out of the audience seat
+  bar.innerHTML = '';
+  const playBtn = document.createElement('button');
+  playBtn.id = 'gw-replay-play';
+  playBtn.type = 'button';
+  const syncPlay = (): void => {
+    playBtn.textContent = playing ? '⏸' : '▶';
+    playBtn.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+    playBtn.setAttribute('aria-pressed', String(playing));
+  };
+  playBtn.addEventListener('click', () => {
+    if (!playing && time >= duration) time = 0;
+    playing = !playing;
+    syncPlay();
+  });
+  const timeEl = document.createElement('span');
+  timeEl.id = 'gw-replay-time';
+  const timeline = document.createElement('div');
+  timeline.id = 'gw-replay-timeline';
+  timeline.setAttribute('role', 'slider');
+  timeline.setAttribute('tabindex', '0');
+  timeline.setAttribute('aria-label', 'Replay timeline');
+  timeline.setAttribute('aria-valuemin', '0');
+  timeline.setAttribute('aria-valuemax', duration.toFixed(2));
+  const head = document.createElement('div');
+  head.id = 'gw-replay-head';
+  timeline.appendChild(head);
+  for (const ev of trace.events) {
+    const tick = document.createElement('span');
+    tick.className = 'gw-replay-tick';
+    tick.dataset['t'] = String(ev.t);
+    tick.style.left = `${(THREE.MathUtils.clamp(ev.t / duration, 0, 1) * 100).toFixed(3)}%`;
+    tick.title = ev.label;
+    tick.setAttribute('aria-hidden', 'true');
+    timeline.appendChild(tick);
+  }
+  const syncBar = (): void => {
+    head.style.left = `${(THREE.MathUtils.clamp(time / duration, 0, 1) * 100).toFixed(3)}%`;
+    timeEl.textContent = `${time.toFixed(1)}s / ${duration.toFixed(1)}s`;
+    timeline.setAttribute('aria-valuenow', time.toFixed(2));
+    timeline.setAttribute('aria-valuetext', `${time.toFixed(1)} of ${duration.toFixed(1)} seconds`);
+  };
+  const seek = (t: number): void => {
+    time = THREE.MathUtils.clamp(t, 0, duration);
+    syncBar();
+    renderAt(time);
+  };
+  const ratioAt = (ev: PointerEvent): number => {
+    const r = timeline.getBoundingClientRect();
+    return THREE.MathUtils.clamp((ev.clientX - r.left) / Math.max(r.width, 1), 0, 1);
+  };
+  timeline.addEventListener('pointerdown', (ev) => {
+    dragging = true;
+    resumeAfterDrag = playing;
+    playing = false;
+    syncPlay();
+    try {
+      timeline.setPointerCapture(ev.pointerId); // synthetic/ended pointers may not capture
+    } catch {
+      /* seek anyway */
+    }
+    seek(ratioAt(ev) * duration);
+    ev.preventDefault();
+  });
+  timeline.addEventListener('pointermove', (ev) => {
+    if (dragging) seek(ratioAt(ev) * duration);
+  });
+  const endDrag = (ev: PointerEvent): void => {
+    if (!dragging) return;
+    dragging = false;
+    playing = resumeAfterDrag && time < duration;
+    syncPlay();
+    try {
+      timeline.releasePointerCapture(ev.pointerId);
+    } catch {
+      /* not captured */
+    }
+  };
+  timeline.addEventListener('pointerup', endDrag);
+  timeline.addEventListener('pointercancel', endDrag);
+  timeline.addEventListener('keydown', (ev) => {
+    const k = ev as KeyboardEvent;
+    if (k.key === 'ArrowLeft') seek(time - 0.25);
+    else if (k.key === 'ArrowRight') seek(time + 0.25);
+    else if (k.key === 'Home') seek(0);
+    else if (k.key === 'End') seek(duration);
+    else return;
+    k.preventDefault();
+  });
+  const speedBtns: HTMLButtonElement[] = [];
+  for (const s of [1, 2, 4]) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'gw-replay-speed';
+    b.dataset['speed'] = String(s);
+    b.textContent = `${s}×`;
+    b.addEventListener('click', () => {
+      rate = s;
+      for (const o of speedBtns) o.setAttribute('aria-pressed', String(o === b));
+    });
+    speedBtns.push(b);
+  }
+  const exit = document.createElement('a');
+  exit.id = 'gw-replay-build';
+  exit.href = `?level=${encodeURIComponent(level.id)}`;
+  exit.textContent = 'Build your own';
+  bar.append(playBtn, timeEl, timeline, ...speedBtns, exit);
+  syncPlay();
+  syncBar();
+  bar.hidden = false;
+
+  // e2e seams (debug surface, not UI): the recorded trace for the node↔
+  // browser seek proof, the live rendered state, and the finish shot's cup
+  // projected through the replay camera
+  const w = window as unknown as Record<string, unknown>;
+  w.__gwReplayTrace = () => ({
+    dt: trace.dt,
+    steps: trace.steps,
+    time: trace.time,
+    duration: trace.duration,
+    status: trace.status,
+    hash: trace.hash,
+    events: trace.events,
+    shots: trace.plan.shots,
+    cuts: trace.plan.cuts,
+    verified,
+    poses: Array.from({ length: trace.steps }, (_, i) => [
+      trace.pos[i * 3]!,
+      trace.pos[i * 3 + 1]!,
+      trace.pos[i * 3 + 2]!,
+      trace.quat[i * 4]!,
+      trace.quat[i * 4 + 1]!,
+      trace.quat[i * 4 + 2]!,
+      trace.quat[i * 4 + 3]!,
+    ]),
+  });
+  w.__gwReplayState = () => {
+    const k = stepAt(time);
+    return {
+      t: time,
+      step: k,
+      pos: [trace.pos[k * 3]!, trace.pos[k * 3 + 1]!, trace.pos[k * 3 + 2]!],
+      quat: [trace.quat[k * 4]!, trace.quat[k * 4 + 1]!, trace.quat[k * 4 + 2]!, trace.quat[k * 4 + 3]!],
+    };
+  };
+  const cup = cupView(payload.build);
+  w.__gwReplayGoalNdc = (): number[] | null => {
+    if (!cup) return null;
+    camera.updateMatrixWorld();
+    const v = cup.center.clone().project(camera);
+    return [v.x, v.y];
+  };
+
+  let last = performance.now();
+  const frame = (now: number): void => {
+    requestAnimationFrame(frame);
+    const dt = Math.min((now - last) / 1000, 0.25);
+    last = now;
+    if (playing && !dragging) {
+      time = Math.min(duration, time + dt * rate);
+      if (time >= duration) {
+        time = duration;
+        playing = false;
+        syncPlay();
+      }
+      syncBar();
+      renderAt(time);
+    }
+  };
+  renderAt(0);
+  requestAnimationFrame(frame);
 }
 
 // ---- game page --------------------------------------------------------------
