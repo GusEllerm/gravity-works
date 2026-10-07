@@ -249,17 +249,40 @@ export function createRunRecorder(): RunRecorder {
  * of the tray the gate stays permissive. Every tail stays admissible for
  * the evidence that printed it: a note is never printed that the run could
  * not have produced.
+ *
+ * PHRASING HONESTY (round 5, playtest W: a drop-only build that never placed
+ * a Landing got "flatten the landing" and read it as a LIE — no landing to
+ * flatten existed in the build). The gate above is logically honest but the
+ * CRITIQUE verbs ("flatten", "lower") describe a piece the player is assumed
+ * to have built, so a tray-only tail must not wear them. The three-way
+ * truth per advice half: PLACED in the build that just ran → the critique
+ * phrasing stands ("flatten the landing", "lower the lip"); TRAY-ONLY
+ * (stocked, not placed) → ADD phrasing ("add a flat landing", "add a lip");
+ * neither → the half is dropped, as before. `placedKinds` (the kinds in the
+ * build that ran, from `placedKindsFor` in `src/boot.ts`) carries the split;
+ * unknown (`null`) stays permissive and keeps the shipped critique wording.
+ * Sibling sweep: the booster tail was already add-shaped ("add a booster")
+ * — honest for a tray-only booster (place one) and for a placed one (add
+ * another); the loop/uphill/last-push lines name no kinds at all, and the
+ * long-jump line's "the gap outran the landing" is descriptive (evidence-
+ * gated, never advice) — the critique-verb trap was only "flatten the
+ * landing" / "lower the lip".
  */
 export function physicsNote(
   result: RunResult,
   ev: RunEvidence,
   actionableKinds: ReadonlySet<PieceKind> | null = null,
+  placedKinds: ReadonlySet<PieceKind> | null = null,
 ): string {
   if (result.status === 'finished') return '';
   if (result.hazardsTouched > 0) return 'a hazard took the run — line up to miss it';
 
   /** Can the player act on this kind right now? null = unknown = permissive. */
   const canAct = (k: PieceKind): boolean => actionableKinds === null || actionableKinds.has(k);
+  /** Is this kind in the build that just ran? Only then does CRITIQUE
+   *  phrasing ("flatten it", "lower it") describe something that exists to
+   *  critique; a tray-only kind gets ADD phrasing instead (playtest W). */
+  const isPlaced = (k: PieceKind): boolean => placedKinds === null || placedKinds.has(k);
 
   const climb = ev.apexY - ev.startY;
   const apexFloor = Math.sqrt(NOTE_G * (climb / 2));
@@ -269,9 +292,13 @@ export function physicsNote(
     if (ev.lastTouchdownPitch !== null && ev.lastTouchdownPitch < NOSE_FIRST_PITCH) {
       // each half of the advice names only a piece the player can reach
       // NOW (playtest M: no lip placed; playtest Q: no landing in the tray)
+      // and PHRASES it by where that piece lives: critique verbs only for
+      // pieces actually in the build, add- verbs for tray stock (playtest
+      // W: "flatten the landing" on a build with no landing placed read
+      // as a lie even though the gate had made it logically true)
       const advice = [
-        canAct('landing') ? 'flatten the landing' : null,
-        canAct('gapLip') ? 'lower the lip' : null,
+        canAct('landing') ? (isPlaced('landing') ? 'flatten the landing' : 'add a flat landing') : null,
+        canAct('gapLip') ? (isPlaced('gapLip') ? 'lower the lip' : 'add a lip') : null,
       ].filter((s): s is string => s !== null);
       return advice.length > 0 ? `fell off nose-first — ${advice.join(' or ')}` : 'fell off nose-first';
     }
@@ -296,7 +323,10 @@ export function physicsNote(
     }
     // the booster is named only when the player can actually place one
     // (playtest Q's K5 wall: a tray without a booster must not be told to
-    // buy one — the same fault as the unreachable landing advice)
+    // buy one — the same fault as the unreachable landing advice). The
+    // sibling-phrase sweep kept this tail as-is: "add a booster" is ALREADY
+    // add-shaped, honest for a tray-only booster (place one) and a placed
+    // one alike (add another) — no critique verb to lie.
     return canAct('booster')
       ? 'stalled on the flat — friction won; start higher or add a booster'
       : 'stalled on the flat — friction won; start higher';
@@ -333,20 +363,22 @@ export interface ResultModel {
 
 /** Stars + note for one finished-or-not run: the panel's whole content.
  *  `actionableKinds` (kinds placed in the build that ran, plus kinds with
- *  stock left in the level's tray) gates the note's advice tails — see
- *  `physicsNote`; it never reaches the physics. */
+ *  stock left in the level's tray) gates the note's advice tails and
+ *  `placedKinds` (the kinds actually in the build) phrases them — see
+ *  `physicsNote`; neither reaches the physics. */
 export function resultModel(
   result: RunResult,
   par: Par,
   ev: RunEvidence,
   bestStarsBefore = 0,
   actionableKinds: ReadonlySet<PieceKind> | null = null,
+  placedKinds: ReadonlySet<PieceKind> | null = null,
 ): ResultModel {
   return {
     stars: starsFor(result, par),
     time: result.time,
     piecesUsed: result.piecesUsed,
-    note: physicsNote(result, ev, actionableKinds),
+    note: physicsNote(result, ev, actionableKinds, placedKinds),
     status: result.status,
     par,
     bestStarsBefore,

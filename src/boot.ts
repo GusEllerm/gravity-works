@@ -346,6 +346,16 @@ export function actionableKindsFor(
   return out;
 }
 
+/** The kinds PLACED in a build — the PHRASING side of the note's advice
+ *  gates (round-5 playtest W: "flatten the landing" on a build with no
+ *  landing placed read as a lie though the tray made it actionable).
+ *  Critique verbs fit kinds in this set; tray-only kinds get add verbs —
+ *  see `physicsNote` in `src/ui/result.ts`. A subset of
+ *  `actionableKindsFor` by construction. UI-side only, like that gate. */
+export function placedKindsFor(build: Build): Set<PieceKind> {
+  return new Set(build.pieces.map((p) => p.def));
+}
+
 export function boot(root: HTMLElement): void {
   // a bare fragment change is a new run request on a static host: reload into it
   window.addEventListener('hashchange', () => window.location.reload())
@@ -893,13 +903,17 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       const bestStarsBefore = loadSave().progress.stars[level.id] ?? 0;
       // ACTIONABLE KINDS for the note's advice tails (playtest Q item 5:
       // "flatten the landing" with no landing in the tray) — see
-      // `actionableKindsFor`. UI-side only; physics and the hash never see it.
+      // `actionableKindsFor` — plus the PLACED kinds that PHRASE the tails
+      // (round-5 playtest W: a tray-only kind must be told to ADD, not to
+      // fix a piece the build never had) — see `placedKindsFor`. UI-side
+      // only; physics and the hash never see either set.
       const model = resultModel(
         result,
         parFor(level.id, level.par),
         recorder.evidence(),
         bestStarsBefore,
         actionableKindsFor(currentBuild, tray),
+        placedKindsFor(currentBuild),
       );
       resultPanel.show(model);
       // §9.2 progress persists: a finished run's stars are the save's best
