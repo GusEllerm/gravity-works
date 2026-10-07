@@ -201,3 +201,13 @@ livedocs symbol resolution is Python-first; TS names in notes likely resolve as 
 ## 2026-10-03 — Pages deploy = workflow build type `[agent decision]` (Director)
 
 Enabled GitHub Pages with `build_type=workflow`; `.github/workflows/deploy.yml` builds with Vite and publishes `dist`. Alternative: deploy from `main`/`docs`. Reason: artifact must be the built bundle, and the same commit must be checkable by CI first. Site: https://gusellerm.github.io/gravity-works/
+
+## 2026-10-07 — Merge discipline after the builder.ts near-miss [agent decision]
+`git checkout --ours <file>` to resolve one conflict region silently dropped the other side's
+auto-mergeable hunks in `src/ui/builder.ts` (the empty-click speech line vanished; CI caught it
+only because the branch's own e2e asserted it). Two standing rules: (1) resolve code conflicts by
+editing conflict markers in place, never by wholesale `--ours`/`--theirs` checkouts — if a file
+truly should take one side, diff the other side's version against the result first; (2) after ANY
+`git merge` commit (which skips the pre-commit hook), run `livedocs affected` and batch-stamp
+before pushing — `git merge -q` bypassing the gate is how `Reference/Level Ladder.md` went stale
+for one commit.
