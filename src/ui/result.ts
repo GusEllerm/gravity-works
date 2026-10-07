@@ -201,7 +201,9 @@ export function createRunRecorder(): RunRecorder {
  *                              `actionableKinds` below)
  *   any slow-at-apex      -> fell off / stalled — too slow at the top of the loop
  *   fell after a long flight that ROSE off the deck -> fell off after a long jump
- *   fell otherwise        -> fell off the set
+ *   fell otherwise        -> fell off ("the set" retired from player copy —
+ *                              an internal word, playtest R; the head verb
+ *                              is unchanged and still EQUALS the status line)
  *   stalled nose-high     -> stalled going uphill
  *   stalled after a push  -> stalled after its last push
  *   stalled otherwise     -> stalled on the flat (friction won)
@@ -282,7 +284,7 @@ export function physicsNote(
     if (ev.finalAirtime > LONG_FLIGHT && ev.finalTakeoffVy !== null && ev.finalTakeoffVy > JUMP_MIN_TAKEOFF_VY) {
       return 'fell off after a long jump — the gap outran the landing';
     }
-    return 'fell off the set — the line let go before the cup';
+    return 'fell off — the line let go before the cup';
   }
   if (result.status === 'stalled') {
     if (tooSlowAtApex) return 'stalled — too slow at the top of the loop; give it more height before it';
@@ -361,7 +363,9 @@ const STAR_RULES = 'Stars: finish the run · stay at or under par pieces · stay
  * this is the same three lines stated as one countable sentence.
  */
 export function starRulesLine(par: Par): string {
-  return `Stars: finish the run · at or under ${par.pieces} pieces (par) · at or under ${formatTime(par.time)} (par)`;
+  // one plain clause where a first-timer FIRST meets the word (playtests R+S:
+  // "unexplained par times (what clock?)" / "par 2.65 s is meaningless noise")
+  return `Stars: finish the run · at or under ${par.pieces} pieces (par) · at or under ${formatTime(par.time)} (par = the target time for this run)`;
 }
 
 /**

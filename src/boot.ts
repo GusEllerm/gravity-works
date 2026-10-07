@@ -48,7 +48,7 @@ import type { Level } from './world/level.ts';
 import { createBuilder } from './ui/builder.ts';
 import { parseShareUrl } from './share/share.ts';
 import { replayRun } from './replay/replay.ts';
-import { loadSave, rememberBuild, recordStars } from './save/save.ts';
+import { loadSave, rememberBuild, recordStars, savedBuild } from './save/save.ts';
 import { SET_TOKENS } from './render/tokens.ts';
 import type { PostStack } from './render/post/index.ts';
 import { parFor, starsFor, type RunOutcome, type RunResult } from './world/stars.ts';
@@ -239,6 +239,31 @@ export function initialBuild(level: Level): Build {
     return { levelId: level.id, pieces, seed: level.seed };
   }
   return level.placeholderBuild();
+}
+
+/**
+ * The build a GAME page starts in, decided per the save schema (`Modules/save`):
+ * a `?build=par`/`?build=alt` address is a recorded test rig and always
+ * re-mounts the addressed reference line fresh (addressing is not the runtime,
+ * the same doctrine as `?level=`); otherwise the level's AUTOSAVED working
+ * build is restored when the save carries one — `rememberBuild` writes it on
+ * every change, and playtest S's reload that "silently wiped my in-progress
+ * build" proved writing it while starting without it was half a feature. A
+ * fresh save has no record (fresh build), and a record whose bytes do not
+ * deserialize, or name a different level, is nobody's build: fresh again.
+ * Restoring is what the `reached` legacy carry already implies — a level with
+ * a build record is a level the player STOOD in (`MIGRATIONS[1]`).
+ */
+export function startBuildFor(
+  level: Level,
+  params: URLSearchParams,
+  saved: Build | undefined,
+): Build {
+  const alt = ALT_LINES[level.id];
+  if (params.get('build') === 'par') return level.placeholderBuild();
+  if (params.get('build') === 'alt' && alt) return alt();
+  if (saved && saved.levelId === level.id) return saved;
+  return initialBuild(level);
 }
 
 /**
@@ -545,19 +570,15 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   const recorder = createRunRecorder();
   const resultPanel = createResultPanel(stage);
   let lastStatus: RunStatus = 'idle';
-  // the build the game starts in: fixtures only (the player builds the
-  // tray pieces); ?build=par re-mounts the full reference build for tests,
-  // and ?build=alt the level's ALTERNATE authored line (L02's arc route —
-  // the camera's filmstrip gate frames the second rail too, playtest M).
-  // The alt line is ADDRESSED here from the level module's existing export
-  // (an addressing table, not a level-data edit — L02's data is unchanged).
-  const alt = ALT_LINES[level.id];
-  const startBuild =
-    params.get('build') === 'par'
-      ? level.placeholderBuild()
-      : params.get('build') === 'alt' && alt
-        ? alt()
-        : initialBuild(level);
+  // the build the game starts in (`startBuildFor`, just below the save
+  // rules): fixtures only on a fresh visit, the AUTOSAVED working build on a
+  // reload of one already worked on (playtest S: a reload "silently wiped my
+  // in-progress build"); ?build=par re-mounts the full reference build for
+  // tests, and ?build=alt the level's ALTERNATE authored line (L02's arc
+  // route — the camera's filmstrip gate frames the second rail too, playtest
+  // M; the alt is ADDRESSED from the level module's existing export, never a
+  // level-data edit).
+  const startBuild = startBuildFor(level, params, savedBuild(level.id));
   // the build the CURRENT world runs (set in `rebuild`): its piece KINDS
   // make the failure note's tails build-aware (a lip tip when no lip was
   // ever placed reads as noise — playtest M; UI-side only, the physics and
@@ -954,7 +975,10 @@ export function runStatusLine(world: World, pieces: number, budget: number): str
     case 'finished':
       return `finished — ${t}`;
     case 'fell':
-      return `fell off the set — ${t}`;
+      // STAGE-4 SWEEP (playtest R: "the set" unreadable): the internal noun is
+      // gone from every player line; the head verb is just `fell off`, and it
+      // still EQUALS the physics note's head (`physicsNote`, result.ts).
+      return `fell off — ${t}`;
     case 'stalled':
       return `stalled — ${t}`;
     case 'timeout':

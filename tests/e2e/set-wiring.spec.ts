@@ -83,7 +83,7 @@ test('the builder ghost goes red on a set solid (L03 bowl-rim socket)', async ({
   // playtest M.)
   await expect(page.locator('#gw-target-label')).toContainText('end of ramp')
   await page.locator('#gw-builder').press('ArrowRight') // the cup's run-out
-  await expect(page.locator('#gw-target-label')).toContainText('end of cup')
+  await expect(page.locator('#gw-target-label')).toContainText('cup on the table')
   await page.locator('#gw-builder').press('ArrowRight') // end of curve -> bowl.out
   await expect(page.locator('#gw-target-label')).toContainText('end of curve')
   await expect(page.locator('#gw-ghost-state')).toContainText('blocked', { timeout: 10_000 })

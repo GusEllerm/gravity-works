@@ -19,6 +19,16 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
 #gw-hash-details summary { cursor: pointer; }
 #gw-hash-details p { margin: 2px 0 0; }
 #gw-builder { margin-top: 10px; }
+/* THE TOOLBAR IS NEVER OUT OF REACH (playtest R: "Remove clicks died behind
+ * the result card"). The panel itself is pointer-transparent — what actually
+ * killed the clicks was SCROLL: a taller page than the window plus a player
+ * scrolled to look at the world put the toolbar OFF-SCREEN, and the blind
+ * click where Remove used to be fell on the canvas THROUGH the transparent
+ * panel. Sticky pins the toolbar to the viewport top with a z-index above
+ * every stage overlay (the panel and the help drawer live in the stage, all
+ * below it), so with a card up or not, the toolbar is always on screen and
+ * always the thing under the cursor. */
+#gw-builder-host { position: sticky; top: 0; z-index: 5; background: #efe0c8; padding-top: 4px; }
 #gw-tray { display: flex; flex-wrap: wrap; gap: 6px; }
 #gw-tray button, #gw-controls button, #gw-help-toggle {
   font: inherit; font-size: 13px; padding: 4px 10px; border-radius: 4px;

@@ -237,7 +237,9 @@ test('every open rung and the first boot state THAT level’s par numbers', asyn
     const line = page.locator(`#gw-level-${id} .gw-level-rules`)
     await expect(line).toBeVisible()
     await expect(line).toContainText(`${pieces} pieces (par)`)
-    await expect(line).toContainText(`${time} s (par)`)
+    // the time par carries the ONE defining clause where a first-timer first
+    // meets the word (playtests R+S: "unexplained par times — what clock?")
+    await expect(line).toContainText(`${time} s (par = the target time for this run)`)
   }
   await ctx.close()
 
@@ -249,7 +251,7 @@ test('every open rung and the first boot state THAT level’s par numbers', asyn
   await ready(boot)
   await expect(boot.locator('#gw-callout')).toContainText('Stars: finish the run')
   await expect(boot.locator('#gw-callout')).toContainText('5 pieces (par)')
-  await expect(boot.locator('#gw-callout')).toContainText('2.65 s (par)')
+  await expect(boot.locator('#gw-callout')).toContainText('2.65 s (par = the target time for this run)')
   await ctx2.close()
 
   expect(errors).toEqual([])

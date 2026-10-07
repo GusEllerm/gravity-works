@@ -4,10 +4,11 @@
  * tests/e2e/builder.spec.ts, which drive the real built page.
  */
 import { describe, expect, test } from 'vitest';
-import { boot, initialBuild, nextLevelId, runStatusLine } from '../../src/boot.ts';
+import { boot, initialBuild, nextLevelId, runStatusLine, startBuildFor } from '../../src/boot.ts';
 import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts';
 import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts';
 import type { World } from '../../src/world/world.ts';
+import type { Build } from '../../src/track/build.ts';
 
 const fake = (status: string, time: number, hash: string): World =>
   ({ status, time, hashHex: () => hash }) as unknown as World;
@@ -24,7 +25,7 @@ describe('boot shell', () => {
     // tally in the SAME words as #gw-piece-count — "n of m pieces used"
     expect(runStatusLine(fake('idle', 0, '00000000'), 5, 9)).toBe('ready — 5 of 9 pieces used');
     expect(runStatusLine(fake('finished', 1.5, 'abcd1234'), 6, 9)).toBe('finished — 1.50s');
-    expect(runStatusLine(fake('fell', 0.4, '01234567'), 5, 9)).toContain('fell off the set');
+    expect(runStatusLine(fake('fell', 0.4, '01234567'), 5, 9)).toBe('fell off — 0.40s');
     expect(runStatusLine(fake('running', 2, 'ffffffff'), 5, 9)).toBe('running — 2.00s');
     expect(runStatusLine(fake('running', 2, 'ffffffff'), 5, 9)).not.toContain('hash');
     // the terminal/running lines carry no tally at all (one counter means
@@ -42,6 +43,27 @@ describe('boot shell', () => {
     expect(Object.keys(KITCHEN01.tray)).toEqual(['gapLip', 'drop', 'landing']);
     // a level with no fixture table (the feel rig) ships its reference build
     expect(initialBuild(FEELTRACK).pieces.length).toBe(FEELTRACK.placeholderBuild().pieces.length);
+  });
+
+  test('reload restores the WORKING build; the save rules decide fresh (playtest S)', () => {
+    // S's reload "silently wiped my in-progress build": autosave existed
+    // (rememberBuild on every change) but nothing read it back. Both
+    // directions of the decision are pure (`startBuildFor`).
+    const fresh = initialBuild(KITCHEN01);
+    const working: Build = KITCHEN01.parBuild(); // fixtures + the full tray line
+    // no record (fresh save) → fresh fixtures-only build
+    expect(startBuildFor(KITCHEN01, new URLSearchParams(''), undefined).pieces).toEqual(fresh.pieces);
+    // a record for THIS level → restored, byte for byte
+    const back = startBuildFor(KITCHEN01, new URLSearchParams(''), working);
+    expect(back.pieces.map((p) => p.def)).toEqual(working.pieces.map((p) => p.def));
+    // a record naming ANOTHER level is nobody's build → fresh
+    expect(
+      startBuildFor(KITCHEN01, new URLSearchParams(''), { ...working, levelId: 'kitchen02' }).pieces,
+    ).toEqual(fresh.pieces);
+    // ?build=par is recorded addressing — the fresh reference build, record or not
+    expect(
+      startBuildFor(KITCHEN01, new URLSearchParams('build=par'), working).pieces.length,
+    ).toBe(KITCHEN01.placeholderBuild().pieces.length);
   });
 
   test('the ladder walks kitchen01..05 into bedroom01..04 into bathroom01..04 into garden01..04 into garage01..04 and nothing is anyone’s next beyond it', () => {

@@ -25,10 +25,13 @@
  *   fit`, red `blocked — <reason>`. Nothing is ever targeted silently.
  * - THE BOOT DEFAULT TARGET is the head of the start-connected chain — the
  *   open exit of the line as built (on a fixture level: the start ramp's
- *   exit, where the par line begins), NOT the bare `level start` socket
+ *   exit, where the par line begins), NOT the bare release-point socket
  *   (playtest N's eight-try wall: the default aimed `drop@start`, a legal
  *   build that cannot win, and the arrows were the only clue). The bare
- *   start socket stays a target — the arrows and hover still walk there.
+ *   release socket stays a target — the arrows and hover still walk there —
+ *   and names itself PLAINLY ("where the car starts", playtest R: "level
+ *   start???"), as does the cup ("cup on the table", never "end of cup" —
+ *   the cup is a fixture the kit never offers as a piece).
  * - HOVERING the canvas moves the target to the nearest open socket on
  *   screen (projection-nearest, within `HOVER_PX`), so the ghost always
  *   shows the socket a click would use BEFORE the click.
@@ -58,7 +61,7 @@
  *   a piece leaves the tray onto the track   "place" (button/hint) / "placed"
  *   the tally                              "N of M pieces used"
  *   the socket's verdict on the ghost       "fits here" | "flipped fit" |
- *                                           "blocked — the set is in the way"
+ *                                           "blocked — furniture is in the way"
  *   the FIRST flipped fit of a session      appends WHY once: "flipped fit
  *                                           — it rides backwards; fine for
  *                                           a coaster, not for a launch
@@ -108,7 +111,7 @@ export const GHOST_LABEL: Record<GhostState, string> = {
   snapped: 'fits here',
   reversed: 'flipped fit',
   invalid: 'no seat at this socket',
-  blocked: 'blocked — the set is in the way',
+  blocked: 'blocked — furniture is in the way',
 };
 
 export interface BuilderOptions {
@@ -444,7 +447,11 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     const startTaken = all.some(({ sockets }) =>
       sockets.some((s) => s.pos.distanceTo(level.startSocket.pos) < JOIN_TOL),
     );
-    if (!startTaken) out.push({ socket: level.startSocket, label: 'level start' });
+    // THE START SOCKET, NAMED PLAINLY (playtest R: "target: level start???"):
+    // an open start socket is the car's RELEASE point — the line says exactly
+    // that; the internal word "level" never reaches the screen. (Once a piece
+    // is seated on it the socket is taken and the piece's own exit labels aim.)
+    if (!startTaken) out.push({ socket: level.startSocket, label: 'where the car starts' });
     for (const { piece, sockets } of all) {
       const [, exit] = sockets;
       const taken = all.some(
@@ -452,7 +459,16 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
           other.piece.seq !== piece.seq &&
           other.sockets.some((s) => s.pos.distanceTo(exit.pos) < JOIN_TOL),
       );
-      if (!taken) out.push({ socket: exit, label: `end of ${pieceLabel(piece.def).toLowerCase()}` });
+      // THE CUP IS THE CUP, not a piece (playtests R+S: "target: end of cup"
+      // named a piece the kit never offered; the cup is the object they can
+      // SEE). Its open exit — where a run-out line would chain — names the
+      // visible thing instead. Every other kind keeps the measured-good
+      // "end of X" the playtesters read as chain order.
+      if (!taken)
+        out.push({
+          socket: exit,
+          label: piece.def === 'finishCup' ? 'cup on the table' : `end of ${pieceLabel(piece.def).toLowerCase()}`,
+        });
     }
     return out;
   }

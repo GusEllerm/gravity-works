@@ -917,8 +917,9 @@ cards state the chained number and this table states the other one.
 
 **And the tutorial's target walk (fixed at this pass).** The shipped
 builder's `targets()` list is in ARRAY order, and `initialBuild` mounts the
-fixtures FIRST — so on L01 the list starts `[level start, end of ramp, end of
-finishCup]`, and after the player seats the `gapLip` on the ramp's exit the
+fixtures FIRST — so on L01 the list slots start `[release socket, end of ramp, end of
+finishCup]` (the R+S pass renamed what those slots SAY — "where the car starts",
+"cup on the table" — the walk order is untouched), and after the player seats the `gapLip` on the ramp's exit the
 list becomes `[level start, end of finishCup, end of gapLip]`: the same
 "place" keystroke now aims at the CUP's exit and the `drop` is seated there,
 a few centimetres from where the line is. The three-piece fit therefore failed

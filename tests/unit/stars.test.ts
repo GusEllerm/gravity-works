@@ -126,11 +126,13 @@ describe('physicsNote (coverage map of src/ui/result.ts)', () => {
     // must get the honest line, not the launched-jump one
     expect(
       physicsNote(run('fell'), ev({ finalAirtime: 0.433, finalTakeoffVy: -0.13 })),
-    ).toMatch(/^fell off the set/);
+    ).toMatch(/^fell off — the line let go/); // ("the set" retired from player copy, playtest R)
   });
 
-  test('fell otherwise -> fell off the set', () => {
-    expect(physicsNote(run('fell'), ev())).toMatch(/fell off the set/);
+  test('fell otherwise -> fell off, never the internal noun "the set"', () => {
+    const line = physicsNote(run('fell'), ev());
+    expect(line).toMatch(/^fell off — the line let go before the cup/);
+    expect(line).not.toMatch(/\bset\b|\blevel start\b/);
   });
 
   test('stalled nose-high -> stalled going uphill', () => {
