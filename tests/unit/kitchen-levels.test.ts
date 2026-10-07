@@ -19,6 +19,7 @@
  * ladder is BLOCKED pending piece request 1.
  */
 import { describe, expect, test } from 'vitest';
+import * as THREE from 'three';
 import { KITCHEN01, KITCHEN_GEOM, trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
 import { serialize, type Build } from '../../src/track/build.ts';
 import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
@@ -472,6 +473,97 @@ describe('kitchen04 — learnability: place-everything works, guessing is over',
     expect(par.status).toBe('finished');
     expect(beat.status).toBe('finished');
     expect(beat.time).toBeLessThan(par.time); // measured 2.47 s vs the 2.52 s par
+  }, 60_000);
+});
+
+/**
+ * THE STAGE-4 K4 TAP-WALL PASS (Playtest R: cleared K1–K3 in one try each,
+ * walled at The Tap in three tries, quit). Headless replay of her three
+ * reconstructed builds on the SHIPPED builder's mount says the wall was
+ * neither the tray nor the zone: every try rode a REVERSED `gapLip` mount
+ * (the R flag left up by an empty-handed press — the note-advice honesty
+ * half is a note-side handoff, see
+ * `Sessions/2026-10-09 Stage 4 - K4 tap wall`). What the replay also
+ * measured is that this level's old card claim ("no finishing line touches
+ * the zone") was only true of the FLY lines — the tray DOES afford wet
+ * routes, and the zone can even rescue a run. Pinned here so the claims
+ * stay the measured ones.
+ */
+function kitchen04BuilderMount(steps: { def: PieceKind; flip?: boolean }[]): Build {
+  const par = KITCHEN04.parBuild();
+  const fixtureKinds = new Set(Object.keys(KITCHEN04.fixtures!));
+  const pieces = par.pieces.filter((p) => fixtureKinds.has(p.def)).map((p, i) => ({ ...p, seq: i }));
+  const trayParams = levelTrayParams(KITCHEN04, KITCHEN04.tray)!;
+  const ramp = pieces.find((p) => p.def === 'ramp')!;
+  let cursor = transformSocket(PIECES.ramp.sockets(ramp.params)[1], ramp.transform);
+  for (const step of steps) {
+    const p = { ...trayParams[step.def]! };
+    let m = fitSocket(cursor, PIECES[step.def].sockets(p)[0]);
+    if (step.flip) {
+      // the REVERSED seat builder.place() produces while `flipped` is up:
+      // half a turn about the target socket's up through the socket point
+      const axis = new THREE.Vector3(cursor.up.x, cursor.up.y, cursor.up.z).normalize();
+      const flip = new THREE.Matrix4()
+        .makeTranslation(cursor.pos.x, cursor.pos.y, cursor.pos.z)
+        .multiply(new THREE.Matrix4().makeRotationAxis(axis, Math.PI))
+        .multiply(new THREE.Matrix4().makeTranslation(-cursor.pos.x, -cursor.pos.y, -cursor.pos.z));
+      m = flip.multiply(m);
+    }
+    pieces.push({ def: step.def, params: p, transform: m, seq: pieces.length });
+    cursor = transformSocket(PIECES[step.def].sockets(p)[1], m);
+  }
+  return { levelId: KITCHEN04.id, pieces, seed: KITCHEN04.seed };
+}
+
+/** Replay with the per-step grip witness (the live zone hook's readout). */
+async function gripRun(lvl: typeof KITCHEN04, build: Build) {
+  const world = await World.create(lvl, build, { visuals: false });
+  world.launch();
+  let minGrip = 1;
+  let wetSteps = 0;
+  while (world.stepCount < 15 * 120 && world.status === 'running') {
+    world.step();
+    const grip = world.state().car.grip;
+    if (grip < 0.999) wetSteps += 1;
+    minGrip = Math.min(minGrip, grip);
+  }
+  const out = { status: world.status, time: world.time, minGrip, wetSteps };
+  world.dispose();
+  return out;
+}
+
+const KITCHEN04_DRY = { ...KITCHEN04, hazards: [] as never[] };
+
+describe('kitchen04 — the wet route is real, and so is R\u2019s reversed-lip wall (stage 4)', () => {
+  test('the FLY line never feels the patch (par grip stays exactly 1 — the bit-identical claim stays the default)', async () => {
+    const run = await gripRun(KITCHEN04, kitchen04BuilderMount([{ def: 'gapLip' }, { def: 'drop' }, { def: 'landing' }, { def: 'straight' }]));
+    expect(run.status).toBe('finished');
+    expect(run.minGrip).toBe(1); // the par flies the zone; the hook never bites
+  }, 60_000);
+
+  test('a decked whole-tray order is a REAL wet route: it rolls through the zone (grip 0.5) and still finishes inside the fly clock', async () => {
+    const run = await gripRun(KITCHEN04, kitchen04BuilderMount([{ def: 'straight' }, { def: 'gapLip' }, { def: 'drop' }, { def: 'landing' }]));
+    expect(run.status).toBe('finished');
+    expect(run.minGrip).toBeLessThan(1); // the toll is live on the tray (measured 0.5)
+    expect(run.wetSteps).toBeGreaterThan(10); // ~0.29 s of half grip, measured
+    expect(run.time).toBeLessThan(2.7); // costless: inside the fly lines’ own span
+  }, 60_000);
+
+  test('the patch can RESCUE a line: gapLip>straight>landing (tray minus drop) FINISHES wet and `fell` dry (wet-can-rescue, bathroom03\u2019s twin)', async () => {
+    const steps = [{ def: 'gapLip' as PieceKind }, { def: 'straight' as PieceKind }, { def: 'landing' as PieceKind }];
+    const wet = await gripRun(KITCHEN04, kitchen04BuilderMount(steps));
+    const dry = await gripRun(KITCHEN04_DRY, kitchen04BuilderMount(steps));
+    expect(wet.wetSteps).toBeGreaterThan(0);
+    expect(wet.status).toBe('finished');
+    expect(dry.status).toBe('fell');
+  }, 90_000);
+
+  test('a REVERSED gapLip mount (R\u2019s wall) never finishes — the sink catapult and the past-cup overshoot are both `fell`', async () => {
+    const sink = await replayRun(KITCHEN04, kitchen04BuilderMount([{ def: 'drop' }, { def: 'gapLip', flip: true }, { def: 'landing' }]));
+    const over = await replayRun(KITCHEN04, kitchen04BuilderMount([{ def: 'drop' }, { def: 'landing' }, { def: 'gapLip', flip: true }, { def: 'straight' }]));
+    expect(sink.status).toBe('fell'); // measured 2.192 s into the sink, nose −54°
+    expect(over.status).toBe('fell'); // measured 2.533 s past the cup
+    expect(Math.abs(sink.time - over.time)).toBeGreaterThan(0.2); // the two families are clock-separated
   }, 60_000);
 });
 

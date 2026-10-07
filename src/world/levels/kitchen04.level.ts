@@ -37,14 +37,26 @@
  * test-asserted), so the lesson is the ORDER question the rung already
  * teaches upstream, and the par ORDER is beatable (`drop→landing→straight→
  * gapLip` runs 2.47 s against a 2.52 s par). The wet patch keeps its exact
- * authored data (the tap's drip lands in it — set-wiring); on every line a
- * player can actually build it stays a TELLS-not-a-TOLL: the drips mark the
- * sink the arc must fly, and no finishing line touches the zone (par wet ==
- * par dry, bit-for-bit). The grip physics of the patch are still measured
- * — on `kitchen04GroundBuild()`, which is now the HAZARD/JUICE PROBE it
- * physically always was (a chained decked-sink build the tray no longer
- * holds): its hash diverges wet vs dry and it runs faster wet (low-drag
- * plastic, [[Modules/hazards]]). It is not a route, and the card says so.
+ * authored data (the tap's drip lands in it — set-wiring). STAGE-4 K4
+ * TAP-WALL PASS (Playtest R, headless on the builder mount): the old claim
+ * that NO finishing line touches the zone was only true of the FLY lines —
+ * 10 of the 24 whole-tray orders stand a deck across the sink's near half
+ * and ROLL THROUGH the zone (grip 0.5 for 0.11–0.29 s) yet still finish,
+ * at 2.53–2.61 s, inside the fly lines' own 2.47–3.12 s span. The patch is
+ * a TELLS with a COSTLESS toll on the tray today: it bites where a decked
+ * order rolls, it kills nothing (every wet-touching order finishes), and
+ * one 3-piece order (`gapLip→straight→landing`, the tray minus `drop`)
+ * even FINISHES wet where it `fell` dry — the ladder's wet-can-rescue
+ * property (bathroom03's twin), test-pinned. Playtest R's wall itself was
+ * neither the tray nor the zone: all three tries rode a REVERSED `gapLip`
+ * mount (the R flag left up by an empty-handed press) — pinned falling at
+ * the sink (2.192 s, nose −54°) and past the cup (2.533 s) with the SAME
+ * note text; advice honesty for reversed mounts is a note-side ask
+ * (`Sessions/2026-10-09 Stage 4 - K4 tap wall`, handoff to
+ * `src/ui/result.ts`). The grip physics of the patch are still measured
+ * — on `kitchen04GroundBuild()`, the HAZARD/JUICE PROBE: its hash diverges
+ * wet vs dry and it runs faster wet (low-drag plastic,
+ * [[Modules/hazards]]). It is not a route, and the card says so.
  */
 import { KitRig } from '../../feel/kittrack.ts';
 import type { Build } from '../../track/build.ts';
