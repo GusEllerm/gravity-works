@@ -46,19 +46,19 @@ import { PORCH05 } from './world/levels/porch05.level.ts';
 import { World, type RunStatus } from './world/world.ts';
 import { fixtureQuota, type Build } from './track/build.ts';
 export { fixtureQuota };
-import { PIECES } from './track/pieces.ts';
+import { PIECES, pieceLabel } from './track/pieces.ts';
 import { fitSocket } from './track/snap.ts';
 import { transformSocket } from './track/socket.ts';
 import type { Level } from './world/level.ts';
 import { createBuilder, type Builder } from './ui/builder.ts';
-import { parseShareUrl, type SharePayload } from './share/share.ts';
+import { encodeShareUrl, parseShareUrl, type SharePayload } from './share/share.ts';
 import { replayRun } from './replay/replay.ts';
 import { stepAndRecord, ReplayDirector, cupView, REPLAY_FOV } from './replay/cinematic.ts';
 import { createBuildAutosave, loadSave, rememberBuild, recordStars, savedBuild } from './save/save.ts';
 import { createSound, upAxisYOfQuat } from './sound/sound.ts';
 import { SET_TOKENS } from './render/tokens.ts';
 import type { PostStack } from './render/post/index.ts';
-import { parFor, starsFor, type RunOutcome, type RunResult } from './world/stars.ts';
+import { parFor, starsFor, type RunOutcome, type RunResult, type StarCount } from './world/stars.ts';
 import { createResultPanel, createRunRecorder, resultModel, starRulesLine } from './ui/result.ts';
 import { createHelpDrawer } from './ui/help.ts';
 import { firstLesson, firstSight } from './ui/callouts.ts';
@@ -361,6 +361,31 @@ export function actionableKindsFor(
  *  `actionableKindsFor` by construction. UI-side only, like that gate. */
 export function placedKindsFor(build: Build): Set<PieceKind> {
   return new Set(build.pieces.map((p) => p.def));
+}
+
+/**
+ * The GOAL FIXTURE NOUN for a level's player copy — the word the fell-line
+ * ends on ("the line let go before the ___"). Stage 5, playtest AA: "'the
+ * line let go before the cup' fired where no cup was visible" — a noun
+ * hardcoded in `physicsNote` names an object the level may never have
+ * shipped. The rule mirrors the builder's target sweep (`targets()` in
+ * `src/ui/builder.ts`): read the level's `fixtures` table — the SAME table
+ * `initialBuild` mounts and `buildTrackMeshes` signals — and name the
+ * fixture whose kind ENDS a run: the one the registry gives a
+ * `captureVolume` (world.ts resolves exactly one such piece to the capture
+ * sphere). A bowl or a mat joins that rule for free the day the registry
+ * ships one — the noun follows the data, never the prose. `null` when the
+ * level declares no fixture table or no capturing fixture (the note then
+ * keeps its shipped default, which is honest only for cup levels).
+ * UI-side copy, like the two kind-gates above — the physics never sees it.
+ */
+export function goalNounFor(level: Level): string | null {
+  const fixtures = (level as unknown as { fixtures?: Partial<Record<PieceKind, number>> }).fixtures;
+  if (!fixtures) return null;
+  for (const k of Object.keys(fixtures) as PieceKind[]) {
+    if ((fixtures[k] ?? 0) > 0 && PIECES[k].captureVolume) return pieceLabel(k).toLowerCase();
+  }
+  return null;
 }
 
 export function boot(root: HTMLElement): void {
@@ -1178,6 +1203,75 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   }
   gateNext(0); // hidden until a run EARNS a star (see gateNext)
 
+  // ---- SHARE (playtest AA item 1: "no share button exists anywhere… I'd
+  // send replays to a friend if the game would hand me a link") ----------
+  // The whole `#s=` machinery already existed (`src/share/share.ts`, the
+  // shared-run page, the card) with ONE missing surface: the panel never
+  // offered it. `lastOutcome` is the run the panel is ABOUT — captured at
+  // the terminal edge below, hash and all; `lastShare` is the link once a
+  // press has made one. `currentBuild` cannot have moved under the panel:
+  // any edit hides the panel (onChange), so the build, seed and hash the
+  // link encodes are the run the player just watched.
+  let lastShare: { url: string; time: number; stars: StarCount } | null = null;
+  let lastOutcome: { hash: string; time: number; stars: StarCount } | null = null;
+  resultPanel.share.addEventListener('click', () => {
+    if (!lastOutcome) return;
+    const outcome = lastOutcome;
+    const payload: SharePayload = {
+      levelId: level.id,
+      seed: currentBuild.seed,
+      hash: outcome.hash,
+      build: currentBuild,
+    };
+    resultPanel.shareNote.hidden = false;
+    resultPanel.shareNote.textContent = 'making link…';
+    void encodeShareUrl(payload).then(
+      (frag) => {
+        const url = `${window.location.origin}${window.location.pathname}${frag}`;
+        lastShare = { url, time: outcome.time, stars: outcome.stars };
+        // the VISIBLE LINK is the fallback that never fails: clipboard
+        // permission can be denied (headless, permissions policy, http),
+        // a select-and-copy on a real input cannot
+        resultPanel.shareUrl.value = url;
+        resultPanel.shareRow.hidden = false;
+        resultPanel.shareCard.hidden = false;
+        return navigator.clipboard
+          ?.writeText(url)
+          .then(() => {
+            resultPanel.shareNote.textContent = 'link copied — send it to a friend';
+          })
+          .catch(() => {
+            resultPanel.shareNote.textContent = 'copy the link below';
+          });
+      },
+      () => {
+        resultPanel.shareNote.textContent = 'this browser could not build the link';
+      },
+    );
+  });
+  // the card PNG "if cheap" — it was already wired for the SHARED page
+  // (`wireShareCard`); one reused call here, the card carrying the URL the
+  // share press just made
+  resultPanel.shareCard.addEventListener('click', () => {
+    const s = lastShare;
+    if (!s) return;
+    resultPanel.shareNote.textContent = 'rendering card…';
+    void generateShareCard({
+      levelId: level.id,
+      build: currentBuild,
+      time: s.time,
+      stars: s.stars,
+      url: s.url,
+    })
+      .then((blob) => {
+        downloadBlob(blob, `gravity-works-${level.id}.png`);
+        resultPanel.shareNote.textContent = 'card downloaded';
+      })
+      .catch(() => {
+        resultPanel.shareNote.textContent = 'card failed on this browser';
+      });
+  });
+
   // the e2e/keyboard-parity seam: the world position of the VISIBLE target
   // marker — arrows and hover move this socket, nothing targets invisibly
   (window as unknown as Record<string, unknown>).__gwTargetSocket = (): number[] | null => {
@@ -1215,6 +1309,30 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     if (w.scene) frameCamera(camera, w.scene, framingFocus, null, buildView);
     resultPanel.hide();
   }
+
+  // ESC CLOSES THE OVERLAY FIRST (playtest AA item 3: "Home did nothing
+  // with the failure overlay up — camera stayed parked in a far failure
+  // vista"). The overlay is the thing between the player and the Home
+  // chord, so the FIRST Escape dismisses it and walks the framing home —
+  // build view, home pose, car left where it fell (Retry is still the
+  // button that moves the car). CAPTURE-phase stopPropagation hides the
+  // press from the camera's double-Escape pair entirely, so the SECOND
+  // Escape is a lone first half of the chord: it arms nothing the player
+  // did not ask for, and a vista that is already home stays home.
+  window.addEventListener(
+    'keydown',
+    (ev) => {
+      if (ev.key !== 'Escape' || resultPanel.element.hidden) return;
+      ev.preventDefault();
+      ev.stopPropagation(); // capture: the camera's Escape chord never sees this press
+      resultPanel.hide();
+      runCamActive = false;
+      endHold = null; // the damping tick must not re-solve the death hold
+      buildView.reset();
+      if (world?.scene) frameCamera(camera, world.scene, framingFocus, null, buildView);
+    },
+    { capture: true },
+  );
 
   function startRun(): void {
     acc = 0;
@@ -1395,6 +1513,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         bestStarsBefore,
         actionableKindsFor(currentBuild, tray),
         placedKindsFor(currentBuild),
+        goalNounFor(level),
       );
       resultPanel.show(model);
       // the run's OUTCOME is an audio event exactly once per run: the
@@ -1423,6 +1542,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         hashNote.hidden = true;
       }
       lastRun = { hash: h, pieces: result.piecesUsed };
+      // the SHARE payload's run (see the share wiring): the hash, time and
+      // stars of the run the panel is about, frozen at its terminal edge
+      lastOutcome = { hash: h, time: result.time, stars: model.stars };
     }
     lastStatus = w.status;
     const pose = w.carPose(w.status === 'running' ? acc / FIXED_DT : 0);

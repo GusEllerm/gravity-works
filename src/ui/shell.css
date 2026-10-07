@@ -105,6 +105,32 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
   font: inherit; font-size: 13px; padding: 4px 10px; border-radius: 4px;
   border: 1px solid #fdf2e0; background: transparent; color: #fdf2e0; cursor: pointer;
 }
+/* THE SHARE ROW (playtest AA item 1): revealed only after a share press.
+ * The panel's root is pointer-transparent, so the row's own controls opt
+ * back in — the link is selectable and the card button clickable. */
+#gw-result-share-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 6px;
+  pointer-events: auto;
+}
+#gw-result-share-row[hidden] { display: none; }
+#gw-result-share-url {
+  flex: 1 1 200px;
+  min-width: 0;
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid #b9915a;
+  background: #fff8ec;
+  color: #2c2013;
+}
+#gw-result-share-note { margin: 0; font-size: 11px; font-style: italic; flex: 1 1 100%; }
+#gw-result-share-note[hidden] { display: none; }
+#gw-result-share-card[hidden] { display: none; }
 /* SHORT-WINDOW COMPACT (playtest Z round7: at a 1280x633 window the result
  * panel and the failure caption rendered below the fold — the old 620 px
  * threshold never fired at 633 and the page (chrome + a 540 px canvas + the
@@ -131,6 +157,8 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
   #gw-result-rules { font-size: 10px; }
   #gw-result-buttons { margin-top: 4px; }
   #gw-result-buttons button { font-size: 11px; padding: 3px 8px; }
+  #gw-result-share-row { margin-top: 4px; }
+  #gw-result-share-url { font-size: 10px; }
 }
 /* THE GRAPHICS HICCUP (playtest W round5: a tab that went BLACK and silent
  * mid-drag). If the WebGL context is ever lost, the page SAYS so and says

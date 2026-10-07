@@ -363,7 +363,16 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   // 'Home: Esc Esc'" — an echo of the DOUBLE-press gesture that reads like a
   // stuck key): the gesture is two Escapes inside RECENTER_MS (see
   // `build-camera.ts`), so the line says the number of presses plainly.
-  hint.textContent = 'Aim: hover the world or ←→ · Place: click the world or Enter · Flip: R · Look: right-drag · Home: press Esc twice';
+  // THE "OTHER SPOT" KEY IS ONE KEY EVERYWHERE (stage 5, playtest AA: "the
+  // J/] 'other spot' hint is inconsistent: one level says press J, the next
+  // says press ]"). The binding that walks spots is `]` (cycleAim — ties
+  // when the pointer found a near-tie, the whole target list otherwise —
+  // see the keydown table below); the arrows keep working, but no player
+  // line names a second key for the same job. This line and the tie tail
+  // in `updateGhost` are the page's only two other-spot hints — both now
+  // say `]`. The old "hover the world or ←→" taught a different key for
+  // the same verb, which is exactly the inconsistency AA heard.
+  hint.textContent = 'Aim: hover the world or press ] for the other spot · Place: click the world or Enter · Flip: R · Look: right-drag · Home: press Esc twice';
   hint.hidden = true;
   root.appendChild(hint);
   // the VISIBLE reason behind every greyed/spent tray button — one counter,

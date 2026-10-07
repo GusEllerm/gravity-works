@@ -206,7 +206,7 @@ test('holding a tray piece teaches Place, and disabled buttons say why', async (
 
   // hold a live piece: the one-line instruction appears next to the tray
   await page.click('#gw-tray-drop')
-  await expect(page.locator('#gw-tray-hint')).toHaveText('Aim: hover the world or ←→ · Place: click the world or Enter · Flip: R · Look: right-drag · Home: press Esc twice')
+  await expect(page.locator('#gw-tray-hint')).toHaveText('Aim: hover the world or press ] for the other spot · Place: click the world or Enter · Flip: R · Look: right-drag · Home: press Esc twice')
 
   // a click on a greyed piece explains itself in the live status line
   // (dispatchEvent: the button is aria-disabled but focusable — the real

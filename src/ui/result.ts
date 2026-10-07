@@ -273,6 +273,7 @@ export function physicsNote(
   ev: RunEvidence,
   actionableKinds: ReadonlySet<PieceKind> | null = null,
   placedKinds: ReadonlySet<PieceKind> | null = null,
+  goalNoun: string | null = null,
 ): string {
   if (result.status === 'finished') return '';
   if (result.hazardsTouched > 0) return 'a hazard took the run — line up to miss it';
@@ -311,7 +312,15 @@ export function physicsNote(
     if (ev.finalAirtime > LONG_FLIGHT && ev.finalTakeoffVy !== null && ev.finalTakeoffVy > JUMP_MIN_TAKEOFF_VY) {
       return 'fell off after a long jump — the gap outran the landing';
     }
-    return 'fell off — the line let go before the cup';
+    // HEAD-NOUN HONESTY (stage 5, playtest AA: "'the line let go before the
+    // cup' fired where no cup was visible"). The noun names the level's
+    // ACTUAL goal fixture — resolved from the level's `fixtures` table by
+    // `goalNounFor` in `src/boot.ts` (the same table the builder's target
+    // sweep labels, and the same capture rule `targets()` speaks), so a
+    // level whose finish reads as a bowl or a mat says THAT word. `null`
+    // (no level context — a shared page, a unit caller) keeps the shipped
+    // "cup": the finish kind of every level that ever shipped is the cup.
+    return `fell off — the line let go before the ${goalNoun ?? 'cup'}`;
   }
   if (result.status === 'stalled') {
     if (tooSlowAtApex) return 'stalled — too slow at the top of the loop; give it more height before it';
@@ -365,7 +374,9 @@ export interface ResultModel {
  *  `actionableKinds` (kinds placed in the build that ran, plus kinds with
  *  stock left in the level's tray) gates the note's advice tails and
  *  `placedKinds` (the kinds actually in the build) phrases them — see
- *  `physicsNote`; neither reaches the physics. */
+ *  `physicsNote`; neither reaches the physics. `goalNoun` is the level's
+ *  goal-fixture noun (`goalNounFor` in `src/boot.ts`) — also note-only,
+ *  UI-side, never physics. */
 export function resultModel(
   result: RunResult,
   par: Par,
@@ -373,12 +384,13 @@ export function resultModel(
   bestStarsBefore = 0,
   actionableKinds: ReadonlySet<PieceKind> | null = null,
   placedKinds: ReadonlySet<PieceKind> | null = null,
+  goalNoun: string | null = null,
 ): ResultModel {
   return {
     stars: starsFor(result, par),
     time: result.time,
     piecesUsed: result.piecesUsed,
-    note: physicsNote(result, ev, actionableKinds, placedKinds),
+    note: physicsNote(result, ev, actionableKinds, placedKinds, goalNoun),
     status: result.status,
     par,
     bestStarsBefore,
@@ -445,6 +457,22 @@ export interface ResultPanel {
   /** On to the next rung of the ladder (wired by the shell; hidden when
    * this level has no next). */
   next: HTMLButtonElement;
+  /** "Share this run" (wired by the shell; playtest AA: "I'd send replays
+   * to a friend if the game would hand me a link"). The button produces a
+   * `#s=` link; the row beside it carries the visible-link fallback and the
+   * share-card PNG once a link exists. */
+  share: HTMLButtonElement;
+  /** The row holding the link input, the card button and the note. */
+  shareRow: HTMLElement;
+  /** The visible link (readonly, select-on-click) the shell fills after a
+   * share press — the no-clipboard fallback. */
+  shareUrl: HTMLInputElement;
+  /** The card-PNG download (shell-wired; shown once a link exists). */
+  shareCard: HTMLButtonElement;
+  /** One honest line about the link: copied / copy it yourself / failed. */
+  shareNote: HTMLElement;
+  /** Retire the last run's share artifacts (a new run invalidates them). */
+  resetShare(): void;
   show(model: ResultModel): void;
   hide(): void;
 }
@@ -479,6 +507,11 @@ function makePanel(): {
   note: HTMLElement;
   retry: HTMLButtonElement;
   next: HTMLButtonElement;
+  share: HTMLButtonElement;
+  shareRow: HTMLElement;
+  shareUrl: HTMLInputElement;
+  shareCard: HTMLButtonElement;
+  shareNote: HTMLElement;
 } {
   const root = document.createElement('div');
   root.id = 'gw-result';
@@ -487,9 +520,11 @@ function makePanel(): {
   root.hidden = true;
   // over the world, never over a run: shown only at run end (§5.11). Warm
   // paper palette, no drop shadow (§5.10). CENTRED over the stage and
-  // scrolled into view on show — pinned to a stage corner, the panel landed
-  // off-viewport whenever the reader had scrolled to look at the world
-  // (the deployed-page "invisible result" finding, 3/3 playtesters).
+  // VIEWPORT-ANCHORED on show (see `createResultPanel`): pinned to a stage
+  // corner, the panel landed off-viewport whenever the reader had scrolled
+  // to look at the world (the deployed-page "invisible result" finding,
+  // 3/3 playtesters); the stage-5 AA pass replaced the scroll-into-view fix
+  // with a fixed-position anchor so being seen never costs a scroll.
   // VIEWPORT-SAFE (playtest J: at ~960x540 the panel outran the fold and
   // the Next button was cut off): every pixel of the panel is styled in
   // `src/ui/shell.css`, which caps it with max-height + overflow (the
@@ -512,8 +547,36 @@ function makePanel(): {
   retry.setAttribute('aria-label', 'Retry this build from the start');
   const next = panelButton('gw-result-next', 'Next level', buttons);
   next.setAttribute('aria-label', 'Play the next level');
-  root.append(stars, time, pieces, rules, note, buttons);
-  return { root, stars, time, pieces, rules, note, retry, next };
+  // THE SHARE BUTTON LIVES ON THE PANEL (playtest AA item 1: "no share
+  // button exists anywhere" while the whole `#s=` machinery was dead code
+  // one import away). It rides the SAME button row (no extra panel line —
+  // the viewport-safe 960x540 law from playtest J stays intact), and its
+  // label names the thing it hands you: this run, as a link.
+  const share = panelButton('gw-result-share', 'Share this run', buttons);
+  share.setAttribute('aria-label', 'Copy a link to this run');
+  // the share row: visible link + card download, revealed only once a link
+  // exists (before the first press the panel shows just the buttons)
+  const shareRow = document.createElement('div');
+  shareRow.id = 'gw-result-share-row';
+  shareRow.hidden = true;
+  const shareUrl = document.createElement('input');
+  shareUrl.id = 'gw-result-share-url';
+  shareUrl.type = 'text';
+  shareUrl.readOnly = true;
+  shareUrl.setAttribute('aria-label', 'Share link for this run');
+  shareUrl.addEventListener('focus', () => shareUrl.select());
+  const shareCard = panelButton('gw-result-share-card', 'Card PNG', shareRow);
+  shareCard.setAttribute('aria-label', 'Download the share card image');
+  const shareNote = document.createElement('p');
+  shareNote.id = 'gw-result-share-note';
+  shareNote.setAttribute('role', 'status');
+  shareNote.setAttribute('aria-live', 'polite');
+  shareRow.prepend(shareUrl, shareNote);
+  root.append(stars, time, pieces, rules, note, buttons, shareRow);
+  return {
+    root, stars, time, pieces, rules, note, retry, next,
+    share, shareRow, shareUrl, shareCard, shareNote,
+  };
 }
 
 /**
@@ -522,12 +585,26 @@ function makePanel(): {
  * shell only calls `show` on a terminal status.
  */
 export function createResultPanel(host: HTMLElement): ResultPanel {
-  const { root, stars, time, pieces, rules, note, retry, next } = makePanel();
+  const {
+    root, stars, time, pieces, rules, note, retry, next,
+    share, shareRow, shareUrl, shareCard, shareNote,
+  } = makePanel();
   host.appendChild(root);
   return {
     element: root,
     retry,
     next,
+    share,
+    shareRow,
+    shareUrl,
+    shareCard,
+    shareNote,
+    resetShare() {
+      shareRow.hidden = true;
+      shareUrl.value = '';
+      shareCard.hidden = true;
+      shareNote.hidden = true;
+    },
     show(model) {
       stars.textContent = starGlyphs(model.stars);
       // role=img + label so a screen reader says "2 of 3 stars", not "star star star"
@@ -539,18 +616,46 @@ export function createResultPanel(host: HTMLElement): ResultPanel {
       rules.textContent = lines.rules;
       note.textContent = model.note;
       note.hidden = model.note === '';
+      // a fresh panel never keeps the last run's link (the hash would be stale)
+      this.resetShare();
       // visibility on BOTH channels (the help drawer's lesson: `hidden`
       // alone loses to any inline display; display alone loses to a11y)
+      // SCROLL ANCHOR (playtest AA item 4: "the results card yanks the page
+      // scroll — I lost the canvas twice"): the panel NEVER scrolls the
+      // document. It is absolute over the stage, so when the stage is on
+      // screen the panel is already on screen; when the reader had scrolled
+      // the stage away, the panel ANCHORS to the viewport (`position:
+      // fixed`, still centred, still capped by the viewport-safe CSS) —
+      // visible without moving the world. The old `scrollIntoView` did the
+      // opposite: a document jump that teleported the canvas out from under
+      // the player (the deployed-page "jump the panel into view" fix is
+      // superseded; loop.spec's on-screen claim holds by anchoring now).
+      // ScrollY is captured and restored across the mutation so no focus
+      // rule, scroll anchoring, or button click can yank the page.
+      const anchor = window.scrollY;
+      root.style.position = '';
+      root.style.top = '';
       root.hidden = false;
       root.style.display = '';
-      // and guarantee the reader is LOOKING at it: if the page is scrolled
-      // such that the panel is off-screen, jump it into view (nearest =
-      // the smallest scroll that works, no jump when already visible)
-      root.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+      const rect = root.getBoundingClientRect();
+      if (rect.top < 0 || rect.bottom > window.innerHeight) {
+        // anchored to the viewport, BELOW the sticky toolbar (playtest R's
+        // law: the toolbar is always the thing under the cursor — the
+        // panel must never trade that away to be seen)
+        root.style.position = 'fixed';
+        const host = document.getElementById('gw-builder-host');
+        const below = host ? Math.round(host.getBoundingClientRect().bottom) : 0;
+        root.style.top = `${Math.max(8, below + 6)}px`;
+      }
+      if (window.scrollY !== anchor) window.scrollTo(0, anchor);
     },
     hide() {
+      const anchor = window.scrollY;
       root.hidden = true;
       root.style.display = 'none';
+      root.style.position = '';
+      root.style.top = '';
+      if (window.scrollY !== anchor) window.scrollTo(0, anchor);
     },
   };
 }

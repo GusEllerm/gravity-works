@@ -261,3 +261,50 @@ describe('tail phrasing tracks placed vs tray-only (playtest W round5)', () => {
     expect(note).toBe('fell off nose-first');
   });
 });
+
+/**
+ * GOAL-NOUN HONESTY (stage 5, playtest AA: "'the line let go before the
+ * cup' fired where no cup was visible — I never knew which object 'the cup'
+ * was"). The fell-line's head noun names the level's ACTUAL goal fixture,
+ * resolved by `goalNounFor` from the level's `fixtures` table — the same
+ * table the builder's target sweep and the fixture signal read — and the
+ * noun reaches `physicsNote` as a plain string (UI-side; the physics never
+ * sees it). No level context keeps the shipped default.
+ */
+describe('goal-noun honesty in the fell line (playtest AA item 2)', () => {
+  const fell = { status: 'fell', time: 3.2, piecesUsed: 6, hazardsTouched: 0 } as const;
+
+  test('the shipped default stands when the caller has no level context', () => {
+    expect(physicsNote(fell, emptyEvidence(0))).toMatch(/^fell off — the line let go before the cup$/);
+  });
+
+  test('a supplied goal noun replaces the word after "before the"', () => {
+    const note = physicsNote(fell, emptyEvidence(0), null, null, 'bowl');
+    expect(note).toBe('fell off — the line let go before the bowl');
+  });
+
+  test('goalNounFor names the capturing fixture of a rung\'s table', async () => {
+    const { goalNounFor } = await import('../../src/boot.ts');
+    const { KITCHEN01 } = await import('../../src/world/levels/kitchen01.level.ts');
+    const { KITCHEN02 } = await import('../../src/world/levels/kitchen02.level.ts');
+    // every shipped rung fixtures a finishCup — the registry's only
+    // captureVolume kind — so the noun is its player word, lowercased
+    expect(goalNounFor(KITCHEN01)).toBe('cup');
+    expect(goalNounFor(KITCHEN02)).toBe('cup');
+  });
+
+  test('goalNounFor reports null for a level with no fixture table', async () => {
+    const { goalNounFor } = await import('../../src/boot.ts');
+    const { FEELTRACK } = await import('../../src/world/levels/feeltrack.level.ts');
+    expect(goalNounFor(FEELTRACK)).toBeNull();
+  });
+
+  test('every campaign rung resolves a noun its fixtures table actually carries', async () => {
+    const { goalNounFor } = await import('../../src/boot.ts');
+    const { getLevel } = await import('../../src/world/levels/feeltrack.level.ts');
+    const { CAMPAIGN_LADDER } = await import('../../src/world/campaign.ts');
+    for (const id of CAMPAIGN_LADDER) {
+      expect(goalNounFor(getLevel(id)), id).toBe('cup');
+    }
+  });
+});

@@ -118,7 +118,7 @@ test('the switch hint is plain words with the key named, and silent with no ambi
   // the teaching line names the home reset as a SENTENCE, not "Esc Esc"
   await page.click('#gw-tray-drop')
   await expect(page.locator('#gw-tray-hint')).toHaveText(
-    'Aim: hover the world or ←→ · Place: click the world or Enter · Flip: R · Look: right-drag · Home: press Esc twice',
+    'Aim: hover the world or press ] for the other spot · Place: click the world or Enter · Flip: R · Look: right-drag · Home: press Esc twice',
   )
   // and no player line still shows the bracket-glyph wording
   const spoken = await page.evaluate(() =>
@@ -381,7 +381,12 @@ test('T+U 2: the hint states the home chord once, honestly', async ({ page }) =>
 
 test('T+U 3: the finish cup is inside the build framing on every campaign rung', async ({ page }) => {
   test.slow()
-  expect(CAMPAIGN_LADDER.length).toBe(21)
+  // the sweep's rung count is the ladder's law: 21 through stage 4, and the
+  // stage-5 porch ladder grew it to 26 (kitchen 5 + bedroom 4 + bathroom 4 +
+  // garden 4 + garage 4 + porch 5) — the merge grew the campaign and left
+  // this literal at 21 (playtest AA pass repair; the porch rungs now sweep
+  // their cup framing here too)
+  expect(CAMPAIGN_LADDER.length).toBe(26)
   for (const id of CAMPAIGN_LADDER) {
     for (const build of ['', '&build=par']) {
       await page.goto(`/?level=${id}${build}`)
