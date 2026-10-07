@@ -12,6 +12,7 @@
  */
 import { test, expect } from '@playwright/test'
 import { PNG } from 'pngjs'
+import * as THREE from 'three'
 
 const SAMPLE_MS = 250
 const MAX_DOMINANT = 0.6
@@ -204,4 +205,109 @@ test('L01+L02(par+alt)+L04 par runs: EVERY 100 ms of the final second, no frame 
       expect(s.share, `${level}: frame at bucket ${b}: ${(s.share * 100).toFixed(1)} %`).toBeLessThanOrEqual(MAX_DOMINANT)
     }
   }
+})
+
+/**
+ * STAGE 4 — THE FAILURE END-HOLD GATE (playtest R round 3: "on the K4
+ * failure the camera buried itself in a peach wall — could not see the
+ * marble fall"; playtest S: "the result text overlays exactly where the
+ * car died — I never saw where K3's line let go"). The success end-hold
+ * always framed well; on fell/stalled the shell now holds a WIDE view of
+ * the DEATH SITE (the car's last seeable point) with the eye cleared over
+ * the set solids — `frameDeathHold`, see Modules/camera.
+ *
+ * Scripted wrong build on L04: the par line with its landing (and spare
+ * straight) REMOVED through the shipped Remove button — a chain that
+ * lets go before the sink, `fell` with the car coming to rest below the
+ * counter. The gate samples the dense 100 ms grid across the final second
+ * AND the whole end-hold window after the terminal step (the frames the
+ * verdict panel is shown over — the stage-4 dense window stopped at the
+ * terminal step; the failure hold lives AFTER it), same bar: no frame may
+ * exceed the single-colour share, and the death site must be IN the frame
+ * (projected through the live camera: in front of the eye and inside the
+ * canvas) — a hold that shows a beautiful wall of the launch side is
+ * exactly what the wide death-hold exists to prevent.
+ */
+test('L04 scripted wrong build: the failure end-hold never wall-buries and keeps the death site on screen', async ({ page }) => {
+  test.slow()
+  await page.addInitScript(() => {
+    const raf = window.requestAnimationFrame.bind(window)
+    const buckets = new Map<number, { share: number; status: string }>()
+    ;(window as unknown as Record<string, unknown>).__gwStrip = buckets
+    const work = document.createElement('canvas')
+    work.width = 240
+    work.height = 135
+    const g = work.getContext('2d', { willReadFrequently: true })!
+    window.requestAnimationFrame = ((cb: FrameRequestCallback) =>
+      raf((t) => {
+        cb(t)
+        const c = document.querySelector('#gw-canvas') as HTMLCanvasElement | null
+        const st = document.querySelector('#gw-status')?.textContent ?? ''
+        if (!c || !c.width) return
+        const bucket = Math.floor(performance.now() / 100)
+        if (buckets.has(bucket)) return
+        g.drawImage(c, 0, 0, 240, 135)
+        const d = g.getImageData(0, 0, 240, 135).data
+        const hist = new Map<number, number>()
+        let n = 0
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i + 3]! < 8) continue
+          const key = ((d[i]! >> 4) << 8) | ((d[i + 1]! >> 4) << 4) | ((d[i + 2]! >> 4) << 0)
+          hist.set(key, (hist.get(key) ?? 0) + 1)
+          n++
+        }
+        let mx = 0
+        for (const v of hist.values()) if (v > mx) mx = v
+        buckets.set(bucket, { share: mx / n, status: st })
+      })) as typeof window.requestAnimationFrame
+  })
+
+  await page.goto('/?level=kitchen04&build=par')
+  await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
+  // the WRONG build through the shipped controls: strip the run-out back
+  // to ramp->lip->drop so the line lets go before the sink
+  await page.click('#gw-remove-piece')
+  await page.waitForTimeout(500)
+  await page.click('#gw-remove-piece')
+  await page.waitForTimeout(700)
+  await page.click('#gw-launch')
+  await expect
+    .poll(async () => (await page.locator('#gw-status').textContent()) ?? '', { timeout: 30_000, intervals: [25, 50] })
+    .toMatch(/fell off the set|stalled|timed out/)
+  // hold the failure framing for a full 1.4 s of dense samples
+  await page.waitForTimeout(1500)
+
+  const strip = (await page.evaluate(() =>
+    [...((window as unknown as Record<string, unknown>).__gwStrip as Map<number, { share: number; status: string }>).entries()])) as [number, { share: number; status: string }][]
+  const terminal = strip.find(([b, s]) => /fell off the set|stalled|timed out/.test(s.status) && b > 0)![0]
+  // the final second BEFORE the terminal step (the run camera's last word)
+  // and the end-hold window AFTER it (the failure hold's word)
+  const window_ = strip.filter(([b]) => b >= terminal - 10 && b < terminal + 15)
+  expect(window_.length, 'failure window must hold >= 20 dense frames').toBeGreaterThanOrEqual(20)
+  for (const [b, s] of window_) {
+    expect(
+      s.share,
+      `failure frame at bucket ${b} (${((b - terminal) * 0.1).toFixed(1)} s around the terminal step): ${(s.share * 100).toFixed(1)} % single colour — wall-buried`,
+    ).toBeLessThanOrEqual(MAX_DOMINANT)
+  }
+
+  // THE DEATH SITE IS ON SCREEN: the settled car projects in FRONT of the
+  // eye and inside the canvas box, under a generous 20° margin
+  const box = (await page.locator('#gw-canvas').boundingBox())!
+  const pose = await page.evaluate(() => (window as unknown as Record<string, () => { pos: number[]; quat: number[] }>).__gwCameraPose())
+  const car = await page.evaluate(() => (window as unknown as Record<string, () => number[] | null>).__gwCarPos())
+  expect(car, 'no settled car position').not.toBeNull()
+  const eye = new THREE.Vector3(...pose.pos)
+  const q = new THREE.Quaternion(...pose.quat)
+  const toCar = new THREE.Vector3(...car!).sub(eye)
+  const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(q)
+  const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q)
+  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(q)
+  const zc = toCar.dot(fwd)
+  expect(zc, 'the death site is BEHIND the camera').toBeGreaterThan(0.1)
+  const f = 1 / Math.tan((35 * Math.PI) / 180 / 2)
+  const ndcX = (toCar.dot(right) * f) / zc / (box.width / box.height)
+  const ndcY = (toCar.dot(up) * f) / zc
+  expect(Math.abs(ndcX), `death site off-frame horizontally (ndc ${ndcX.toFixed(2)})`).toBeLessThan(1.2)
+  expect(Math.abs(ndcY), `death site off-frame vertically (ndc ${ndcY.toFixed(2)})`).toBeLessThan(1.2)
 })
