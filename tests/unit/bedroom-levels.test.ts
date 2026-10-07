@@ -43,6 +43,11 @@ import { GARAGE01 } from '../../src/world/levels/garage01.level.ts';
 import { GARAGE02, garage02FloorBuild } from '../../src/world/levels/garage02.level.ts';
 import { GARAGE03, garage03OilLaneBuild } from '../../src/world/levels/garage03.level.ts';
 import { GARAGE04 } from '../../src/world/levels/garage04.level.ts';
+import { PORCH01 } from '../../src/world/levels/porch01.level.ts';
+import { PORCH02, porch02DoorBuild } from '../../src/world/levels/porch02.level.ts';
+import { PORCH03, porch03BounceBuild } from '../../src/world/levels/porch03.level.ts';
+import { PORCH04 } from '../../src/world/levels/porch04.level.ts';
+import { PORCH05, porch05CatchFirstBuild } from '../../src/world/levels/porch05.level.ts';
 import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
 import { PARS } from '../../src/world/stars.ts';
 import { PIECES, type PieceKind } from '../../src/track/pieces.ts';
@@ -153,13 +158,14 @@ describe('bedroom ladder — level contracts', () => {
   });
 });
 
-describe('ladders (kitchen + bedroom + bathroom + garden + garage) — tray ⊇ parBuild on EVERY authored level', () => {
-  /** Every line ALL FIVE ladders author, in the level files' own data. */
+describe('ladders (kitchen + bedroom + bathroom + garden + garage + porch) — tray ⊇ parBuild on EVERY authored level', () => {
+  /** Every line ALL SIX ladders author, in the level files' own data. */
   const BATHROOM_LADDER: readonly Rung[] = [BATHROOM01, BATHROOM02, BATHROOM03, BATHROOM04];
   const GARDEN_LADDER: readonly Rung[] = [GARDEN01, GARDEN02, GARDEN03, GARDEN04];
   const GARAGE_LADDER: readonly Rung[] = [GARAGE01, GARAGE02, GARAGE03, GARAGE04];
+  const PORCH_LADDER: readonly Rung[] = [PORCH01, PORCH02, PORCH03, PORCH04, PORCH05];
   const LINES: readonly { level: Rung; label: string; build: Build }[] = [
-    ...[...KITCHEN_LADDER, ...LADDER, ...BATHROOM_LADDER, ...GARDEN_LADDER, ...GARAGE_LADDER].map((level) => ({
+    ...[...KITCHEN_LADDER, ...LADDER, ...BATHROOM_LADDER, ...GARDEN_LADDER, ...GARAGE_LADDER, ...PORCH_LADDER].map((level) => ({
       level,
       label: 'par build',
       build: level.parBuild(),
@@ -173,6 +179,9 @@ describe('ladders (kitchen + bedroom + bathroom + garden + garage) — tray ⊇ 
     { level: GARDEN03, label: 'wet shortcut', build: garden03SprinklerBuild() },
     { level: GARAGE02, label: 'floor line', build: garage02FloorBuild() },
     { level: GARAGE03, label: 'oil lane', build: garage03OilLaneBuild() },
+    { level: PORCH02, label: 'door line', build: porch02DoorBuild() },
+    { level: PORCH03, label: 'bounce line', build: porch03BounceBuild() },
+    { level: PORCH05, label: 'catch-first line', build: porch05CatchFirstBuild() },
   ];
 
   function multiset(pieces: Build['pieces']): Map<PieceKind, number> {

@@ -113,5 +113,30 @@
     "levelId": "kitchen05",
     "parPieces": 6,
     "parTime": 2.4
+  },
+  {
+    "levelId": "porch01",
+    "parPieces": 3,
+    "parTime": 1.1
+  },
+  {
+    "levelId": "porch02",
+    "parPieces": 4,
+    "parTime": 1.2
+  },
+  {
+    "levelId": "porch03",
+    "parPieces": 4,
+    "parTime": 1.25
+  },
+  {
+    "levelId": "porch04",
+    "parPieces": 4,
+    "parTime": 1.1
+  },
+  {
+    "levelId": "porch05",
+    "parPieces": 4,
+    "parTime": 1.2
   }
 ]

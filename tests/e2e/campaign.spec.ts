@@ -176,6 +176,25 @@ test('bedroom01 is finishable through the real UI, reached via the unlocked rung
   expect(errors).toEqual([])
 })
 
+test('the campaign OPENS: garage04\u2019s Next lands on porch01 with the porch mounted (stage 5: the sixth room is reachable from the garage rung)', async ({ page }) => {
+  const errors = noErrors(page)
+  // Navigation, not an unlock claim: the par-build launch is the cheapest
+  // honest way to stand on garage04\u2019s finish panel (campaign unlock
+  // semantics are the domain of the unit suite and the tests above).
+  await page.goto('/?level=garage04&launch=1&build=par')
+  await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
+  await expect(page.locator('#gw-status')).toContainText('finished')
+  await expect(page.locator('#gw-result-next')).toBeVisible()
+  await page.click('#gw-result-next')
+
+  await page.waitForURL(/\?level=porch01/)
+  await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'porch', {
+    timeout: 60_000,
+  })
+  await ready(page)
+  expect(errors).toEqual([])
+})
+
 test('set switch renders error-free: the bedroom level paints with zero console errors', async ({ page }) => {
   const errors = noErrors(page)
   await page.goto('/?level=bedroom01')

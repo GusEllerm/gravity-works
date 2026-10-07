@@ -38,6 +38,11 @@ import { GARAGE01 } from './world/levels/garage01.level.ts';
 import { GARAGE02 } from './world/levels/garage02.level.ts';
 import { GARAGE03 } from './world/levels/garage03.level.ts';
 import { GARAGE04 } from './world/levels/garage04.level.ts';
+import { PORCH01 } from './world/levels/porch01.level.ts';
+import { PORCH02 } from './world/levels/porch02.level.ts';
+import { PORCH03 } from './world/levels/porch03.level.ts';
+import { PORCH04 } from './world/levels/porch04.level.ts';
+import { PORCH05 } from './world/levels/porch05.level.ts';
 import { World, type RunStatus } from './world/world.ts';
 import { fixtureQuota, type Build } from './track/build.ts';
 export { fixtureQuota };
@@ -73,7 +78,7 @@ import type { PieceKind, PieceParams } from './track/pieces.ts';
 // registers it; the feel track stays addressable for the stage-2 specs). The
 // campaign table (`src/world/campaign.ts`) names its rungs; the sandbox and
 // the feel rig are imported here for addressing only.
-void [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04, KITCHEN05, KITCHEN_SANDBOX, BEDROOM01, BEDROOM02, BEDROOM03, BEDROOM04, BATHROOM01, BATHROOM02, BATHROOM03, BATHROOM04, GARDEN01, GARDEN02, GARDEN03, GARDEN04, GARAGE01, GARAGE02, GARAGE03, GARAGE04];
+void [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04, KITCHEN05, KITCHEN_SANDBOX, BEDROOM01, BEDROOM02, BEDROOM03, BEDROOM04, BATHROOM01, BATHROOM02, BATHROOM03, BATHROOM04, GARDEN01, GARDEN02, GARDEN03, GARDEN04, GARAGE01, GARAGE02, GARAGE03, GARAGE04, PORCH01, PORCH02, PORCH03, PORCH04, PORCH05];
 
 /** The set a level declares (`KitchenLevel.set` / any set-carrying level),
  *  structurally — the boot must not depend on the level modules' types to

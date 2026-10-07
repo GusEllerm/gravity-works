@@ -95,11 +95,12 @@ lessons, hazards and the sun regime as the new thing
 | `garage01` | `garage01.level.ts` | the OIL-STAIN grip hazard enters: the film halves grip, and the patch is flown AROUND, not driven through — the stain itself is the lesson | 3 (`gapLip`, `drop`, `landing`) | 3 | 2.25 | done — par = the L01 flight over the film, BIT-IDENTICAL wet vs dry (measured 2.233); every omission `fell` anchored; 5 of 6 whole-tray orders finish (`landing>drop>gapLip` pinned falling); the THROUGH line is the tray-unbuyable probe (diverges wet, wet FASTER 2.250 < 2.383 — low drag, the honest in-channel delta); `prop:oilStain` callout registered BY THE LEVEL FILE (the set module carries no `PROP_CALLOUTS` row — ask #8a) |
 | `garage02` | `garage02.level.ts` | the CHOICE of the AD's ported mezzanine: the HIGH workbench line vs the FLOOR line — a real trade-off, and the lazy-high line is the fast one | 5 (`straight`×3, `drop`, `landing`) | 3 | 2.40 | done — high 2.367 beats floor 2.575 chained (both finish — the trade-off is real in the tray); ANCHORED only the high line reaches the cup (floor `fell` 2.925 — the plateau property bedroom02 carried until the B2 redesign retired it there; ask #2b, pinned here); sampled orders: the pure-high subset finishes and one beats the par clock (2.250), the mixed ones `fell` (choice tray, not whole-order-invariant); `trayParams` seats `drop`/`landing` the par never places |
 | `garage03` | `garage03.level.ts` | the TRADE-OFF the tunnel FORCES: the speed line flies the goal line dry; the oil-film lane costs time | 5 (`straight`×2, `gapLip`, `drop`, `landing`) | 4 | 2.70 | done — par 2.667 flies the film (wet == dry bit-for-bit); the lane chained 2.675 finishes and `fell` anchored (ask #2b); lane WET 2.675 beats its own dry 2.708 yet STILL loses the speed line — bathroom03's tightest margin re-flowed; the zone is centred deep on the lane's own deck (bathroom03's fix verbatim); whole tray finishes every order sampled (best 2.483); **the ride THROUGH the wheel is STAGING** — variant C declares no sockets; a bore ride needs a lane-crossing tunnel anchor (ask #8b) behind ask #4/#1 |
-| `garage04` | `garage04.level.ts` | everything, one tray, stain + HEIGHT combined, a live film under the flight (capstone; the campaign's last rung) | 4 (`straight`, `gapLip`, `drop`, `landing`) | 4 | 2.70 | done — ALL 24 whole-tray orders finish (2.467–3.300, sweep seating inherited — the lesson IS the order-invariant sum) AND sampled orders replay BIT-IDENTICAL wet vs dry; par ORDER beatable at 2.467 s; decked probe diverges wet-faster (2.583 vs 2.717); starts at the 0.26 bench height — the two garage verbs on one line, `nextInCampaign('garage04') === null` |
+| `garage04` | `garage04.level.ts` | everything, one tray, stain + HEIGHT combined, a live film under the flight (capstone; hands the campaign to the porch) | 4 (`straight`, `gapLip`, `drop`, `landing`) | 4 | 2.70 | done — ALL 24 whole-tray orders finish (2.467–3.300, sweep seating inherited — the lesson IS the order-invariant sum) AND sampled orders replay BIT-IDENTICAL wet vs dry; par ORDER beatable at 2.467 s; decked probe diverges wet-faster (2.583 vs 2.717); starts at the 0.26 bench height — the two garage verbs on one line, `nextInCampaign('garage04') === 'porch01'` (stage 5 opened the sixth room) |
 
 The garage rungs join the ladder after `garden04`
-(`nextInCampaign('garden04') === 'garage01'`, and `garage04` is the
-campaign's LAST rung — no Next beyond it); `garageSetPlacement` mounts
+(`nextInCampaign('garden04') === 'garage01'`; since the stage-5 porch pass
+`garage04` hands off to `porch01` — it is no longer the campaign's last
+rung); `garageSetPlacement` mounts
 the ratified variant-C set UNDER the run on the bedroom rule (x = rail
 midpoint, −37 cm off the corridor — the family-tightest offset that keeps
 the forward-most dress solid, the flattened CARDBOARD at set z +0.261, a
@@ -113,6 +114,37 @@ same `KITCHEN_GAP` as `SHOP_GAP`, same sweep seating), so the garage
 clocks ARE the bathroom clocks — stated openly, with the oil stain, the
 ported mezzanine and the goal-line wheel as the new thing
 (`Sessions/2026-10-09 Stage 4 - garage ladder.md`).
+
+## The porch ladder (stage 5 — five rungs, the campaign's LAST room)
+
+| id | file | teaches | tray (budget) | par pieces | par time | status |
+|---|---|---|---|---|---|---|
+| `porch01` | `porch01.level.ts` | the MORNING FLIGHT under the weave: the −29°/0.16 m chute tool, one pop, one catch, one plank — the porch's L01 | 3 (`gapLip`, `drop`, `straight`) | 3 | 1.10 | done — par 1.058, byte-identical on the builder mount; ALL 6 whole-tray orders finish (1.017–1.083); every omission FALLS and EARLY-class: the ramp-end family dies UNDER 1 s (0.867–0.967), the only late death (lip+drop over the far deck, 1.275) is a distinct family 0.3 s away — the fail-timing law stated cleanest in the house |
+| `porch02` | `porch02.level.ts` | the CHOICE: the lazy three-plank deck vs the POP at the door mouth (the AD's threshold pair is staging, not a bore) | 5 (`straight`×3, `gapLip`, `drop`) | 4 | 1.20 | done — deck 1.158 beats door 1.250 chained AND anchored (both lines finish on both mountings — span-equal by construction, ask #2b does not bite); ALL 20 whole-tray orders finish (1.142–1.358); omission families: ≤1.05 s ramp-end vs the 1.25–1.43 far-deck class; the `door.in`/`door.out` pair sits INSIDE the deck bounds with its travel axis ACROSS the +x lane (test-pinned staging; a ride needs ask #4 behind a lane-crossing anchor) |
+| `porch03` | `porch03.level.ts` | THE STEP (order rung on the PINNED step, kitchen03's shape): WHERE the step goes in the chain is the whole game — pop onto it, or slam it off the chute and let the BOUNCE carry | 4 (`straight`×2, `gapLip`, `drop`) | 4 | 1.25 | done — par = the WHOLE TRAY (1.242): **no subset finishes AT ALL** (all 11 swept omissions FALL, 0.967–1.408 — the strongest anti-cheat in the house, bought with the sink-bridge cheat war this rung fought); 22 of 24 orders finish — lip-first with the step LAST wedges, porch04's belly law announced early; the exported BOUNCE line slams the step off the chute and beats par at 1.125 (kitchen02's beable-par, all four pieces) |
+| `porch04` | `porch04.level.ts` | the CAPSTONE of the deck: everything at once, the SINK-vs-CARRY choice inside an order rung, the PINNED step killing the belly cheat the ladder's step fed | 4 (`landing`, `drop`, `straight`, `gapLip`) | 4 | 1.10 | done — ALL 24 whole-tray orders finish (1.083–1.367) and no legitimate order beats the par ORDER (1.083 = par itself); the belly build that finishes on the LADDER's forgiving step DIES here at 1.475 (the pinned 0.14 m / 55° step — kitchen05's unforgiving-gap trick for trenches); the one 3-piece pop-and-catch shortcut finishes 0.15 s OVER the par line (pieces star, never the time star) |
+| `porch05` | `porch05.level.ts` | THE CROSSING (the campaign's final rung): TWO thresholds, one per line — sink the door mouth then belly the stoam, or pop-catch both; the smooth route is the fast one | 4 (`gapLip`×2, `drop`, `landing`) | 4 | 1.20 | done — par (sink-first) 1.192 beats catch-first 1.392, both finish chained AND anchored on the same single cup (equal reach sums); ALL 12 whole-tray orders finish (1.117–1.475) and the par order is beatable within the tray (sink, belly-the-carry, double pop — 1.117); every subset FALLS by 1.525 except the one-threshold shortcut, which arrives 0.07 s over the line; `porch05.next === null` — the campaign ends in the yard light |
+
+The porch rungs join the ladder after `garage04`
+(`nextInCampaign('garage04') === 'porch01'`, and `porch05` is the
+campaign's LAST rung — no Next beyond it); `porchSetPlacement` mounts
+the ratified porch UNDER the run on the bedroom rule (x = rail midpoint,
+−53 cm back — the corner POSTS at set z +0.421 are the dress solids that
+set the offset, keeping every `dress` mesh's live box ≥ 10 cm clear of
+the +x corridor, test-swept from the live group boxes — the flush planks
+(`DECK_Y`, the deck's own 5 mm carried explicitly) 5 mm under the LOWEST
+authored finish deck, yaw 0 so the ratified weave, door and gutter stay
+as reviewed). THE PORCH SHIPS ZERO LIVE HAZARD ZONES BY LAW (the set's
+`HAZARDS` is empty and no rung adds a zone): the weave shade is read-only
+rhythm — garden01's doctrine as a whole-room rule — and a taught hazard
+(rain) must be enforced physics first. The clocks are the porch's OWN
+(not the bathroom's): the −29°/0.16 m chute tool caps every death under
+~1.5 s on every rung, and the kit files (`porch01`'s `PORCH_GEOM`,
+`THRESHOLD_GAP`, `PORCH_STEP`, `PORCH_SINK`) are shared across the ladder
+the way `KITCHEN_GAP` is. The porch's `door.in`/`door.out` pair is
+REGISTERED in the SET module (`prop:weaveShadow`, `prop:gutterFlume`) —
+garage ask #8a answered where it was asked
+(`Sessions/2026-10-09 Stage 5 - porch ladder.md`).
 
 ## Pars
 
@@ -202,7 +234,9 @@ in the same roster (the bathroom and garden hazard PROBES, like kitchen04's grou
 build, are NOT in the line roster — hazard replay, not tray-affordable
 routes); since the garage pass it spans FIVE — the garage's `floor`/`oil
 lane` alternates join the roster and the pars/parity/budget trio of
-checks now covers the garage rungs too.
+checks now covers the garage rungs too; since the stage-5 porch pass it
+spans SIX — the porch's `door`/`bounce`/`catch-first` alternates join the
+roster and the trio now covers the porch rungs as well.
 
 ## Notes
 
@@ -217,18 +251,20 @@ checks now covers the garage rungs too.
   ground PROBE finishing, L04's whole-tray order sweep finishing — the
   Playtest G learnability gate — and L05's wrong allocations NOT
   finishing).
-- `getLevel` now resolves 23 ids once the level modules are imported (feel
-  rig, kitchen six, bedroom four, bathroom four, garden four, garage four); the kitchen
+- `getLevel` now resolves 28 ids once the level modules are imported (feel
+  rig, kitchen six, bedroom four, bathroom four, garden four, garage four,
+  porch five); the kitchen
   files self-register via `registerLevel` on import
   (`feeltrack.level.ts`'s registry), the bedroom files do the same
   (`registerBedroom` wraps it), the bathroom files likewise
-  (`registerBathroom`), the garden files likewise (`registerGarden`), and
-  the garage files likewise (`registerGarage`).
+  (`registerBathroom`), the garden files likewise (`registerGarden`), the
+  garage files likewise (`registerGarage`), and the porch files likewise
+  (`registerPorch` wraps it, `porchLevel` fills the contract).
   `src/boot.ts` imports every rung (the
   kitchen wiring since stage 2, the bedroom wiring added at the stage-4
   ladder pass, the bathroom wiring at the stage-4 bathroom pass, the garden
   wiring at the stage-4 garden pass, the garage wiring at the stage-4 garage
-  pass — a file outside the level designer's
+  pass, the porch wiring at the stage-5 porch pass — a file outside the level designer's
   lane, touched only to
   register and extend the `void [...]` list; `LADDER` itself is the
   campaign table).

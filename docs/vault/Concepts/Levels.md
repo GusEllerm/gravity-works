@@ -367,6 +367,94 @@ the rig's SIM-space pose into that world field (a 10× displacement that
 happens to stay on that level's very long ramp); kitchen's
 `startSocketFromBuild` divides by `SIM_SCALE` and is the correct pattern.
 
+## The porch five (design cards)
+
+The porch ladder (stage 5) is five rungs on the RATIFIED porch set
+(`src/sets/porch/data.ts` — the weave-shade lattice, the threshold pair,
+the gutter flume, 12/13 at the production cameras,
+`Reference/Review 2026-10-09 Stage 5 porch set.md`), entering the campaign
+after `garage04` as the campaign's LAST room. THE ROOM SHIPS ZERO LIVE
+HAZARD ZONES BY LAW: the set's `HAZARDS` is empty and no rung adds a zone
+— the weave shade is garden01's read-only-rhythm doctrine promoted to a
+room rule, and the taught hazard (rain on the planks) must wait for
+enforced physics, never a decorative zone. Every rung launches on the
+fail-timing tool — the −29°/0.16 m MORNING CHUTE (`porch01`'s
+`PORCH_GEOM`, the kit file the whole ladder shares: `PORCH_STRAIGHT`
+0.11, `PORCH_LIP`/`THRESHOLD_GAP` (kitchen02's drop with the 0.125
+porch leads), the PINNED `PORCH_STEP` and the `PORCH_SINK`) — so every
+death on every rung lands under ~1.5 s and the death families are the
+rung cards' currency. Set mounting is the bedroom rule
+(`porchSetPlacement`): planks centred on the run, 53 cm BEHIND the
+corridor (`PORCH_AXIS_OFFSET` — set by the forward-most dress solid, the
+ROOF CORNER POSTS at set z +0.421, swept from the live group boxes by
+the ladder test), the flush planks (`DECK_Y`, the deck's own 5 mm
+carried explicitly) 5 mm under the LOWEST authored finish deck, yaw 0
+(the ratified weave, door and gutter stay as reviewed). The threshold
+pair is STAGING: `porch02` exports `door.in`/`door.out` through its
+mount, INSIDE the deck bounds with its travel axis ACROSS the +x lane —
+a ride through the door needs ask #4's prop-socket seating behind a
+lane-crossing anchor, and the porch's ask is exactly that anchor. The
+callouts (`prop:weaveShadow`, `prop:gutterFlume`) are registered BY THE
+SET MODULE — garage ask #8a, answered where it was asked.
+
+**PORCH 01 — Screen Door** (`porch01.level.ts`, the tutorial). Teaches:
+the morning flight under the weave — one pop, one catch, one plank, on
+the chute tool. Tray = the par line's exact multiset (3 = budget), par 3,
+1.10 (measured 1.058, builder-mount byte-identical); ALL 6 whole-tray
+orders finish (1.017–1.083) and every omission FALLS — the ramp-end
+family UNDER 1 s (0.867–0.967), the single late death (lip+drop over the
+far deck, 1.275) a distinct family 0.3 s clear. The cleanest
+fail-timing-law statement in the house.
+
+**PORCH 02 — The Open Door** (`porch02.level.ts`). Teaches: the CHOICE —
+the lazy three-plank deck vs the POP at the door mouth — with the AD's
+threshold pair as pure staging (the pair sits inside the deck, never in
+the lane; the test pins it). Tray = the 5-piece union, par 4 (the deck
+line, 1.20 — measured 1.158); the door line (`porch02DoorBuild`, the lip
+swapped into the deck at span-equal geometry) finishes 1.250 CHAINED AND
+ANCHORED — both lines reach, the lazy one still wins, ask #2b retired by
+construction. ALL 20 whole-tray orders finish (1.142–1.358, the
+kitchen02 sum law); the omission families split ≤1.05 ramp-end vs the
+1.25–1.43 far-deck class.
+
+**PORCH 03 — The Step** (`porch03.level.ts`, the rung the anti-cheat
+war forged). Teaches: WHERE the step goes in the chain is the whole game
+— kitchen03's trench-order lesson on the PINNED geometry. Tray = the
+par's whole multiset (4 = budget, 1.25 — measured 1.242): **no subset
+finishes at all** (all 11 swept omissions FALL, 0.967–1.408). The first
+tuning shipped a fifth piece — a sink ramp — and the sweep kept finding
+a no-lip belly bridge finishing UNDER the par line; kitchen03's shape
+(tray = par, no landing in the tray) is the cure, and porch05 keeps the
+sink only where every line still needs its pops. 22 of 24 orders finish
+(lip-first with the step LAST wedges — porch04's belly law announced
+early); the exported BOUNCE line (`porch03BounceBuild`) slams the step
+off the chute itself and beats par at 1.125 with all four pieces —
+kitchen02's beable-par hidden in plain sight.
+
+**PORCH 04 — Sunday Morning** (`porch04.level.ts`, the deck capstone).
+Teaches: everything at once, and the LAW that every piece must earn its
+place — the PINNED STEP (`PORCH_STEP`: 0.14 m on 55° knife walls, span
+preserved at 0.35 so every reach equality holds) was tuned HERE after
+the sweep caught a belly build rolling the stock trench UNDER the par
+line: the belly that finishes on the ladder's forgiving step DIES here
+at 1.475 while ALL 24 whole-tray orders still finish (1.083–1.367) and
+no legitimate order beats the par ORDER (1.083 = par itself, 4 of 4,
+1.10). The one surviving 3-piece shortcut (pop, step, sink) arrives 0.15
+s OVER the par line — pieces star, never the time star.
+
+**PORCH 05 — The Crossing** (`porch05.level.ts`, the campaign's last
+rung). Teaches: TWO thresholds — the door mouth and the stoam edge, one
+per line — and the crossing you choose. Par (4, 1.20 — measured 1.192)
+SINKS the mouth (`PORCH_SINK`, the soft catch that keeps the speed) and
+belly-steps the stoam run-out; the catch-first alternative
+(`porch05CatchFirstBuild`, 1.392) pops onto the step HARD at both
+thresholds. Both finish chained AND anchored at the same single cup
+(equal reach sums, the sink's span == the step's), ALL 12 orders finish
+(1.117–1.475), the par order is beatable within the tray (1.117 — the
+campaign lets you leave fast), and every subset FALLS by 1.525 except
+the one-threshold shortcut, 0.07 s over the line. `porch05.next ===
+null` — the campaign ends in the yard light.
+
 ## Pars are counted on the tray basis
 
 `scripts/gen-pars.mjs` writes `parPieces` = the pieces the reference build
@@ -1048,4 +1136,18 @@ is what sets the 37 cm offset), the bike-wheel-tunnel behind-the-lane
 staging check, and the `prop:oilStain` manifest pin — and extends the
 cross-ladder describe to FIVE ladders (kitchen, bedroom, bathroom,
 garden, garage; the garage floor line and oil lane ride the roster, and
-the pars/parity/budget checks now cover the garage rungs too).
+the pars/parity/budget checks now cover the garage rungs too). The
+stage-5 porch pass adds `tests/unit/porch-levels.test.ts` — the same
+gates for the porch five (pars finish, contracts, THE ZONE-FREE LAW
+(`hazards` absent-or-empty on every rung and `HAZARDS` empty in the set
+module, test-pinned), 01's exact fit + the EARLY-family omission table,
+02's choice on both mountings + the inside-deck/ACROSS-the-lane staging
+check, 03's whole-tray-is-par anti-cheat (every subset FALLS) + the 22/24
+order sweep + the bounce's par-beat, 04's 24/24 with the pinned-step
+belly death + the late shortcut, 05's both-threshold dual-route on both
+mountings + the beatable par) PLUS the flush-plank placement derivation
+(the deck's `DECK_Y` carried explicitly under the lowest authored
+finish deck) and a DERIVED dress sweep (the roof corner POSTS set the
+53 cm offset) — and extends the cross-ladder describe to SIX ladders
+(kitchen, bedroom, bathroom, garden, garage, porch; the porch door,
+bounce and catch-first lines ride the roster).

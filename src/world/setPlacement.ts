@@ -252,13 +252,40 @@ export function garageSetPlacement(levelId: string): SetPlacement | null {
  * under the LOWEST authored finish deck, yaw 0 — the weave parallelogram
  * must keep crossing the lane exactly as the ratified frames angle it, so
  * the set's own light-bearing geometry does not rotate for a level).
- * The handover constants the rungs will author against are set-side, not
- * here: the sockets (`PORCH_SOCKET_FRAMES`: `door.in`/`door.out`/`step.out`),
- * the flush deck height (`DECK_Y`), and the built-in-piece quota convention
- * (`fixtureQuota` in `src/track/build.ts` — the set carries the ROOM; a
- * rung's fixture multiset stays per-level data like every other room).
+ * The handover constants the rungs author against are set-side: the sockets
+ * (`PORCH_SOCKET_FRAMES`: `door.in`/`door.out`/`step.out`), the flush deck
+ * height (`DECK_Y`), and the built-in-piece quota convention (`fixtureQuota`
+ * in `src/track/build.ts` — the set carries the ROOM; a rung's fixture
+ * multiset stays per-level data like every other room).
+ *
+ * The stage-5 ladder rows. The porch is dressed around its deck disc with
+ * the front rail, roof posts and lantern FORWARD of the set origin (local z
+ * up to ≈ 0.43), so the run threads the THRESHOLD LINE: the set slides
+ * BACK by `PORCH_AXIS_OFFSET` until every `dress` solid's live box clears
+ * the +x corridor by 10 cm — which lands the lane over the flush stoam and
+ * the deck's front edge, the planks, weave shade, door mouth and flume all
+ * standing behind the line as ratified (the dress-box sweep is derived
+ * from the live group boxes by `tests/unit/porch-levels.test.ts`). DOWN:
+ * the planks' finish surface (`DECK_Y` above the set origin, the flush-
+ * deck floor-camera law) 5 mm under the LOWEST authored line's finish deck
+ * — same `DECK_CLEARANCE` contract as the counter/floor/tile/paving/slab
+ * rows. Yaw 0 on every rung BY LAW: the weave parallelogram is the room's
+ * key light made geometry, and the ratified frames angle it across the
+ * scene exactly as judged — the room never rotates for a level (the
+ * garden's trellis-bar lesson, re-stated).
  */
-const PORCH_ROWS: Record<string, readonly [number, number, number]> = {};
+export const PORCH_AXIS_OFFSET = 0.53;
+
+const PORCH_ROWS: Record<string, readonly [number, number, number]> = {
+  // x = the par rail's midpoint, y = the rung's LOWEST authored finish
+  // deck − DECK_CLEARANCE − DECK_Y (the planks' flush finish surface);
+  // re-derived from the live builds by `tests/unit/porch-levels.test.ts`.
+  porch01: [0.5786, -0.284734, -PORCH_AXIS_OFFSET],
+  porch02: [0.634, -0.294176, -PORCH_AXIS_OFFSET],
+  porch03: [0.6274, -0.324734, -PORCH_AXIS_OFFSET],
+  porch04: [0.7455, -0.43428, -PORCH_AXIS_OFFSET],
+  porch05: [0.7513, -0.384837, -PORCH_AXIS_OFFSET],
+};
 
 /** The mount transform for one porch level id (null = no placement — today
  *  every id, and the canonical-origin fallback the `?set=porch` inspection
