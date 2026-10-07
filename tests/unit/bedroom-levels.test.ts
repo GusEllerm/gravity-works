@@ -17,8 +17,9 @@
  * (Concepts/Levels §The same data replayed the way the BUILDER mounts it)
  * USED to except bedroom02's soft line (ask #2b — chained finish, anchored
  * fall). The stage-4 B2 redesign retired that exception for this rung: the
- * pillow sink and the plateau step now end on ONE deck plane (4 mm apart),
- * both lines finish on the builder mount, and the tests below assert it.
+ * pillow sink and the plateau step now end on ONE deck plane (≈3 mm apart
+ * since the pass-2 sink steepening), both lines finish on the builder
+ * mount, and the tests below assert it.
  */
 import { describe, expect, test } from 'vitest';
 import { BEDROOM01 } from '../../src/world/levels/bedroom01.level.ts';
@@ -258,7 +259,7 @@ describe('bedroom02 — the plateau choice finishes on BOTH mounts (B2 redesign;
     const step = await replayRun(BEDROOM02, bedroom02StepBuild());
     expect(par.status).toBe('finished');
     expect(step.status).toBe('finished');
-    expect(par.time).toBeLessThan(step.time); // measured ~1.72 vs ~2.47
+    expect(par.time).toBeLessThan(step.time); // measured ~1.72 vs ~2.04
   }, 60_000);
 
   test('on the BUILDER mount BOTH lines finish — one deck plane, one anchored cup', async () => {
@@ -266,7 +267,7 @@ describe('bedroom02 — the plateau choice finishes on BOTH mounts (B2 redesign;
     expect(pillow.status).toBe('finished');
     const step = await replayRun(BEDROOM02, placed(BEDROOM02, ['straight', 'straight', 'drop', 'straight']));
     expect(step.status).toBe('finished'); // the old ask #2b pin (soft line falls anchored) is RETIRED
-    expect(pillow.time).toBeLessThan(step.time); // ~1.83 vs ~2.47 anchored
+    expect(pillow.time).toBeLessThan(step.time); // ~1.72 vs ~2.04 (the pass-2 sink shortened the step's run-out)
     const short = await replayRun(BEDROOM02, placed(BEDROOM02, ['straight', 'straight']));
     expect(short.status).not.toBe('finished'); // two plateau decks fly short of the crossing
   }, 90_000);
@@ -323,6 +324,59 @@ describe('bedroom02 — the plateau choice finishes on BOTH mounts (B2 redesign;
       expect(run.time, `death clock on ${line}`).toBeLessThanOrEqual(2.6);
     }
   }, 180_000);
+
+  test("AA's builds die at DISTINCT sites on DISTINCT clocks (pass-2 fail-timing law)", async () => {
+    // Playtest AA (stage 5) rebuilt this rung six ways and saw ONE death —
+    // "always ~a hand's width from the glowing papers". The pass-2 sink
+    // (32°) re-houses the start-sink family at the START end; the deck-only
+    // family keeps its structural hand's-width site but now owns the
+    // LATEST death clock alone; the almost-right family dies UNDER AND
+    // PAST the mug, nowhere near the other clocks. Sites are the last
+    // recorded car x; the cup is the par build's capture centre.
+    const par = BEDROOM02.parBuild();
+    const cup = par.pieces.find((p) => p.def === 'finishCup')!;
+    const cv = PIECES.finishCup.captureVolume!(cup.params);
+    const e = cup.transform.elements;
+    const cupX = cv.center.x * e[0]! + cv.center.y * e[4]! + e[12]!;
+    const rows: [string, PieceKind[], 'start' | 'early' | 'past' | 'late'][] = [
+      ['sink at the start', ['landing'], 'start'],
+      ['sink + run-out', ['landing', 'straight'], 'early'],
+      ['three flats, no crossing', ['straight', 'straight', 'straight'], 'late'],
+      ['pillow line, one deck short', ['straight', 'landing', 'straight'], 'past'],
+    ];
+    const clocks: number[] = [];
+    for (const [label, kinds, site] of rows) {
+      const run = await replayRun(BEDROOM02, placed(BEDROOM02, kinds), { record: true });
+      expect(run.status, label).toBe('fell');
+      expect(run.time, label).toBeLessThanOrEqual(2.6);
+      const last = run.trace![run.trace!.length - 1]!;
+      clocks.push(run.time);
+      if (site === 'start') {
+        // the start-sink family LEFT the cup cluster: dies ≥ 0.55 m SHORT
+        // of the mug (measured 0.79) and under 1.45 s
+        expect(last.pos[0], label).toBeLessThanOrEqual(cupX - 0.55);
+        expect(run.time, label).toBeLessThanOrEqual(1.45);
+      }
+      if (site === 'early') {
+        expect(run.time, label).toBeLessThanOrEqual(1.75);
+      }
+      if (site === 'late') {
+        // the deck-only family is the LATEST clock on the level — its
+        // hand's-width site is structural (three tray decks chain to
+        // within sink dx of the par chain end at EVERY angle that keeps
+        // the step line finishing — swept −12…−28), so it is separated by
+        // the clock, not the site, and the note tail names the two
+        // crossing pieces the tray still holds
+        expect(run.time, label).toBeGreaterThanOrEqual(1.95);
+      }
+      if (site === 'past') {
+        // the almost-right family rolls a deck BELOW the mug plane and
+        // dies past it — the cup in frame overhead, never "a hand away"
+        expect(last.pos[0], label).toBeGreaterThanOrEqual(cupX);
+      }
+    }
+    expect(Math.max(...clocks) - Math.min(...clocks)).toBeGreaterThanOrEqual(0.5);
+  }, 120_000);
 });
 
 describe('bedroom03 — the catch trade-off is measured', () => {

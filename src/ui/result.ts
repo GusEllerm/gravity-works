@@ -203,7 +203,11 @@ export function createRunRecorder(): RunRecorder {
  *   fell after a long flight that ROSE off the deck -> fell off after a long jump
  *   fell otherwise        -> fell off ("the set" retired from player copy —
  *                              an internal word, playtest R; the head verb
- *                              is unchanged and still EQUALS the status line)
+ *                              is unchanged and still EQUALS the status
+ *                              line) with a stock-shaped ADD tail naming
+ *                              the kinds the tray still holds (stage-5 B2
+ *                              pass 2, playtest AA — see THE DRIVE-OFF
+ *                              TAIL below)
  *   stalled nose-high     -> stalled going uphill
  *   stalled after a push  -> stalled after its last push
  *   stalled otherwise     -> stalled on the flat (friction won)
@@ -267,6 +271,25 @@ export function createRunRecorder(): RunRecorder {
  * long-jump line's "the gap outran the landing" is descriptive (evidence-
  * gated, never advice) — the critique-verb trap was only "flatten the
  * landing" / "lower the lip".
+ *
+ * THE DRIVE-OFF TAIL (stage-5 B2 pass 2, playtest AA: six different
+ * bedroom02 builds, six deaths under the SAME tailless "the line let go
+ * before the cup"). The builds differed mainly in WHICH pieces the tray
+ * still held, and the tailless note never said so — "no advice text
+ * differentiated my six builds". The plain drive-off branch — fell with no
+ * other evidence — now carries an ADD tail naming the kinds with stock
+ * LEFT in the tray (`stockedKinds`, `stockedKindsFor` in boot: tray count
+ * minus what the build placed): "…; add a drop or a landing" when the
+ * crossing pieces are still in the tray, "…; add a straight" when the
+ * spare is a deck. This is the three-way rule at its strictest: the tail
+ * can ONLY name a kind with tray stock (a used-up or absent kind never
+ * appears — so it is always ADD-shaped, never a critique of a piece the
+ * build has no more of), and the list PRINTS DIFFERENTLY per build, which
+ * is what turns AA's six guesses into one informed retry: the deck-only
+ * death lists the two crossing pieces (bridge the pillow — the lesson),
+ * the almost-right line lists exactly the missing deck. Unknown stock
+ * (`null` — shared/replay pages, no builder context) keeps the bare head
+ * exactly as shipped.
  */
 export function physicsNote(
   result: RunResult,
@@ -274,6 +297,7 @@ export function physicsNote(
   actionableKinds: ReadonlySet<PieceKind> | null = null,
   placedKinds: ReadonlySet<PieceKind> | null = null,
   goalNoun: string | null = null,
+  stockedKinds: ReadonlySet<PieceKind> | null = null,
 ): string {
   if (result.status === 'finished') return '';
   if (result.hazardsTouched > 0) return 'a hazard took the run — line up to miss it';
@@ -313,14 +337,28 @@ export function physicsNote(
       return 'fell off after a long jump — the gap outran the landing';
     }
     // HEAD-NOUN HONESTY (stage 5, playtest AA: "'the line let go before the
-    // cup' fired where no cup was visible"). The noun names the level's
-    // ACTUAL goal fixture — resolved from the level's `fixtures` table by
-    // `goalNounFor` in `src/boot.ts` (the same table the builder's target
-    // sweep labels, and the same capture rule `targets()` speaks), so a
-    // level whose finish reads as a bowl or a mat says THAT word. `null`
-    // (no level context — a shared page, a unit caller) keeps the shipped
-    // "cup": the finish kind of every level that ever shipped is the cup.
-    return `fell off — the line let go before the ${goalNoun ?? 'cup'}`;
+    // cup' fired where no cup was visible"): the noun names the level's ACTUAL
+    // goal fixture (`goalNounFor`, the fixtures table the target sweep speaks);
+    // null keeps the shipped "cup" — honest for every level that shipped.
+    // DRIVE-OFF TAIL (same playtest): fell with no other evidence — the car
+    // was running and the LINE ended. Name what the tray STILL HOLDS: only
+    // kinds with stock left may be named (strictest ADD-only reading), and
+    // the list differs per build — six different wrong builds must not read
+    // as one undifferentiated line. Unknown stock keeps the head alone.
+    const head = `fell off — the line let go before the ${goalNoun ?? 'cup'}`;
+    if (stockedKinds === null) return head;
+    const named = ([
+      ['straight', 'a straight'],
+      ['drop', 'a drop'],
+      ['gapLip', 'a lip'],
+      ['landing', 'a landing'],
+    ] as [PieceKind, string][])
+      .filter(([k]) => stockedKinds.has(k))
+      .map(([, w]) => w);
+    if (named.length === 0) return head; // tray spent or empty — nothing honest to add
+    const list =
+      named.length === 1 ? named[0]! : `${named.slice(0, -1).join(', ')} or ${named[named.length - 1]!}`;
+    return `${head}; add ${list}`;
   }
   if (result.status === 'stalled') {
     if (tooSlowAtApex) return 'stalled — too slow at the top of the loop; give it more height before it';
@@ -372,11 +410,11 @@ export interface ResultModel {
 
 /** Stars + note for one finished-or-not run: the panel's whole content.
  *  `actionableKinds` (kinds placed in the build that ran, plus kinds with
- *  stock left in the level's tray) gates the note's advice tails and
- *  `placedKinds` (the kinds actually in the build) phrases them — see
- *  `physicsNote`; neither reaches the physics. `goalNoun` is the level's
- *  goal-fixture noun (`goalNounFor` in `src/boot.ts`) — also note-only,
- *  UI-side, never physics. */
+ *  stock left in the level's tray) gates the note's advice tails,
+ *  `placedKinds` (the kinds actually in the build) phrases them, `goalNoun` is the
+ *  level's goal-fixture noun (`goalNounFor` in `src/boot.ts`), and `stockedKinds`
+ *  (kinds with tray stock LEFT) carries the drive-off ADD tail — see `physicsNote`;
+ *  none of them reaches the physics. */
 export function resultModel(
   result: RunResult,
   par: Par,
@@ -385,12 +423,13 @@ export function resultModel(
   actionableKinds: ReadonlySet<PieceKind> | null = null,
   placedKinds: ReadonlySet<PieceKind> | null = null,
   goalNoun: string | null = null,
+  stockedKinds: ReadonlySet<PieceKind> | null = null,
 ): ResultModel {
   return {
     stars: starsFor(result, par),
     time: result.time,
     piecesUsed: result.piecesUsed,
-    note: physicsNote(result, ev, actionableKinds, placedKinds, goalNoun),
+    note: physicsNote(result, ev, actionableKinds, placedKinds, goalNoun, stockedKinds),
     status: result.status,
     par,
     bestStarsBefore,

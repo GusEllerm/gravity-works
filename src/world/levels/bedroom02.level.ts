@@ -2,42 +2,59 @@
  * BEDROOM 02 — "Pillow Plateau" (the CHOICE rung: the sunk pillow vs the
  * hard step).
  *
- * STAGE-4 B2 REDESIGN (Playtest U round 4's wall — see
- * `Sessions/2026-10-09 Stage 4 - B2 learnability`). The rung's lesson is
- * the kitchen L02 shape re-staged on the bed — the plateau offers two ways
- * down to the mug and one of them is measurably lazier — but the OLD
- * geometry made the lesson a lie on the mount the game actually builds:
- * the soft line ended 18 cm below its par (ask #2b), 13 of the 20 tray
- * orders finished (several sub-par), and every drop-first build died at
- * 2.9–3.3 s far past the anchored cup with nothing on screen to read
- * ("the line let go before the cup" — unknowable, which is what walled U).
+ * STAGE-5 B2 PASS 2 (Playtest AA's wall — see
+ * `Sessions/2026-10-10 Stage 5 - B2 pass 2.md`). The stage-4 B2 redesign
+ * (Playtest U round 4) put both lines on ONE deck plane so no build could
+ * die invisibly past the cup; AA then rebuilt the rung six times and every
+ * car died "~a hand's width from the glowing papers" with the SAME note
+ * ("the line let go before the cup") and gave up. Reconstructing AA's six
+ * builds headless (builder mount, documented assumptions in the session
+ * log) showed the old death map had TWO families sharing the cup site at
+ * 5 cm of each other: the start-sink build (sink placed at the ramp, dies
+ * 0.10 m short of the mug, 1.57 s) and the deck-only build (three flats,
+ * no crossing, dies 0.13 m short, 2.17 s) both end under the mug wall, and
+ * the start-sink family died far too late and far too close to the cup to
+ * read as "put the pillow further along".
  *
- * The redesign puts BOTH lines on ONE deck plane — the same depth — so the
- * anchored cup catches either and no build can die late-invisible:
+ * This pass keeps every stage-4 invariant — one deck plane for BOTH lines
+ * (the sink and the step still pass the mug mouth ~3 mm apart), tray =
+ * par multiset + the other line's parts, no ≤ 3-piece build finishes,
+ * empty span still the proven 0.2066 m, −22° launch (the ramp-angle knob —
+ * swept −12…−28: shallower STALLS the step line at −16/−19/−20, steeper
+ * drags every family's clock toward the cup site, so −22 stays) — and moves
+ * ONE number: the pillow sink steepens 30° → 32° (`PILLOW_SINK`, level
+ * 0.31 → 0.29), with the `PLATEAU_STEP` lead shortened 0.0885 → 0.0766 so
+ * the step span still matches the sink's dx to 0.03 mm. Why that number is
+ * the knob: it shortens the sink's dx (0.383 → 0.360) while keeping the
+ * dy, so the sink-at-start builds drop their car steeper and earlier and
+ * the car now dies AT the start end (~1.34 s, 0.79 m short — a distinct
+ * EARLY site), while the double-drop family stays where the U-redesign
+ * pinned it (falls 1.9–2.5 s, never a tumble past the 2.6 s cap, which the
+ * 34° variant measured and rejected).
  *
- * - The PILLOW (par, fast) line crosses one `straight` of mattress and
- *   sinks into the pillow — a `landing` re-authored as a 30° sink
- *   (`PILLOW_SINK`, dy −0.1857) — and runs the floor plane out to the mug.
- *   Measured ~1.7 s.
- * - The STEP line keeps the deck high for two `straight`s, then takes the
- *   plateau edge on a `drop` whose step depth MATCHES the sink
- *   (`PLATEAU_STEP`, dy −0.1900 vs −0.1857 — the two decks pass the mug
- *   mouth 4 mm apart, inside the capture sphere). It finishes too, ~0.5 s
- *   slower: the ballistic slam eats what the high deck gained. The
- *   trade-off is real, measured, and asserted BOTH-CHAINED-AND-ANCHORED.
+ * The families now read as FOUR different lessons on the death clock
+ * (times at seed 1, builder mount):
  *
- * Failure timing is separated the way kitchen02's second pass learned (the
- * ramp-angle tool: this rung ships its OWN launch, −22°, shortening the
- * crawl that compressed every L02 death into one clock). Every wrong build
- * now dies by ~2.5 s where a visible rail failed: the bare plateau falls
- * at the plateau END (~1.7 s); a step or pillow with no run-out dies AT
- * the crossing (~1.6–2.1 s); the double-drop (step AND pillow in one
- * chain) rolls a deck 19 cm BELOW the mug plane and dies at its far end,
- * the cup in frame overhead (~1.9–2.3 s). Nothing reaches 3 s. The cup
- * sits a whole crossing (0.78 m — two straights or straight+sink) beyond
- * any plateau end, far outside the ballistic reach (~0.25 m), so no
- * omission skips a missing piece into the capture; every ≤ 3-piece build
- * fails (test-pinned).
+ * - flipped piece — 1.28 s, at the flip (the piece is visibly backwards);
+ * - sink at the start — 1.34 s, ~0.8 m short, by the start end (the fix is
+ *   on screen: the pillow sank the car before the bed);
+ * - almost-right (pillow line minus a run-out deck) — 1.84 s, under and
+ *   past the mug (the note names the deck still in the tray: ADD tail);
+ * - deck-only / never bridged the pillow — 2.17 s, a hand's width short.
+ *   THIS ONE IS STRUCTURAL, and it is said plainly: the tray's three
+ *   straights chain to within sink dx of the par chain's end, so a flat
+ *   build lands within ~0.13 m of the mug no matter what the angle does
+ *   (measured across −12…−28: 0.07–0.15 m short at every angle that keeps
+ *   the step line finishing). It is separated by the LATEST clock of any
+ *   death (2.17 s against ≤1.84 s) and by the pass-2 note tail, which for
+ *   this build lists exactly the two pieces the tray still holds — "add a
+ *   drop or a landing". The lesson (stay high / bridge the pillow) is one
+ *   informed retry away from ANY of the four deaths.
+ *
+ * Death-clock cap pinned at 2.6 s (all 20 whole-tray orders: worst 2.49);
+ * 7 of 20 whole-tray orders finish (1.67–2.38, a CHOICE tray, not
+ * order-invariant whole — unchanged from the B2 redesign); seeds and
+ * launch jitter 0–0.1 m/s stable (measured).
  *
  * The deck is 0.4 m (`BEDROOM02_STRAIGHT`) — this rung's own seating, the
  * way 04 carries 0.3: the plateau spans want two decks, not five.
@@ -67,24 +84,30 @@ export const BEDROOM02_ID = 'bedroom02';
  *  `BEDROOM_STRAIGHT` cannot span a mattress in two pieces). */
 export const BEDROOM02_STRAIGHT = 0.4;
 
-/** The launch deviation (the L02 "ramp angle is its own knob" precedent):
- *  −22° keeps the crawl short enough that the fail classes separate on the
- *  death clock instead of stacking at ~3 s. */
+/** The launch deviation (the L02 "ramp angle is its own knob" precedent).
+ *  −22° is kept: the pass-2 sweep at −12/−16/−19/−20 STALLS the step line
+ *  or drags the par clock past 1.9 s, and −25/−28 pull every family's
+ *  death within 0.15 m of the mug (measured, session log). */
 export const BEDROOM02_RAMP_ANGLE = -22;
 
-/** The pillow as geometry: the `landing` piece re-authored as a 30° sink —
- *  dy −0.1857, dx 0.3831. Placed by the par line, so the tray seats it
- *  from the build (no `trayParams` entry needed). */
-export const PILLOW_SINK = { level: 0.31, angle: 30, blend: 0.06 } as const;
+/** The pillow as geometry: the `landing` re-authored as a 32° SINK —
+ *  dy −0.1867, dx 0.3598. Steeper and shorter than the B2 pass-1 sink
+ *  (30°/0.31): sinking the pillow at the START now dumps the car at the
+ *  start end (~1.34 s, 0.79 m short) instead of rolling it a hand's width
+ *  from the cup, which is what read as "nothing differentiated my six
+ *  builds" for AA. Placed by the par line, so the tray seats it from the
+ *  build (no `trayParams` entry needed). */
+export const PILLOW_SINK = { level: 0.29, angle: 32, blend: 0.06 } as const;
 
-/** The plateau step as geometry: the `drop` piece deepened to 0.19 m so its
- *  exit deck and the pillow's floor plane pass the mug 4 mm apart (dy
- *  −0.1900 vs −0.1857). The 0.0885 leads keep the empty span at the proven
- *  0.207 m — longer than the plateau END's ballistic reach — while the
- *  whole span matches the sink's dx to half a millimetre, which is what
- *  lets BOTH routes reach the anchored cup (ask #2b retired for this rung,
- *  test-pinned). Declared via `trayParams` — the par line never places it. */
-export const PLATEAU_STEP = { height: 0.19, angle: 45, radius: 0.02, lead: 0.0885 } as const;
+/** The plateau step as geometry: the `drop` deepened to 0.19 m so its
+ *  exit deck and the pillow's floor plane pass the mug ~3 mm apart (dy
+ *  −0.1900 vs −0.1867). The 0.0766 leads keep the EMPTY span at the
+ *  proven 0.2066 m — longer than the plateau END's ballistic reach — while
+ *  the whole span (0.3597) matches the sink's new dx to 0.03 mm, which is
+ *  what lets BOTH routes reach the anchored cup (ask #2b retired for this
+ *  rung, test-pinned). Declared via `trayParams` — the par line never
+ *  places it. */
+export const PLATEAU_STEP = { height: 0.19, angle: 45, radius: 0.02, lead: 0.0766 } as const;
 
 function parBuild(): Build {
   return lay(
@@ -104,7 +127,8 @@ function parBuild(): Build {
 /** The STEP line: stay high across the plateau (two decks), then the hard
  *  step off the edge and a run-out. Kept as data so the test can prove it
  *  finishes ON THE BUILDER MOUNT — and which line is faster (it is this
- *  one's opposite). */
+ *  one's opposite: ~2.04 against the pillow's ~1.72 — the trade-off is
+ *  real, measured, and asserted BOTH-CHAINED-AND-ANCHORED). */
 export function bedroom02StepBuild(): Build {
   return lay(
     [

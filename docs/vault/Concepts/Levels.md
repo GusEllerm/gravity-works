@@ -730,28 +730,52 @@ choice off the mattress — sink into the pillow, or step hard off the
 plateau edge — and since the **B2 redesign** (Playtest U round 4's wall)
 BOTH roads reach the same anchored mug. The par (4 of 5 tray pieces,
 1.75 — measured 1.72 s) is the PILLOW line: one 0.4 m deck of mattress,
-then the `landing` re-authored as a 30° SINK (`PILLOW_SINK`, dy −0.1857),
-then the floor run. The STEP line (two high decks, then the `drop`
-deepened to match the sink — `PLATEAU_STEP`, dy −0.1900, declared in
-`trayParams` because the par never places it) finishes too, ~0.5 s
-slower: the ballistic slam eats what the high deck gained. The two decks
-pass the mug mouth 4 mm apart — ONE floor plane — which is what RETIRES
-ask #2b for this rung: chained AND builder-anchored both lines finish
-(test-pinned, and the anchored-soft-falls pin is retired with them).
-The rung rides its own seating: 0.4 m decks (`BEDROOM02_STRAIGHT`) and a
-−22° launch (`BEDROOM02_RAMP_ANGLE`, the L02 "the ramp angle is its own
-knob" precedent) that shortens the crawl enough to separate the fail
-classes. THE FAIL STREAM IS THE LESSON: the old geometry died every
-wrong build at ~3.0–3.25 s invisibly past the cup ("the line let go
-before the cup" — unknowable, which is what walled U; 13-of-20 orders
-finished, several sub-par). Now nothing reaches 3 s: the bare plateau
-falls at the plateau END (~1.7–2.2 s), a crossing with no run-out dies
-AT the step or pillow (~1.6–2.1 s), and the double-drop — step AND
-pillow in one chain — rolls a deck 19 cm BELOW the mug plane and dies at
-its far end with the cup in frame overhead (~1.9–2.3 s). No build of
-three pieces or fewer finishes (test-enumerated), and the death-clock
-cap is pinned at 2.6 s. The cup sits a full crossing (0.78 m) beyond any
-plateau end, far outside the ballistic reach (~0.25 m). Seeds 1–6 and
+then the `landing` re-authored as a 32° SINK (`PILLOW_SINK`, dy −0.1867 —
+steepened from 30° at the **B2 pass-2** fix, see below), then the floor
+run. The STEP line (two high decks, then the `drop` deepened to match the
+sink — `PLATEAU_STEP`, dy −0.1900, its leads shortened 0.0885 → 0.0766 at
+pass 2 so the step span still equals the sink's shorter dx, declared in
+`trayParams` because the par never places it) finishes too, ~0.3 s
+slower (1.72 vs 2.04 chained): the ballistic slam eats what the high
+deck gained. The two decks pass the mug mouth ~3 mm apart — ONE floor
+plane — which is what RETIRES ask #2b for this rung: chained AND
+builder-anchored both lines finish (test-pinned, and the anchored-soft-
+falls pin is retired with them). The rung rides its own seating: 0.4 m
+decks (`BEDROOM02_STRAIGHT`) and a −22° launch (`BEDROOM02_RAMP_ANGLE`,
+the L02 "the ramp angle is its own knob" precedent) that shortens the
+crawl enough to separate the fail classes. THE FAIL STREAM IS THE LESSON:
+the old geometry died every wrong build at ~3.0–3.25 s invisibly past the
+cup ("the line let go before the cup" — unknowable, which is what walled
+U; 13-of-20 orders finished, several sub-par). The B2 redesign fixed the
+invisibility, then Playtest AA (stage 5) walled differently: six builds,
+ONE death — "always ~a hand's width from the glowing papers" — because
+the start-sink build and the deck-only build died 5 cm from EACH OTHER
+under the mug wall (1.57 s / 2.17 s, both ~0.11 m short) and the tailless
+note read the same on both. THE PASS-2 FIX moved one number: the sink
+steepened 30° → 32° (dx 0.383 → 0.360), which re-houses the start-sink
+family at the START end (1.34 s, 0.79 m short — a distinct early site)
+while the double-drop family stays inside the 2.6 s cap (a 34° variant
+measured and REJECTED: it tumbled `l,d,s,s` to 3.63 s). The angle knob
+was swept −12…−28 and −22 stays: shallower STALLS the step line, steeper
+drag every family toward the cup site. What geometry CANNOT do here is
+said plainly: a three-flats build chains to within the sink's dx of the
+par chain's end, so it lands ~0.11–0.15 m short of the mug at EVERY angle
+that keeps the step line finishing — the deck-only family keeps the
+hand's-width site and is separated instead by owning the LATEST clock
+alone (2.17 s against ≤1.84 s for every other family) and by the
+pass-2 note tail, which lists exactly the pieces the tray still holds
+("add a drop or a landing" — see `Modules/ui`). The four families now
+read: flipped piece 1.28 s at the flip; sink-at-start 1.34 s at the
+start end; almost-right (pillow line minus a deck) 1.84 s UNDER AND PAST
+the mug, cup in frame overhead; deck-only 2.17 s a hand's width short —
+and the lesson is one informed retry from any of them. Nothing reaches
+2.6 s (all 20 whole-tray orders: worst 2.49; death-clock cap test-pinned)
+and 7 of 20 orders finish (1.67–2.38, the CHOICE-tray property unchanged);
+no build of three pieces or fewer finishes (test-enumerated). The whole-
+tray sweep cannot be under par in PIECES by construction (5 placements
+against a 4-piece par — 0 of 20), which is what makes the tray read
+"under par" as a 4-piece edit of the par line (2/20 orders beat the par
+CLOCK). Seeds 1–6 and
 launch jitter 0–0.1 m/s stable.
 
 **BEDROOM 03 — Pyramid Air** (`bedroom03.level.ts`). Teaches: one

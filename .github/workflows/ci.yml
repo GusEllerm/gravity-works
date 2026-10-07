@@ -16,6 +16,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run typecheck
+      - run: npm run replay:all
       - run: npm test
       - run: npx playwright test
       - name: Install drift + livedocs
