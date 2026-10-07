@@ -7,20 +7,22 @@
  * Same seams as the kitchen gate: every parBuild finishes headless through
  * `replayRun`; the level contracts hold (budget = tray, one geometry per
  * kind, `trayParityBuild` byte-identical to `parBuild`, pars.json on the
- * tray basis); the choices and the trade-off are real (bedroom02's plateau
- * line beats its soft line, bedroom03's hard catch beats its soft catch,
+ * tray basis); the choices and the trade-off are real (bedroom02's pillow
+ * line beats its step line ON BOTH MOUNTS since the B2 redesign,
+ * bedroom03's hard catch beats its soft catch,
  * bedroom04's whole tray finishes in all 24 orders and the par order is
  * beatable, bedroom01's three-piece fit is the ONLY builder-mountable fit).
  *
  * The chained-vs-anchored honesty note the kitchen era established
  * (Concepts/Levels §The same data replayed the way the BUILDER mounts it)
- * applies to bedroom02's soft line: it finishes in the chained model the
- * card quotes and does NOT reach the anchored cup (ask #2b) — asserted
- * below so the claim can never silently become prose about the wrong model.
+ * USED to except bedroom02's soft line (ask #2b — chained finish, anchored
+ * fall). The stage-4 B2 redesign retired that exception for this rung: the
+ * pillow sink and the plateau step now end on ONE deck plane (4 mm apart),
+ * both lines finish on the builder mount, and the tests below assert it.
  */
 import { describe, expect, test } from 'vitest';
 import { BEDROOM01 } from '../../src/world/levels/bedroom01.level.ts';
-import { BEDROOM02, bedroom02SoftBuild } from '../../src/world/levels/bedroom02.level.ts';
+import { BEDROOM02, bedroom02StepBuild } from '../../src/world/levels/bedroom02.level.ts';
 import { BEDROOM03, bedroom03SoftBuild } from '../../src/world/levels/bedroom03.level.ts';
 import { BEDROOM04 } from '../../src/world/levels/bedroom04.level.ts';
 import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts';
@@ -163,7 +165,7 @@ describe('ladders (kitchen + bedroom + bathroom + garden + garage) — tray ⊇ 
       build: level.parBuild(),
     })),
     { level: KITCHEN02, label: 'arc line', build: kitchen02ArcBuild() },
-    { level: BEDROOM02, label: 'soft line', build: bedroom02SoftBuild() },
+    { level: BEDROOM02, label: 'step line', build: bedroom02StepBuild() },
     { level: BEDROOM03, label: 'soft catch line', build: bedroom03SoftBuild() },
     { level: BATHROOM02, label: 'drain line', build: bathroom02DrainBuild() },
     { level: BATHROOM03, label: 'splash line', build: bathroom03SplashBuild() },
@@ -241,23 +243,77 @@ describe('bedroom01 — the three-piece fit is the ONLY fit (cable dip promise)'
   }, 90_000);
 });
 
-describe('bedroom02 — the plateau choice is real (and honest about mounting)', () => {
-  test('BOTH lines finish in the chained model, and the high line is faster', async () => {
+describe('bedroom02 — the plateau choice finishes on BOTH mounts (B2 redesign; ask #2b retired here)', () => {
+  test('BOTH lines finish in the chained model, and the pillow line is faster', async () => {
     const par = await replayRun(BEDROOM02, BEDROOM02.parBuild());
-    const soft = await replayRun(BEDROOM02, bedroom02SoftBuild());
+    const step = await replayRun(BEDROOM02, bedroom02StepBuild());
     expect(par.status).toBe('finished');
-    expect(soft.status).toBe('finished');
-    expect(par.time).toBeLessThan(soft.time); // measured 2.367 vs 2.575
+    expect(step.status).toBe('finished');
+    expect(par.time).toBeLessThan(step.time); // measured ~1.72 vs ~2.47
   }, 60_000);
 
-  test('on the BUILDER mount the plateau line finishes and the soft line does NOT reach the anchored cup (ask #2b)', async () => {
-    const high = await replayRun(BEDROOM02, placed(BEDROOM02, ['straight', 'straight', 'straight']));
-    expect(high.status).toBe('finished');
-    const softAnchored = await replayRun(BEDROOM02, placed(BEDROOM02, ['straight', 'drop', 'landing', 'straight']));
-    expect(softAnchored.status).not.toBe('finished'); // the card states this as the anchored truth
+  test('on the BUILDER mount BOTH lines finish — one deck plane, one anchored cup', async () => {
+    const pillow = await replayRun(BEDROOM02, placed(BEDROOM02, ['straight', 'landing', 'straight', 'straight']));
+    expect(pillow.status).toBe('finished');
+    const step = await replayRun(BEDROOM02, placed(BEDROOM02, ['straight', 'straight', 'drop', 'straight']));
+    expect(step.status).toBe('finished'); // the old ask #2b pin (soft line falls anchored) is RETIRED
+    expect(pillow.time).toBeLessThan(step.time); // ~1.83 vs ~2.47 anchored
     const short = await replayRun(BEDROOM02, placed(BEDROOM02, ['straight', 'straight']));
-    expect(short.status).not.toBe('finished'); // two of the three plateau decks fall short
+    expect(short.status).not.toBe('finished'); // two plateau decks fly short of the crossing
   }, 90_000);
+
+  test('no build of three pieces or fewer finishes (the crossing needs its piece)', async () => {
+    const tried = new Set<string>();
+    for (let ns = 0; ns <= 3; ns++)
+      for (let nd = 0; nd <= 1; nd++)
+        for (let nl = 0; nl <= 1; nl++) {
+          if (ns + nd + nl > 3) continue;
+          const items: string[] = [];
+          items.push(...Array(ns).fill('straight'), ...Array(nd).fill('drop'), ...Array(nl).fill('landing'));
+          for (const order of permutations(items)) {
+            const key = order.join(',');
+            if (tried.has(key)) continue;
+            tried.add(key);
+            const run = await replayRun(BEDROOM02, placed(BEDROOM02, order as PieceKind[]));
+            expect(run.status, order.join('>')).not.toBe('finished');
+          }
+        }
+  }, 180_000);
+
+  test('the fail stream is separated: every death lands by 2.6 s, both routes finish (U wall, ask #2b)', async () => {
+    const PINNED: [string, ('finished' | 'fell')][] = [
+      // the pillow line's orders (multiset s,s,s,l) + the step line's (s,s,s,d)
+      ['s,l,s,s', 'finished'],
+      ['l,s,s,s', 'finished'],
+      ['s,s,l,s', 'finished'],
+      ['s,s,s,l', 'finished'],
+      ['s,d,s,s', 'finished'],
+      ['s,s,d,s', 'finished'],
+      // whole-tray orders: the step+pillow chain finishes one way…
+      ['d,s,s,s,l', 'finished'],
+      ['l,s,s,s,d', 'finished'],
+      // …and Playtest U's class (drop+landing mixed into the straights) dies
+      // EARLY and visibly, never the old invisible ~3 s past the cup:
+      ['d,l,s,s', 'fell'],
+      ['l,s,s,d', 'fell'],
+      ['s,l,s,d', 'fell'],
+      ['s,s,l,d', 'fell'],
+      ['d,s,s,l', 'fell'],
+      ['l,d,s,s', 'fell'],
+      ['s,d,l,s', 'fell'],
+      ['s,s,d,l', 'fell'],
+      ['s,d,l', 'fell'],
+      ['s,s,s', 'fell'],
+      ['s,s,d', 'fell'],
+      ['s,s,l', 'fell'],
+    ];
+    const KIND = { s: 'straight', d: 'drop', l: 'landing' } as const;
+    for (const [line, status] of PINNED) {
+      const run = await replayRun(BEDROOM02, placed(BEDROOM02, line.split(',').map((c) => KIND[c as keyof typeof KIND])));
+      expect(run.status, line).toBe(status);
+      expect(run.time, `death clock on ${line}`).toBeLessThanOrEqual(2.6);
+    }
+  }, 180_000);
 });
 
 describe('bedroom03 — the catch trade-off is measured', () => {
@@ -306,7 +362,7 @@ describe('bedroom04 — the whole tray is the answer (Playtest-G lesson, capston
 describe('bedroom set wiring — the placement table is derived, not folklore', () => {
   const LINES_BY_LEVEL: Record<string, Build[]> = {
     bedroom01: [BEDROOM01.parBuild()],
-    bedroom02: [BEDROOM02.parBuild(), bedroom02SoftBuild()],
+    bedroom02: [BEDROOM02.parBuild(), bedroom02StepBuild()],
     bedroom03: [BEDROOM03.parBuild(), bedroom03SoftBuild()],
     bedroom04: [BEDROOM04.parBuild()],
   };
