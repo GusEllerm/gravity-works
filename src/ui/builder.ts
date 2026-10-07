@@ -352,7 +352,11 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   const hint = document.createElement('p');
   hint.id = 'gw-tray-hint';
   hint.setAttribute('aria-live', 'polite');
-  hint.textContent = 'Aim: hover the world or ←→ · Place: click the world or Enter · Flip: R · Look: right-drag · Home: Esc Esc';
+  // THE HOME RESET, ONE HONEST SENTENCE (playtest U round4: "hint rendered
+  // 'Home: Esc Esc'" — an echo of the DOUBLE-press gesture that reads like a
+  // stuck key): the gesture is two Escapes inside RECENTER_MS (see
+  // `build-camera.ts`), so the line says the number of presses plainly.
+  hint.textContent = 'Aim: hover the world or ←→ · Place: click the world or Enter · Flip: R · Look: right-drag · Home: press Esc twice';
   hint.hidden = true;
   root.appendChild(hint);
   // the VISIBLE reason behind every greyed/spent tray button — one counter,
@@ -575,9 +579,15 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     targetLabel.textContent =
       list.length > 0
         ? aimTies.length > 1 && targetIndex === aimTies[aimTieCursor]
-          ? // THE CHOICE IS VISIBLE: the ring names how many sockets the
-            // pointer could mean and which one it currently marks
-            `target: ${list[targetIndex]!.label} · ${aimTieCursor + 1} of ${aimTies.length} near — [ ] to pick the other`
+          ? // THE CHOICE IS VISIBLE — and NAMED IN PLAIN WORDS with the key
+            // that walks it (playtest U round4: "'other one with [ ]' —
+            // brackets never named"; the bracket pair was read as a checkbox
+            // glyph, not keys). Shown ONLY while a near-tie is live (the
+            // same `aimTies.length > 1` gate — no ambiguity, no hint); the
+            // ring itself shows WHICH socket is marked.
+            aimTies.length === 2
+              ? `target: ${list[targetIndex]!.label} · two spots fit here — press ] for the other one`
+              : `target: ${list[targetIndex]!.label} · ${aimTies.length} spots fit here — press ] for the next one (${aimTieCursor + 1} of ${aimTies.length})`
           : `target: ${list[targetIndex]!.label}`
         : '';
     if (list.length === 0 || !scene) {
@@ -921,7 +931,13 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       ArrowDown: () => cycleKind(-1),
       // depth-disambiguation keys (playtest S K3): walk the ring among the
       // screen-space near-ties of the last aim point — the ring and the
-      // label say which one the ghost means
+      // label say which one the ghost means. THE KEYS ARE THE CHARACTERS:
+      // `ev.key` for the bracket key is `]`/`[` (`BracketRight` is `ev.code`)
+      // — mapping only the code names made both keys dead on the real page
+      // and only visible once the round4 U playtest could not parse the
+      // hint; both spellings are accepted, the characters are the contract.
+      ']': () => cycleAim(1),
+      '[': () => cycleAim(-1),
       BracketRight: () => cycleAim(1),
       BracketLeft: () => cycleAim(-1),
       Tab: () => {

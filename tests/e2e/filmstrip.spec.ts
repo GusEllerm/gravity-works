@@ -273,13 +273,13 @@ test('L04 scripted wrong build: the failure end-hold never wall-buries and keeps
   await page.click('#gw-launch')
   await expect
     .poll(async () => (await page.locator('#gw-status').textContent()) ?? '', { timeout: 30_000, intervals: [25, 50] })
-    .toMatch(/fell off the set|stalled|timed out/)
+    .toMatch(/fell off|stalled|timed out/)
   // hold the failure framing for a full 1.4 s of dense samples
   await page.waitForTimeout(1500)
 
   const strip = (await page.evaluate(() =>
     [...((window as unknown as Record<string, unknown>).__gwStrip as Map<number, { share: number; status: string }>).entries()])) as [number, { share: number; status: string }][]
-  const terminal = strip.find(([b, s]) => /fell off the set|stalled|timed out/.test(s.status) && b > 0)![0]
+  const terminal = strip.find(([b, s]) => /fell off|stalled|timed out/.test(s.status) && b > 0)![0]
   // the final second BEFORE the terminal step (the run camera's last word)
   // and the end-hold window AFTER it (the failure hold's word)
   const window_ = strip.filter(([b]) => b >= terminal - 10 && b < terminal + 15)

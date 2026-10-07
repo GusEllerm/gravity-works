@@ -48,7 +48,7 @@ import type { Level } from './world/level.ts';
 import { createBuilder } from './ui/builder.ts';
 import { parseShareUrl } from './share/share.ts';
 import { replayRun } from './replay/replay.ts';
-import { loadSave, rememberBuild, recordStars, savedBuild } from './save/save.ts';
+import { createBuildAutosave, loadSave, rememberBuild, recordStars, savedBuild } from './save/save.ts';
 import { SET_TOKENS } from './render/tokens.ts';
 import type { PostStack } from './render/post/index.ts';
 import { parFor, starsFor, type RunOutcome, type RunResult } from './world/stars.ts';
@@ -246,8 +246,9 @@ export function initialBuild(level: Level): Build {
  * a `?build=par`/`?build=alt` address is a recorded test rig and always
  * re-mounts the addressed reference line fresh (addressing is not the runtime,
  * the same doctrine as `?level=`); otherwise the level's AUTOSAVED working
- * build is restored when the save carries one — `rememberBuild` writes it on
- * every change, and playtest S's reload that "silently wiped my in-progress
+ * build is restored when the save carries one — the autosave writes it on
+ * every edit (`createBuildAutosave`, debounced, flushed before the unload),
+ * and playtest S's reload that "silently wiped my in-progress
  * build" proved writing it while starting without it was half a feature. A
  * fresh save has no record (fresh build), and a record whose bytes do not
  * deserialize, or name a different level, is nobody's build: fresh again.
@@ -584,6 +585,16 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // M; the alt is ADDRESSED from the level module's existing export, never a
   // level-data edit).
   const startBuild = startBuildFor(level, params, savedBuild(level.id));
+  // THE EDIT-SIDE AUTOSAVE (playtest T round4: "reload kept 1 of 3"): the
+  // working build is stored per EDIT BURST, not per run — a level change is
+  // a cross-document navigation, so the two flush hooks below (a reload or a
+  // tab put away inside the debounce window still stores the last edit) mean
+  // no edit is ever younger than the bytes the next boot reads back.
+  const autosave = createBuildAutosave((b) => rememberBuild(b));
+  window.addEventListener('pagehide', () => autosave.flush());
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') autosave.flush();
+  });
   // the build the CURRENT world runs (set in `rebuild`): its piece KINDS
   // make the failure note's tails build-aware (a lip tip when no lip was
   // ever placed reads as noise — playtest M; UI-side only, the physics and
@@ -647,7 +658,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     trayParams: tray ? levelTrayParams(level, tray) : undefined,
     solids: setSolids,
     onChange: (build) => {
-      rememberBuild(build);
+      autosave.edit(build);
       // first-time callout (§9.3): the first piece of a kind ever PLACED
       if (build.pieces.length > placedCount) {
         const line = firstSight(build.pieces[build.pieces.length - 1]!.def);

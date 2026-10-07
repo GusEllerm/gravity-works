@@ -274,6 +274,68 @@ export function rememberBuild(build: Build, store: StorageLike | null = defaultS
   saveSave(data, store);
 }
 
+/** The edit-side autosave scheduler: see `createBuildAutosave`. */
+export interface BuildAutosave {
+  /** Note the latest build and restart the debounce window. */
+  edit(build: Build): void;
+  /** Write any not-yet-written edit immediately (no-op when clean). */
+  flush(): void;
+}
+
+/**
+ * The AUTOSAVE the GAME uses while the player edits (playtest T round4:
+ * "reload kept the build — 1 of 3 survived"). `rememberBuild` is the write;
+ * this scheduler decides WHEN the shell calls it: one write per EDIT BURST
+ * rather than a full envelope rewrite per mutation — every place/remove
+ * replaces the pending build and restarts the `delayMs` trailing timer, and
+ * the latest build is written once when the window closes.
+ *
+ * The debounce must never BECOME the data-loss path it is scheduling
+ * around, so `flush()` is the guarantee, not a nicety: the shell calls it
+ * on `pagehide` and on `visibilitychange → hidden` (a reload or a tab-put-
+ * away inside the window still stores the last edit), and a level change is
+ * a cross-document navigation (`?level=` swaps reload the page), which
+ * fires `pagehide` on the way out — no pending edit ever survives a boot.
+ *
+ * Cross-level isolation is NOT this scheduler's business and unchanged by
+ * it: a session edits exactly ONE level, the write is the level-keyed
+ * `rememberBuild` (a kitchen burst writes `builds.kitchen01` and touches
+ * nothing else), and `startBuildFor` refuses a record naming another
+ * level — so a kitchen edit can never restore onto a bedroom level.
+ */
+export function createBuildAutosave(
+  remember: (build: Build) => void,
+  delayMs = 350,
+  clock: { schedule(fn: () => void, ms: number): unknown; cancel(handle: unknown): void } = {
+    schedule: (fn, ms) => setTimeout(fn, ms),
+    cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+  },
+): BuildAutosave {
+  let pending: Build | null = null;
+  let handle: unknown = null;
+  const write = (): void => {
+    if (handle !== null) {
+      clock.cancel(handle);
+      handle = null;
+    }
+    if (pending === null) return;
+    const build = pending;
+    pending = null;
+    remember(build);
+  };
+  return {
+    edit: (build) => {
+      pending = build;
+      if (handle !== null) clock.cancel(handle);
+      handle = clock.schedule(() => {
+        handle = null;
+        write();
+      }, delayMs);
+    },
+    flush: write,
+  };
+}
+
 /**
  * Record the star line of a FINISHED-or-not run: the save keeps the BEST
  * count ever earned on the level and writes nothing when the run did not

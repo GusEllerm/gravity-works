@@ -4,6 +4,7 @@ import {
   SAVE_KEY,
   SAVE_VERSION,
   clearSave,
+  createBuildAutosave,
   freshSave,
   importSaveFile,
   loadSave,
@@ -173,5 +174,90 @@ describe('save', () => {
 
   test('deserialize validates what a save file claims about a build', () => {
     expect(() => deserialize('{"levelId":"x","seed":1,"pieces":[{"def":"nope","transform":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"seq":0}]}')).toThrow();
+  });
+
+  // ---- edit-side autosave (playtest T round4: "reload kept 1 of 3") ------
+
+  test('the autosave writes ONCE per edit burst — the latest build, on the real store', () => {
+    // a manual clock keeps the debounce window exact: no timers in the test
+    const jobs = new Map<number, () => void>();
+    let nextId = 1;
+    const clock = {
+      schedule: (fn: () => void, _ms: number) => {
+        const id = nextId++;
+        jobs.set(id, fn);
+        return id;
+      },
+      cancel: (handle: unknown) => {
+        jobs.delete(handle as number);
+      },
+    };
+    const fire = () => {
+      const all = [...jobs.values()];
+      jobs.clear();
+      for (const fn of all) fn();
+    };
+    const store = memoryStorage();
+    const saved: string[] = [];
+    const autosave = createBuildAutosave((b) => rememberBuild(b, store), 350, clock);
+
+    // three edits in one burst: nothing is written while the window is open
+    const b1 = KITCHEN01.parBuild();
+    const b2 = { ...b1, pieces: b1.pieces.slice(0, 2) };
+    const b3 = { ...b1, pieces: b1.pieces.slice(0, 3) };
+    autosave.edit(b1);
+    autosave.edit(b2);
+    autosave.edit(b3);
+    expect(saved.length).toBe(0);
+    expect(Object.keys(loadSave(store).builds)).toEqual([]); // nothing stored YET
+    fire(); // the window closes: ONE write, carrying the LATEST build
+    expect(savedBuild(KITCHEN01.id, store)!.pieces.length).toBe(3);
+    // a closed window stays closed: firing again with no edits writes nothing
+    const bytes = loadSave(store).builds[KITCHEN01.id];
+    fire();
+    autosave.flush();
+    expect(loadSave(store).builds[KITCHEN01.id]).toBe(bytes);
+  });
+
+  test('flush stores a pending edit immediately, exactly once — the before-unload guarantee', () => {
+    const jobs = new Map<number, () => void>();
+    const clock = {
+      schedule: (fn: () => void, _ms: number) => {
+        const id = jobs.size + 1;
+        jobs.set(id, fn);
+        return id;
+      },
+      cancel: (handle: unknown) => {
+        jobs.delete(handle as number);
+      },
+    };
+    const store = memoryStorage();
+    const writes: number[] = [];
+    const autosave = createBuildAutosave(
+      (b) => {
+        writes.push(b.pieces.length);
+        rememberBuild(b, store);
+      },
+      350,
+      clock,
+    );
+    autosave.flush(); // clean: flush of nothing writes nothing
+    expect(writes).toEqual([]);
+    const build = KITCHEN01.parBuild();
+    autosave.edit(build);
+    autosave.flush(); // the reload-inside-the-window case
+    expect(writes).toEqual([build.pieces.length]);
+    expect(savedBuild(KITCHEN01.id, store)!.pieces.length).toBe(build.pieces.length);
+    autosave.flush(); // and the timer that still fires afterwards writes nothing
+    for (const fn of [...jobs.values()]) fn();
+    autosave.flush();
+    expect(writes).toEqual([build.pieces.length]);
+  });
+
+  test('an autosaved kitchen build is keyed to ITS level — a bedroom read sees nothing (no-leak)', () => {
+    const store = memoryStorage();
+    rememberBuild(KITCHEN01.parBuild(), store); // the store-level fact the shell relies on
+    expect(savedBuild('bedroom01', store)).toBeUndefined();
+    expect(savedBuild(KITCHEN01.id, store)!.pieces.length).toBe(KITCHEN01.parBuild().pieces.length);
   });
 });

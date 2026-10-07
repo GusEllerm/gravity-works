@@ -9,7 +9,9 @@
  * 1. Among screen-space near-ties the socket NEARER the camera wins —
  *    hovering (and therefore clicking) the ambiguous midpoint between a
  *    near socket and a far one aims the NEAR one.
- * 2. The choice is EXPOSED: the label names the tie ("n of m near"), and
+ * 2. The choice is EXPOSED: the label names the tie and the key that walks
+ *    it ("two spots fit here — press ] for the other one", playtest U
+ *    round4's reword), and
  *    `]` / Tab cycle the ring through the candidates, so the far socket is
  *    reachable too — the ambiguity is handed to the player, not hidden.
  *
@@ -19,7 +21,7 @@
  * hardcoded screen point).
  */
 import { test, expect } from '@playwright/test'
-import { HOVER_PX } from '../../src/ui/builder.ts'
+import { AIM_TIE_PX, HOVER_PX } from '../../src/ui/builder.ts'
 
 type Pose = { pos: number[]; quat: number[] }
 type Box = { x: number; y: number; width: number; height: number }
@@ -117,23 +119,61 @@ test('K3 at a 30° orbit: the ambiguous midpoint aims the NEARER socket, and [ ]
     Math.hypot(atNear[0]! - farSock[0]!, atNear[1]! - farSock[1]!, atNear[2]! - farSock[2]!),
     'the click-intent point aimed the FAR socket (chain-behind-the-cup bug)',
   ).toBeGreaterThan(0.02)
-  await expect(page.locator('#gw-target-label')).toContainText('near')
+  // the tie is EXPOSED (playtest U round4: the old "[ ] to pick the other"
+  // read as a checkbox glyph, not keys — the line now names the key itself)
+  await expect(page.locator('#gw-target-label')).toContainText('spots fit here — press ] for')
 
-  // EXPOSED: ']' cycles the ring to the far candidate — and Tab cycles it
-  // too (world focus). The label tracks which one the ring marks.
+  // The tie list at this point is whatever the builder's own rule yields:
+  // everything within HOVER reach of the pointer, reduced to the AIM_TIE
+  // band of the screen-nearest one. The midpoint pair guarantees AT LEAST
+  // the two candidates; K3's rim can hand it a third, so the cycle checks
+  // walk the computed list rather than assuming the pair is all of it
+  // (the pre-U-round4 gate assumed exactly two — red since the rim work
+  // added an open socket inside the band).
+  const tiesHere = proj
+    .map((p, k) => ({ k, dPx: Math.hypot(p.x - mx, p.y - my), dCam: p.dCam, z: p.z }))
+    .filter((t) => t.z > 0 && t.dPx <= HOVER_PX)
+  const nearestD = Math.min(...tiesHere.map((t) => t.dPx))
+  const tieSockets = tiesHere
+    .filter((t) => t.dPx <= nearestD + AIM_TIE_PX)
+    .sort((p, q) => p.dCam - q.dCam || p.k - q.k)
+    .map((t) => sockets[t.k]!)
+  const m = tieSockets.length
+  expect(m, 'the midpoint aims no near-tie at all').toBeGreaterThanOrEqual(2)
+
+  const distTo = async (p: number[]): Promise<number> => {
+    const t = (await page.evaluate(() => (window as unknown as Record<string, () => number[] | null>).__gwTargetSocket())) as number[] | null
+    return t ? Math.hypot(t[0]! - p[0]!, t[1]! - p[1]!, t[2]! - p[2]!) : -1
+  }
+
+  // EXPOSED: ']' moves the ring OFF the auto-picked socket and onto ANOTHER
+  // candidate of this tie (never some random third socket) — and Tab walks
+  // the same list, which must wrap back to the auto-pick.
   await page.keyboard.press(']')
   await expect
     .poll(async () => {
       const t = (await page.evaluate(() => (window as unknown as Record<string, () => number[] | null>).__gwTargetSocket())) as number[] | null
-      return t ? Math.hypot(t[0]! - farSock[0]!, t[1]! - farSock[1]!, t[2]! - farSock[2]!) : -1
+      if (!t) return -1
+      const dNear = Math.hypot(t[0]! - nearSock[0]!, t[1]! - nearSock[1]!, t[2]! - nearSock[2]!)
+      const dAnyTie = Math.min(...tieSockets.map((s) => Math.hypot(t[0]! - s[0]!, t[1]! - s[1]!, t[2]! - s[2]!)))
+      return dNear > 0.02 && dAnyTie < 0.02 ? 0 : 1
     }, { timeout: 5_000 })
-    .toBeLessThan(0.02)
-  await page.keyboard.press('Tab')
-  await expect
-    .poll(async () => {
-      const t = (await page.evaluate(() => (window as unknown as Record<string, () => number[] | null>).__gwTargetSocket())) as number[] | null
-      return t ? Math.hypot(t[0]! - nearSock[0]!, t[1]! - nearSock[1]!, t[2]! - nearSock[2]!) : -1
-    }, { timeout: 5_000 })
-    .toBeLessThan(0.02)
+    .toBe(0)
+  // the far one of the pair is REACHABLE through the cycle (S's actual
+  // need): walk the whole tie list — at most m-1 more presses land the
+  // ring on farSock, wherever it sits in the depth order
+  let sawFar = (await distTo(farSock)) < 0.02
+  for (let i = 0; i < m - 1 && !sawFar; i++) {
+    await page.keyboard.press('Tab')
+    sawFar = (await distTo(farSock)) < 0.02
+  }
+  expect(sawFar, `] / Tab never walked the ring onto the far socket through the ${m}-candidate tie`).toBe(true)
+  // and the walk WRAPS back to the auto-picked near one
+  let sawNear = sawFar && (await distTo(nearSock)) < 0.02
+  for (let i = 0; i < m && !sawNear; i++) {
+    await page.keyboard.press('Tab')
+    sawNear = (await distTo(nearSock)) < 0.02
+  }
+  expect(sawNear, '] / Tab never wrapped back to the auto-picked socket').toBe(true)
   expect(errors).toEqual([])
 })
