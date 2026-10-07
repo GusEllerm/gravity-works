@@ -62,8 +62,12 @@ const STANDARD: Record<string, readonly [number, number, number]> = {
   // the union of the two lines (straights 0.09 m = the lip's span), the gap
   // shortened and the whole timed rail moved nearer the books — the centre
   // follows the run. Deck y is untouched (the drop's step is unchanged).
+  // L02 re-derived a THIRD time at the stage-4 FAIL-TIMING pass: the launch
+  // ramp is a short 0.16 m chute (the rail is shorter — the centre moves
+  // back) and the drop step is 0.10 m (the finish deck sits higher — the
+  // counter rises with it).
   kitchen01: [0.9111, -0.3980919, AXIS_OFFSET],
-  kitchen02: [0.9412, -0.4017658, AXIS_OFFSET],
+  kitchen02: [0.51896, -0.27917623256124524, AXIS_OFFSET],
   kitchen03: [1.2469, -0.4780919, AXIS_OFFSET],
   kitchen05: [1.308, -0.6395241, AXIS_OFFSET],
   'kitchen-sandbox': [1.2719, -0.4780919, AXIS_OFFSET],

@@ -1,69 +1,87 @@
 /**
- * KITCHEN 02 — "Two Ways" (the choice level).
+ * KITCHEN 02 — "Two Ways" (the choice level). STAGE-4 SECOND PASS (level
+ * designer): the discoverability pass's geometry still funneled EVERY wrong
+ * build into one invisible death. Both stage-4 playtests died at the SAME
+ * time — 2.2–2.4 s, "car vanished out of sight" for all nine distinct wrong
+ * builds AND on first tries — so nothing in the fail stream said WHICH
+ * mistake was made. The predecessor's standing finding said why: with the
+ * shared ramp convention (`kitchenRamp(0.28)`, −12°, a 1.43 m crawl) the
+ * ramp-end arrival clock alone runs ~1.8 s, and every wrong chain then
+ * covers a similar ramp+flight+fall to a similar near-cup death. This pass
+ * executed their sweep instruction — steep launch ramps × void sizes, ~25
+ * 000 headless worlds on the shipped mount — and the sweep's verdict is the
+ * headline: THE DEATH CLOCK IS THE RAMP-END ARRIVAL + A CONSTANT ~0.4 s
+ * FALL; the "ramp angle" moves it mainly through its HEIGHT, and a wrong
+ * build can only die EARLY if it dies where it can see the rail it must
+ * cross. So L02 now STEERS the release into the void itself.
  *
- * One gap, two valid lines across it — and (measured) the lazy one wins the
- * clock by a hair. STAGE-4 DISCOVERABILITY PASS (Playtest H: 4 tries, 3 ends
- * "fell off after a long jump"; Playtest K: 3 builds, all "fell off the set"
- * ~3.1 s, quit). Headless replay of every chain their reports describe, on
- * the mount the SHIPPED builder makes (`initialBuild` anchors the fixtures,
- * tray pieces chain off the ramp's exit), said the wall was the FINDING, not
- * the physics: with a 5-piece tray for two 3–4-piece lines, the plausible
- * orders split three ways — lines that finish (~2.2–2.6 s), lines that land
- * PAST the cup and fall off the far end (~3.0–3.1 s: K's three deaths), and
- * lip-launched lines that fly the hole and fall in it (~2.4 s: H's three
- * deaths) — and nothing on screen says which rail a chain rides. The fix is
- * the rule the bedroom rungs later (bedroom03/04) authored under and
- * kitchen04's learnability pass proved: kill the guess-space, not the choice.
+ * THE GEOMETRY (all local to this level; the ladder's −12° kitchen ramp
+ * convention is deliberately deviated from, like L04 deviates its gap):
+ *   ramp — a short steep chute: 0.16 m of drop at −29° (vs the ladder's
+ *     −12° convention) with a 0.14 m blend; the car is airborne
+ *     at the ramp end ~0.55 s after launch, so NOTHING can die later than
+ *     ~1.3 s, and the level's whole fail stream compresses from 2.2–2.5 s
+ *     into three VISIBLE families (below);
+ *   one `straight` geometry, 0.11 m, EQUAL to the lip's span (the reach-sum
+ *     law from the discoverability pass is kept intact — chain sums stay
+ *     order-invariant, which is what makes place-everything finish);
+ *   the `gapLip` is lengthened (0.0405) so its span matches the new
+ *     straight; launch angle stays 12°;
+ *   the `drop` is one ladder deviation deeper than it looks: a 0.10 m step
+ *     (shallower than the ladder's 0.12) with 0.125 m leads — the sweep
+ *     found the two thresholds only coexist at this pair: the belly-gap
+ *     kill (every pair gap ≥ 0.10 m wedges or falls) and the pop-catch
+ *     window (the lip's 12° parabola and the flat release line both meet
+ *     the exit deck). At the 0.12 m step no lead value stopped the
+ *     `gapLip → drop` pair wedge-capturing the cup lip and finishing at par
+ *     speed; at 0.10 every 2-piece build dies.
  *
- * THE TRAY IS NOW THE UNION OF THE TWO LINES — 4 pieces, none spare:
- *   the LAZY line — `straight`, `drop`, `straight` — 3 of 4, the par, 2.17 s;
- *   the ARC line — `gapLip` launch, `drop` catch, one `straight` run-out —
- *   3 of 4, 2.19 s. The lip replaces one straight (that swap IS the choice);
- *   placing ALL FOUR finishes in EVERY order (12/12 measured, 2.17–3.10 s —
- *   the place-everything test-gate, exactly bedroom04's pattern), so a
- *   stranger cannot build a stranger's death: H's and K's reported builds all
- *   finish or die fast and NEAR the gap, never past the cup.
+ * WHAT THE PLAYER NOW LEARNS FROM FAILING (measured on the shipped mount,
+ * every chainable build enumerated — see the test):
+ *   ~0.9 s family — bare ramp, one piece, or two flat pieces: the release
+ *     line flies off the ramp end into the void right at the rail;
+ *   ~1.05 s family — three flats, or flat+lip: the deck bridges to the near
+ *     lip and the car lands IN the void a rail-length out;
+ *   ~1.25 s family — any pair that includes the drop: the drop's catch is
+ *     visibly crossed and the car falls at the FAR side of the drop deck —
+ *     the "the deck must REACH the cup, the drop only catches it" lesson;
+ *   ~1.15 s — bridge+lip combos catapult short into the same void.
+ * Nothing flies past the cup any more (last-airborne x of every failing
+ * build is 0.86–1.22 vs cup mouth at 0.99 — the test gates death x on the
+ * corrected metric; the first pass's x-gate sampled cars ALREADY on the
+ * floor, whose x keeps drifting ~0.5 m and hid flyovers up to x≈2.1).
  *
- * WHY THE GAP IS SMALLER NOW (and the drop/lip are re-tuned LOCALLY, one
- * deviation from the KITCHEN_GAP-chain convention, stated honestly): on a
- * single anchored rail two lines share the cup only if their reaches SUM to
- * the same distance. Flat sockets make a chain's reach the sum of its
- * spans, so `gapLip`'s span had to equal one `straight`'s (0.09 m) and the
- * `drop`'s catch had to meet the launched parabola from a shorter deck — the
- * lip's launch angle is 12° and the drop's leads 0.07 m, both local to this
- * level (the tray's `gapLip`/`drop` geometry is declared via `trayParams`).
- * The old 5-piece tray could not satisfy that law at ANY order count: one
- * line always summed 0.36 m past the cup — the flyovers H and K died on.
- * The lesson as shipped is now TRUE IN THE GAME, not just in the chained
- * model: both lines reach the anchored cup and the lazy one is faster
- * (2.17 s vs 2.19 s; par 2.20 — both 3-star-able, the lazy one wins by
- * 0.02 s, small, measured, true — the bedroom03 precedent for an honest
- * margin). The choice is also beatable: `drop` FIRST (`drop → straight →
- * straight`) runs 2.17 s against a 2.20 par — order, not subset, is the
- * speed question.
+ * THE CHOICE still stands, and the law that makes it honest still stands:
+ *   the LAZY line — `straight`, `drop`, `straight` — 3 of 4, the par, 1.01 s;
+ *   the ARC line — `gapLip` launch, `drop` catch, one `straight` — 3 of 4,
+ *     1.07 s: the pop over the level's own deck costs the hop, honestly
+ *     slower (bedroom03's precedent for a small measured margin);
+ *   the par is BEATABLE: `drop → straight → straight` runs 0.99 s under the
+ *     1.05 par — order, not subset, is the speed question (kept from the
+ *     first pass);
+ *   placing ALL FOUR tray pieces (the tray is still exactly the union —
+ *     2 straights, 1 gapLip, 1 drop, par multiset = tray) finishes in EVERY
+ *     order — 12/12, 1.01–1.16 s — the place-everything gate, and every
+ *     order now also finishes FASTER than the old level ran.
+ * Robustness re-measured across seeds 1–6 and launch speeds ×1.0–1.1.
  *
- * KNOWN MEASURED EDGE (kept honest, like L04's probe rows): two-piece builds
- * (`straight → gapLip`, `straight → straight`, `gapLip → drop`,
- * `straight → drop`) and one-piece builds all FAIL — near the gap or just
- * past the cup, never finishing — and one THREE-piece fluke,
- * `straight → straight → gapLip`, catapults across the hole without the
- * `drop` (2.20 s, test-pinned as finishing so the claim stays falsifiable).
- * The old "no build missing the drop crosses" law needed the big gap the two
- * lines could not share; on the small gap the lip can almost buy a crossing.
+ * KNOWN MEASURED EDGE (kept honest, pinned in the test): the fail table IS
+ * the edge list — every build short of a line dies. The discoverability
+ * pass's pinned fluke, `straight → straight → gapLip`, once a 2.20 s
+ * FINISHER, now falls in the void at ~1.14 s, and the `gapLip → drop` pair
+ * that wedge-captured the cup lip at the old 0.12 m step dies at ~1.3 s.
+ * Across ~25 000 swept geometries the sweep found no cell on this
+ * architecture where a wrong build finishes.
  *
  * The rung this level was specced to add — a drivable mid-run `curve` — is
- * BLOCKED: no mid-run yaw arc is steerable by either shipped car (every
- * attempt ploughs off the outer wall or dies on the yaw seam; see
- * Concepts/Levels §Piece request 1 and the stage-2 `Modules/feel.md` "banked
- * yaw arcs are the open boundary" finding). The curve is therefore present as
- * a FIXTURE past the cup — built, colliding, railable, Hot-Wheels run-out
- * style, exactly the honesty standard the feel track set — and the timed run
- * ends at the cup. The par build gains one line once steering lands.
+ * still BLOCKED (see Concepts/Levels §Piece request 1). The curve remains a
+ * FIXTURE past the cup — built, colliding, railable, run-out style — and the
+ * timed run ends at the cup.
  */
 import type { Build } from '../../track/build.ts';
+import { rampLevelForDrop } from '../../feel/kittrack.ts';
 import {
   KITCHEN_GEOM,
-  kitchenRamp,
   lay,
   registerKitchen,
   kitchenLevel,
@@ -73,32 +91,58 @@ import {
 
 export const KITCHEN02_ID = 'kitchen02';
 
+/** L02's own launch ramp: short and steep (the stage-4 sweep's finding —
+ *  the death clock is ramp-end arrival + fall, so a 0.16 m chute caps every
+ *  death near the rail at ~1.3 s). 0.28 m / −12° was the clustering engine. */
+/** L02's own launch ramp: short and steep (the stage-4 sweep's finding —
+ *  the death clock is ramp-end arrival + fall, so a 0.16 m chute caps every
+ *  death near the rail at ~1.3 s). 0.28 m / −12° was the clustering engine.
+ *  The BLEND is its own knob too: 0.12 m (vs the ladder's 0.08) — measured
+ *  on the camera contract, the −29° chute's tangent rotated fast enough per
+ *  metre that the run camera's arc smoothing left it pitched down the chute
+ *  while the car was already at the drop (car high in frame, |ndc| 0.99 >
+ *  the 0.95 gate); the longer blend eases that rotation to 0.89. (0.14 also
+ *  clears the camera but STALLS one whole-tray order and lets a 2-piece
+ *  fly the gap — the rail laws are NOT blend-invariant, they shift with the
+ *  longer exit; 0.12 keeps every one of them.) */
+const L02_RAMP_BLEND = 0.12;
+const L02_RAMP = {
+  angle: -29,
+  blend: L02_RAMP_BLEND,
+  level: rampLevelForDrop(0.16, -29, L02_RAMP_BLEND, KITCHEN_GEOM.release * L02_RAMP_BLEND),
+};
+
 /** The fixture run-out past the cup (visible curve; the timed run ends first). */
 export const KITCHEN02_RUNOUT = { radius: 1.2, angle: 40 };
 
 /** ONE straight geometry for the whole level — and it EQUALS the lip's span
- *  by design (see the header's reach-sum law): one `straight` is exactly the
- *  deck the arc line buys back when the lip replaces it.
- *  HISTORY: stage 3 unified the level's two straights (0.12/0.25) to ONE
- *  0.18 m geometry; the discoverability pass shortened the single geometry to
- *  0.09 m so the lip's span can trade against it deck-for-deck. */
-const L02_STRAIGHT = 0.09;
+ *  by design (the reach-sum law the discoverability pass proved): one
+ *  `straight` is exactly the deck the arc line buys back when the lip
+ *  replaces it. HISTORY: stage 3 unified the level's two straights to ONE
+ *  0.18 m; the discoverability pass shortened it to 0.09 (= the 0.02 lip's
+ *  span); the stage-4 fail-timing pass lengthened the pair to 0.11 so the
+ *  two-piece belly gap (always exactly one straight, by the same law) sits
+ *  past the measured 0.10 m wedge-capture threshold — every pair now dies. */
+const L02_STRAIGHT = 0.11;
 
-/** L02's own `gapLip` geometry — span 0.09 m (= the straight's), launch 12°.
- *  Declared in `trayParams` because the par line never places it. */
-const L02_LIP = { length: 0.02, angle: 12, blend: 0.05 };
+/** L02's own `gapLip` geometry — span 0.11 m (= the straight's, by the law
+ *  above; the 0.0405 deck length is what the 12° + blend geometry needs to
+ *  span it), launch 12°. Declared in `trayParams` because the par line
+ *  never places it. */
+const L02_LIP = { length: 0.0405, angle: 12, blend: 0.05 };
 
-/** L02's own `drop` geometry — the shared `KITCHEN_GAP` catch with longer
- *  leads (0.07 m) so the launched parabola AND the flat roll-off both meet
- *  the exit deck on this level's shorter run-up. This is the level's ONE
- *  deviation from the ladder's KITCHEN_GAP-chain convention, and the tray
- *  seats it here so par, arc and every player chain share it. */
-const L02_DROP = { height: 0.12, angle: 45, radius: 0.02, lead: 0.07 };
+/** L02's own `drop` geometry — a 0.10 m step (the sweep's threshold
+ *  coexistence: ≥ 0.10 m so a pair's belly gap never wedge-captures the cup
+ *  lip, ≤ 0.10 m so the lip's pop and the flat release line both meet the
+ *  exit deck) and 0.125 m leads. This is the level's one deviation from the
+ *  KITCHEN_GAP-chain convention; the tray seats it here so par, arc and
+ *  every player chain share it. */
+const L02_DROP = { height: 0.1, angle: 45, radius: 0.02, lead: 0.125 };
 
 function parBuild(): Build {
   return lay(
     [
-      { def: 'ramp', params: kitchenRamp(0.28) }, // the books (fixture)
+      { def: 'ramp', params: L02_RAMP }, // the books (fixture)
       { def: 'straight', params: { length: L02_STRAIGHT } }, // tray: counter lip
       { def: 'drop', params: L02_DROP }, // tray: the gap + its catch
       { def: 'straight', params: { length: L02_STRAIGHT } }, // tray: to the cup
@@ -116,7 +160,7 @@ function parBuild(): Build {
 export function kitchen02ArcBuild(): Build {
   return lay(
     [
-      { def: 'ramp', params: kitchenRamp(0.28) },
+      { def: 'ramp', params: L02_RAMP },
       { def: 'gapLip', params: L02_LIP },
       { def: 'drop', params: L02_DROP },
       { def: 'straight', params: { length: L02_STRAIGHT } },
@@ -134,12 +178,12 @@ export const KITCHEN02: KitchenLevel = registerKitchen(
     name: 'Two Ways',
     set: 'kitchen',
     seed: 1,
-    startSocket: startSocketFromBuild(parBuild(), KITCHEN_GEOM.release * KITCHEN_GEOM.rampBlend),
-    par: { pieces: 3, time: 2.2 }, // 3 of the 4 tray pieces are placed on the par line (measured 2.17 — regenerate via pars)
+    startSocket: startSocketFromBuild(parBuild(), KITCHEN_GEOM.release * L02_RAMP_BLEND),
+    par: { pieces: 3, time: 1.05 }, // 3 of the 4 tray pieces are placed on the par line (measured 1.01, ceil-to-0.05 — regenerate via pars)
     maxTime: 12,
     // the tray IS the union of the two lines — 4 pieces, no spare, and
     // EVERY order of ALL of them finishes (test-gated): the discoverability
-    // fix for the two-stranger wall (see the header).
+    // fix, kept from the first pass and still true at the new geometry.
     tray: { straight: 2, gapLip: 1, drop: 1 },
     // the arc line's piece: the LAZY par line never places a `gapLip`, and a
     // tray kind's geometry otherwise comes from the par build's first

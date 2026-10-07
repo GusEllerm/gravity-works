@@ -34,6 +34,7 @@ import {
   kitchen05NoBoosterBuild,
 } from '../../src/world/levels/kitchen05.level.ts';
 import { replayRun } from '../../src/replay/replay.ts';
+import { World } from '../../src/world/world.ts';
 
 const LADDER: readonly KitchenLevel[] = [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04, KITCHEN05, KITCHEN_SANDBOX];
 
@@ -66,11 +67,25 @@ describe('kitchen ladder — level contracts', () => {
       expect(level.budget).toBe(trayCount(level.tray));
       expect(level.par.pieces).toBeLessThanOrEqual(level.budget);
       // the release pose sits on the start ramp's descending blend (a level
-      // deck release stalls against the tuned rolling resistance)
+      // deck release stalls against the tuned rolling resistance). L02 is
+      // the one rung that deviates from the shared −12° ramp convention —
+      // its own contract test below pins its steeper chute.
+      if (level.id === KITCHEN02.id) return;
       expect(level.startSocket.tangent.y).toBeLessThan(0);
       expect(level.startSocket.tangent.y).toBeCloseTo(Math.sin((KITCHEN_GEOM.rampAngle * Math.PI) / 180), 1);
     });
   }
+
+  test('L02: its stage-4 fail-timing pass deviates from the ladder ramp convention — a short steep chute, release on ITS slope', () => {
+    // the −12°/0.28 m shared ramp was the CLUSTERING ENGINE: its 1.8 s
+    // crawl put every wrong death at 2.2–2.4 s regardless of the mistake
+    // (see the level header). The chute's angle is level-local, like L04's
+    // gap; everything else on the rung stays on convention.
+    const ramp = KITCHEN02.parBuild().pieces.find((p) => p.def === 'ramp')!.params as { angle: number };
+    expect(ramp.angle).toBe(-29); // steep chute; the height rides in `level` (rampLevelForDrop)
+    expect(KITCHEN02.startSocket.tangent.y).toBeLessThan(0);
+    expect(KITCHEN02.startSocket.tangent.y).toBeCloseTo(Math.sin((-29 * Math.PI) / 180), 1);
+  });
 
   test('the sandbox has no budget and everything unlocked', () => {
     expect(KITCHEN_SANDBOX.sandbox).toBe(true);
@@ -187,7 +202,6 @@ describe('kitchen ladder — the choices and the trade-off are real', () => {
     // the lazy line (drop between straights) is the FAST one — that is the lesson
     expect(par.time).toBeLessThan(arc.time);
   }, 30_000);
-
   test('L04: the ground PROBE through the wet patch finishes (it is hazard data replay, not a player route — the tray does not afford it and the anchored cup would reject it)', async () => {
     const ground = await replayRun(KITCHEN04, kitchen04GroundBuild());
     expect(ground.status).toBe('finished');
@@ -195,7 +209,7 @@ describe('kitchen ladder — the choices and the trade-off are real', () => {
 
   test('L02: Playtest E’s lazy build (straight→drop→straight) finishes on the BUILDER mount — the line was discoverable; E’s failure predates the target-follow fix', async () => {
     const run = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, ['straight', 'drop', 'straight']));
-    expect(run.status).toBe('finished'); // measured 2.17 s (stage-4 re-author)
+    expect(run.status).toBe('finished'); // measured 1.01 s (stage-4 fail-timing re-author)
   }, 30_000);
 
   /**
@@ -216,45 +230,107 @@ describe('kitchen ladder — the choices and the trade-off are real', () => {
     expect(orders).toHaveLength(24); // 12 DISTINCT orders (the two straights are identical pieces)
     for (const order of orders) {
       const run = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, order));
-      expect(run.status, `order ${order.join('>')}`).toBe('finished');
+      expect(run.status, `order ${order.join('>')}`).toBe('finished'); // measured 1.01–1.16 s
     }
   }, 120_000);
 
   test('L02: the arc line finishes on the BUILDER mount and loses the clock to the lazy par', async () => {
     const arc = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, ['gapLip', 'drop', 'straight']));
     const lazy = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, ['straight', 'drop', 'straight']));
-    expect(arc.status).toBe('finished'); // measured 2.19 s
-    expect(lazy.status).toBe('finished'); // measured 2.17 s
+    expect(arc.status).toBe('finished'); // measured 1.07 s
+    expect(lazy.status).toBe('finished'); // measured 1.01 s
     expect(lazy.time).toBeLessThan(arc.time); // the lazy line wins — in the GAME, not just the chained model
     // and the par ORDER is beatable within the tray (the L04 pattern): drop
-    // first runs at/below the 2.20 s par line
+    // first runs at/below the 1.05 par line
     const early = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, ['drop', 'straight', 'straight']));
     expect(early.status).toBe('finished');
     expect(early.time).toBeLessThanOrEqual(PARS[KITCHEN02.id]!.time);
   }, 90_000);
 
-  test('L02: the builds short of the two lines fail — near the gap, and NEVER past the cup', async () => {
-    // the obvious straight route and every 1–2-piece build fall (fast, at or
-    // before the cup’s x — the drama that replaces the old 3.1 s flyovers)
-    const fails: [string, PieceKind[]][] = [
-      ['straight>straight (the obvious straight route)', ['straight', 'straight']],
-      ['straight>gapLip', ['straight', 'gapLip']],
-      ['straight>drop', ['straight', 'drop']],
-      ['gapLip>drop', ['gapLip', 'drop']],
-      ['straight', ['straight']],
-      ['gapLip', ['gapLip']],
-      ['drop', ['drop']],
-    ];
-    for (const [label, kinds] of fails) {
-      const run = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, kinds));
-      expect(run.status, `partial ${label}`).not.toBe('finished');
+  /**
+   * THE L02 FAIL-TIMING PASS (stage 4, second pass). Every prior playtest
+   * died INVISIBLE and IDENTICAL: nine distinct wrong builds and first tries
+   * all ended at ~2.2–2.4 s with "the car vanished out of sight", because the
+   * shared −12°/0.28 m ramp's ~1.8 s crawl is a clock every chain pays
+   * before it can discover its own mistake. The sweep of steeper ramps ×
+   * void sizes (~25 000 headless worlds) fixed the geometry that makes
+   * failures speak (level header): the death clock = ramp-end arrival +
+   * flight + a constant ~0.4 s fall, so a short steep chute moves EVERY
+   * death to the near rail. This gate enumerates EVERY chainable build on
+   * the shipped mount and pins three VISIBLE time families plus the
+   * corrected airborne-x law: a failing build is never airborne above the
+   * rail deck PAST the cup mouth (the old x-check sampled cars already
+   * sliding on the floor — x that keeps drifting ~0.5 m past the rail — so
+   * it could not see flyovers; this one samples the last point above the
+   * deck plane, where a car that could hit the cup actually is).
+   */
+  test('L02: EVERY chainable build fails EARLY and DISTINCTLY or finishes — the three death families', async () => {
+    const tray: PieceKind[] = ['straight', 'straight', 'gapLip', 'drop'];
+    // every subset × every order, deduped by kind string (s/g/d keys)
+    const chains = new Map<string, PieceKind[]>();
+    for (let mask = 0; mask < 16; mask++) {
+      const pool = [0, 1, 2, 3].filter((i) => mask & (1 << i)).map((i) => tray[i]);
+      for (const order of permutations<PieceKind>(pool)) {
+        const key = order.map((k) => (k === 'straight' ? 's' : k === 'gapLip' ? 'g' : 'd')).join('');
+        if (!chains.has(key)) chains.set(key, order);
+      }
     }
-    // …and the three-piece fluke that catapults over the hole WITHOUT the
-    // drop (straight>straight>gapLip, 2.20 s) is pinned to FINISH, so the
-    // card’s “one measured exception” claim stays falsifiable, not folklore.
+    // Pinned outcome table — measured on this geometry, seeds 1–6 and launch
+    // speeds ×1.0–1.1 stable. f = finished; numbers are the fail times.
+    //   ~0.9 s  near-rail: nothing or one/two flats under the release line
+    //   ~1.05 s bridged decks land IN the void; ~1.15 bridge+lip catapults
+    //   ~1.25 s drop pairs: the catch is crossed, the car falls OFF the drop
+    const expected: Record<string, 'finish' | number> = {
+      '': 0.86, s: 0.95, g: 0.96, ss: 1.04, sg: 1.04, gs: 1.05,
+      d: 1.13, sd: 1.24, ds: 1.23, gd: 1.3, dg: 1.23,
+      ssg: 1.14, sgs: 1.16, gss: 1.12,
+      ssd: 'finish', sds: 'finish', dss: 'finish', sgd: 'finish', sdg: 'finish',
+      gsd: 'finish', gds: 'finish', dsg: 'finish', dgs: 'finish',
+      ssgd: 'finish', ssdg: 'finish', sgsd: 'finish', sgds: 'finish', sdsg: 'finish',
+      sdgs: 'finish', gssd: 'finish', gsds: 'finish', gdss: 'finish', dssg: 'finish',
+      dsgs: 'finish', dgss: 'finish',
+    };    expect([...chains.keys()].sort()).toEqual(Object.keys(expected).sort());
+    const { cupIn } = railGeometry(KITCHEN02);
+    const failTimes: number[] = [];
+    for (const [key, kinds] of chains) {
+      const probe = await failProbe(KITCHEN02, kitchenPlaced(KITCHEN02, kinds));
+      const want = expected[key]!;
+      if (want === 'finish') {
+        expect(probe.status, `build ${key}`).toBe('finished');
+        continue;
+      }
+      expect(probe.status, `build ${key}`).not.toBe('finished');
+      // the pinned time moved < 0.15 s from measurement (and NEVER back to
+      // the old 2.2+ s cluster)
+      expect(probe.time, `build ${key} time`).toBeGreaterThan(want - 0.15);
+      expect(probe.time, `build ${key} time`).toBeLessThan(want + 0.15);
+      expect(probe.time, `build ${key} dies late`).toBeLessThan(1.4);
+      // never airborne past the cup mouth — the flyover class is dead: a
+      // car whose whole path stays BELOW the rail deck after its last
+      // support cannot touch the cup wherever it falls.
+      expect(probe.airX, `build ${key} flew past the cup`).toBeLessThan(cupIn);
+      failTimes.push(probe.time);
+    }
+    // the clustering law itself: the fail stream spans > 0.3 s across 15
+    // failing builds with ≥ 12 distinct clockings (the old geometry crammed
+    // 9 of 9 deaths inside 0.15 s of 2.3 s — 5 buckets at 0.1 resolution,
+    // but 12 clocks at 0.01 — the RANGE is the separation claim)
+    const distinct = new Set(failTimes.map((t) => Math.round(t * 100) / 100));
+    expect(Math.max(...failTimes) - Math.min(...failTimes)).toBeGreaterThan(0.3);
+    expect(distinct.size).toBeGreaterThanOrEqual(12);
+  }, 180_000);
+
+  test('L02: the discoverability pass’s two pinned exceptions are both dead at this geometry', async () => {
+    // the old 2.20 s no-drop catapult finisher (`straight>straight>gapLip`)
+    // and the `gapLip>drop` pair that wedge-captured the cup lip at the old
+    // 0.12 m drop step now FALL — the fail-timing geometry left no wrong
+    // build that finishes (pinned in the table test above; re-pinned here
+    // so the claim names its two former exceptions).
     const fluke = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, ['straight', 'straight', 'gapLip']));
-    expect(fluke.status).toBe('finished');
-  }, 120_000);
+    expect(fluke.status).not.toBe('finished');
+    const pair = await replayRun(KITCHEN02, kitchenPlaced(KITCHEN02, ['gapLip', 'drop']));
+    expect(pair.status).not.toBe('finished');
+  }, 60_000);
 
   test('L05: the two wrong allocations do NOT finish', async () => {
     const noBooster = await replayRun(KITCHEN05, kitchen05NoBoosterBuild());
@@ -303,6 +379,38 @@ function permutations<T>(items: readonly T[]): T[][] {
     permutations([...items.slice(0, i), ...items.slice(i + 1)]).forEach((p) => out.push([x, ...p])),
   );
   return out;
+}
+
+/** The rail deck surface height (the par rail's flat straights) and the
+ *  cup mouth x (the par rail's LAST straight's exit socket) — the datum
+ *  pair for the airborne-x law: a car that has dropped below the deck plane
+ *  can no longer reach the cup at all. */
+function railGeometry(level: KitchenLevel) {
+  const par = level.parBuild();
+  const deckY = Math.min(...par.pieces.filter((p) => p.def === 'straight').map((p) => p.transform.elements[7]!));
+  const last = [...par.pieces].reverse().find((p) => p.def === 'straight')!;
+  const [, out] = PIECES.straight.sockets(last.params);
+  const m = last.transform.elements;
+  const cupIn = m[0]! * out.pos.x + m[4]! * out.pos.y + m[8]! * out.pos.z + m[12]!;
+  return { deckY, cupIn };
+}
+
+/** Replay with the DECK-PLANE x metric: the last point the car was seen at
+ *  or above the rail deck (the furthest point where it could still have
+ *  hit the cup). Replaces the floor-plane sampling that hid flyovers. */
+async function failProbe(level: KitchenLevel, build: Build) {
+  const { deckY } = railGeometry(level);
+  const world = await World.create(level, build, { visuals: false });
+  world.launch();
+  let airX = 0;
+  while (world.stepCount < 15 * 120 && world.status === 'running') {
+    world.step();
+    const pose = world.carPose(1);
+    if (pose.pos.y > deckY - 0.03) airX = pose.pos.x;
+  }
+  const result = { status: world.status, time: world.time, airX };
+  world.dispose();
+  return result;
 }
 
 describe('kitchen04 — learnability: place-everything works, guessing is over', () => {
