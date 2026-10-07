@@ -74,13 +74,13 @@ test('the builder ghost goes red on a set solid (L03 bowl-rim socket)', async ({
   // the default boot is the FIXTURE build: ramp + cup + the two rim
   // fixtures, tray full (`straight` is on L03's tray, so it is holdable)
   await page.click('#gw-tray button[data-kind="straight"]')
-  // targets: level start, then the fixtures' open exits — end of ramp,
-  // end of cup, and the bowl-rim fixture socket (end of curve =
-  // `bowl.out`; `bowl.in` is closed by the counter-arc's in-socket) —
-  // riding the rim, where a straight would drive through the ceramic.
-  // ("cup" — the target line speaks the PIECE_LABELS word, playtest M.)
-  await expect(page.locator('#gw-target-label')).toContainText('level start')
-  await page.locator('#gw-builder').press('ArrowRight') // end of ramp
+  // targets: the BOOT DEFAULT is the chain head (the start ramp's open
+  // exit, where the par line begins — playtest N), then the rest in
+  // array order: the cup's run-out, and the bowl-rim fixture socket
+  // (end of curve = `bowl.out`; `bowl.in` is closed by the counter-arc's
+  // in-socket) — riding the rim, where a straight would drive through the
+  // ceramic. ("cup" — the target line speaks the PIECE_LABELS word,
+  // playtest M.)
   await expect(page.locator('#gw-target-label')).toContainText('end of ramp')
   await page.locator('#gw-builder').press('ArrowRight') // the cup's run-out
   await expect(page.locator('#gw-target-label')).toContainText('end of cup')

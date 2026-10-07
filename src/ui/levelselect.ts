@@ -29,7 +29,8 @@
  */
 import { CAMPAIGN, levelUnlock, previousInCampaign } from '../world/campaign.ts';
 import { getLevel } from '../world/levels/feeltrack.level.ts';
-import { starGlyphs, type StarCount } from '../world/stars.ts';
+import { parFor, starGlyphs, type StarCount } from '../world/stars.ts';
+import { starRulesLine } from './result.ts';
 import { defaultStorage, loadSave, type StorageLike } from '../save/save.ts';
 
 /** The level's display name — registry truth; a nameless rung shows its id. */
@@ -38,6 +39,18 @@ function levelName(id: string): string {
     return getLevel(id).name;
   } catch {
     return id;
+  }
+}
+
+/** The rung's star rules with its own par numbers — registry truth again.
+ *  Teaching BEFORE the first run (playtest N: "the star rules only appear
+ *  after a run"): every open rung states what its three stars cost. */
+function levelRulesLine(id: string): string {
+  try {
+    const level = getLevel(id);
+    return starRulesLine(parFor(id, level.par));
+  } catch {
+    return '';
   }
 }
 
@@ -86,7 +99,13 @@ export function createLevelSelect(root: HTMLElement, store: StorageLike | null =
         glyph.className = 'gw-level-stars';
         glyph.textContent = starGlyphs(stars);
         button.appendChild(glyph);
-        button.setAttribute('aria-label', `${name} — ${stars} of 3 stars`);
+        // the per-rung RULES line (playtest N): stars + this level's par,
+        // on the rung, before the first run — what each ★ costs, countable
+        const rules = document.createElement('span');
+        rules.className = 'gw-level-rules';
+        rules.textContent = levelRulesLine(id);
+        button.appendChild(rules);
+        button.setAttribute('aria-label', `${name} — ${stars} of 3 stars — ${levelRulesLine(id)}`);
         button.addEventListener('click', () => {
           const p = new URLSearchParams();
           p.set('level', id);

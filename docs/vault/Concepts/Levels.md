@@ -37,7 +37,12 @@ richer — `KitchenLevel` (`src/world/levels/kitchen01.level.ts`) adds:
 - `fixtures` — pieces the level ships BUILT-IN (the book-stack `ramp`, the
   counter `finishCup`, the bowl's rim, the L02 run-out curve). They are part
   of `parBuild`'s geometry but not of the tray, and `initialBuild` mounts
-  them ANCHORED at their par transforms — which is why a piece-count par is
+  them ANCHORED at their par transforms — by PER-KIND QUOTA (the `fixtures`
+  counts themselves, build order): a kind may not live in BOTH the tray and
+  the fixtures, and the boot-invariant test (`tests/unit/boot-invariants.test.ts`)
+  gates every rung on it — the N-wave kitchen02 "tray empty at boot" fault
+  was exactly what the old membership test did when it could not tell a
+  fixture's copy from a tray piece's. This is also why a piece-count par is
   counted WITHOUT them (§Pars are counted on the tray basis).
 - `parBuild()` — the Level Designer's reference build: fixtures plus the
   intended line. This is the pars-regeneration seam: a script replays it

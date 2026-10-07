@@ -307,6 +307,17 @@ export function resultModel(
 const STAR_RULES = 'Stars: finish the run · stay at or under par pieces · stay at or under par time';
 
 /**
+ * The star rules with THIS level's par numbers filled in — the line a
+ * player reads BEFORE the first run (the level select's per-rung rules line
+ * and the level's first-boot one-liner; playtest N: "the star rules only
+ * appear after a run"). The panel keeps the static `STAR_RULES` phrasing;
+ * this is the same three lines stated as one countable sentence.
+ */
+export function starRulesLine(par: Par): string {
+  return `Stars: finish the run · at or under ${par.pieces} pieces (par) · at or under ${formatTime(par.time)} (par)`;
+}
+
+/**
  * The panel's three explanatory lines, pure (unit-tested): the piece tally
  * and the time against their par lines, and the static star rule. The ✓/✗
  * marks appear only on a finished run — an unfinished one has 0 stars by

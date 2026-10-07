@@ -86,7 +86,8 @@ test('building all three tray pieces launches, finishes, and shows the result pa
 
   // the player builds the line: lip -> drop -> landing on the open exits
   await page.click('#gw-tray-gapLip')
-  await page.keyboard.press('ArrowRight') // past `level start` onto `end of ramp`
+  // the BOOT DEFAULT TARGET is the par rail (the start ramp's exit, the
+  // chain head of the as-shipped build) — playtest N's chain-order fix
   await expect(page.locator('#gw-target-label')).toContainText('end of ramp')
   await page.click('#gw-place')
   await expect(page.locator('#gw-piece-count')).toHaveText('1 of 3 pieces used')

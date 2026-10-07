@@ -51,9 +51,9 @@ import { loadSave, rememberBuild, recordStars } from './save/save.ts';
 import { SET_TOKENS } from './render/tokens.ts';
 import type { PostStack } from './render/post/index.ts';
 import { parFor, starsFor, type RunOutcome, type RunResult } from './world/stars.ts';
-import { createResultPanel, createRunRecorder, resultModel } from './ui/result.ts';
+import { createResultPanel, createRunRecorder, resultModel, starRulesLine } from './ui/result.ts';
 import { createHelpDrawer } from './ui/help.ts';
-import { firstSight } from './ui/callouts.ts';
+import { firstLesson, firstSight } from './ui/callouts.ts';
 import { downloadBlob, generateShareCard } from './share/card.ts';
 import { SETS, isRegisteredSet, type SetRegistration } from './sets/index.ts';
 import { CAMPAIGN_LADDER, nextInCampaign } from './world/campaign.ts';
@@ -196,17 +196,38 @@ export function levelTrayParams(
  * build was the deployed-page bug: it pre-played the level, overflowed the
  * tray budget ("5 / 3 pieces") and left nothing to build. A level with no
  * fixture table (the feel track rig) ships its whole reference build.
+ *
+ * OCCURRENCE RULE (N-wave fault fix): a piece is a fixture only while its
+ * kind's FIXTURE QUOTA is not yet filled — `fixtures[k]` copies of kind `k`,
+ * in build order — NOT every piece whose kind merely APPEARS in the table.
+ * The old kind-membership test (`def in fixtures`) mounted a tray piece the
+ * moment one rung put a kind in BOTH the tray and the fixtures (the reported
+ * kitchen02 empty-tray fault: "the full tray build is mounted at boot"),
+ * pre-playing the level and draining the tray to ×0. The boot build is
+ * therefore EXACTLY the fixture multiset on every rung — pinned by
+ * `tests/unit/boot-invariants.test.ts` (`trayParityBuild` shares the rule so
+ * the parity probe keeps anchoring on the fixture's own copy).
  */
+export function fixtureQuota(
+  fixtures: Partial<Record<PieceKind, number>>,
+): (def: PieceKind) => boolean {
+  const left: Partial<Record<PieceKind, number>> = { ...fixtures };
+  return (def) => {
+    const n = left[def] ?? 0;
+    if (n <= 0) return false;
+    left[def] = n - 1;
+    return true;
+  };
+}
+
 export function initialBuild(level: Level): Build {
   const kl = level as unknown as {
     fixtures?: Partial<Record<PieceKind, number>>;
     parBuild?: () => Build;
   };
   if (kl.fixtures && kl.parBuild) {
-    const pieces = kl
-      .parBuild()
-      .pieces.filter((p) => p.def in kl.fixtures!)
-      .map((p, i) => ({ ...p, seq: i }));
+    const isFixture = fixtureQuota(kl.fixtures);
+    const pieces = kl.parBuild().pieces.filter((p) => isFixture(p.def)).map((p, i) => ({ ...p, seq: i }));
     return { levelId: level.id, pieces, seed: level.seed };
   }
   return level.placeholderBuild();
@@ -231,10 +252,16 @@ export function trayParityBuild(level: Level): Build {
   };
   if (!kl.parBuild || !kl.tray || !kl.fixtures) return initialBuild(level);
   const trayParams = levelTrayParams(level, kl.tray) ?? {};
+  // the SAME occurrence rule `initialBuild` mounts with: the pieces this
+  // probe treats as anchored fixtures are exactly the ones the boot build
+  // mounted, so a shared kind anchors the chain on the fixture's copy and
+  // chains the tray's copies (byte-identical to `parBuild` on a coherent
+  // level, and no longer possible to pre-mount a tray piece)
+  const isFixture = fixtureQuota(kl.fixtures);
   const pieces: Build['pieces'] = [];
   let cursor: ReturnType<typeof transformSocket> | null = null;
   kl.parBuild().pieces.forEach((p, i) => {
-    if (p.def in kl.fixtures!) {
+    if (isFixture(p.def)) {
       pieces.push({ ...p, seq: i });
       cursor = transformSocket(PIECES[p.def].sockets(p.params)[1], p.transform);
       return;
@@ -253,10 +280,15 @@ export function trayParityBuild(level: Level): Build {
 /** Pieces of a build the PLAYER placed — the tray basis every piece-count
  *  star line compares against. `Builder.playerCount` reports this live; a
  *  replay/share payload has no builder, so the same rule is applied to the
- *  build here (a level's built-in fixtures are nobody's purchase). */
+ *  build here (a level's built-in fixtures are nobody's purchase). The
+ *  fixture side is the SAME occurrence quota `initialBuild` mounts — on a
+ *  shared kind the fixture's own copies are the FIRST ones, the rest are
+ *  the player's. */
 export function playerPieceCount(level: Level, build: Build): number {
   const fixtures = (level as unknown as { fixtures?: Partial<Record<PieceKind, number>> }).fixtures;
-  return fixtures ? build.pieces.filter((p) => !(p.def in fixtures)).length : build.pieces.length;
+  if (!fixtures) return build.pieces.length;
+  const isFixture = fixtureQuota(fixtures);
+  return build.pieces.filter((p) => !isFixture(p.def)).length;
 }
 
 export function boot(root: HTMLElement): void {
@@ -528,7 +560,11 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // only when this level HAS one; Reset (permanent, beside Launch) walks
   // the car home without touching the build.
   const nextId = nextLevelId(level.id);
+  // The panel Retry and the PERMANENT Retry beside Launch are one wiring:
+  // `resetCar` (playtest N: a dismissed panel hid the way back — the
+  // as-built retry now lives outside the panel too).
   resultPanel.retry.addEventListener('click', () => resetCar());
+  builder.elements.reset.addEventListener('click', () => resetCar());
   if (nextId) {
     resultPanel.next.addEventListener('click', () => {
       const p = new URLSearchParams(window.location.search);
@@ -537,7 +573,6 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     });
   }
   gateNext(0); // hidden until a run EARNS a star (see gateNext)
-  builder.elements.reset.addEventListener('click', () => resetCar());
 
   // the e2e/keyboard-parity seam: the world position of the VISIBLE target
   // marker — arrows and hover move this socket, nothing targets invisibly
@@ -613,6 +648,14 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   }
 
   await rebuild(startBuild);
+
+  // STAR RULES BEFORE THE FIRST RUN (playtest N: "the star rules only
+  // appear after a run — teaching precedes failure"): a quiet one-liner
+  // on the level's FIRST boot, the same three lines with this level's par
+  // numbers, shown once per level through the callouts' seen set
+  // (`firstLesson`). The rung on the level select carries the same line.
+  const rulesLesson = firstLesson(`rules:${level.id}`, starRulesLine(parFor(level.id, level.par)));
+  if (rulesLesson) calloutLine.textContent = rulesLesson;
 
   // the terminal state of the LAST finished run, for the honest same-hash
   // line: equal hashes on DIFFERENT builds mean the added piece never

@@ -50,7 +50,17 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
   max-width: 380px;
   max-height: min(calc(100% - 16px), calc(100vh - 16px));
   overflow-y: auto;
+  /* POINTER-EVENTS: the panel's BOX must not swallow the world (playtest
+   * N: with the panel open, canvas clicks died inside its rectangle and
+   * dragging selected the panel's text). The root takes no pointers at all
+   * — every pointer lands on the canvas underneath, around the box AND
+   * through it — and interactivity is scoped to the box's own controls. */
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
+#gw-result-buttons { pointer-events: auto; }
+#gw-result-buttons button { pointer-events: auto; }
 #gw-result-stars, #gw-result-time, #gw-result-pieces { margin: 0; }
 #gw-result-stars { font-size: 20px; letter-spacing: 2px; }
 #gw-result-rules { margin: 2px 0 0; font-size: 11px; opacity: 0.85; }
@@ -74,6 +84,9 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
  * at a glance. See src/ui/levelselect.ts. */
 .gw-levelselect button[aria-disabled='true'] { opacity: 0.55; }
 .gw-level-lockline { display: block; font-size: 11px; font-weight: 400; color: #6a5636; }
+/* the per-rung star-rules line (playtest N: teaching precedes failure):
+ * stars + this level's par, printed ON the open rung before its first run */
+.gw-level-rules { display: block; font-size: 11px; font-weight: 400; color: #6a5636; }
 /* the tray legend decrements (×N counts what is LEFT) — the label is set
  * from code; keep the spent buttons visually distinct without removing them
  * from the tab order (aria-disabled, not disabled) */

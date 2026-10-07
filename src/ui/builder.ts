@@ -11,6 +11,12 @@
  *   sits at the socket the held piece WILL occupy. The ghost (when a piece is
  *   held) renders at that same socket — green `fits here`, amber `flipped
  *   fit`, red `blocked — <reason>`. Nothing is ever targeted silently.
+ * - THE BOOT DEFAULT TARGET is the head of the start-connected chain — the
+ *   open exit of the line as built (on a fixture level: the start ramp's
+ *   exit, where the par line begins), NOT the bare `level start` socket
+ *   (playtest N's eight-try wall: the default aimed `drop@start`, a legal
+ *   build that cannot win, and the arrows were the only clue). The bare
+ *   start socket stays a target — the arrows and hover still walk there.
  * - HOVERING the canvas moves the target to the nearest open socket on
  *   screen (projection-nearest, within `HOVER_PX`), so the ghost always
  *   shows the socket a click would use BEFORE the click.
@@ -107,8 +113,10 @@ export interface BuilderElements {
   place: HTMLButtonElement;
   rotate: HTMLButtonElement;
   remove: HTMLButtonElement;
-  /** Permanent visible control next to Launch: returns the CAR to the start
-   * pose (the build untouched). */
+  /** The permanent Retry (playtest N: "Retry only appears in the result
+   *  panel"): as-built — returns the CAR to the start pose, the build
+ *  untouched, the panel away. The element id stays `gw-reset` (the
+ *  recorded test surface); the WORD a player looks for is Retry. */
   reset: HTMLButtonElement;
   launch: HTMLButtonElement;
 }
@@ -177,7 +185,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   ).map((p, i) => ({ ...p, seq: i }));
   let kind: PieceKind | null = null;
   let flipped = false;
-  let targetIndex = 0;
+  let targetIndex = chainHeadIndex();
   let state: GhostState = 'hidden';
   // the teaching line persists until the FIRST successful place of the
   // session (a build that loads already-built starts without the hint)
@@ -206,13 +214,24 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     b.setAttribute('aria-label', `Hold the ${pieceLabel(k)} piece`);
     b.setAttribute('aria-pressed', 'false');
     b.addEventListener('click', () => {
-      // a click on a locked or spent button must EXPLAIN itself
-      if (locked(k)) ghostState.textContent = `the ${pieceLabel(k)} is not in this level’s tray`;
-      else if (!selectable(k)) ghostState.textContent = `no ${pieceLabel(k)} left in the tray`;
+      // A click on a locked or spent button must EXPLAIN itself, and the
+      // explanation may never contradict the piece in hand (playtests M+N
+      // both tripped on "no landing left in the tray" read as a verdict on
+      // the held `gapLip`): the line names the kind the click TRIED, and
+      // when another kind is held it says so.
+      const holding = kind !== null && kind !== k ? ` — you are holding ${pieceLabel(kind)}` : '';
+      if (locked(k)) ghostState.textContent = `the ${pieceLabel(k)} is not in this level’s tray${holding}`;
+      else if (!selectable(k)) ghostState.textContent = `no ${pieceLabel(k)} left in the tray${holding}`;
       else setKind(k);
     });
     b.addEventListener('mouseenter', () => {
-      if (!locked(k)) setKind(k);
+      // hover PREVIEW switches the held kind — but only onto a kind the
+      // tray can actually place. Passing the mouse over a SPENT button
+      // used to silently drop the held piece for it (playtest N: "no
+      // landing left in the tray" while holding gapLip: the hover had
+      // taken the hold, the tray buttons said otherwise). A spent button
+      // says nothing on hover and steals nothing; its click explains.
+      if (!locked(k) && selectable(k)) setKind(k);
     });
     trayButtons.set(k, b);
   }
@@ -223,8 +242,12 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   const placeBtn = button('gw-place', 'Place', controls);
   const rotateBtn = button('gw-rotate', 'Rotate (R)', controls);
   const remove = button('gw-remove-piece', 'Remove piece', controls);
-  const resetBtn = button('gw-reset', 'Reset', controls);
-  resetBtn.setAttribute('aria-label', 'Return the car to the start (the build stays as built)');
+  // The permanent Retry (playtest N: a dismissed panel hid the way back).
+  // Same as-built semantics the result panel's Retry carries — the shell
+  // wires BOTH to the same `resetCar`. The id stays `gw-reset`: the element
+  // id is a test surface, the button WORD is player copy (playtest M rule).
+  const resetBtn = button('gw-reset', 'Retry', controls);
+  resetBtn.setAttribute('aria-label', 'Retry from the start — the build stays as built');
   const launch = button('gw-launch', 'Launch', controls);
   // the teaching line (near the tray, §9.3). The copy describes what the
   // inputs ACTUALLY do (playtest E: "Place: Enter — Enter did nothing"):
@@ -367,6 +390,31 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       if (!taken) out.push({ socket: exit, label: `end of ${pieceLabel(piece.def).toLowerCase()}` });
     }
     return out;
+  }
+
+  /**
+   * The BOOT DEFAULT target: walk the join chain from the FIRST-BUILT piece
+   * (every shipped fixture build starts on its start ramp — `initialBuild`
+   * filters `parBuild`, which lays the ramp first) and stop at the far open
+   * exit; that socket heads the par line. Deterministic in build order — no
+   * scoring, no geometry beyond the same `JOIN_TOL` join test the rest of
+   * the builder uses. 0 (the list head, `level start` when it is open) when
+   * there is no chain to walk.
+   */
+  function chainHeadIndex(): number {
+    if (pieces.length === 0) return 0;
+    let current = pieces[0]!;
+    let cursor = pieceSockets(current)[1];
+    for (let guard = 0; guard < pieces.length; guard++) {
+      const next = pieces.find(
+        (p) => p.seq !== current.seq && pieceSockets(p)[0].pos.distanceTo(cursor.pos) < JOIN_TOL,
+      );
+      if (!next) break;
+      current = next;
+      cursor = pieceSockets(next)[1];
+    }
+    const at = targets().findIndex((t) => t.socket.pos.distanceTo(cursor.pos) < JOIN_TOL);
+    return at >= 0 ? at : 0;
   }
 
   function placement(target: Socket, held: PieceKind): THREE.Matrix4 {

@@ -14,8 +14,9 @@ import { test, expect } from '@playwright/test'
  * 2. the loop closes — the panel states the par lines behind the stars,
  *    Retry returns the as-built run to Launch in one click, Launch is
  *    pressable after ANY terminal status, Next level walks the ladder;
- * 3. Reset (permanent, beside Launch) returns the car and the view home
- *    without touching the build;
+ * 3. the permanent Retry (as-built, beside Launch — the same `resetCar`
+ *    wiring the panel's Retry carries, playtest N) returns the car and the
+ *    view home without touching the build;
  * 4. the run camera MOVES the render camera while the run plays (§7.3 on
  *    the live path — the deployed run was unreadable), and hands the view
  *    back at the end;
@@ -31,7 +32,10 @@ const buildAllThree = async (page: import('@playwright/test').Page): Promise<voi
   for (const k of ['gapLip', 'drop', 'landing']) {
     await page.click(`#gw-tray-${k}`)
     if (k === 'gapLip') {
-      await page.keyboard.press('ArrowRight') // off `level start`, onto `end of ramp`
+      // the boot default target sits on the PAR rail — the start ramp's
+      // open exit — so the first Place begins the par line with no aiming
+      // at all (playtest N's chain-order wall)
+      await expect(page.locator('#gw-target-label')).toContainText('end of ramp')
     }
     await page.click('#gw-place')
     await expect(page.locator('#gw-piece-count')).toContainText(
@@ -139,7 +143,7 @@ test('the result states the par rules, and Retry / Launch / Next close the loop'
   expect(errors).toEqual([])
 })
 
-test('Reset returns the car and the view home after a terminal status', async ({ page }) => {
+test('the permanent Retry returns the car and the view home after a terminal status', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 

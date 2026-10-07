@@ -78,3 +78,15 @@ export function firstSight(id: string, store: StorageLike | null = defaultStorag
   markCalloutSeen(id, store);
   return text;
 }
+
+/**
+ * The same once-ever discipline for a NON-piece teaching line the caller
+ * supplies (the level's star-rules one-liner, playtest N: "teaching
+ * precedes failure"). The seen set is shared with the piece callouts under
+ * a namespaced id (`rules:<levelId>`), so the save shape does not move.
+ */
+export function firstLesson(id: string, text: string, store: StorageLike | null = defaultStorage()): string | null {
+  if (seenCallouts(store).includes(id)) return null;
+  markCalloutSeen(id, store);
+  return text;
+}
