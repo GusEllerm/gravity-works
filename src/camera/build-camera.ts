@@ -518,7 +518,24 @@ export function attachBuildView(
   // lost) the element under the pointer gets them — and they STILL bubble
   // here. One listener, every release seen.
   const release = (ev: PointerEvent): void => {
-    if (!press || ev.pointerId !== press.id) return;
+    if (!press) {
+      // THE STUCK-PRESS GUARD (playtests T+U round4 / tooling: a press
+      // whose DOWN we never saw — released over browser chrome, a dropped
+      // pointerdown, automation that moves+releases without a tracked
+      // begin — used to make the release a NOISE EVENT the page ate: the
+      // player clicked, the ghost said "fits here", nothing placed).
+      // An untracked mouse release OVER the canvas is therefore FRESH
+      // INTENT at its point — routed through the same place verb, and
+      // recorded in `placedAt` so the `click` fallback below cannot
+      // double-place it. A release whose press IS tracked keeps the
+      // exact old rules (a latched framing drag still never places).
+      if (ev.type === 'pointerup' && ev.button === 0 && ev.target === canvas) {
+        placedAt = { t: performance.now(), x: ev.clientX, y: ev.clientY };
+        handlers.onPlace(ev.clientX, ev.clientY);
+      }
+      return;
+    }
+    if (ev.pointerId !== press.id) return;
     const wasCleanClick =
       !press.dragged && press.button === 0 && !spaceHeld &&
       Math.hypot(ev.clientX - press.startX, ev.clientY - press.startY) <= CANVAS_DRAG_PX;

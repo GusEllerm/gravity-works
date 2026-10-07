@@ -37,8 +37,28 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
 #gw-tray button[aria-pressed='true'] { background: #f0d9a8; border-color: #8a7040; }
 #gw-controls { display: flex; gap: 6px; margin-top: 6px; }
 #gw-piece-count, #gw-ghost-state, #gw-target-label { font-size: 12px; color: #6a5636; margin: 4px 0; }
+/* AIM LAYOUT STABILITY (playtests V+W round5: "the ghost sat ~40 px up and
+ * left of the cursor" 2/2 — the director's rect (160,311) vs the settled
+ * (160,270) was these lines appearing/hiding ABOVE the canvas and moving
+ * it under a still cursor). Every toggleable row here RESERVES its line so
+ * showing/hiding it cannot teleport the canvas; the builder additionally
+ * re-derives the aim whenever the rect still moves (`src/ui/builder.ts`).
+ * `visibility` keeps the reserved line where `display:none` would collapse
+ * it; Playwright/a11y still read a `hidden` row as hidden. */
+#gw-tray-hint, #gw-ring-hint { min-height: 17px; }
+#gw-piece-count, #gw-ghost-state, #gw-target-label { min-height: 16px; }
+/* INTEGER line-boxes: a fractional `min-height` (1.3em) leaks sub-pixel
+ * offsets into the canvas rect and breaks the baseline screenshot's pixel
+ * clip — keep every reserved line a whole CSS px (and state the
+ * line-height so reserved height == shown height at every zoom). */
+#gw-tray-hint { line-height: 17px; }
+#gw-ring-hint { line-height: 21px; min-height: 21px; }
+#gw-piece-count, #gw-ghost-state, #gw-target-label, #gw-tray-reason { line-height: 16px; min-height: 16px; }
+#gw-tray-hint[hidden], #gw-ring-hint[hidden] { display: block; visibility: hidden; }
 #gw-tray-hint { font-size: 13px; color: #2c2013; margin: 6px 0 2px; font-weight: 600; }
-#gw-tray-hint[hidden] { display: none; }
+/* (the stage-3 `display:none` hide lived here; the AIM LAYOUT STABILITY
+ * reservation above replaces it — a collapsed hint row WAS the canvas
+ * teleport) */
 #gw-tray-reason { font-size: 12px; color: #6a5636; margin: 2px 0 4px; }
 #gw-help-list { background: #fff8ec; border: 1px solid #d8c49a; border-radius: 6px; padding: 8px; }
 /* THE END-OF-RUN PANEL over the world (see src/ui/result.ts). Playtest J:
@@ -87,6 +107,23 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
   #gw-result-buttons { margin-top: 4px; }
   #gw-result-buttons button { font-size: 11px; padding: 3px 8px; }
 }
+/* THE GRAPHICS HICCUP (playtest W round5: a tab that went BLACK and silent
+ * mid-drag). If the WebGL context is ever lost, the page SAYS so and says
+ * the way back — a dead-black canvas with no story is never the symptom
+ * (see `src/boot.ts`'s context-lost/restore handlers). */
+#gw-hiccup {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 16, 10, 0.92);
+  color: #fdf2e0;
+  font: 15px/1.4 system-ui, sans-serif;
+  text-align: center;
+  cursor: pointer;
+}
+#gw-hiccup[hidden] { display: none; }
 /* THE LEVEL SELECT (playtest K: locked rungs "taught nothing about what's
  * unlocked or why", and in plain-text view a locked ☆☆☆ read as merely
  * unstarred). A locked rung carries a lock glyph and states its rule IN THE

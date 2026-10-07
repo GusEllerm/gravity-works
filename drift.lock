@@ -13,7 +13,7 @@ sig = "17598bed0f73a9df"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/boot.ts"
-sig = "c5caac1a8f132618"
+sig = "a50da6783084d585"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -43,7 +43,7 @@ sig = "85fea3da970c0e69"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/ui/builder.ts"
-sig = "e4e635541c891aee"
+sig = "086d4124f3254d8a"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -163,12 +163,17 @@ sig = "cb7dd5d5414784c4"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/boot.ts"
-sig = "382c70ab1ae9bf28"
+sig = "a50da6783084d585"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "src/camera/build-camera.ts"
+sig = "e2ac1d314a9dda23"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/camera/run-camera.ts"
-sig = "1e1d7f5df8a8c81b"
+sig = "b6da8f847549e8cc"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -182,18 +187,38 @@ sig = "94a2ee27e5931879"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
+target = "tests/e2e/build-view.spec.ts"
+sig = "4bf12de87802a90c"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "tests/e2e/camera-torture.spec.ts"
+sig = "08b28fa0582747ff"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/filmstrip.spec.ts"
-sig = "78d466e8bf1104ea"
+sig = "698ffa9252f05d38"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/loop.spec.ts"
-sig = "b7642c638f1671f4"
+sig = "859c2a07c099bc08"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "tests/e2e/playtest-tu.spec.ts"
+sig = "c907ce2240f2ba76"
+
+[[bindings]]
+doc = "docs/vault/Modules/camera.md"
+target = "tests/unit/build-camera.test.ts"
+sig = "20b9d095e17ced76"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/unit/camera.test.ts"
-sig = "61f96bcfc29be4f3"
+sig = "f00a6dbe45a90d4a"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -428,7 +453,7 @@ sig = "0f065f90d47289b6"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "src/boot.ts"
-sig = "c5caac1a8f132618"
+sig = "a50da6783084d585"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -458,7 +483,7 @@ sig = "c55f143b9eaa05bc"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "src/boot.ts"
-sig = "c5caac1a8f132618"
+sig = "a50da6783084d585"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
@@ -753,7 +778,7 @@ sig = "01a43379f62aea63"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "src/boot.ts"
-sig = "c5caac1a8f132618"
+sig = "a50da6783084d585"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -818,12 +843,12 @@ sig = "4e0fc998b5b96411"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/boot.ts"
-sig = "c5caac1a8f132618"
+sig = "a50da6783084d585"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/camera/build-camera.ts"
-sig = "6bb385767adfc19a"
+sig = "e2ac1d314a9dda23"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -842,8 +867,13 @@ sig = "657bd550d4a7c899"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
+target = "src/ui/aim-transform.ts"
+sig = "85920b82ecda91cd"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
 target = "src/ui/builder.ts"
-sig = "e4e635541c891aee"
+sig = "086d4124f3254d8a"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -868,7 +898,7 @@ sig = "461a1783635da44b"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/shell.css"
-sig = "d68cd0434d8ac2e6"
+sig = "fcb172559f1664f8"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -949,6 +979,11 @@ sig = "81c6baa440261d00"
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/shell.spec.ts"
 sig = "940f0e902aa3a4ab"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
+target = "tests/e2e/viewport-aim.spec.ts"
+sig = "010ab7e7a8f82893"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1128,7 +1163,7 @@ sig = "17598bed0f73a9df"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/boot.ts"
-sig = "c5caac1a8f132618"
+sig = "a50da6783084d585"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
@@ -1138,7 +1173,7 @@ sig = "358c8994ef168677"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/ui/builder.ts"
-sig = "e4e635541c891aee"
+sig = "086d4124f3254d8a"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
