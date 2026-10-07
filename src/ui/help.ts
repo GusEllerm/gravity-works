@@ -247,7 +247,13 @@ export function createHelpDrawer(host: HTMLElement, options: HelpOptions = {}): 
     raf = requestAnimationFrame(tick);
   }
 
-  toggle.addEventListener('click', () => (open ? close() : openDrawer()));
+  toggle.addEventListener('click', () => {
+    // focus returns to the world after the press (playtests P+Q focus
+    // policy — a toolbar button keeps no focus; see src/ui/builder.ts)
+    if (document.activeElement === toggle) toggle.blur();
+    if (open) close();
+    else openDrawer();
+  });
 
   function openDrawer(): void {
     open = true;

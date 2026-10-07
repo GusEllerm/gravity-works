@@ -29,7 +29,7 @@ test('game shell boots kitchen01 unchanged with the garage in the registry (no r
 
   await page.goto('/?level=kitchen01')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'kitchen', { timeout: 60_000 })
-  await expect(page.locator('#gw-status')).toContainText('pieces placed', { timeout: 60_000 })
+  await expect(page.locator('#gw-status')).toContainText('pieces used', { timeout: 60_000 })
   expect(errors).toEqual([])
 })
 
@@ -64,6 +64,6 @@ test('the game-shell dev entry ?set=garage mounts the garage set at the canonica
 
   await page.goto('/?set=garage')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'garage', { timeout: 60_000 })
-  await expect(page.locator('#gw-status')).toContainText('pieces placed', { timeout: 60_000 })
+  await expect(page.locator('#gw-status')).toContainText('pieces used', { timeout: 60_000 })
   expect(errors).toEqual([])
 })

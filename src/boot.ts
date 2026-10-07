@@ -689,7 +689,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         : null;
     runCamActive = false;
     frameCamera(camera, next.scene, framingFocus);
-    statusLine.textContent = 'ready';
+    // the same tally line the frame loop writes (ONE counter, ONE verb —
+    // never a bare "ready" that skips the number the tray already shows)
+    statusLine.textContent = runStatusLine(next, builder.playerCount(), level.budget);
   }
 
   await rebuild(startBuild);
@@ -786,7 +788,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       w.carMesh.position.set(pose.pos.x, pose.pos.y, pose.pos.z);
       w.carMesh.quaternion.set(pose.quat.x, pose.quat.y, pose.quat.z, pose.quat.w);
     }
-    statusLine.textContent = runStatusLine(w, builder.playerCount());
+    statusLine.textContent = runStatusLine(w, builder.playerCount(), level.budget);
     if (w.status !== 'idle') hashValue.textContent = w.hashHex(); // live under the details
     if (runCamActive && runCam) {
       // §7.3: during a run the RUN CAMERA owns the transform — leading the
@@ -872,12 +874,19 @@ const framingScratch = new THREE.Vector3();
 
 /** Plain-text run status; the aria-live line the run reports through. The
  *  hash is NOT here (playtest E: engineer trivia on the player's line) — it
- *  lives in `#gw-hash-value` behind the same-pieces-same-run details. */
-export function runStatusLine(world: World, pieces: number): string {
+ *  lives in `#gw-hash-value` behind the same-pieces-same-run details. ONE
+ *  COUNTER, ONE VERB (playtests P+Q: "0 of 4 used" vs "ready — 1 placed"
+ *  was the same number wearing two words): the IDLE line states the tray
+ *  tally in the SAME words as the builder's `#gw-piece-count` — "n of m
+ *  pieces used" — so the two lines can never contradict mid-session; the
+ *  in-run/terminal lines carry no tally at all (the clock is their only
+ *  number; an edit-halted run's tally reappears when the line is idle
+ *  again, recomputed from the same `playerCount`). */
+export function runStatusLine(world: World, pieces: number, budget: number): string {
   const t = `${world.time.toFixed(2)}s`;
   switch (world.status) {
     case 'idle':
-      return `ready — ${pieces} pieces placed`;
+      return `ready — ${pieces} of ${budget} pieces used`;
     case 'running':
       return `running — ${t}`;
     case 'finished':

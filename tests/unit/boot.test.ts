@@ -20,11 +20,16 @@ describe('boot shell', () => {
   test('run status copy is concrete and carries no hash (hash lives in the details)', () => {
     // playtest E+F: the hash was engineer trivia on the player's line — it
     // now rides #gw-hash-value behind the determinism-fingerprint disclosure
-    expect(runStatusLine(fake('idle', 0, '00000000'), 5)).toBe('ready — 5 pieces placed');
-    expect(runStatusLine(fake('finished', 1.5, 'abcd1234'), 6)).toBe('finished — 1.50s');
-    expect(runStatusLine(fake('fell', 0.4, '01234567'), 5)).toContain('fell off the set');
-    expect(runStatusLine(fake('running', 2, 'ffffffff'), 5)).toBe('running — 2.00s');
-    expect(runStatusLine(fake('running', 2, 'ffffffff'), 5)).not.toContain('hash');
+    // playtests P+Q (counter coherence): the idle line states the tray
+    // tally in the SAME words as #gw-piece-count — "n of m pieces used"
+    expect(runStatusLine(fake('idle', 0, '00000000'), 5, 9)).toBe('ready — 5 of 9 pieces used');
+    expect(runStatusLine(fake('finished', 1.5, 'abcd1234'), 6, 9)).toBe('finished — 1.50s');
+    expect(runStatusLine(fake('fell', 0.4, '01234567'), 5, 9)).toContain('fell off the set');
+    expect(runStatusLine(fake('running', 2, 'ffffffff'), 5, 9)).toBe('running — 2.00s');
+    expect(runStatusLine(fake('running', 2, 'ffffffff'), 5, 9)).not.toContain('hash');
+    // the terminal/running lines carry no tally at all (one counter means
+    // the status line never states a second one mid-run)
+    expect(runStatusLine(fake('running', 2, 'ffffffff'), 5, 9)).not.toContain('pieces');
   });
 
   test('a kitchen level starts EMPTY of tray pieces: fixtures only, tray to build', () => {

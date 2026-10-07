@@ -395,6 +395,14 @@ function panelButton(id: string, label: string, parent: HTMLElement): HTMLButton
   b.id = id;
   b.type = 'button';
   b.textContent = label;
+  // FOCUS POLICY (playtests P+Q, same law as the builder's toolbar): the
+  // panel's buttons BLUR after activation, so the Enter that dismissed or
+  // retried is never also the Enter that re-fires them — "Enter both
+  // re-launches and dismisses the win overlay" was focus parked on a
+  // panel button. After activation focus is the world's again.
+  b.addEventListener('click', () => {
+    if (document.activeElement === b) b.blur();
+  });
   // no inline style: the panel's whole look lives in `src/ui/shell.css`,
   // where a `@media (max-height: …)` rule can actually shrink it (inline
   // styles outrank the stylesheet, and the playtest J viewport-safe pass

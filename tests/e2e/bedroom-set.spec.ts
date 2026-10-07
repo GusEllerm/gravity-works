@@ -26,7 +26,7 @@ test('game shell boots kitchen01 unchanged through the set registry (no regressi
 
   await page.goto('/?level=kitchen01')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'kitchen', { timeout: 60_000 })
-  await expect(page.locator('#gw-status')).toContainText('pieces placed', { timeout: 60_000 })
+  await expect(page.locator('#gw-status')).toContainText('pieces used', { timeout: 60_000 })
   expect(errors).toEqual([])
 })
 
@@ -62,6 +62,6 @@ test('the game-shell dev entry ?set=bedroom mounts the bedroom set', async ({ pa
 
   await page.goto('/?set=bedroom')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'bedroom', { timeout: 60_000 })
-  await expect(page.locator('#gw-status')).toContainText('pieces placed', { timeout: 60_000 })
+  await expect(page.locator('#gw-status')).toContainText('pieces used', { timeout: 60_000 })
   expect(errors).toEqual([])
 })

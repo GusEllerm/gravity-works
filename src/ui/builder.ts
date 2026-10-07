@@ -5,6 +5,18 @@
  * stage 6's a11y pass extends it instead of rebuilding it, and so Playwright
  * has stable selectors to poke.
  *
+ * FOCUS POLICY (v3, playtests P+Q: "Enter re-picks the last-focused
+ * button", "Rotate eats focus", "Enter ambiguously relaunches"): every
+ * toolbar/tray button BLURS itself after activation (a `click` listener on
+ * the button — pointer OR keyboard activation both run it), so keyboard
+ * focus returns to the world the moment a control has done its job. Enter's
+ * WORLD action (place) therefore fires only with focus on the body, the
+ * canvas or the builder's own board group — never parked on a button; a
+ * focused button keeps its native Enter (the keydown handler never
+ * prevents it) until the activation lands and the blur returns focus to
+ * the world. Launch is launched by Enter ONLY while the Launch button
+ * itself is focused; once clicked it is no longer the Enter target.
+ *
  * Placement model (v2, the shell-truth pass after playtests E/F/G):
  *
  * - The CURRENT TARGET is always VISIBLE: a ring marker (`#gw-target` torus)
@@ -154,6 +166,15 @@ function button(id: string, label: string, parent: HTMLElement): HTMLButtonEleme
   b.type = 'button';
   b.textContent = label;
   parent.appendChild(b);
+  // FOCUS POLICY (playtests P+Q): every toolbar/tray button returns focus
+  // to the world after activation, so the NEXT Enter is the world's Enter
+  // (place), not a silent re-click of the last button touched. The blur
+  // runs on the click event — after the button's native activation — so a
+  // focused button still keeps its own Enter/space (Launch on Enter still
+  // launches while focus is on it).
+  b.addEventListener('click', () => {
+    if (document.activeElement === b) b.blur();
+  });
   return b;
 }
 
@@ -187,6 +208,11 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   let flipped = false;
   let targetIndex = chainHeadIndex();
   let state: GhostState = 'hidden';
+  // a one-shot explanation line that OUTLIVES the async world rebuild an
+  // emit triggers (`setScene` re-runs `updateGhost`, which would otherwise
+  // erase it); any NEXT player action retires it (playtest Q's spent-hold
+  // line has to still be there when the eyes arrive)
+  let stuckNote: string | null = null;
   // the teaching line persists until the FIRST successful place of the
   // session (a build that loads already-built starts without the hint)
   let everPlaced = trayPlaced() > 0;
@@ -214,6 +240,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     b.setAttribute('aria-label', `Hold the ${pieceLabel(k)} piece`);
     b.setAttribute('aria-pressed', 'false');
     b.addEventListener('click', () => {
+      stuckNote = null; // a fresh press retires the last one-shot line
       // A click on a locked or spent button must EXPLAIN itself, and the
       // explanation may never contradict the piece in hand (playtests M+N
       // both tripped on "no landing left in the tray" read as a verdict on
@@ -277,6 +304,18 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   targetLabel.id = 'gw-target-label';
   targetLabel.setAttribute('aria-live', 'polite');
   root.appendChild(targetLabel);
+  // THE RING SPEAKS (playtest Q: "white ring markers unlabeled"): one quiet
+  // line the FIRST time the ring is visible in a page session, naming what
+  // it is. Session-scoped (not save-scoped) on purpose — a fresh visit
+  // re-teaches it, and the first successful place retires the line for good
+  // (the ring itself keeps its socket's label on `#gw-target-label`).
+  const ringHint = document.createElement('p');
+  ringHint.id = 'gw-ring-hint';
+  ringHint.setAttribute('aria-live', 'polite');
+  ringHint.textContent = 'the ring is where it will land';
+  ringHint.hidden = true;
+  root.appendChild(ringHint);
+  let ringAnnounced = false;
 
   host.appendChild(root);
 
@@ -446,11 +485,11 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     rebuildGhostGeometry();
     const list = targets();
     if (targetIndex >= list.length) targetIndex = Math.max(0, list.length - 1);
-    targetLabel.textContent = kind
-      ? list.length > 0
-        ? `target: ${list[targetIndex]!.label}`
-        : 'target: none'
-      : '';
+    // THE RING KEEPS ITS SOCKET'S LABEL: whenever a target exists the
+    // label line names its socket — held piece or not (playtest Q: the
+    // white rings were mute; the ring is always the answer to "where will
+    // it go", so it is never silent).
+    targetLabel.textContent = list.length > 0 ? `target: ${list[targetIndex]!.label}` : '';
     if (list.length === 0 || !scene) {
       state = 'hidden';
       anim = null;
@@ -495,8 +534,18 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       );
     }
     // the VERB TABLE's copy — never the internal state word
-    ghostState.textContent = GHOST_LABEL[state];
+    ghostState.textContent = stuckNote ?? GHOST_LABEL[state];
+    // ONE counter, ONE verb: this tally line and the shell's idle status
+    // line (`runStatusLine`, boot.ts) state the SAME numbers in the SAME
+    // words — "n of m pieces used" (playtests P+Q: "0 of 4 used" next to
+    // "ready — 1 placed" was two counters saying two things)
     count.textContent = `${trayPlaced()} of ${level.budget} pieces used`;
+    // the ring named itself once this session; it is on screen now
+    if (marker.visible && !ringAnnounced) {
+      ringAnnounced = true;
+      ringHint.hidden = false;
+    }
+    if (ringAnnounced && !marker.visible) ringHint.hidden = true;
     hint.hidden = everPlaced || kind === null;
     for (const [k, b] of trayButtons) {
       const cap = allowance(k);
@@ -534,6 +583,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   // ---- actions -----------------------------------------------------------
 
   function setKind(next: PieceKind | null): void {
+    if (next !== null) stuckNote = null; // picking a piece up retires the note
     kind = next;
     updateGhost();
   }
@@ -558,6 +608,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   }
 
   function rotate(): void {
+    stuckNote = null;
     flipped = !flipped;
     // `animate` — the flip is the one change the eye must not be able to
     // miss (playtest G: "Rotate (R): clicked it; ghost never visibly changed")
@@ -571,8 +622,11 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
 
   function place(): boolean {
     const list = targets();
+    stuckNote = null;
     if (!kind || list.length === 0) return false;
     if (trayPlaced() >= level.budget) {
+      // nothing left ANYWHERE — a hold here is a stranded hold; release it
+      if (!selectable(kind)) setKind(null);
       // on a TRAY level the legend already tells this story per kind; the
       // line only appears where the tray cannot say it (sandbox budgets)
       ghostState.textContent = trayKinds
@@ -582,7 +636,13 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     }
     const cap = allowance(kind);
     if (cap !== null && placedOf(kind) >= cap) {
-      ghostState.textContent = `no ${pieceLabel(kind)} left in the tray`;
+      // REJECT-PATH RELEASE (playtest Q: "no Drop left" while holding a
+      // spent kind — the message was fixed, the STUCK HOLD stayed): a
+      // refusal that names an exhausted kind also drops the hold, so the
+      // next Place is never spent on a piece that cannot place
+      const spent = kind;
+      stuckNote = `no ${pieceLabel(spent)} left in the tray`;
+      setKind(null);
       return false;
     }
     const target = list[targetIndex]!.socket;
@@ -606,10 +666,22 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     if (next >= 0) targetIndex = next;
     updateGhost();
     emit();
+    // the ring line retires at the first piece that actually landed
+    ringHint.hidden = true;
+    // EXHAUSTED-HOLD RELEASE: placing the LAST of a kind must not leave
+    // the player holding a ghost the tray no longer stocks (playtest Q's
+    // stuck hold) — the hold releases and says so; the tray legend shows
+    // the ×0
+    if (kind !== null && !selectable(kind)) {
+      const spent = kind;
+      stuckNote = `last ${pieceLabel(spent)} placed — pick another piece`;
+      setKind(null);
+    }
     return true;
   }
 
   function removeLast(): boolean {
+    stuckNote = null;
     if (pieces.length === 0) return false;
     let i = pieces.length - 1;
     if (trayKinds) {
@@ -661,6 +733,16 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   window.addEventListener('keydown', (ev) => {
     const t = ev.target as HTMLElement | null;
     const onButton = t !== null && (t.tagName === 'BUTTON' || t.tagName === 'A');
+    // Enter's WORLD action fires only with focus on the world: body, the
+    // canvas, or the builder's board group — never parked on a control
+    // (every builder button blurs on activation, so after a click/keyboard
+    // activation focus is back on the body and Enter is PLACE again)
+    const onWorld =
+      t === null ||
+      t === document.body ||
+      t === root ||
+      t === canvasEl ||
+      t.tagName === 'CANVAS';
     const keys: Record<string, () => void> = {
       ArrowRight: () => cycleTarget(1),
       ArrowLeft: () => cycleTarget(-1),
@@ -669,7 +751,9 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       r: rotate,
       R: rotate,
       Enter: () => {
-        if (!onButton) place(); // a focused button's Enter is its own click
+        // a focused button's Enter is its own click; the world's Enter is
+        // PLACE, and PLACE fires only when the world holds the focus
+        if (onWorld) place();
       },
       Delete: () => removeLast(),
       Backspace: () => removeLast(),
