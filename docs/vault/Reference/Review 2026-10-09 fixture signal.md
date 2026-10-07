@@ -38,3 +38,13 @@ livedocs: snapshot
   tame the inlay's lighting response on banked decks (e.g. FrontSide-only or a flatter-shaded
   material for fixture-inlay), keeping the lightness-only lift. Re-check with two bowl-camera
   views after the fix.
+
+> [!UPDATE] Session trail — environment artist re-measure (2026-10-09,
+> [[2026-10-09 Stage 4 - banked inlay verdict recheck]]): the white-hot pill re-causes to the
+> parked runner car's blown roof stripe, NOT the `fixture-inlay` — removing the inlay meshes
+> changes 0 px in every K3 wiring view, removing the car removes the pill (1367 cream px → 0);
+> the rim pair itself is in none of these frames. A dev-camera render seated above the bowl puts
+> the banked rim ribbon at L\* 35.3 (max 38.5) over a deck of L\* 29.7 — inside the flat-deck
+> inlay's band, its maximum BELOW the flat deck's — so no material rework was needed and none
+> shipped (verdict body unchanged; kitchen01 ratified delta and all baselines untouched, green).
+> The rim pair stays unratified pending a bowl-framed still and a call on the car's stripe.
