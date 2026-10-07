@@ -233,7 +233,13 @@ camera never frames the cup". Four fixes, all camera-side:
 framing lives with `frameCamera` (`src/boot.ts`, exported for the proof):
 the static/table/load framing biases its look-at 35 % toward the cup's
 capture centre (cup |ndc| ≤ 0.28 vs 0.43/0.46 cornering when N could not
-find the goal; every track corner still ≤ 0.49) and the RUN-END (end-hold)
+find the goal; every track corner still ≤ 0.49 — and SINCE playtest U
+round 4 the promise is SWEPT, not asserted: the shell's `__gwGoalNdc`
+seam projects the cup at build framing and
+`tests/e2e/playtest-tu.spec.ts` asserts |ndc| ≤ 0.9 on ALL 21 campaign
+rungs at fresh framing AND on the full par line, bedroom02 included —
+U's "never located the cup" was the PANNED view with the broken
+Esc-home (fixed), the law itself verified in-frame ≤ 0.30); and the RUN-END (end-hold)
 pass unions the car's FINAL position — clamped to the track's ±0.6 m
 neighbourhood — into the subject, so the verdict panel lands over a frame
 that CONTAINS the death spot (M item 6). Since playtest R round 3 the
@@ -300,18 +306,29 @@ answer is `src/camera/build-camera.ts`, the RESTRICTED build orbit:
   void"): a press whose release is LOST (up off the window, capture
   stolen) used to leave the recogniser believing the button was down, so
   every later HOVER moved the framing until the yaw pinned at its clamp.
-  Three defences, none trusting one event: every `pointermove` reconciles
+  Four defences, none trusting one event: every `pointermove` reconciles
   the physical `ev.buttons` mask against the pressed button (a lost
   release dies on the next hover — hover can NEVER move the framing);
   `pointerup`/`pointercancel` are decided on `window` (a release the
-  canvas misses still ends the press); and **`Escape Escape`
+  canvas misses still ends the press); a `pointerdown` RECONCILES AT
+  PRESS (playtests T+U round 4: the zombie could still eat exactly the
+  NEXT left click — the old join rule handed any press arriving before
+  the first reconciling hover to the stale right-button verb, and that
+  release could never be a clean click — "fits here" shown, nothing
+  placed, Enter worked); and **`Escape Escape`
   recenters** — `view.reset()` from ANY state, the damping walk bringing
-  the pose home (the recovery hatch by construction). A `click` with no
+  the pose home (the recovery hatch by construction; `RECENTER_MS`
+  600 → **1500** ms because a deliberate two-KEY Esc-Esc lands well
+  past 600 ms apart and the hatch was INERT for both round-4 testers —
+  the hint copy now reads "Home: press Esc twice", one honest
+  description). A `click` with no
   pointer sequence behind it (`detail 0`, a synthetic/automation click)
   routes to the place verb too, deduped against the pointer path — a
-  click is a place INTENT whoever sent it. A second button joining an
-  open press makes the verb ORBIT (right wins) without re-anchoring the
-  click origin, and a held Space is released on window blur.
+  click is a place INTENT whoever sent it. A SECOND (right) button
+  joining an open press still makes the verb ORBIT without re-anchoring
+  the click origin; a LEFT press whose right bit is physically UP is
+  NOT joining an orbit — it re-anchors the press (the stale-orbit
+  reconcile above) — and a held Space is released on window blur.
 - **Proofs**: `tests/unit/build-camera.test.ts` (zero-state bit-identity
   with `frameCamera`; yaw/pan clamps; yaw-only invariances — eye distance,
   elevation and roll frozen, pan a pure translation; 63 % step response
@@ -322,7 +339,11 @@ answer is `src/camera/build-camera.ts`, the RESTRICTED build orbit:
   `tests/e2e/camera-torture.spec.ts` (a lost-release drag is reconciled —
   hover NEVER moves the framing; 20 randomized pointer operations leave
   the state finite, clamped and responsive, and double-Escape brings the
-  pose home).
+  pose home) and `tests/e2e/playtest-tu.spec.ts` (round 4: ten ghost
+  click-places register after a 40° orbit and again with the R flip
+  armed; a lost right-release cannot eat the next left click; the click
+  binds to the SHOWN ghost through the damping tail; Esc Esc homes the
+  pose at 300 ms AND 900 ms gaps from an orbit+pan drag).
 - **THE FILMSTRIP'S COVERAGE FLOOR WAS STALE** (fixed here, level data
   untouched): the L02 redesign shortened the line to ~1.01 s, and both
   sampling gates still counted wall-clock boundaries from PAGE start —

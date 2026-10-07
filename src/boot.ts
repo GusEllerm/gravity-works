@@ -645,6 +645,16 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     const p = w.carPose(0).pos;
     return [p.x, p.y, p.z];
   };
+  // the e2e seam for the GOAL-IN-FRAME law (playtest U round 4: Pillow
+  // Plateau's cup was never on screen at build framing): the build's
+  // FINISH CUP capture centre projected to normalised device coords under
+  // the LIVE camera — |x|,|y| <= 1 is inside the canvas. Levels whose
+  // build has no cup report null (debug surface, not UI).
+  (window as unknown as Record<string, unknown>).__gwGoalNdc = (): number[] | null => {
+    if (!framingFocus) return null;
+    const v = framingFocus.clone().project(camera);
+    return [v.x, v.y];
+  };
 
   createHelpDrawer(stage, { reducedMotion: loadSave().settings.reducedMotion ?? undefined });
   // quiet, focusable, TOP-RIGHT of the world (playtest A+F: “Help = collapsed
