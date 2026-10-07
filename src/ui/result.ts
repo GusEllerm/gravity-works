@@ -195,9 +195,10 @@ export function createRunRecorder(): RunRecorder {
  * map at the top of this file and in docs/vault/Modules/ui.md:
  *
  *   hazard touched        -> "a hazard took the run" (which one, once props report it)
- *   fell, nose-down touchdown -> fell off nose-first (BUILD-AWARE tail:
- *                              the lip advice only when a lip is IN the
- *                              build — see `buildKinds` below)
+ *   fell, nose-down touchdown -> fell off nose-first (ACTIONABLE tail:
+ *                              each advice half only names a kind the
+ *                              player can act on now — see
+ *                              `actionableKinds` below)
  *   any slow-at-apex      -> fell off / stalled — too slow at the top of the loop
  *   fell after a long flight that ROSE off the deck -> fell off after a long jump
  *   fell otherwise        -> fell off the set
@@ -227,22 +228,36 @@ export function createRunRecorder(): RunRecorder {
  * like (§11: text never explains what a picture shows).
  *
  * BUILD-AWARE NOTES (stage 4, playtest M item: "'lower the lip' advice when I
- * had NO lip placed"). `buildKinds` is the set of piece KINDS in the build
- * that just ran (plumbed from `src/boot.ts` — UI-side derivation only; the
- * physics, and therefore the run hash, never sees it). A tail that tells the
- * player to change a piece they never placed is not advice, it is noise —
- * the nose-first line's `lower the lip` tail prints only when a `gapLip` is
- * actually in the build; the landing-flattening half of the advice stands on
- * its own either way. Every tail stays admissible for the evidence that
- * printed it: a note is never printed that the run could not have produced.
+ * had NO lip placed"; EXTENDED by playtest Q item 5: "'flatten the landing'
+ * when Landing isn't in the tray (L2!)"). `actionableKinds` is the set of
+ * piece KINDS the player can act on RIGHT NOW: kinds in the build that just
+ * ran PLACED, plus kinds with stock still LEFT in the level's tray (plumbed
+ * from `src/boot.ts` — UI-side derivation only; the physics, and therefore
+ * the run hash, never see it). The rule: a note's ADVICE TAIL may only name
+ * a kind the player can act on now — in build or in tray. A tail naming a
+ * piece that is neither placed nor placeable is not advice, it is noise
+ * (Q's K2: "flatten the landing" with no landing anywhere reachable). Each
+ * advice half is gated by ITS OWN kind: the nose-first line prints
+ * `flatten the landing` only when a landing is placed or still in the tray
+ * and `lower the lip` only when a gapLip is; the stalled-on-the-flat line
+ * names the booster only when the booster is actionable. When no actionable
+ * kind can carry a tail the line keeps its honest head with no tail —
+ * evidence without invented precision. `null` (no builder context — a
+ * shared/replay page) keeps the shipped lines unchanged: with no knowledge
+ * of the tray the gate stays permissive. Every tail stays admissible for
+ * the evidence that printed it: a note is never printed that the run could
+ * not have produced.
  */
 export function physicsNote(
   result: RunResult,
   ev: RunEvidence,
-  buildKinds: ReadonlySet<PieceKind> | null = null,
+  actionableKinds: ReadonlySet<PieceKind> | null = null,
 ): string {
   if (result.status === 'finished') return '';
   if (result.hazardsTouched > 0) return 'a hazard took the run — line up to miss it';
+
+  /** Can the player act on this kind right now? null = unknown = permissive. */
+  const canAct = (k: PieceKind): boolean => actionableKinds === null || actionableKinds.has(k);
 
   const climb = ev.apexY - ev.startY;
   const apexFloor = Math.sqrt(NOTE_G * (climb / 2));
@@ -250,11 +265,13 @@ export function physicsNote(
 
   if (result.status === 'fell') {
     if (ev.lastTouchdownPitch !== null && ev.lastTouchdownPitch < NOSE_FIRST_PITCH) {
-      // the lip tail names a piece the player can only lower if it is in
-      // front of them (playtest M's straight+drop build had no lip at all)
-      return buildKinds && !buildKinds.has('gapLip')
-        ? 'fell off nose-first — flatten the landing'
-        : 'fell off nose-first — flatten the landing or lower the lip';
+      // each half of the advice names only a piece the player can reach
+      // NOW (playtest M: no lip placed; playtest Q: no landing in the tray)
+      const advice = [
+        canAct('landing') ? 'flatten the landing' : null,
+        canAct('gapLip') ? 'lower the lip' : null,
+      ].filter((s): s is string => s !== null);
+      return advice.length > 0 ? `fell off nose-first — ${advice.join(' or ')}` : 'fell off nose-first';
     }
     if (tooSlowAtApex) return 'fell off — too slow at the top of the loop; give it more height before it';
     // Stage-4 (playtest K: "'flew off — a long jump' on a run that never
@@ -275,7 +292,12 @@ export function physicsNote(
     if (ev.lastPushTime !== null) {
       return 'stalled after its last push — the track ahead needs less than it gave';
     }
-    return 'stalled on the flat — friction won; start higher or add a booster';
+    // the booster is named only when the player can actually place one
+    // (playtest Q's K5 wall: a tray without a booster must not be told to
+    // buy one — the same fault as the unreachable landing advice)
+    return canAct('booster')
+      ? 'stalled on the flat — friction won; start higher or add a booster'
+      : 'stalled on the flat — friction won; start higher';
   }
   if (result.status === 'timeout') {
     return 'timed out — the run went past the time limit';
@@ -308,20 +330,21 @@ export interface ResultModel {
 }
 
 /** Stars + note for one finished-or-not run: the panel's whole content.
- *  `buildKinds` (the kinds in the build that ran) makes the note tails
- *  build-aware — see `physicsNote`; it never reaches the physics. */
+ *  `actionableKinds` (kinds placed in the build that ran, plus kinds with
+ *  stock left in the level's tray) gates the note's advice tails — see
+ *  `physicsNote`; it never reaches the physics. */
 export function resultModel(
   result: RunResult,
   par: Par,
   ev: RunEvidence,
   bestStarsBefore = 0,
-  buildKinds: ReadonlySet<PieceKind> | null = null,
+  actionableKinds: ReadonlySet<PieceKind> | null = null,
 ): ResultModel {
   return {
     stars: starsFor(result, par),
     time: result.time,
     piecesUsed: result.piecesUsed,
-    note: physicsNote(result, ev, buildKinds),
+    note: physicsNote(result, ev, actionableKinds),
     status: result.status,
     par,
     bestStarsBefore,

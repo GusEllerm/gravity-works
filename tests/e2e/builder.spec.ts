@@ -41,9 +41,15 @@ test('builder: ghost appears on hover, place and remove move the piece counter',
 
   // the R button flips the fit into a reverse seat and back — the VERB
   // TABLE's copy ("seated"/"snapped" never reach the screen; playtest E),
-  // and since playtest M each press also echoes a passive "rotated" tail
+  // and since playtest M each press also echoes a passive "rotated" tail.
+  // The FIRST reversed result of the session additionally carries the
+  // once-per-session WHY tail (playtest Q item 5: "flipped fit" vs "fits
+  // here" was uninterpretable; the tail is honest about the ride AND the
+  // reversibility). Subsequent flips say just the verb.
   await page.click('#gw-rotate')
-  await expect(page.locator('#gw-ghost-state')).toHaveText('flipped fit · rotated')
+  await expect(page.locator('#gw-ghost-state')).toHaveText(
+    'flipped fit · rotated — it rides backwards; fine for a coaster, not for a launch (press R again to flip back)',
+  )
   await page.click('#gw-rotate')
   await expect(page.locator('#gw-ghost-state')).toHaveText('fits here · rotated')
 
