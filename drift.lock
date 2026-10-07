@@ -47,6 +47,11 @@ sig = "cabdaa04a0c3c712"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
+target = "src/ui/callouts.ts"
+sig = "befa699b906bc793"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Levels.md"
 target = "src/world/hazards.ts"
 sig = "c574d75a051da4fc"
 
@@ -78,7 +83,7 @@ sig = "ce2f3bd36ac059e9"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/world/levels/kitchen05.level.ts"
-sig = "7cdc65e3b90d60bf"
+sig = "e123971bb17db1e4"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -123,7 +128,7 @@ sig = "c7d9abdf2d44719f"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "tests/unit/kitchen-levels.test.ts"
-sig = "347ed8f618279682"
+sig = "3ff368e36c737fed"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -813,7 +818,7 @@ sig = "cabdaa04a0c3c712"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/callouts.ts"
-sig = "f031673852534133"
+sig = "befa699b906bc793"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -898,7 +903,7 @@ sig = "b654a3f081d42b62"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/kitchen-levels.test.ts"
-sig = "347ed8f618279682"
+sig = "3ff368e36c737fed"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1098,4 +1103,4 @@ sig = "c7d9abdf2d44719f"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "tests/unit/kitchen-levels.test.ts"
-sig = "347ed8f618279682"
+sig = "3ff368e36c737fed"

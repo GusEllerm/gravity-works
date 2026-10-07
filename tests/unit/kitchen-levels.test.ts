@@ -8,8 +8,10 @@
  * the shipped `ROLL_COEF`, the feel harness's own physics), and the status
  * must be `finished`. On top of the gate: the level contracts hold (budget =
  * tray, par build replays identically twice), L02's second line and L04's
- * ground line really finish (the choices are real), and L05's two wrong
- * allocations really DON'T (the trade-off is real).
+ * ground line really finish (the choices are real), L05's SECOND intended
+ * line (the between-gaps booster) finishes, and L05's three wrong
+ * allocations really DON'T (the trade-off is real, and no wrong answer —
+ * including the place-LAST build a wrong hint would teach — finishes).
  *
  * The rung that cannot be proven is stated in Concepts/Levels: no mid-run
  * yaw arc (curve/bank) is drivable by either shipped car, so L02's curve and
@@ -31,6 +33,8 @@ import {
   KITCHEN05,
   KITCHEN_SANDBOX,
   kitchen05LateBoosterBuild,
+  kitchen05LastBoosterBuild,
+  kitchen05MidBoosterBuild,
   kitchen05NoBoosterBuild,
 } from '../../src/world/levels/kitchen05.level.ts';
 import { replayRun } from '../../src/replay/replay.ts';
@@ -115,8 +119,9 @@ describe('kitchen ladder — level contracts', () => {
 
 describe('kitchen ladder — tray ⊇ parBuild (a level you cannot build is not a level)', () => {
   /** Every line a level AUTHORS, in the level's own data: the par line plus
-   *  the alternates the cards promise (L02's arc, L04's ground, L05's two
-   *  wrong allocations). The invariant is asserted over all of them, so a
+   *  the alternates the cards promise (L02's arc, L04's ground, L05's
+   *  between-gaps line and its two booster-less/wrong-place allocations).
+   *  The invariant is asserted over all of them, so a
    *  second line cannot quietly grow a piece the tray does not hold. */
   const LINES: readonly { level: KitchenLevel; label: string; build: Build }[] = [
     ...LADDER.map((level) => ({ level, label: 'par build', build: level.parBuild() })),
@@ -130,6 +135,8 @@ describe('kitchen ladder — tray ⊇ parBuild (a level you cannot build is not 
     // kitchen04.level.ts's header; the probe still replays below.
     { level: KITCHEN05, label: 'no-booster line', build: kitchen05NoBoosterBuild() },
     { level: KITCHEN05, label: 'late-booster line', build: kitchen05LateBoosterBuild() },
+    { level: KITCHEN05, label: 'between-gaps line', build: kitchen05MidBoosterBuild() },
+    { level: KITCHEN05, label: 'place-last-booster line', build: kitchen05LastBoosterBuild() },
   ];
 
   /** Pieces per kind, as a multiset. */
@@ -332,12 +339,21 @@ describe('kitchen ladder — the choices and the trade-off are real', () => {
     expect(pair.status).not.toBe('finished');
   }, 60_000);
 
-  test('L05: the two wrong allocations do NOT finish', async () => {
+  test('L05: BOTH intended lines finish and the three wrong allocations do NOT', async () => {
+    // intended line 1: the par order (booster FIRST off the ramp) — gated
+    // by the par-build loop above; intended line 2: the between-gaps
+    // booster (beatable-par evidence, ~2.50 s).
+    const midBooster = await replayRun(KITCHEN05, kitchen05MidBoosterBuild());
+    expect(midBooster.status).toBe('finished');
+    // wrong A: never bought. Wrong B: spent at the back lip. Wrong C: the
+    // literal place-LAST build (the hint-truth pin — playtest Q's wall).
     const noBooster = await replayRun(KITCHEN05, kitchen05NoBoosterBuild());
     const lateBooster = await replayRun(KITCHEN05, kitchen05LateBoosterBuild());
+    const lastBooster = await replayRun(KITCHEN05, kitchen05LastBoosterBuild());
     expect(noBooster.status).not.toBe('finished');
     expect(lateBooster.status).not.toBe('finished');
-  }, 30_000);
+    expect(lastBooster.status).not.toBe('finished');
+  }, 60_000);
 });
 
 /**

@@ -13,6 +13,26 @@
  * line exists near 2.3 s) but not obvious, which is what the 3-star time is
  * for.
  *
+ * PLACE VERDICT (playtest Q round 2: "Booster fits nowhere I could find" —
+ * 4 tries, quit): the booster's useful socket is the BOOT CHAIN HEAD — the
+ * ramp's open exit, the ring the builder already defaults to (its boot
+ * `chainHeadIndex` target) and the socket where a held booster reports
+ * `fits here` on the fixture-only rail (probe: the tray-seated booster
+ * `snapSocket`s there on `initialBuild`). The wall was the ORDER story,
+ * not the fit. Measured: mid-chain FINISHES but pays +0.11 s (pinned as
+ * `kitchen05MidBoosterBuild`, the second intended line), LAST FALLS (the
+ * literal place-last tray build, pinned as `kitchen05LastBoosterBuild`,
+ * wrong answer C), EARLY is the fast line. So on this rung the booster
+ * does NOT belong mid-chain — it belongs FIRST in the tray line, straight
+ * off the ramp, exactly where `parBuild` puts it: buy the speed while it
+ * still has two gaps to cross. The only shipped copy that reads as a
+ * placement ORDER — the `booster` first-sight callout in
+ * `src/ui/callouts.ts` — used to say "in the middle of a run" and now
+ * names the EARLY placement (K5 is the booster's only campaign tray;
+ * there is no per-level hint render seam — see the level declaration
+ * note below and the session log `2026-10-09 Stage 4 - K5 booster +
+ * fixture reading`).
+ *
  * This file also registers the kitchen SANDBOX (`kitchen-sandbox`): every
  * piece and prop unlocked, no budget, the reference build being one clean lap
  * of every drivable kitchen verb. Sandbox variants for the other sets follow
@@ -106,6 +126,51 @@ export function kitchen05LateBoosterBuild(): Build {
   );
 }
 
+/** The SECOND intended line: the booster parked BETWEEN the gaps — the
+ *  mid-chain placement the old callout copy implied. It finishes
+ *  (measured 2.500 s vs the par's 2.392) and is the beatable-par
+ *  evidence, now data so "both intended K5 lines finish" is a test, not
+ *  prose. */
+export function kitchen05MidBoosterBuild(): Build {
+  return lay(
+    [
+      { def: 'ramp', params: kitchenRamp(0.3) },
+      { def: 'gapLip', params: KITCHEN05_GAP.lip },
+      { def: 'drop', params: KITCHEN05_GAP.drop },
+      { def: 'booster', params: { power: 1.1 } },
+      { def: 'gapLip', params: KITCHEN05_GAP.lip },
+      { def: 'drop', params: KITCHEN05_GAP.drop },
+      { def: 'landing', params: KITCHEN05_GAP.landing },
+      { def: 'finishCup' },
+    ],
+    KITCHEN05_ID,
+    1,
+  );
+}
+
+/** Wrong answer C: the place-LAST build — every par piece in par order,
+ *  the booster saved for the very last socket. This is the build a "place
+ *  the booster LAST" hint teaches (and playtest Q's class of attempts).
+ *  Measured `fell` 2.467 s — the extra speed arrives after both gaps and
+ *  the catch are spent and throws the car past the cup. Pinned so hint
+ *  copy can never drift back to implying LAST. */
+export function kitchen05LastBoosterBuild(): Build {
+  return lay(
+    [
+      { def: 'ramp', params: kitchenRamp(0.3) },
+      { def: 'gapLip', params: KITCHEN05_GAP.lip },
+      { def: 'drop', params: KITCHEN05_GAP.drop },
+      { def: 'gapLip', params: KITCHEN05_GAP.lip },
+      { def: 'drop', params: KITCHEN05_GAP.drop },
+      { def: 'landing', params: KITCHEN05_GAP.landing },
+      { def: 'booster', params: { power: 1.1 } },
+      { def: 'finishCup' },
+    ],
+    KITCHEN05_ID,
+    1,
+  );
+}
+
 export const KITCHEN05: KitchenLevel = registerKitchen(
   kitchenLevel({
     id: KITCHEN05_ID,
@@ -116,6 +181,12 @@ export const KITCHEN05: KitchenLevel = registerKitchen(
     par: { time: 2.39 }, // measured on the par build (regenerate via pars)
     maxTime: 12,
     tray: { gapLip: 2, drop: 2, landing: 1, booster: 1 },
+    // No `trayParams` and no placement-hint field here BY DESIGN: the par
+    // places every tray kind once (so the tray seats each kind at the
+    // par's own geometry), and the level data has no hint RENDER seam —
+    // the shipped per-piece hint is the `booster` first-sight callout in
+    // `src/ui/callouts.ts`, and the place-EARLY verdict that copy must
+    // carry is stated at the top of this file.
     fixtures: { ramp: 1, finishCup: 1 },
     parBuild,
   }),

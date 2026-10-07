@@ -553,16 +553,29 @@ flat between (plus the two fixtures). The forced trade-off: one soft catch, one 
 booster must be spent EARLY (before the first lip). Wrong answer A: no
 booster, the car is a gram of rolling resistance short of the back gap's far
 rim — `fell`. Wrong answer B: land the front gap and save the booster for
-the back lip — the extra speed overshoots the catch — `fell`. Both wrong
-answers are in the test, so the trade-off is measured, not asserted. This
+the back lip — the extra speed overshoots the catch — `fell`. Wrong answer
+C (playtest Q round 2): every par piece in par order and the booster saved
+LAST — `fell` 2.47 s, the build a "place the booster last" hint would
+teach; the rung has NO such hint and the one shipped copy that reads as an
+ORDER — the `booster` first-sight callout (`src/ui/callouts.ts`) — now
+says spend it EARLY (it used to read "in the middle of a run"; measured,
+mid-chain finishes but pays +0.11 s, last falls, early is the fast line,
+so on this rung the booster belongs FIRST in the tray line, not
+mid-chain — the level file's header carries the verdict; there is no
+per-level hint render seam in the level data). All three wrong answers
+are in the test, so the trade-off is measured, not asserted. This
 rung chains its OWN pinned copy of the original gap numbers
 (`KITCHEN05_GAP`, `kitchen05.level.ts`): its lesson needs an unforgiving
 _gap_ — when the shared `KITCHEN_GAP` softened for the L01 promise, the
 no-booster line silently started finishing, un-teaching the trade-off; the
 pin restores the measured wrong answers byte-identically (par hash
-unchanged). Par 2.39 s; beatable (a between-gaps booster line finishes at
-2.50 s, and a tighter line is out there), not obvious. Common failure:
-booster too late. STAGE-3 COHERENCE: this rung is where the tray rule was
+unchanged). Par 2.39 s; beatable — the between-gaps booster line is now
+DATA (`kitchen05MidBoosterBuild`, finishes 2.50 s, test-gated alongside
+the par as the second intended line; a tighter line is out there), not
+obvious. Common failure: booster too late. The useful booster socket is
+visible by construction: the builder's boot target ring sits on the ramp's
+open exit (`chainHeadIndex`), which is exactly where the par seats it and
+where a held booster reports `fits here` on the fixture-only rail. STAGE-3 COHERENCE: this rung is where the tray rule was
 checked against, not changed — its tray is ALREADY the exact multiset the par
 build places (`gapLip`×2, `drop`×2, `landing`, `booster` = 6 = budget), both
 wrong allocations fit the same tray, and every tray kind appears at ONE
