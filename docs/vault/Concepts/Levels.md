@@ -112,13 +112,14 @@ drain prop — the tunnel mouth is STAGING; the drain is a plain anchor,
 nothing snaps to it) finishes too (chained 2.550) and the tray affords both
 (`trayParams` declares the `gapLip`/`landing` the par never places). The
 builder-anchored truth (ask #2b, and it bites LESS here than on
-bedroom02/03): BOTH lines reach the fixed cup and the lazy one still wins
+bedroom03 — bedroom02 retired its own case at the B2 redesign): BOTH
+lines reach the fixed cup and the lazy one still wins
 — 2.350 vs 2.367, test-pinned. Whole-tray orders finish every order the
 test samples (2.292–2.392; the best order beats the par clock at the
 pieces-star's cost) — but the CHOICE tray is not order-invariant whole
 (swept at authoring: 39 of the 60 distinct whole-tray orders finish — the
 extra two pieces are the OTHER line's parts; the family measured the same
-property on bedroom02, 13 of 20). The order-invariance gate lives on the
+property on bedroom02, 7 of 20 finish since the B2 redesign). The order-invariance gate lives on the
 capstones (kitchen04, bedroom04, bathroom04 — 24/24), not on a rung whose
 tray is deliberately bigger than its par. No live zone on this rung (the
 wet tile is the set's TELLS; grip returns as mechanic in 03).
@@ -614,8 +615,9 @@ par rail's midpoint — the rails are 2.2–2.5 m long and the disc is a
 solid clears the lane (homework near edge 14.6 cm off-axis, test-asserted)
 and drops it so the floor sits 5 mm under the LOWEST authored line's
 finish deck — the kitchen counter rule with one stage-4 addition: a
-choice level's floor cannot bury a line the player can run (bedroom02's
-soft line ends 18 cm below its par, so the row follows the soft line).
+choice level's floor cannot bury a line the player can run (since the
+B2 redesign bedroom02's two routes end on ONE deck plane, so the row
+follows either; pre-B2 the soft line ended 18 cm below its par).
 
 **BEDROOM 01 — Cable Dip** (`bedroom01.level.ts`, the tutorial of RIDE
 OVER). The cable snake crossing the floor is the set's fourth voice, and
@@ -636,21 +638,33 @@ hole the missing `drop` leaves is 0.136 m of empty span, longer than the
 flat roll-off clears.
 
 **BEDROOM 02 — Pillow Plateau** (`bedroom02.level.ts`). Teaches: a
-choice off the mattress — stay high, or drop to the pillow. The par
-(three of five tray pieces, 2.40 — measured 2.367 s) is the HIGH line:
-three `straight`s, the deck never leaves plateau height, pure rolling.
-The tempting SOFT line (`drop` off the plateau edge into the `landing`
-pillow, then the floor run) finishes too — 2.575 s chained — and the
-catch costs it 0.21 s. `trayParams` declares `drop`/`landing` (the par
-line never places them — the choice pieces must seat at the geometry the
-lines were measured on, not kit defaults). ANCHORED HONESTY (ask #2b,
-and sharper here than kitchen02's table entry): on the mount the shipped
-builder makes, ONLY the high line reaches the anchored cup — the soft
-line runs 18 cm below the cup deck (`fell`, pinned by test), and the
-two-straight partial falls short. "Two ways off the plateau" is a
-chained-model claim; on one rail the plateau line is the only finisher,
-and the card says so. The soft line stays authored data so the claim
-stays falsifiable, not folklore.
+choice off the mattress — sink into the pillow, or step hard off the
+plateau edge — and since the **B2 redesign** (Playtest U round 4's wall)
+BOTH roads reach the same anchored mug. The par (4 of 5 tray pieces,
+1.75 — measured 1.72 s) is the PILLOW line: one 0.4 m deck of mattress,
+then the `landing` re-authored as a 30° SINK (`PILLOW_SINK`, dy −0.1857),
+then the floor run. The STEP line (two high decks, then the `drop`
+deepened to match the sink — `PLATEAU_STEP`, dy −0.1900, declared in
+`trayParams` because the par never places it) finishes too, ~0.5 s
+slower: the ballistic slam eats what the high deck gained. The two decks
+pass the mug mouth 4 mm apart — ONE floor plane — which is what RETIRES
+ask #2b for this rung: chained AND builder-anchored both lines finish
+(test-pinned, and the anchored-soft-falls pin is retired with them).
+The rung rides its own seating: 0.4 m decks (`BEDROOM02_STRAIGHT`) and a
+−22° launch (`BEDROOM02_RAMP_ANGLE`, the L02 "the ramp angle is its own
+knob" precedent) that shortens the crawl enough to separate the fail
+classes. THE FAIL STREAM IS THE LESSON: the old geometry died every
+wrong build at ~3.0–3.25 s invisibly past the cup ("the line let go
+before the cup" — unknowable, which is what walled U; 13-of-20 orders
+finished, several sub-par). Now nothing reaches 3 s: the bare plateau
+falls at the plateau END (~1.7–2.2 s), a crossing with no run-out dies
+AT the step or pillow (~1.6–2.1 s), and the double-drop — step AND
+pillow in one chain — rolls a deck 19 cm BELOW the mug plane and dies at
+its far end with the cup in frame overhead (~1.9–2.3 s). No build of
+three pieces or fewer finishes (test-enumerated), and the death-clock
+cap is pinned at 2.6 s. The cup sits a full crossing (0.78 m) beyond any
+plateau end, far outside the ballistic reach (~0.25 m). Seeds 1–6 and
+launch jitter 0–0.1 m/s stable.
 
 **BEDROOM 03 — Pyramid Air** (`bedroom03.level.ts`). Teaches: one
 launch, two catches — the trade-off is which catcher you buy. The line:

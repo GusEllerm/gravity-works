@@ -77,7 +77,7 @@ export function startSocketFromBuild(build: Build, s: number): Socket {
 /** A `ramp` sized so the car is released exactly `height` world-metres above
  *  the deck it lands on (measured from the release pose, the feel rigs'
  *  convention). */
-export function kitchenRamp(height: number, angleDeg = KITCHEN_GEOM.rampAngle): PieceParams {
+export function kitchenRamp(height: number, angleDeg: number = KITCHEN_GEOM.rampAngle): PieceParams {
   return {
     angle: angleDeg,
     blend: KITCHEN_GEOM.rampBlend,

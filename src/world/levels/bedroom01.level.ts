@@ -90,7 +90,8 @@ export const BEDROOM_GEOM = {
  *  than the 0.18 m lazy-line deck the stage-3 coherence pass proved, kept as
  *  this ladder's single seating (a tray seats a kind at ONE geometry). The
  *  04 rung is the deliberate exception and carries its own 0.3 m run-out
- *  (see its file). */
+ *  (see its file); the B2-redesigned 02 likewise seats its own 0.4 m decks
+ *  (`BEDROOM02_STRAIGHT`) — a mattress wants two spans, not five. */
 export const BEDROOM_STRAIGHT = 0.2;
 
 /** The cable dip: the deck STEPS DOWN for the cable and the `drop` piece's

@@ -114,7 +114,7 @@ export function kitchenSetPlacement(levelId: string): SetPlacement | null {
  * bed and pyramid. */
 const BEDROOM_ROWS: Record<string, readonly [number, number, number]> = {
   bedroom01: [1.0912, -0.41177, -0.15],
-  bedroom02: [1.0727, -0.47419, -0.15],
+  bedroom02: [1.25162, -0.48732, -0.15],
   bedroom03: [1.1825, -0.42567, -0.15],
   bedroom04: [1.2165, -0.44809, -0.15],
 };
