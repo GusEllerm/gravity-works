@@ -36,6 +36,23 @@ export interface SaveSettings {
    * v1 and needs no migration. `src/ui/callouts.ts` owns the read/write.
    */
   calloutsSeen?: string[];
+  /**
+   * Sound mix (stage 5): mute flag and volume (0..1) for `src/sound`.
+   * Same optional-field technique as `calloutsSeen` — `isSaveData` validates
+   * `settings` as an object and passes unknown keys through, so an absent
+   * `sound` means "defaults" (sound on, default volume) and the envelope
+   * stays v2: no schema bump, no migrade (the stage-5 brief reserves the
+   * version bump for F6's lane; the autosave-revision migration F6 wants can
+   * still take v3 without colliding with this key).
+   */
+  sound?: SoundSettings;
+}
+
+/** The `settings.sound` payload owned by `src/sound/sound.ts`. */
+export interface SoundSettings {
+  muted?: boolean;
+  /** Master volume, 0..1, riding UNDER the -12 dBFS mix ceiling. */
+  volume?: number;
 }
 
 /**
