@@ -242,6 +242,32 @@ export function garageSetPlacement(levelId: string): SetPlacement | null {
   return row ? { position: [row[0], row[1], row[2]], yaw: 0 } : null;
 }
 
+/** ---- porch (stage 5) -----------------------------------------------------
+ * The porch set is dressed around its deck (`DECK` in `src/sets/porch/data.ts`)
+ * and the campaign has NO porch rungs yet — the ladder crew follows the set.
+ * The table is therefore EMPTY: every level id returns null, which is the
+ * canonical-origin mount the `?set=porch` inspection entry uses, and the
+ * first porch rung will add its row exactly as the other five rooms did
+ * (centred on the run, back by an offset that clears the dress, deck 5 mm
+ * under the LOWEST authored finish deck, yaw 0 — the weave parallelogram
+ * must keep crossing the lane exactly as the ratified frames angle it, so
+ * the set's own light-bearing geometry does not rotate for a level).
+ * The handover constants the rungs will author against are set-side, not
+ * here: the sockets (`PORCH_SOCKET_FRAMES`: `door.in`/`door.out`/`step.out`),
+ * the flush deck height (`DECK_Y`), and the built-in-piece quota convention
+ * (`fixtureQuota` in `src/track/build.ts` — the set carries the ROOM; a
+ * rung's fixture multiset stays per-level data like every other room).
+ */
+const PORCH_ROWS: Record<string, readonly [number, number, number]> = {};
+
+/** The mount transform for one porch level id (null = no placement — today
+ *  every id, and the canonical-origin fallback the `?set=porch` inspection
+ *  entry uses). */
+export function porchSetPlacement(levelId: string): SetPlacement | null {
+  const row = PORCH_ROWS[levelId];
+  return row ? { position: [row[0], row[1], row[2]], yaw: 0 } : null;
+}
+
 /** The rigid transform of a placement (three users: the scene mount, the
  *  L03 socket seating, the guard boxes). */
 export function placementMatrix(p: SetPlacement): THREE.Matrix4 {

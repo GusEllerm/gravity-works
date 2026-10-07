@@ -93,7 +93,7 @@ sig = "8b4d61fa3cc9742e"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/world/setPlacement.ts"
-sig = "1c7761d52d50a9a2"
+sig = "cf1a547ff60f3d04"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -168,7 +168,7 @@ sig = "3422122b9708ccd8"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/world/setPlacement.ts"
-sig = "1c7761d52d50a9a2"
+sig = "cf1a547ff60f3d04"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -268,7 +268,7 @@ sig = "e30f378dcba417b3"
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
 target = "src/dev/cameras.ts"
-sig = "510190c1b1f2cc56"
+sig = "9c5eab0c8bc6c469"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -633,7 +633,7 @@ sig = "30af55b32a0f0f22"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/boot.ts"
-sig = "011df5ba88f1c831"
+sig = "0f7cb5cf084adf16"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -688,22 +688,22 @@ sig = "657bd550d4a7c899"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/sets/index.ts"
-sig = "075fcdd1b5a7e3a2"
+sig = "fa1d6873574ee080"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/ui/callouts.ts"
-sig = "f031673852534133"
+sig = "befa699b906bc793"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/world/setPlacement.ts"
-sig = "15cd2be53ac85fa6"
+sig = "cf1a547ff60f3d04"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "tests/e2e/bedroom-set.spec.ts"
-sig = "2b5cfe5d6541e8e3"
+sig = "69776ca83ac7634e"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -738,7 +738,7 @@ sig = "5e74818ce3a61832"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/sets/index.ts"
-sig = "075fcdd1b5a7e3a2"
+sig = "fa1d6873574ee080"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -1158,7 +1158,7 @@ sig = "8b4d61fa3cc9742e"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/setPlacement.ts"
-sig = "1c7761d52d50a9a2"
+sig = "cf1a547ff60f3d04"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1228,7 +1228,12 @@ sig = "9599dbdb90965a2b"
 [[bindings]]
 doc = "docs/vault/Reference/Canonical Cameras.md"
 target = "src/dev/cameras.ts"
-sig = "510190c1b1f2cc56"
+sig = "9c5eab0c8bc6c469"
+
+[[bindings]]
+doc = "docs/vault/Reference/Canonical Cameras.md"
+target = "src/sets/porch/data.ts"
+sig = "c6f64cb86daf87db"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"

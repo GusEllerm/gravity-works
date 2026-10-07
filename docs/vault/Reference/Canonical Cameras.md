@@ -44,5 +44,6 @@ fork these numbers elsewhere.
 ## Per-set status
 
 - Kitchen (hero set): defined provisionally in `src/dev/cameras.ts` (numbers above); moves into the kitchen level file with the stage-3 art slice.
-- Bathroom, bedroom, garden, porch: unassigned — each Environment Artist adds them with their set (stage 4/5).
+- Bathroom, bedroom: unassigned — each Environment Artist adds them with their set (stage 4/5).
 - Garage: ships a single `establishing` (side) row in `SET_SHOTS` in `src/dev/cameras.ts` (stage 4 production side-rig round, Review 2026-10-09); its hero/floor shots ride the provisional fallback so the ratified stills re-render byte-identical.
+- Porch: ships all three rigs, sourced from `CAMERAS` in `src/sets/porch/data.ts` (stage 5, judging port condition 6). The `establishing` row copies the provisional kitchen numbers VERBATIM (the ratified establishing-a frame was shot through them, so the production build camera re-shoots them byte-comparably — census medTone 152, 0.000 % darks/blackish); the `hero` is the new canonical frame — the threshold composition, standing past the stoam and looking back through the rail's step-break at the door-mouth + weave + lane (the ratified hero rig's "frames decks, not the threshold" demerit, fixed); the `floor` lives 45 mm over the 5 mm flush deck (the 35 mm law) looking up the lane into the door mouth.

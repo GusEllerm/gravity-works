@@ -54,6 +54,17 @@ export function isCanonicalShot(value: string): value is CanonicalShot {
 // horizon, floor lives 35 mm over the flush deck (the floor-rig law).
 import { CAMERAS as GARDEN_CAMERAS } from '../sets/garden/data.ts'
 
+// The PORCH ships its own canonical rigs (stage 5, Environment Artist —
+// the judging's port condition 6: the hero re-aimed at the door-mouth +
+// step is the fix the exploration asked production to make, the garden
+// precedent again: hero frames the story, floor obeys the 35 mm law). One
+// deliberate asymmetry: the establishing row copies the PROVISIONAL kitchen
+// numbers VERBATIM — the ratified establishing-a frame was shot through
+// them, and a production port re-shoots the ratified build camera byte-
+// comparably (the garage precedent: only moved rows differ). The hero and
+// floor rows are the new porch framings.
+import { CAMERAS as PORCH_CAMERAS } from '../sets/porch/data.ts'
+
 const SET_SHOTS: Record<string, Partial<Record<CanonicalShot, CameraRig>>> = {
   // The GARAGE ships only its SIDE rig (stage 4 production round — the AD's
   // one knob on Review 2026-10-09: re-aim the establishing rig). The old rig
@@ -75,6 +86,11 @@ const SET_SHOTS: Record<string, Partial<Record<CanonicalShot, CameraRig>>> = {
     establishing: { ...GARDEN_CAMERAS.establishing, position: [...GARDEN_CAMERAS.establishing.position], target: [...GARDEN_CAMERAS.establishing.target] },
     hero: { ...GARDEN_CAMERAS.hero, position: [...GARDEN_CAMERAS.hero.position], target: [...GARDEN_CAMERAS.hero.target] },
     floor: { ...GARDEN_CAMERAS.floor, position: [...GARDEN_CAMERAS.floor.position], target: [...GARDEN_CAMERAS.floor.target] },
+  },
+  'porch-set': {
+    establishing: { ...PORCH_CAMERAS.establishing, position: [...PORCH_CAMERAS.establishing.position], target: [...PORCH_CAMERAS.establishing.target] },
+    hero: { ...PORCH_CAMERAS.hero, position: [...PORCH_CAMERAS.hero.position], target: [...PORCH_CAMERAS.hero.target] },
+    floor: { ...PORCH_CAMERAS.floor, position: [...PORCH_CAMERAS.floor.position], target: [...PORCH_CAMERAS.floor.target] },
   },
 }
 

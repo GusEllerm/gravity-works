@@ -46,6 +46,7 @@ import {
   bathroomSetPlacement,
   gardenSetPlacement,
   garageSetPlacement,
+  porchSetPlacement,
 } from '../world/setPlacement.ts'
 
 export interface SetInstanceSocket {
@@ -83,6 +84,34 @@ export interface SetRegistration {
   build(T: typeof THREE_NS, opts?: { rig?: import('../render/lighting.ts').LightingRig }): Promise<SetInstance>
   /** Where the set mounts for one level id (null = canonical origin). */
   placement(levelId: string): SetPlacement | null
+}
+
+/** The PORCH registration (stage 5, Environment Artist — the sixth room and
+ *  the campaign's THRESHOLD). Exported as a named row (the task's `PORCH_SET`
+ *  handle: the ladder crew and any future wiring address it directly) and
+ *  mounted in `SETS.porch` like every other room. No levels yet — the
+ *  placement table is empty and every mount is the canonical-origin
+ *  fallback until the porch rungs land (the ladder crew follows this set);
+ *  the handover (sockets `door.in`/`door.out`/`step.out`, the shell/dress
+ *  split that keeps the door mouth buildable, the empty hazard table, and
+ *  the fixtures-quota recommendation) is stated once in
+ *  `src/sets/porch/data.ts` and in the stage-5 session log. */
+export const PORCH_SET: SetRegistration = {
+  id: 'porch',
+  // the RATIFIED variant-A tokens (the slate-storm dominant + lantern amber
+  // are the token row the exploration judged against — `src/render/tokens.ts`;
+  // the shell's background reads this row; the renders' flat SKY value is
+  // set data, the garden pattern)
+  tokens: SET_TOKENS.porch,
+  async build(T, opts = {}) {
+    const { buildPorchSet } = await import('./porch/index.ts')
+    const set = buildPorchSet(T, opts)
+    return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.ground, staging: set.staging }
+  },
+  // no porch rungs exist yet: every level id returns null (the canonical-
+  // origin mount the `?set=porch` inspection entry uses), and the table
+  // fills per rung exactly as the other five rooms'
+  placement: porchSetPlacement,
 }
 
 export const SETS: Record<string, SetRegistration> = {
@@ -161,6 +190,7 @@ export const SETS: Record<string, SetRegistration> = {
     // canonical-origin fallback.
     placement: garageSetPlacement,
   },
+  porch: PORCH_SET,
 }
 
 export function isRegisteredSet(id: string | null): id is string {
