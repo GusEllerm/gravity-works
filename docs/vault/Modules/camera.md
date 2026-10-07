@@ -248,7 +248,16 @@ Boot keeps the witness in `endHold` so the build-view damping tick
 re-solves the SAME cleared pose instead of overwriting the eye lift;
 Retry/Launch/edit clear it and success keeps the cup framing unchanged.
 Proved per-line in
-`tests/unit/camera.test.ts` (goal-framing + end-hold block).
+`tests/unit/camera.test.ts` (goal-framing + end-hold block), bitten by
+`tests/unit/build-camera.test.ts` (a wall containing the wide hold's own
+eye: same solve without the clearance is buried, with it is legal and the
+death stays the subject), and gated on the BUILT page by the filmstrip's
+L04 FAILURE test — the par line stripped back through the shipped Remove
+button, sampled every 100 ms across the final second AND the end-hold
+window after the terminal step (no frame >60 % single-colour — the
+wall-bury bar) and the settled car projected through the live camera
+(IN FRONT of the eye, inside the canvas) — the death the player must read
+is in the frame the verdict lands on.
 
 ## Stage 4 round 4: the build view (playtest Q, "one fixed angle")
 

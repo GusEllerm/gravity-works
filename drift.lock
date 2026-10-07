@@ -193,7 +193,7 @@ sig = "4bf12de87802a90c"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/filmstrip.spec.ts"
-sig = "2c4af38de1884d09"
+sig = "55c498ca1c60bd69"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -203,7 +203,7 @@ sig = "0cb99e5ae642850a"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/unit/build-camera.test.ts"
-sig = "a65bafd954ab4ea5"
+sig = "20b9d095e17ced76"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"

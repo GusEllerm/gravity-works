@@ -150,3 +150,60 @@ describe('build view: yaw-only geometry — no zoom, no roll, no pitch', () => {
     expect(cam.position.distanceTo(p0)).toBeCloseTo(Math.hypot(view.panX, view.panY), 9);
   });
 });
+
+describe('death hold: the failure end-hold frames the death, never the wall', () => {
+  it('the wall case: the same wide solve, wall ON, cannot bury the eye', async () => {
+    const { frameCamera } = await import('../../src/boot.ts');
+    const { frameDeathHold } = await import('../../src/camera/build-camera.ts');
+    const scene = sceneOf();
+    const raw = new THREE.PerspectiveCamera(35, 960 / 540, 0.01, 20);
+    frameCamera(raw, scene, null, null);
+    const death = { x: 1.6, y: -0.9, z: 0.4 }; // a fail in the sink corner
+    const bare = new THREE.PerspectiveCamera(35, 960 / 540, 0.01, 20);
+    const held = new THREE.PerspectiveCamera(35, 960 / 540, 0.01, 20);
+    frameDeathHold(bare, scene, { death, solids: [], view: null });
+    // THE PEACH WALL: a solid that contains the wide hold's own eye point
+    // (what R's failure framing sat inside). The clearance rule MUST move
+    // the eye out of it — the same solve with the wall reads legal.
+    const wall = {
+      min: [
+        bare.position.x - 0.5,
+        bare.position.y - 0.2,
+        bare.position.z - 0.5,
+      ] as [number, number, number],
+      max: [
+        bare.position.x + 0.5,
+        bare.position.y + 0.6,
+        bare.position.z + 0.5,
+      ] as [number, number, number],
+    };
+    expect(boxHas(bare.position, wall)).toBe(true); // the raw pose is buried
+    frameDeathHold(held, scene, { death, solids: [wall], view: null });
+    expect(boxHas(held.position, wall)).toBe(false);
+    expect(held.position.y).toBeGreaterThanOrEqual(wall.max[1] + 0.04 - 1e-6);
+    // and the DEATH remains the subject of the lifted hold
+    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(held.quaternion);
+    const toDeath = new THREE.Vector3(death.x, death.y, death.z).sub(held.position).normalize();
+    expect(Math.acos(Math.min(1, fwd.dot(toDeath)))).toBeLessThan(0.6);
+  });
+
+  it('a flung-off-world death does not inflate the framing into the void', async () => {
+    const { frameDeathHold } = await import('../../src/camera/build-camera.ts');
+    const scene = sceneOf();
+    const cam = new THREE.PerspectiveCamera(35, 960 / 540, 0.01, 20);
+    frameDeathHold(cam, scene, { death: { x: 4000, y: -4000, z: 4000 }, solids: [], view: null });
+    expect(Math.hypot(cam.position.x, cam.position.y, cam.position.z)).toBeLessThan(20);
+  });
+
+  it('no solids, no track: still a finite pose (an empty build cannot crash the hold)', async () => {
+    const { frameDeathHold } = await import('../../src/camera/build-camera.ts');
+    const cam = new THREE.PerspectiveCamera(35, 960 / 540, 0.01, 20);
+    frameDeathHold(cam, new THREE.Scene(), { death: { x: 0.2, y: 0, z: 0.1 }, solids: [], view: null });
+    expect(Number.isFinite(cam.position.x + cam.position.y + cam.position.z)).toBe(true);
+    expect(Number.isFinite(cam.quaternion.x + cam.quaternion.y + cam.quaternion.z + cam.quaternion.w)).toBe(true);
+  });
+});
+
+function boxHas(p: THREE.Vector3, b: { min: [number, number, number]; max: [number, number, number] }): boolean {
+  return p.x > b.min[0] && p.x < b.max[0] && p.y > b.min[1] && p.y < b.max[1] && p.z > b.min[2] && p.z < b.max[2];
+}
