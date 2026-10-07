@@ -33,3 +33,6 @@ docs/vault/.obsidian/workspace-mobile.json
 docs/vault/.trash/
 test-results/
 playwright-report/
+
+# Feel-engineer local probes (untracked scratch)
+.scratch/

@@ -18,7 +18,7 @@ import * as THREE from 'three';
 import { FIXED_DT, SIM_SCALE } from './physics/sim.ts';
 import { getLevel } from './world/levels/feeltrack.level.ts';
 import { KITCHEN01 } from './world/levels/kitchen01.level.ts';
-import { KITCHEN02 } from './world/levels/kitchen02.level.ts';
+import { KITCHEN02, kitchen02ArcBuild } from './world/levels/kitchen02.level.ts';
 import { KITCHEN03 } from './world/levels/kitchen03.level.ts';
 import { KITCHEN04 } from './world/levels/kitchen04.level.ts';
 import { KITCHEN05, KITCHEN_SANDBOX } from './world/levels/kitchen05.level.ts';
@@ -60,7 +60,7 @@ import { CAMPAIGN_LADDER, nextInCampaign } from './world/campaign.ts';
 import { createLevelSelect } from './ui/levelselect.ts';
 import type { SetInstance } from './sets/index.ts';
 import { placeSet } from './world/setPlacement.ts';
-import { KitRig } from './feel/kittrack.ts';
+import { KitRig, finishCapture } from './feel/kittrack.ts';
 import { RunCamera } from './camera/run-camera.ts';
 import type { RunCameraSolid } from './camera/run-camera.ts';
 import type { PieceKind, PieceParams } from './track/pieces.ts';
@@ -160,6 +160,19 @@ export const LADDER: readonly string[] = CAMPAIGN_LADDER;
 export function nextLevelId(id: string): string | null {
   return nextInCampaign(id);
 }
+
+/** A choice level's ALTERNATE authored line, addressed by `?build=alt` —
+ *  the filmstrip camera gate's second rail (stage 4 watchability, playtest
+ *  M: "the whole far half of Two Ways stays off-frame" — both LANES of a
+ *  choice level are framed-tested, not just the one the old strip happened
+ *  to shoot). The line DATA is the level module's own export (unchanged
+ *  here — this is a debug-addressing table, the same kind as the `?level=`
+ *  registry above); a level with no entry has no alt line and `?build=alt`
+ *  falls back to its reference build. Never a runtime path: the builder is
+ *  the runtime, and no param forges a star or a save. */
+const ALT_LINES: Readonly<Record<string, () => Build>> = {
+  kitchen02: kitchen02ArcBuild,
+};
 
 /** Geometry of the tray pieces: the LEVEL's tuned parameters per kind,
  *  taken from that kind's FIRST placement in the par build (the kitchen
@@ -469,14 +482,32 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   let rig: KitRig | null = null;
   let runCam: RunCamera | null = null;
   let runCamActive = false;
+  // the build's finish-cup capture centre (null when the build has no cup):
+  // the run camera's finish witness AND the static framing's goal bias
+  let framingFocus: THREE.Vector3 | null = null;
   // stage-3 run-end layer: the evidence recorder feeds the physics note, the
   // panel only shows on a TERMINAL status (§5.11: no panels during a run)
   const recorder = createRunRecorder();
   const resultPanel = createResultPanel(stage);
   let lastStatus: RunStatus = 'idle';
   // the build the game starts in: fixtures only (the player builds the
-  // tray pieces); ?build=par re-mounts the full reference build for tests
-  const startBuild = params.get('build') === 'par' ? level.placeholderBuild() : initialBuild(level);
+  // tray pieces); ?build=par re-mounts the full reference build for tests,
+  // and ?build=alt the level's ALTERNATE authored line (L02's arc route —
+  // the camera's filmstrip gate frames the second rail too, playtest M).
+  // The alt line is ADDRESSED here from the level module's existing export
+  // (an addressing table, not a level-data edit — L02's data is unchanged).
+  const alt = ALT_LINES[level.id];
+  const startBuild =
+    params.get('build') === 'par'
+      ? level.placeholderBuild()
+      : params.get('build') === 'alt' && alt
+        ? alt()
+        : initialBuild(level);
+  // the build the CURRENT world runs (set in `rebuild`): its piece KINDS
+  // make the failure note's tails build-aware (a lip tip when no lip was
+  // ever placed reads as noise — playtest M; UI-side only, the physics and
+  // the hash never see it)
+  let currentBuild = startBuild;
   const tray = levelTray(level);
   let placedCount = startBuild.pieces.length;
   // the hazard tally the result screen reports: wheel contacts whose sampled
@@ -564,7 +595,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     acc = 0;
     hazardsTouched = 0;
     runCamActive = false;
-    if (w.scene) frameCamera(camera, w.scene);
+    if (w.scene) frameCamera(camera, w.scene, framingFocus);
     resultPanel.hide();
   }
 
@@ -584,6 +615,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
 
   async function rebuild(build: Build): Promise<void> {
     const next = await World.create(level, build, { visuals: true });
+    currentBuild = build;
     // the set group belongs to the shell, not to any one world — pull it out
     // before dispose() traverses (it disposes every mesh material it finds)
     setInstance?.group.removeFromParent();
@@ -606,9 +638,22 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     // rail to follow (KitRig needs at least one spline), so the static
     // table framing owns those
     rig = build.pieces.length > 0 ? new KitRig(build, SIM_SCALE) : null;
-    runCam = rig && rig.length > 1e-6 ? new RunCamera(rig, 0, { solids: camSolids }) : null;
+    // the finish WITNESS's rail arc (the cup's capture centre projected onto
+    // this build's rail): the camera's finish fade counts down to the CUP,
+    // not to the rail terminus — L02's rail runs a curve past its cup, and
+    // the rail-keyed fade never fired there (playtest M, run-camera.ts).
+    // The same capture centre is the STATIC framing's goal bias (frameCamera).
+    const cup = finishCapture(build);
+    framingFocus = cup ? cup.center.clone() : null;
+    runCam =
+      rig && rig.length > 1e-6
+        ? new RunCamera(rig, 0, {
+            solids: camSolids,
+            finishArc: cup ? rig.nearestArcInfo(cup.center).arc : undefined,
+          })
+        : null;
     runCamActive = false;
-    frameCamera(camera, next.scene);
+    frameCamera(camera, next.scene, framingFocus);
     statusLine.textContent = 'ready';
   }
 
@@ -653,7 +698,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // ("camera buried inside the floor" — playtest B — was the run
       // camera's last pose, kept forever)
       runCamActive = false;
-      frameCamera(camera, w.scene);
+      // the END-HOLD framing: the static table framing re-solved with the
+      // car's FINAL world position as part of the subject (frameCamera),
+      // so the wide end-of-run shot keeps car and cup in one frame under
+      // the verdict panel — never a chase cut-out that hides the death
+      // spot the player most needs to read (playtest M/N item 7).
+      frameCamera(camera, w.scene, framingFocus, w.carPose(0).pos);
       const result: RunResult = {
         status: w.status,
         time: w.time,
@@ -665,7 +715,13 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // before recordStars below writes this run's best, so a re-run in the
       // same session counts as one (see outcomeLines in src/ui/result.ts).
       const bestStarsBefore = loadSave().progress.stars[level.id] ?? 0;
-      const model = resultModel(result, parFor(level.id, level.par), recorder.evidence(), bestStarsBefore);
+      const model = resultModel(
+        result,
+        parFor(level.id, level.par),
+        recorder.evidence(),
+        bestStarsBefore,
+        new Set(currentBuild.pieces.map((p) => p.def)),
+      );
       resultPanel.show(model);
       // §9.2 progress persists: a finished run's stars are the save's best
       // for this level (a failure records nothing); this is what opens the
@@ -726,15 +782,50 @@ async function buildGameSet(reg: SetRegistration, levelId: string): Promise<SetI
  * past the counter into a cream void (deployed-page finding 1). The set is
  * visible scenery, not the framing subject.
  */
-function frameCamera(camera: THREE.PerspectiveCamera, scene: THREE.Scene | null): void {
+export function frameCamera(
+  camera: THREE.PerspectiveCamera,
+  scene: THREE.Scene | null,
+  focus: THREE.Vector3 | null = null,
+  extra: { x: number; y: number; z: number } | null = null,
+): void {
   const track = scene?.getObjectByName('track');
   const box = track ? new THREE.Box3().setFromObject(track) : new THREE.Box3();
+  if (extra) {
+    // the END-HOLD pass boxes the run's LAST SEEABLE POINT (where the car
+    // came to rest — a fallen car settles off the track's box, below a
+    // ledge or past a gap) as part of the subject, so the verdict panel
+    // never lands over an off-frame death spot (playtest M: "the result
+    // panel hides where the car died"). The point is CLAMPED into the
+    // track's neighbourhood — a wild coordinate (a car flung off-world)
+    // may not inflate the table framing into the same cream void the
+    // scene-wide box used to produce.
+    framingScratch.set(extra.x, extra.y, extra.z);
+    box.expandByScalar(0.6).clampPoint(framingScratch, framingScratch);
+    box.expandByPoint(framingScratch);
+  }
   const center = box.isEmpty() ? new THREE.Vector3() : box.getCenter(new THREE.Vector3());
   const span = box.isEmpty() ? 0.5 : Math.max(...box.getSize(new THREE.Vector3()).toArray());
   const d = Math.max(1.2, span * 1.4);
+  // THE GOAL IS IN THE SUBJECT: the static framing biases its look-at 35 %
+  // of the way from the track's centre toward the build's FINISH CUP (the
+  // capture centre, `finishCapture`) — an establishing shot that puts the
+  // GOAL in the middle third, not at the edge where a fresh player cannot
+  // find it (playtest N: "never found the finishCup on screen once in
+  // either level", "the build camera never frames the cup"; measured: at
+  // zero bias the cup captured at |ndc| 0.43/0.46 on L01/L04 — geometrically
+  // in frame, perceptually a few pixels in the corner). At 0.35 the cup
+  // captures at |ndc| <= 0.28 (inside the middle thirds) on every ladder
+  // rung while every track-box corner stays at |ndc| <= 0.49 — the whole
+  // build still fits with room. A level with no cup (a hazard sandbox, the
+  // feel rig) frames its track exactly as before.
+  if (focus && !box.isEmpty()) {
+    center.addScaledVector(framingScratch.copy(focus).sub(center), 0.35);
+  }
   camera.position.set(center.x + d * 0.7, center.y + d * 0.55, center.z + d * 0.9);
   camera.lookAt(center);
 }
+
+const framingScratch = new THREE.Vector3();
 
 /** Plain-text run status; the aria-live line the run reports through. The
  *  hash is NOT here (playtest E: engineer trivia on the player's line) — it
