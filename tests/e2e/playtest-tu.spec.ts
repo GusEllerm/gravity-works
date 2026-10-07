@@ -381,7 +381,7 @@ test('T+U 2: the hint states the home chord once, honestly', async ({ page }) =>
 
 test('T+U 3: the finish cup is inside the build framing on every campaign rung', async ({ page }) => {
   test.slow()
-  expect(CAMPAIGN_LADDER.length).toBe(21)
+  expect(CAMPAIGN_LADDER.length).toBe(26) // 21 + the five porch rungs (stage-5 porch ladder)
   for (const id of CAMPAIGN_LADDER) {
     for (const build of ['', '&build=par']) {
       await page.goto(`/?level=${id}${build}`)

@@ -363,6 +363,26 @@ export function placedKindsFor(build: Build): Set<PieceKind> {
   return new Set(build.pieces.map((p) => p.def));
 }
 
+/** Kinds with STOCK LEFT — tray count minus the copies the build placed
+ *  (stage-5 B2 pass 2, playtest AA). The drive-off note tail may name
+ *  ONLY these: a kind the tray still holds is one press away, so "add a
+ *  X" is always true for it, and a kind used up or absent can never make
+ *  the list — the strictest ADD-only reading of the three-way phrasing
+ *  rule. Six different wrong builds then print six different honest
+ *  lists instead of one undifferentiated line. UI-side only, like the
+ *  other two sets — the physics and the run hash never see it. */
+export function stockedKindsFor(
+  build: Build,
+  tray: Partial<Record<PieceKind, number>> | undefined,
+): Set<PieceKind> {
+  const out = new Set<PieceKind>();
+  if (!tray) return out;
+  for (const k of Object.keys(tray) as PieceKind[]) {
+    if ((tray[k] ?? 0) - build.pieces.filter((p) => p.def === k).length > 0) out.add(k);
+  }
+  return out;
+}
+
 export function boot(root: HTMLElement): void {
   // a bare fragment change is a new run request on a static host: reload into it
   window.addEventListener('hashchange', () => window.location.reload())
@@ -1386,8 +1406,11 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // "flatten the landing" with no landing in the tray) — see
       // `actionableKindsFor` — plus the PLACED kinds that PHRASE the tails
       // (round-5 playtest W: a tray-only kind must be told to ADD, not to
-      // fix a piece the build never had) — see `placedKindsFor`. UI-side
-      // only; physics and the hash never see either set.
+      // fix a piece the build never had) — see `placedKindsFor` — plus the
+      // STOCK-LEFT kinds that carry the drive-off tail (stage-5 B2 pass 2,
+      // playtest AA: six builds, one undifferentiated note) — see
+      // `stockedKindsFor`. UI-side only; physics and the hash never see
+      // any of the sets.
       const model = resultModel(
         result,
         parFor(level.id, level.par),
@@ -1395,6 +1418,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         bestStarsBefore,
         actionableKindsFor(currentBuild, tray),
         placedKindsFor(currentBuild),
+        stockedKindsFor(currentBuild, tray),
       );
       resultPanel.show(model);
       // the run's OUTCOME is an audio event exactly once per run: the

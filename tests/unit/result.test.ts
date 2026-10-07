@@ -261,3 +261,78 @@ describe('tail phrasing tracks placed vs tray-only (playtest W round5)', () => {
     expect(note).toBe('fell off nose-first');
   });
 });
+
+/**
+ * THE DRIVE-OFF TAIL (stage-5 B2 pass 2, playtest AA: six different
+ * bedroom02 builds, one undifferentiated "the line let go before the cup"
+ * — "no advice text differentiated my six builds"). The plain fell branch
+ * now names the kinds with TRAY STOCK LEFT (`stockedKindsFor`, plumbed by
+ * boot like the other sets). The gate is the strictest reading of the
+ * three-way rule: a kind with stock left is one press away, so the tail
+ * is ALWAYS add-shaped, and a kind used up or absent can never appear.
+ */
+describe('drive-off tail names the tray stock, per build (playtest AA, B2 pass 2)', () => {
+  const fell = { status: 'fell', time: 1.8, piecesUsed: 3, hazardsTouched: 0 } as const;
+  // no other witness fires — this is the plain drive-off evidence
+  const flat = emptyEvidence(0);
+  const HEAD = 'fell off — the line let go before the cup';
+
+  test("AA's bedroom02 families print DIFFERENT lines (the differentiation the wall demanded)", () => {
+    // deck-only (three flats): both crossing pieces still in the tray
+    expect(physicsNote(fell, flat, null, null, new Set(['drop', 'landing']))).toBe(
+      `${HEAD}; add a drop or a landing`,
+    );
+    // sink-at-start (landing + one straight placed): deck + step remain
+    expect(physicsNote(fell, flat, null, null, new Set(['straight', 'drop']))).toBe(
+      `${HEAD}; add a straight or a drop`,
+    );
+    // almost-right (pillow line minus one run-out deck): the deck is all
+    // the tray holds — the lesson lands as exactly one honest ADD
+    expect(physicsNote(fell, flat, null, null, new Set(['straight']))).toBe(`${HEAD}; add a straight`);
+  });
+
+  test('a spent tray gets NO tail (nothing honest to add)', () => {
+    expect(physicsNote(fell, flat, null, null, new Set())).toBe(HEAD);
+    // every tray piece placed (whole-tray deaths): the head stands alone
+    expect(physicsNote(fell, flat, null, null, new Set<PieceKind>())).toBe(HEAD);
+  });
+
+  test('unknown stock (shared/replay pages) keeps the shipped head exactly', () => {
+    expect(physicsNote(fell, flat)).toBe(HEAD);
+  });
+
+  test('gate sweep: the tail never names a kind without stock, always ADD-shaped', async () => {
+    const { initialBuild, stockedKindsFor, actionableKindsFor } = await import('../../src/boot.ts');
+    const { KITCHEN02 } = await import('../../src/world/levels/kitchen02.level.ts');
+    const tray = { straight: 2, gapLip: 1, drop: 1 };
+    const base = initialBuild(KITCHEN02);
+    const stocked = stockedKindsFor(base, tray);
+    // the stock set is a subset of the actionable set by construction
+    expect([...stocked].every((k) => actionableKindsFor(base, tray).has(k))).toBe(true);
+    expect(stocked.has('landing')).toBe(false); // not in this tray at all
+    const note = physicsNote(fell, flat, actionableKindsFor(base, tray), new Set(['ramp']), stocked);
+    expect(note.toLowerCase()).not.toContain('landing');
+    expect(note.toLowerCase()).not.toContain('flatten');
+    expect(note.toLowerCase()).not.toContain('lower');
+    expect(note).toBe(`${HEAD}; add a straight, a drop or a lip`);
+    // and placing the spares drains the list honestly, one kind at a time
+    const placedOne = stockedKindsFor(
+      { ...base, pieces: [...base.pieces, { def: 'drop', params: {}, transform: base.pieces[0]!.transform, seq: 9 }] },
+      tray,
+    );
+    expect(placedOne.has('drop')).toBe(false);
+    expect(placedOne.has('straight')).toBe(true);
+  });
+
+  test('stockedKindsFor counts STOCK, not placement: a placed kind with spares stays', async () => {
+    const { stockedKindsFor } = await import('../../src/boot.ts');
+    const { BEDROOM02 } = await import('../../src/world/levels/bedroom02.level.ts');
+    // B6's shape: pillow line minus the last deck — straight 2 of 3 placed
+    const par = BEDROOM02.parBuild();
+    const b6 = { ...par, pieces: par.pieces.filter((p) => !(p.def === 'straight' && p.seq === 4)) };
+    const stocked = stockedKindsFor(b6, BEDROOM02.tray);
+    expect(stocked.has('straight')).toBe(true); // the spare deck is the fix
+    expect(stocked.has('landing')).toBe(false); // the pillow is used up
+    expect(stocked.has('drop')).toBe(true); // the step never placed
+  });
+});
