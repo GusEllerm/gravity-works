@@ -48,11 +48,13 @@ import {
   type Pose,
   type WheelSupport,
 } from '../physics/car.ts';
-import { reify, type Build, type PlacedPiece } from '../track/build.ts';
+import { reify, fixtureQuota, type Build, type PlacedPiece } from '../track/build.ts';
 import { ROLL_COEF } from '../feel/run.ts';
 import { HazardField, type HazardZone } from './hazards.ts';
-import { PIECES, type PieceDef } from '../track/pieces.ts';
-import { TRACK_FRICTION } from '../track/material.ts';
+import { PIECES, type PieceDef, type PieceKind } from '../track/pieces.ts';
+import { FIXTURE_SIGNAL, TRACK_FRICTION } from '../track/material.ts';
+import { DECK_HALF_WIDTH } from '../track/cross-section.ts';
+import { TrackSpline } from '../track/spline.ts';
 import { transformSocket } from '../track/socket.ts';
 import { GLOBAL_TOKENS } from '../render/tokens.ts';
 import type { Level } from './level.ts';
@@ -224,21 +226,100 @@ function seededHash(seed: number): number {
 }
 
 /** Plain-material swept meshes for a build (shared by the scene and the
- * worldsmoke harness scene). One group, world metres, no lights baked in. */
-export function buildTrackMeshes(build: Build): THREE.Group {
+ * worldsmoke harness scene). One group, world metres, no lights baked in.
+ *
+ * FIXTURE READABILITY SIGNAL (stage 4, playtest Q handoff): pass the level's
+ * `fixtures` table and every fixture-piece occurrence (same quota rule the
+ * boot mount uses, `fixtureQuota`) wears the shared treatment — its deck/
+ * shell materials carry `userData[FIXTURE_SIGNAL.key]` and its deck gets a
+ * narrow lighter-orange centreline inlay. Geometry, hashes and tray pieces
+ * are untouched; without the table (share cards, worldsmoke) the build
+ * renders exactly as before. */
+export interface TrackMeshOptions {
+  fixtures?: Partial<Record<PieceKind, number>>;
+}
+
+/** Half-width of the deck inlay stripe — a narrow inlay (45 % of the deck's
+ *  running surface), never a repaint (Art Bible §Color: one accent read per
+ *  surface; the signal must not fight the room palette). */
+const INLAY_HALF_WIDTH = DECK_HALF_WIDTH * 0.45;
+/** Inlay lift above the deck surface, metres — clear of z-fighting at the
+ *  canonical cameras' depth range, low enough to read as flush plastic. */
+const INLAY_LIFT = 0.0008;
+
+/** The inlay ribbon for one piece spline (piece-local space): a flat strip
+ *  along the centreline over every solid run — gaps stay empty, the stripe
+ *  never bridges a void the car flies. */
+function deckInlayGeometry(spline: TrackSpline): THREE.BufferGeometry {
+  const frames = spline.stationFrames();
+  const pos: number[] = [];
+  const side = new THREE.Vector3();
+  const edge = (f: { pos: THREE.Vector3; tangent: THREE.Vector3; up: THREE.Vector3 }, sign: number) =>
+    f.pos
+      .clone()
+      .addScaledVector(f.up, INLAY_LIFT)
+      .addScaledVector(side.crossVectors(f.tangent, f.up).normalize(), sign * INLAY_HALF_WIDTH);
+  for (const run of spline.solidRuns()) {
+    for (let r = run.start; r < run.end; r++) {
+      const a0 = edge(frames[r]!, -1);
+      const a1 = edge(frames[r]!, 1);
+      const b0 = edge(frames[r + 1]!, -1);
+      const b1 = edge(frames[r + 1]!, 1);
+      pos.push(a0.x, a0.y, a0.z, b1.x, b1.y, b1.z, b0.x, b0.y, b0.z);
+      pos.push(a0.x, a0.y, a0.z, a1.x, a1.y, a1.z, b1.x, b1.y, b1.z);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/** A clone of a shared plain material carrying the fixture signal flag (and
+ *  optionally the inlay color + flat-sheet double side). `userData` is the
+ *  unit-testable half. */
+function signalized(base: THREE.Material, color?: string): THREE.Material {
+  const mat = base.clone();
+  if (color !== undefined) {
+    (mat as THREE.MeshLambertMaterial).color.set(color);
+    mat.side = THREE.DoubleSide; // the ribbon is a flat sheet — never a culled face
+    // bias the inlay's depth toward the camera so it always wins over the
+    // coplanar deck it sits 0.8 mm above (depth precision, not lift, decides
+    // which one a far pixel sees)
+    mat.polygonOffset = true;
+    mat.polygonOffsetFactor = -1;
+    mat.polygonOffsetUnits = -1;
+  }
+  mat.userData[FIXTURE_SIGNAL.key] = 'deck-inlay';
+  return mat;
+}
+
+export function buildTrackMeshes(build: Build, options: TrackMeshOptions = {}): THREE.Group {
   const group = new THREE.Group();
   // named so the shell's static framing can box the TRACK alone (never the
   // set or the ground plane the scene also carries) — see boot.frameCamera
   group.name = 'track';
   const deck = new THREE.MeshLambertMaterial({ color: GLOBAL_TOKENS.trackOrange });
   const shell = new THREE.MeshLambertMaterial({ color: '#dce6ea', side: THREE.DoubleSide });
+  const isFixture = fixtureQuota(options.fixtures ?? {});
   for (const piece of reify(build).pieces) {
     const placed = new THREE.Group();
     placed.applyMatrix4(piece.transform);
     const def = PIECES[piece.def];
-    const sweep = new THREE.Mesh(def.spline(piece.params).toMesh(), deck);
+    const fixture = isFixture(piece.def);
+    const deckMat = fixture ? signalized(deck) : deck;
+    const shellMat = fixture ? signalized(shell) : shell;
+    const sweep = new THREE.Mesh(def.spline(piece.params).toMesh(), deckMat);
     placed.add(sweep);
-    for (const extra of def.extraGeometries(piece.params)) placed.add(new THREE.Mesh(extra, shell));
+    for (const extra of def.extraGeometries(piece.params)) placed.add(new THREE.Mesh(extra, shellMat));
+    if (fixture) {
+      const inlay = new THREE.Mesh(
+        deckInlayGeometry(def.spline(piece.params)),
+        signalized(deck, FIXTURE_SIGNAL.inlayColor),
+      );
+      inlay.name = 'fixture-inlay';
+      placed.add(inlay);
+    }
     group.add(placed);
   }
   return group;
@@ -354,7 +435,11 @@ export class World {
       const key = new THREE.DirectionalLight(0xffffff, 1.1);
       key.position.set(1, 2, 1.5);
       this.scene.add(key);
-      this.scene.add(buildTrackMeshes(build));
+      this.scene.add(
+        buildTrackMeshes(build, {
+          fixtures: (level as unknown as { fixtures?: Partial<Record<PieceKind, number>> }).fixtures,
+        }),
+      );
       const ground = new THREE.Mesh(
         new THREE.PlaneGeometry(6, 6),
         new THREE.MeshLambertMaterial({ color: '#e6d3b3' }),

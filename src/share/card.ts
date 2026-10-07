@@ -22,6 +22,8 @@
 import * as THREE from 'three';
 import type { Build } from '../track/build.ts';
 import { buildTrackMeshes } from '../world/world.ts';
+import { LEVELS } from '../world/levels/feeltrack.level.ts';
+import type { PieceKind } from '../track/pieces.ts';
 import { starGlyphs, type StarCount } from '../world/stars.ts';
 
 export const CARD_WIDTH = 1280;
@@ -71,7 +73,12 @@ function sceneFor(state: ShareCardState): { scene: THREE.Scene; subject: THREE.O
   key.position.set(1, 2, 1.5);
   scene.add(key);
   if (state.build) {
-    const track = buildTrackMeshes(state.build);
+    // the same fixture deck-inlay signal the game page shows, resolved from
+    // the registered level's fixture table (absent table = plain render)
+    const level = LEVELS[state.levelId] as unknown as
+      | { fixtures?: Partial<Record<PieceKind, number>> }
+      | undefined;
+    const track = buildTrackMeshes(state.build, { fixtures: level?.fixtures });
     scene.add(track);
     return { scene, subject: track };
   }

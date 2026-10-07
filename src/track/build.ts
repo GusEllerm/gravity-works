@@ -77,6 +77,29 @@ export function chain(
   return { levelId: options.levelId ?? 'sandbox', pieces, seed: options.seed ?? 0 };
 }
 
+/**
+ * The build-time OCCURRENCE RULE for fixtures (moved here from `src/boot.ts`
+ * when the render-side fixture signal needed the same classifier without a
+ * boot <-> world import cycle; boot re-exports). A piece is a fixture only
+ * while its kind's FIXTURE QUOTA is not yet filled — `fixtures[k]` copies of
+ * kind `k`, in build order — NOT every piece whose kind merely APPEARS in the
+ * table (the kitchen02 empty-tray fault; see Concepts/Levels). The single
+ * home keeps the boot mount, the parity probe, the piece counter and the
+ * deck-inlay signal from ever disagreeing about which copy of a shared kind
+ * is the fixture's.
+ */
+export function fixtureQuota(
+  fixtures: Partial<Record<PieceKind, number>>,
+): (def: PieceKind) => boolean {
+  const left: Partial<Record<PieceKind, number>> = { ...fixtures };
+  return (def) => {
+    const n = left[def] ?? 0;
+    if (n <= 0) return false;
+    left[def] = n - 1;
+    return true;
+  };
+}
+
 // ---- canonical JSON --------------------------------------------------------
 
 function canonical(value: unknown): string {

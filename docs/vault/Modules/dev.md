@@ -30,7 +30,7 @@ Guarded by `tests/e2e/harness.spec.ts` (a registered scene renders >0 nonblack p
 
 ## Stage-3 wiring
 
-`setCameras(setId, shot)` / `setShotList(setId)` resolve the harness rig THROUGH the set: a set that ships its own camera data wins, and until the kitchen set does (the file is the EA's; it ships none yet), the provisional kitchen rig in `SHOTS` is the fallback verbatim. The harness accepts `&level=<id>` beside `scene=kitchen-set`: a registered level id mounts the set in that level's own placement (`placeSet(level.parBuild(), level.id)`) plus the level's par build and a car parked at its start socket — the level-in-context render shot the EA needs; no id (or an unknown one) keeps the decorative tile-B staging runs.
+`setCameras(setId, shot)` / `setShotList(setId)` resolve the harness rig THROUGH the set: a set that ships its own camera data wins, and until the kitchen set does (the file is the EA's; it ships none yet), the provisional kitchen rig in `SHOTS` is the fallback verbatim. The harness accepts `&level=<id>` beside `scene=kitchen-set`: a registered level id mounts the set in that level's own placement (`placeSet(level.parBuild(), level.id)`) plus the level's par build and a car parked at its start socket — the level-in-context render shot the EA needs; the par build renders through the same `buildTrackMeshes` fixture-table option the game uses, so fixture pieces wear the deck-inlay signal in the stills too; no id (or an unknown one) keeps the decorative tile-B staging runs.
 
 ## Depends on / used by
 

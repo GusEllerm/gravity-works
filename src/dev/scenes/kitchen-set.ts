@@ -21,6 +21,7 @@ import { canonicalCamera } from '../cameras.ts'
 import { registerScene, type SceneEntry, type SceneFactory } from '../registry.ts'
 import { LEVELS } from '../../world/levels/feeltrack.level.ts'
 import { buildTrackMeshes } from '../../world/world.ts'
+import type { PieceKind } from '../../track/pieces.ts'
 import { kitchenSetPlacement, placeSet } from '../../world/setPlacement.ts'
 
 const tokens = SET_TOKENS.kitchen
@@ -118,7 +119,12 @@ function kitchenSetScene(): SceneFactory {
 
     if (level) {
       // the level's own reference build, reified the way the game reifies it
-      scene.add(buildTrackMeshes((level.parBuild ?? level.placeholderBuild).call(level)))
+      // — including the fixture deck-inlay signal (same table, same rule)
+      scene.add(
+        buildTrackMeshes((level.parBuild ?? level.placeholderBuild).call(level), {
+          fixtures: (level as unknown as { fixtures?: Partial<Record<PieceKind, number>> }).fixtures,
+        }),
+      )
       // one car parked at the level's release pose — the shot's protagonist
       const runner = car()
       runner.position.copy(level.startSocket.pos)

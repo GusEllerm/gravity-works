@@ -43,7 +43,12 @@ runs in the builder, the renderer and a headless Node replay.
   geometry.
 - `src/track/material.ts` — `TRACK_FRICTION`, the ONE toy-plastic deck
   friction, imported by both the game world (`src/world/world.ts`) and the
-  feel rigs (`src/feel/kittrack.ts`). It used to be two exported constants
+  feel rigs (`src/feel/kittrack.ts`), and `FIXTURE_SIGNAL` (stage 4, playtest Q
+  handoff), the one checkable mark the fixture readability treatment wears: a
+  `userData` key plus the inlay color (track orange lifted in lightness only,
+  never a re-hue) that `buildTrackMeshes` draws as a deck-centreline stripe on
+  fixture occurrences. Render-side data only — `PlacedPiece` and `serialize`
+  are untouched, so no hash or par moves. It used to be two exported constants
   with different values (0.6 / 0.05) and a comment claiming they matched —
   the stage-2 review's MAJOR; 0.05 is the value every published metric was
   produced with, and nothing physically contacts the deck differently today
@@ -75,7 +80,11 @@ runs in the builder, the renderer and a headless Node replay.
   `fitSocket` (exact seating, used to hang a piece's local in-socket on a world
   target) and `canonicalBuild` (stable `seq` order). Both are pure.
 - `src/track/build.ts` — `Build`, `PlacedPiece`, `reify`, `chain`, `serialize`,
-  `deserialize`, `rigFingerprint`.
+  `deserialize`, `rigFingerprint`, and `fixtureQuota` — the build-time fixture
+  OCCURRENCE rule (a piece is a fixture only while `fixtures[k]` copies of kind
+  `k` remain, in build order), moved here from `src/boot.ts` (which re-exports)
+  so the boot mount, the parity probe, the piece counter and the render-side
+  fixture signal share one classifier without an import cycle.
 
 ## How it works
 

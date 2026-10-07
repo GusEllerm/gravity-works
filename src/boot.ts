@@ -39,7 +39,8 @@ import { GARAGE02 } from './world/levels/garage02.level.ts';
 import { GARAGE03 } from './world/levels/garage03.level.ts';
 import { GARAGE04 } from './world/levels/garage04.level.ts';
 import { World, type RunStatus } from './world/world.ts';
-import type { Build } from './track/build.ts';
+import { fixtureQuota, type Build } from './track/build.ts';
+export { fixtureQuota };
 import { PIECES } from './track/pieces.ts';
 import { fitSocket } from './track/snap.ts';
 import { transformSocket } from './track/socket.ts';
@@ -221,18 +222,11 @@ export function levelTrayParams(
  * therefore EXACTLY the fixture multiset on every rung — pinned by
  * `tests/unit/boot-invariants.test.ts` (`trayParityBuild` shares the rule so
  * the parity probe keeps anchoring on the fixture's own copy).
+ *
+ * The rule itself now lives in `src/track/build.ts` (the render-side fixture
+ * signal reads the same classifier without a boot <-> world import cycle);
+ * re-exported above so the boot surface is unchanged.
  */
-export function fixtureQuota(
-  fixtures: Partial<Record<PieceKind, number>>,
-): (def: PieceKind) => boolean {
-  const left: Partial<Record<PieceKind, number>> = { ...fixtures };
-  return (def) => {
-    const n = left[def] ?? 0;
-    if (n <= 0) return false;
-    left[def] = n - 1;
-    return true;
-  };
-}
 
 export function initialBuild(level: Level): Build {
   const kl = level as unknown as {
