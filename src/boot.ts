@@ -63,6 +63,7 @@ import { placeSet } from './world/setPlacement.ts';
 import { KitRig, finishCapture } from './feel/kittrack.ts';
 import { RunCamera } from './camera/run-camera.ts';
 import type { RunCameraSolid } from './camera/run-camera.ts';
+import { BuildCamera, attachBuildView } from './camera/build-camera.ts';
 import type { PieceKind, PieceParams } from './track/pieces.ts';
 
 // Level registry ids reachable through ?level= (importing each file is what
@@ -304,6 +305,27 @@ export function playerPieceCount(level: Level, build: Build): number {
   return build.pieces.filter((p) => !isFixture(p.def)).length;
 }
 
+/** Pieces a PLAYER placed (fixtures excluded) plus tray stock — the kinds
+ *  a failure note's ADVICE may name (playtest Q item 5: "flatten the
+ *  landing" printed on a level whose tray has no landing). A kind is
+ *  ACTIONABLE when it is PLACED in the build (the player can remove/
+ *  re-seat it) or still STOCKED in the level's tray (one press away);
+ *  neither = the advice cannot name it. UI-side only — the physics and the
+ *  run hash never see the tray. Levels with no declared tray (the feel rig)
+ *  act on their build kinds alone. */
+export function actionableKindsFor(
+  build: Build,
+  tray: Partial<Record<PieceKind, number>> | undefined,
+): Set<PieceKind> {
+  const out = new Set<PieceKind>(build.pieces.map((p) => p.def));
+  if (!tray) return out;
+  for (const k of Object.keys(tray) as PieceKind[]) {
+    const left = (tray[k] ?? 0) - build.pieces.filter((p) => p.def === k).length;
+    if (left > 0) out.add(k);
+  }
+  return out;
+}
+
 export function boot(root: HTMLElement): void {
   // a bare fragment change is a new run request on a static host: reload into it
   window.addEventListener('hashchange', () => window.location.reload())
@@ -517,6 +539,13 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // the build's finish-cup capture centre (null when the build has no cup):
   // the run camera's finish witness AND the static framing's goal bias
   let framingFocus: THREE.Vector3 | null = null;
+  // stage 4 BUILD VIEW (playtest Q: "built 4 levels from ONE FIXED ANGLE,
+  // left-drag PLACES"): the player-adjustable layer over the static table
+  // framing — right-drag (or Space+drag) = damped yaw-only orbit clamped
+  // to the table's sensible hemisphere, left-drag past the click threshold
+  // = pan, and a click that TRAVELLED places NOTHING (the one gesture
+  // contract lives in `attachBuildView`, src/camera/build-camera.ts)
+  const buildView = new BuildCamera();
   // stage-3 run-end layer: the evidence recorder feeds the physics note, the
   // panel only shows on a TERMINAL status (§5.11: no panels during a run)
   const recorder = createRunRecorder();
@@ -560,6 +589,17 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     pos: camera.position.toArray(),
     quat: camera.quaternion.toArray(),
   });
+  // the e2e seam for the BUILD VIEW: the damped yaw/pan state behind the
+  // pose — the view-control e2e asserts the orbit moved the CAMERA through
+  // this, and that the clamps hold (debug surface, not UI)
+  (window as unknown as Record<string, unknown>).__gwBuildView = (): {
+    yaw: number; pan: number[]; yawTarget: number; panTarget: number[];
+  } => ({
+    yaw: buildView.yaw,
+    pan: [buildView.panX, buildView.panY],
+    yawTarget: buildView.yawTarget,
+    panTarget: [buildView.panTargetX, buildView.panTargetY],
+  });
 
   createHelpDrawer(stage, { reducedMotion: loadSave().settings.reducedMotion ?? undefined });
   // quiet, focusable, TOP-RIGHT of the world (playtest A+F: “Help = collapsed
@@ -585,6 +625,15 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     },
   });
   builder.attachCanvas(renderer.domElement, camera);
+  // THE ONE CANVAS GESTURE OWNER (playtest Q item 6): hover aims, a clean
+  // click places, a travelling press frames (left-drag pans, right-drag or
+  // Space+drag orbits) and never places. The builder no longer registers
+  // pointer listeners of its own — press-move-release counted as a place
+  // there, which WAS the accidental-placement bug.
+  attachBuildView(renderer.domElement, buildView, {
+    onHover: (x, y) => builder.aimAt(x, y),
+    onPlace: (x, y) => builder.clickPlaceAt(x, y),
+  });
   builder.elements.launch.addEventListener('click', startRun);
   // the progression loop closed on the buttons (§9.1 retry, ladder next):
   // Retry = as-built, one click back to Launch; Next = the following rung,
@@ -622,7 +671,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   }
 
   /** Car home to the release pose, the build untouched, the view back on
-   *  the board, the panel away — the missing "bring it back" control. */
+   *  the board, the panel away — the missing "bring it back" control. The
+   *  view RESETS too (playtest Q's orbit): if the player had turned the
+   *  table away, Retry brings the framing home, damped. */
   function resetCar(): void {
     const w = world;
     if (!w) return;
@@ -630,7 +681,8 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     acc = 0;
     hazardsTouched = 0;
     runCamActive = false;
-    if (w.scene) frameCamera(camera, w.scene, framingFocus);
+    buildView.reset();
+    if (w.scene) frameCamera(camera, w.scene, framingFocus, null, buildView);
     resultPanel.hide();
   }
 
@@ -688,10 +740,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
           })
         : null;
     runCamActive = false;
-    frameCamera(camera, next.scene, framingFocus);
+    frameCamera(camera, next.scene, framingFocus, null, buildView)
     // the same tally line the frame loop writes (ONE counter, ONE verb —
     // never a bare "ready" that skips the number the tray already shows)
-    statusLine.textContent = runStatusLine(next, builder.playerCount(), level.budget);
+    statusLine.textContent = runStatusLine(next, builder.playerCount(), level.budget)
   }
 
   await rebuild(startBuild);
@@ -748,7 +800,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // so the wide end-of-run shot keeps car and cup in one frame under
       // the verdict panel — never a chase cut-out that hides the death
       // spot the player most needs to read (playtest M/N item 7).
-      frameCamera(camera, w.scene, framingFocus, w.carPose(0).pos);
+      frameCamera(camera, w.scene, framingFocus, w.carPose(0).pos, buildView);
       const result: RunResult = {
         status: w.status,
         time: w.time,
@@ -760,12 +812,15 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // before recordStars below writes this run's best, so a re-run in the
       // same session counts as one (see outcomeLines in src/ui/result.ts).
       const bestStarsBefore = loadSave().progress.stars[level.id] ?? 0;
+      // ACTIONABLE KINDS for the note's advice tails (playtest Q item 5:
+      // "flatten the landing" with no landing in the tray) — see
+      // `actionableKindsFor`. UI-side only; physics and the hash never see it.
       const model = resultModel(
         result,
         parFor(level.id, level.par),
         recorder.evidence(),
         bestStarsBefore,
-        new Set(currentBuild.pieces.map((p) => p.def)),
+        actionableKindsFor(currentBuild, tray),
       );
       resultPanel.show(model);
       // §9.2 progress persists: a finished run's stars are the save's best
@@ -800,6 +855,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // solid. Both are the class's contract now (CAR_IN_FRONT, solids).
       camera.position.copy(runCam.position);
       camera.quaternion.copy(runCam.rotation);
+    } else if (buildView.step(dt)) {
+      // the BUILD VIEW damping tick (playtest Q): an orbit/pan gesture
+      // damps to its target outside a run; stillness costs nothing
+      buildView.apply(camera);
     }
     if (post) {
       post.setFocus([pose.pos.x, pose.pos.y, pose.pos.z]); // §7.3: band centred on the car
@@ -832,6 +891,7 @@ export function frameCamera(
   scene: THREE.Scene | null,
   focus: THREE.Vector3 | null = null,
   extra: { x: number; y: number; z: number } | null = null,
+  view: BuildCamera | null = null,
 ): void {
   const track = scene?.getObjectByName('track');
   const box = track ? new THREE.Box3().setFromObject(track) : new THREE.Box3();
@@ -865,6 +925,14 @@ export function frameCamera(
   // feel rig) frames its track exactly as before.
   if (focus && !box.isEmpty()) {
     center.addScaledVector(framingScratch.copy(focus).sub(center), 0.35);
+  }
+  // with a build view attached the solved base framing lives in it and the
+  // view composes the pose (at zero yaw/pan that composition is bit-for-bit
+  // the direct set below — the proofs and visual baselines do not move)
+  if (view) {
+    view.setFraming(center, d, span);
+    view.apply(camera);
+    return;
   }
   camera.position.set(center.x + d * 0.7, center.y + d * 0.55, center.z + d * 0.9);
   camera.lookAt(center);

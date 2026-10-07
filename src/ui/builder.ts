@@ -33,8 +33,15 @@
  *   screen (projection-nearest, within `HOVER_PX`), so the ghost always
  *   shows the socket a click would use BEFORE the click.
  * - CLICKING the canvas (a track end, the ghost, anywhere) places the held
- *   piece at the hovered socket — click = place, drag stays optional. With
- *   nothing held a click only moves the marker, and says nothing false.
+ *   piece at the hovered socket — click = place. A CLICK is a press whose
+ *   release stayed within `CANVAS_DRAG_PX` (6 px) of its press: a LEFT
+ *   DRAG that travels is a VIEW gesture (it pans the framing) and places
+ *   NOTHING — the old press-move-release counted as a click and
+ *   misfire-placed pieces (playtest Q item 6: "left-drag on canvas PLACES
+ *   a piece — no way to orbit"). The gesture recognition lives once, in
+ *   `attachBuildView` (`src/camera/build-camera.ts`), which calls back
+ *   into `aimAt` / `clickPlaceAt`; with nothing held a click only moves
+ *   the marker, and says nothing false.
  * - KEYBOARD PARITY (the stage-6 requirement arriving early): the SAME keys
  *   drive the SAME visible marker — ↑/↓ pick the piece, ←/→ move the target
  *   ring, Enter places, R flips the fit, Delete removes. The handler lives
@@ -52,6 +59,10 @@
  *   the tally                              "N of M pieces used"
  *   the socket's verdict on the ghost       "fits here" | "flipped fit" |
  *                                           "blocked — the set is in the way"
+ *   the FIRST flipped fit of a session      appends WHY once: "flipped fit
+ *                                           — it rides backwards; fine for
+ *                                           a coaster, not for a launch
+ *                                           (press R again to flip back)"
  *   a tray kind's stock                     "drop ×1" → "drop ×0" (counts LEFT)
  *   car events (notes, camera)             the Feel Engineer's lines only
  *
@@ -79,6 +90,15 @@ export const HOVER_PX = 120;
 /** The flip animation length — short enough to feel instant, long enough
  *  to be SEEN (playtest G: "clicked R; ghost never visibly changed"). */
 export const ROTATE_MS = 150;
+
+/** The once-per-session WHY tail appended to the `flipped fit` status line
+ *  (playtest Q item 5: "flipped fit vs fits here" unreadable). It states
+ *  the physics honestly (the reverse mount rides BACKWARDS — the deck
+ *  still fits, the direction of travel through it does not) and states
+ *  the REVERSIBILITY honestly (R is exactly its own undo). Shown once, on
+ *  the same status line, never nagging after the first flip. */
+export const FLIP_WHY =
+  'it rides backwards; fine for a coaster, not for a launch (press R again to flip back)';
 
 export type GhostState = 'hidden' | 'snapped' | 'reversed' | 'invalid' | 'blocked';
 
@@ -138,9 +158,15 @@ export interface Builder {
   build(): Build;
   /** Move the ghost and target marker into a (re)built world's scene. */
   setScene(scene: THREE.Scene | null): void;
-  /** Attach the game canvas: hovering aims the target, clicking places.
-   *  The camera is needed to project sockets to the pointer. */
+  /** Attach the game canvas (stores the projection camera). Pointer
+   *  GESTURES are owned by `attachBuildView` (`src/camera/build-camera.ts`),
+   *  which calls `aimAt` on hover and `clickPlaceAt` on a clean click. */
   attachCanvas(canvas: HTMLElement, camera?: THREE.Camera): void;
+  /** Hover aims the target ring at the socket nearest this screen point. */
+  aimAt(clientX: number, clientY: number): void;
+  /** A clean click (no drag travel — the gesture gate upstream decides):
+   *  aim, then place the held piece at the aimed socket. */
+  clickPlaceAt(clientX: number, clientY: number): void;
   setKind(kind: PieceKind | null): void;
   cycleKind(delta: number): void;
   cycleTarget(delta: number): void;
@@ -282,7 +308,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   const hint = document.createElement('p');
   hint.id = 'gw-tray-hint';
   hint.setAttribute('aria-live', 'polite');
-  hint.textContent = 'Aim: hover the world or ←→ · Place: click the world or Enter · Flip: R';
+  hint.textContent = 'Aim: hover the world or ←→ · Place: click the world or Enter · Flip: R · Look: right-drag';
   hint.hidden = true;
   root.appendChild(hint);
   // the VISIBLE reason behind every greyed/spent tray button — one counter,
@@ -481,7 +507,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     return solids.some((s) => s.intersectsBox(box));
   }
 
-  function updateGhost(animate = false): void {
+  function updateGhost(animate = false, echo = false): void {
     rebuildGhostGeometry();
     const list = targets();
     if (targetIndex >= list.length) targetIndex = Math.max(0, list.length - 1);
@@ -533,12 +559,13 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
         state === 'snapped' ? 0x2fbf71 : state === 'reversed' ? 0xffb627 : 0xd7263d,
       );
     }
-    // the VERB TABLE's copy — never the internal state word
-    ghostState.textContent = stuckNote ?? GHOST_LABEL[state];
+    // the VERB TABLE's copy — never the internal state word; a stuck
+    // one-shot note wins the line, else the copy (echo tail on R; the FIRST
+    // reversed ghost of the session also says WHY, once — playtests P/Q)
+    ghostState.textContent = stuckNote ?? ghostCopy(echo);
     // ONE counter, ONE verb: this tally line and the shell's idle status
     // line (`runStatusLine`, boot.ts) state the SAME numbers in the SAME
-    // words — "n of m pieces used" (playtests P+Q: "0 of 4 used" next to
-    // "ready — 1 placed" was two counters saying two things)
+    // words (playtests P+Q: two counters saying two things)
     count.textContent = `${trayPlaced()} of ${level.budget} pieces used`;
     // the ring named itself once this session; it is on screen now
     if (marker.visible && !ringAnnounced) {
@@ -570,6 +597,17 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
           (allowance(kind) === null || placedOf(kind) < allowance(kind)!)),
       ),
     );
+  }
+
+  /** Once-per-session flip legibility: the reversed label carries the WHY
+   *  tail exactly once (the flag is per page session — a reload re-teaches,
+   *  which is the right scope for "once per session"). */
+  let flipWhyShown = false;
+  function ghostCopy(echo: boolean): string {
+    const verb = echo && state !== 'hidden' ? `${GHOST_LABEL[state]} · rotated` : GHOST_LABEL[state];
+    const why = state === 'reversed' && !flipWhyShown;
+    if (state === 'reversed') flipWhyShown = true;
+    return why ? `${verb} — ${FLIP_WHY}` : verb;
   }
 
   function emit(): void {
@@ -611,13 +649,14 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     stuckNote = null;
     flipped = !flipped;
     // `animate` — the flip is the one change the eye must not be able to
-    // miss (playtest G: "Rotate (R): clicked it; ghost never visibly changed")
-    updateGhost(true);
-    // Playtest M: "R-flip has no visible confirmation text" — a passive
-    // echo line on the press path (the FE flip-echo handoff had not landed
-    // at this pass). Only when the ghost is on screen: with nothing held
-    // there is nothing rotated, and the shell stays truthful (§verb table).
-    if (state !== 'hidden') ghostState.textContent = `${GHOST_LABEL[state]} · rotated`;
+    // miss (playtest G: "Rotate (R): clicked it; ghost never visibly changed").
+    // The `echo` is playtest M's passive "· rotated" confirmation on the
+    // press path (ghost on screen only — with nothing held there is
+    // nothing rotated and the line stays truthful, §verb table); on its
+    // FIRST reversed result the same line also carries the once-per-
+    // session WHY tail (playtest Q: "flipped fit" vs "fits here" could not
+    // be interpreted).
+    updateGhost(true, true);
   }
 
   function place(): boolean {
@@ -695,9 +734,22 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     return true;
   }
 
-  // ---- canvas aiming (hover aims, click places) ----------------------------
+  // ---- canvas aiming (hover aims, click places — gestured upstream) -------
   let canvasEl: HTMLElement | null = null;
   let camera: THREE.Camera | null = null;
+
+  function aimAt(clientX: number, clientY: number): void {
+    const hit = socketAtPoint(clientX, clientY);
+    if (hit >= 0 && hit !== targetIndex) {
+      targetIndex = hit;
+      updateGhost();
+    }
+  }
+
+  function clickPlaceAt(clientX: number, clientY: number): void {
+    aimAt(clientX, clientY);
+    if (kind) place();
+  }
 
   /** Nearest open socket to a pointer position (CSS px in the canvas box),
    *  or -1 when every socket is farther than HOVER_PX. */
@@ -781,28 +833,17 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       updateGhost();
     },
     attachCanvas(canvas, cam) {
+      // the projection context only: the POINTER GESTURES (hover/click vs
+      // framing drag) are owned once by `attachBuildView` in
+      // `src/camera/build-camera.ts`, which calls aimAt / clickPlaceAt —
+      // so "press+move+release places a piece" (playtest Q's accidental
+      // placement) is structurally impossible: the gesture gate decides
+      // the verb before this module ever sees the pointer
       canvasEl = canvas;
       camera = cam ?? null;
-      // hover AIMS: the ghost moves to the socket a click would use, so the
-      // player sees the decision before making it (playtest E/F: "canvas
-      // clicks auto-target silently")
-      canvas.addEventListener('pointermove', (ev) => {
-        const hit = socketAtPoint(ev.clientX, ev.clientY);
-        if (hit >= 0 && hit !== targetIndex) {
-          targetIndex = hit;
-          updateGhost();
-        }
-      });
-      // click PLACES at the hovered socket (drag stays optional)
-      canvas.addEventListener('click', (ev) => {
-        const hit = socketAtPoint(ev.clientX, ev.clientY);
-        if (hit >= 0 && hit !== targetIndex) {
-          targetIndex = hit;
-          updateGhost();
-        }
-        if (kind) place();
-      });
     },
+    aimAt,
+    clickPlaceAt,
     setKind,
     cycleKind,
     cycleTarget,

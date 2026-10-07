@@ -64,12 +64,15 @@ describe('result model (par transparency)', () => {
 });
 
 /**
- * BUILD-AWARE NOTES (stage 4, playtest M item 5: "'lower the lip' advice
- * when I had NO lip placed"). The note's advice tails may only name pieces
- * that are IN the build that just ran — and the plumbing is UI-side only:
- * the physics (and the run hash) never see the build's kind set.
+ * BUILD-AWARE NOTES (playtest M item 5: "'lower the lip' advice when I had
+ * NO lip placed"), EXTENDED to TRAY-AWARE (playtest Q item 5: "'flatten
+ * the landing' when Landing isn't in the tray (L2!)"). The advice tails
+ * may only name kinds the player can act on NOW — PLACED in the build that
+ * ran or still STOCKED in the level's tray (`actionableKindsFor` in
+ * `src/boot.ts`); the plumbing is UI-side only, the physics (and the run
+ * hash) never see the kind set.
  */
-describe('build-aware notes (playtest M)', () => {
+describe('build- and tray-aware notes (playtests M + Q)', () => {
   const noseFirst = () => ({
     ...emptyEvidence(0),
     // a touchdown past the nose-first threshold is the whole trigger
@@ -77,25 +80,86 @@ describe('build-aware notes (playtest M)', () => {
   });
   const fell = { status: 'fell', time: 0.71, piecesUsed: 2, hazardsTouched: 0 } as const;
 
-  test('a nose-first fall of a build with a lip keeps the lip advice', () => {
-    const note = physicsNote(fell, noseFirst(), new Set(['ramp', 'gapLip', 'drop']));
+  test('both kinds actionable keeps the shipped two-part advice', () => {
+    const note = physicsNote(fell, noseFirst(), new Set(['ramp', 'gapLip', 'drop', 'landing']));
     expect(note).toBe('fell off nose-first — flatten the landing or lower the lip');
   });
 
-  test('a nose-first fall of a LIP-LESS build never prints "lip" (regression: playtest M straight+drop)', () => {
-    // the playtest M wall: straight+drop, no gapLip anywhere, fell at 0.71 s
-    // "nose-first" — the old note advised lowering a piece that was never placed
-    const note = physicsNote(fell, noseFirst(), new Set(['ramp', 'straight', 'drop']));
+  test('a lip placed with NO landing anywhere reachable names only the lip', () => {
+    // playtest Q's K2 wall: the tray is straight×2 + gapLip + drop — the
+    // old note said "flatten the landing" with no landing in reach
+    const note = physicsNote(fell, noseFirst(), new Set(['ramp', 'straight', 'gapLip', 'drop']));
+    expect(note.toLowerCase()).not.toContain('landing');
+    expect(note).toBe('fell off nose-first — lower the lip');
+  });
+
+  test('a landing reachable but no lip keeps the landing half only (playtest M inversion)', () => {
+    const note = physicsNote(fell, noseFirst(), new Set(['ramp', 'straight', 'drop', 'landing']));
     expect(note.toLowerCase()).not.toContain('lip');
     expect(note).toBe('fell off nose-first — flatten the landing');
   });
 
-  test('resultModel plumbs the kinds through to the note', () => {
-    const m = resultModel({ status: 'fell', time: 0.71, piecesUsed: 2, hazardsTouched: 0 }, par, noseFirst(), 0, new Set(['ramp', 'straight', 'drop']));
-    expect(m.note.toLowerCase()).not.toContain('lip');
+  test('NEITHER advice kind actionable: the honest head stands alone', () => {
+    const note = physicsNote(fell, noseFirst(), new Set(['ramp', 'straight', 'drop']));
+    expect(note).toBe('fell off nose-first');
+    expect(note.toLowerCase()).not.toContain('landing');
+    expect(note.toLowerCase()).not.toContain('lip');
   });
 
-  test('unknown kinds (null) keep the shipped line unchanged', () => {
+  test('the stalled-flat line names the booster only when it is actionable', () => {
+    const stalled = { status: 'stalled', time: 4.0, piecesUsed: 2, hazardsTouched: 0 } as const;
+    const flat = { ...emptyEvidence(0), lastGroundedPitch: 0, lastPushTime: null };
+    expect(physicsNote(stalled, flat, new Set(['ramp', 'straight', 'booster']))).toBe(
+      'stalled on the flat — friction won; start higher or add a booster',
+    );
+    const noBooster = physicsNote(stalled, flat, new Set(['ramp', 'straight', 'drop']));
+    expect(noBooster.toLowerCase()).not.toContain('booster');
+    expect(noBooster).toBe('stalled on the flat — friction won; start higher');
+  });
+
+  test('K2-style tray sweep: no failure line ever names an unavailable kind', async () => {
+    // the regression playtest Q demanded: for the KITCHEN 02 tray (2
+    // straights, 1 gapLip, 1 drop — no landing, no booster) and a fixture
+    // build (ramp + cup), NO printable failure note may NAME a piece the
+    // player cannot act on. (Descriptive lines like "top of the loop"
+    // report what the run hit, not a piece to buy — the rule is about
+    // ADVICE tails.)
+    const { KITCHEN02 } = await import('../../src/world/levels/kitchen02.level.ts');
+    const { initialBuild, actionableKindsFor } = await import('../../src/boot.ts');
+    const tray = { straight: 2, gapLip: 1, drop: 1 };
+    const kinds = actionableKindsFor(initialBuild(KITCHEN02), tray);
+    expect(kinds.has('landing')).toBe(false);
+    expect(kinds.has('booster')).toBe(false);
+    expect(kinds.has('gapLip')).toBe(true);
+    for (const status of ['fell', 'stalled', 'timeout'] as const) {
+      for (const [name, evidence] of Object.entries({
+        plain: emptyEvidence(0),
+        nose: noseFirst(),
+        slowApex: { ...emptyEvidence(0), apexY: 0.5, apexSpeed: 0.1 },
+        uphill: { ...emptyEvidence(0), lastGroundedPitch: 0.4 },
+        pushed: { ...emptyEvidence(0), lastPushTime: 1.2 },
+      })) {
+        const note = physicsNote({ status, time: 1, piecesUsed: 2, hazardsTouched: 0 }, evidence, kinds);
+        // landing and booster are neither placed nor in the tray
+        expect(note.toLowerCase(), `${status}/${name}`).not.toContain('landing');
+        expect(note.toLowerCase(), `${status}/${name}`).not.toContain('booster');
+        // the lip is actionable on this tray — the line MAY name it
+      }
+    }
+    // and the same sweep with the lip NOT actionable names no piece at all
+    const noLip = new Set(kinds);
+    noLip.delete('gapLip');
+    const note = physicsNote(fell, noseFirst(), noLip);
+    expect(note.toLowerCase()).not.toContain('lip');
+    expect(note.toLowerCase()).not.toContain('landing');
+  });
+
+  test('unknown kinds (null) keep the shipped lines unchanged', () => {
     expect(physicsNote(fell, noseFirst())).toBe('fell off nose-first — flatten the landing or lower the lip');
+  });
+
+  test('resultModel plumbs the kinds through to the note', () => {
+    const m = resultModel({ status: 'fell', time: 0.71, piecesUsed: 2, hazardsTouched: 0 }, par, noseFirst(), 0, new Set(['ramp', 'straight', 'gapLip', 'drop']));
+    expect(m.note.toLowerCase()).not.toContain('landing');
   });
 });

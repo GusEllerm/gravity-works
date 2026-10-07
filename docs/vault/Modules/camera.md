@@ -159,7 +159,13 @@ finish window ≤ 0.85 m) and the goal-framing + end-hold proofs on
 `frameCamera`. `tests/e2e/filmstrip.spec.ts`
 (port 4210, `npm run test:e2e:filmstrip`) repeats the in-frame claim on the
 BUILT page as the 250 ms filmstrip (≤ 60 % single-colour per frame) and the
-dense final-second gate on L01/L04 and BOTH L02 lines (`build=par`+`alt`).
+dense final-second gate on L01/L04 and BOTH L02 lines (`build=alt` via
+boot's `ALT_LINES` addressing), both released from a Launch CLICK on a
+booted page so the coverage counts clock from the run, not the page (stage
+4 round 4 — see the stale-floor note below). The build view is guarded by
+`tests/unit/build-camera.test.ts` (zero-state bit-identity, clamps, yaw-only
+invariance, damping) and `tests/e2e/build-view.spec.ts` (orbit turns without
+placing; pan never places; a <6 px click places; Space+drag orbits).
 
 ## Depends on / used by
 
@@ -232,3 +238,56 @@ pass unions the car's FINAL position — clamped to the track's ±0.6 m
 neighbourhood — into the subject, so the verdict panel lands over a frame
 that CONTAINS the death spot (M item 6). Proved per-line in
 `tests/unit/camera.test.ts` (goal-framing + end-hold block).
+
+## Stage 4 round 4: the build view (playtest Q, "one fixed angle")
+
+Q built four levels without ever turning the table: "no orbit at all, and
+left-drag PLACES". §9.3's no-view-control stance (never written as a
+decision, only practised — now amended in the Decision Log 2026-10-09)
+presumed placement clarity needed a locked frame; the playtest evidence
+came back the other way — the fixed view HID the goal on 3 of 5 kitchen
+levels, and the one gesture that existed was the misfire-placing one. The
+answer is `src/camera/build-camera.ts`, the RESTRICTED build orbit:
+
+- **`BuildCamera`** is the player-adjustable layer over `frameCamera`'s
+  static framing: ONE degree of turn — a damped YAW about the world
+  vertical through the framing centre, clamped ±60° (`YAW_MAX`) around the
+  base three-quarter azimuth (the table's sensible hemisphere: the eye
+  never crosses the kitchen's back plane to look through a wall, and
+  yaw-only can never dip under the table or flip over the top) — plus a
+  damped screen-plane PAN clamped to 0.4 × the framing span. NO zoom: the
+  solved eye distance is untouched (`frameCamera` gains an OPTIONAL fifth
+  `view` argument — with it the solved base lives in the view and the view
+  composes the pose; at zero yaw/pan the composition is BIT-IDENTICAL to
+  the direct set, which is what keeps every visual baseline and the
+  goal-framing proofs exactly where they were — asserted). Damping is the
+  run camera's exponential family (`1 − e^(−dt/τ)`, `TAU` 0.15 s), ticked
+  per frame in boot's loop when the run camera is off; Retry/Reset bring
+  the framing home (`reset()` zeroes the targets).
+- **`attachBuildView(canvas, view, {onHover, onPlace})`** is the app's ONE
+  canvas gesture owner, and the click-vs-drag disambiguation is explicit:
+  hover AIMS; a press released within `CANVAS_DRAG_PX` (6 CSS px) PLACES
+  at the aimed socket; a press that TRAVELS is a framing gesture — left
+  pans, RIGHT-drag (or SPACE+drag) orbits — and places NOTHING; the wheel
+  is unwired (there is no build zoom) and the canvas menu is suppressed
+  (right-drag is the orbit, not a menu). The builder registers no pointer
+  listeners of its own any more (`aimAt`/`clickPlaceAt` are its verbs),
+  which makes Q's press-move-release place structurally impossible.
+- **Proofs**: `tests/unit/build-camera.test.ts` (zero-state bit-identity
+  with `frameCamera`; yaw/pan clamps; yaw-only invariances — eye distance,
+  elevation and roll frozen, pan a pure translation; 63 % step response
+  within one τ) and `tests/e2e/build-view.spec.ts` on the BUILT page
+  (right-drag turns the CAMERA — `__gwCameraPose` + `__gwBuildView` seams —
+  and places nothing; left-drag pans, quaternion unchanged, places nothing;
+  a <6 px click still places; Space+drag orbits).
+- **THE FILMSTRIP'S COVERAGE FLOOR WAS STALE** (fixed here, level data
+  untouched): the L02 redesign shortened the line to ~1.01 s, and both
+  sampling gates still counted wall-clock boundaries from PAGE start —
+  launch=1 released mid-boot, so the strip caught 4 of the ≥ 6 frames the
+  floor demanded and the dense window overlapped the wasm/shader warm-up
+  buckets that never belonged to any camera (failing identically at
+  baseline e37bc70). The gates now release from a Launch CLICK on a booted
+  page — the sample clock shares the run's zero — so the final-second
+  window sits entirely inside a drawn, running run: shipped worst frames
+  L01 40.1 %, L04 52.1 %, L02-par 37.9 %, L02-alt 36.2 % (bar 60 %), the
+  250 ms strip five gap-checked frames, both gates green twice.

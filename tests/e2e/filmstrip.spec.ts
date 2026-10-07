@@ -37,11 +37,20 @@ function dominantShare(pngPng: Buffer): number {
 
 test('L02 par run filmstrip every 250 ms: no frame >60 % single-colour', async ({ page }) => {
   test.slow()
-  await page.goto('/?level=kitchen02&build=par&launch=1')
-  // start the strip when the run is actually RUNNING (launch=1 fires on the
-  // first world; the pre-release frames are the static table framing)
+  // WARM START (stage-4 L02-redesign follow-through): the line's par run is
+  // 1.00–1.13 s of SIMULATION now (pars table, LD 2026-10-09), and the old
+  // launch=1 + poll-for-running start spent 300–500 ms of that second on
+  // wasm boot and poll lag — the strip then caught 4–5 boundary samples
+  // and the coverage floor (≥ 6) went red on fast machines while every
+  // PIXEL bar passed (failing identically at baseline e37bc70). Clicking
+  // Launch on a booted page starts the strip AT the release tick instead:
+  // the sample clock and the run clock share a zero, and the same
+  // wall-clock boundaries land deterministically inside the run.
+  await page.goto('/?level=kitchen02&build=par')
+  await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
+  await page.click('#gw-launch')
   await expect
-    .poll(async () => (await page.locator('#gw-status').textContent()) ?? '', { timeout: 20_000 })
+    .poll(async () => (await page.locator('#gw-status').textContent()) ?? '', { timeout: 20_000, intervals: [10, 25, 50] })
     .toMatch(/running/)
 
   const frames: { t: number; share: number }[] = []
@@ -61,7 +70,13 @@ test('L02 par run filmstrip every 250 ms: no frame >60 % single-colour', async (
   console.log(
     `filmstrip: ${frames.length} frames, worst ${worst.t} ms ${(worst.share * 100).toFixed(1)} %`,
   )
-  expect(frames.length).toBeGreaterThanOrEqual(6)
+  // coverage of the strip, not a magic count: five 250 ms boundaries fit
+  // inside a 1.0 s run clocked from its own release (0, 250, 500, 750,
+  // 1000), and NO GAP may exceed one sample-and-read period
+  expect(frames.length).toBeGreaterThanOrEqual(5)
+  for (let i = 1; i < frames.length; i++) {
+    expect(frames[i]!.t - frames[i - 1]!.t, `gap before frame ${i}`).toBeLessThan(SAMPLE_MS * 2)
+  }
   for (const f of frames) {
     expect(f.share, `frame at ${f.t} ms: ${(f.share * 100).toFixed(1)} % single colour`).toBeLessThanOrEqual(
       MAX_DOMINANT,
@@ -144,7 +159,15 @@ test('L01+L02(par+alt)+L04 par runs: EVERY 100 ms of the final second, no frame 
     ['kitchen02', 'alt'],
   ] as const) {
     const line = `${level}:${build}`
-    await page.goto(`/?level=${level}&build=${build}&launch=1`)
+    // WARM START (see the 250 ms gate above): launch=1 released the run
+    // mid-BOOT, so on the ~1 s L02 lines the "final second" window
+    // overlapped wasm/shader warm-up — wall-clock buckets went missing that
+    // were never the camera's (coverage flake, red at baseline e37bc70 on
+    // fast machines). Releasing from a CLICK on a booted page puts the
+    // whole dense window inside a running, fully-drawn run.
+    await page.goto(`/?level=${level}&build=${build}`)
+    await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
+    await page.click('#gw-launch')
     await expect
       .poll(async () => (await page.locator('#gw-result').isVisible().catch(() => false)), { timeout: 30_000 })
       .toBe(true)
