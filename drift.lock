@@ -178,7 +178,7 @@ sig = "698ffa9252f05d38"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "tests/e2e/playtest-y-clickdiff.spec.ts"
-sig = "d0277859dcd8f79c"
+sig = "845195dcbcec87cc"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -238,7 +238,7 @@ sig = "c907ce2240f2ba76"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/playtest-y-clickdiff.spec.ts"
-sig = "d0277859dcd8f79c"
+sig = "845195dcbcec87cc"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -998,7 +998,7 @@ sig = "c907ce2240f2ba76"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/playtest-y-clickdiff.spec.ts"
-sig = "d0277859dcd8f79c"
+sig = "845195dcbcec87cc"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"

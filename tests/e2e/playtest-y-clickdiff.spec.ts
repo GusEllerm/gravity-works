@@ -205,8 +205,9 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
     await cdp.move(spot.x, spot.y)
     await cdp.down(spot.x, spot.y)
     await cdp.up(spot.x, spot.y)
-    await expect(count(page), 'T0: director flow regressed').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async () => {
+    await expect(count(page), 'T0: director flow regressed').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async (err) => {
       await dump(page, 'T0')
+      throw err // the dump is a DIAGNOSTIC; the failure is the verdict (stage-4 close review F1)
     })
   })
 
@@ -218,8 +219,9 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
     const cdp = await cdpInput(page)
     await cdp.down(spot.x, spot.y)
     await cdp.up(spot.x, spot.y)
-    await expect(count(page), 'T1: zero-move down/up placed nothing').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async () => {
+    await expect(count(page), 'T1: zero-move down/up placed nothing').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async (err) => {
       await dump(page, 'T1')
+      throw err
     })
   })
 
@@ -233,8 +235,9 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
     const spot = await ringSpot(page)
     await cdp.down(spot.x, spot.y)
     await cdp.up(spot.x, spot.y)
-    await expect(count(page), 'T2: pre-listener move then click placed nothing').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async () => {
+    await expect(count(page), 'T2: pre-listener move then click placed nothing').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async (err) => {
       await dump(page, 'T2')
+      throw err
     })
   })
 
@@ -252,8 +255,9 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
     const spot = await ringSpot(page)
     await cdp.down(spot.x, spot.y)
     await cdp.up(spot.x, spot.y)
-    await expect(count(page), 'T3: post-boot click placed nothing').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async () => {
+    await expect(count(page), 'T3: post-boot click placed nothing').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async (err) => {
       await dump(page, 'T3')
+      throw err
     })
     const regs = (await probe(page)) as { regs: { type: string; t: number }[] }
     const attachT = Math.max(...regs.regs.filter((r) => r.type === 'pointerdown').map((r) => r.t))
@@ -274,8 +278,9 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
     const cdp = await cdpInput(page)
     await cdp.down(spot.x, spot.y)
     await cdp.up(spot.x, spot.y)
-    await expect(count(page), 'T4: toolbar-stale click placed nothing').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async () => {
+    await expect(count(page), 'T4: toolbar-stale click placed nothing').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async (err) => {
       await dump(page, 'T4')
+      throw err
     })
   })
 
@@ -353,8 +358,9 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
     await cdp2.up(spot.x, spot.y) // untracked release at the SAME point
     await cdp.down(spot.x, spot.y)
     await cdp.up(spot.x, spot.y)
-    await expect(count(page), 'T5: post-lost-release click placed nothing').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async () => {
+    await expect(count(page), 'T5: post-lost-release click placed nothing').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async (err) => {
       await dump(page, 'T5')
+      throw err
     })
   })
 })
@@ -380,8 +386,9 @@ test.describe('X round6 short-viewport geometry (1280x633)', () => {
     expect(Math.hypot(p1!.x - p0.x, p1!.y - p0.y), 'ghost projection offset under 3 px').toBeLessThan(3)
     await page.mouse.down()
     await page.mouse.up()
-    await expect(count(page), 'T6: click at fits placed nothing').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async () => {
+    await expect(count(page), 'T6: click at fits placed nothing').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async (err) => {
       await dump(page, 'T6')
+      throw err
     })
   })
 
@@ -434,8 +441,9 @@ test.describe('Y matrix, below-fold release at canvas coords (1280x633)', () => 
     await expect(count(page), 'T11: below-fold in-rect release placed nothing').toHaveText(
       '1 of 3 pieces used',
       { timeout: 5_000 },
-    ).catch(async () => {
+    ).catch(async (err) => {
       await dump(page, 'T11')
+      throw err
     })
   })
 })

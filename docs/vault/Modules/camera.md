@@ -298,7 +298,11 @@ answer is `src/camera/build-camera.ts`, the RESTRICTED build orbit:
   attaches it straight after the warm frame with the handlers dispatching
   through a null-able builder reference, and `tests/e2e/playtest-y-clickdiff.spec.ts`
   is the ordering matrix: every permutation of zero-move / pre-listener
-  move / boot-window CDP input places). The click-vs-drag disambiguation is explicit:
+  move / boot-window CDP input places). The matrix CAN FAIL (stage-4 close
+  review F1): the probe `dump` in the placing cells rethrows after logging,
+  so a dead release path is a RED cell with the probe transcript beside it,
+  not a green one — proven by a throwaway release-branch flip that turned
+  T0 red before being reverted. The click-vs-drag disambiguation is explicit:
   hover AIMS; a press released within `CANVAS_DRAG_PX` (**20** CSS px —
   raised from 6 by playtest R round 3, where an ordinary click with a
   little finger travel latched as a drag and SILENTLY placed nothing)
