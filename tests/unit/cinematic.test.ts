@@ -120,4 +120,35 @@ describe('cinematic replay record', () => {
     a.poseAt(t);
     expect(a.position.toArray()).toEqual(b.position.toArray());
   });
+
+  test('a nose-first fell (vertical final tangent, no cup) never parks the finish eye in the car', async () => {
+    // playtest AA (stage 5) reproduced: a build with nothing under the
+    // release falls straight down (status `fell`, 0.4 s) and the no-cup
+    // finish fallback took its tangent from the last 24 samples — exactly
+    // UP — where the pose's `tangent*-0.45d + UP*0.42d` terms cancel to
+    // ~3 cm and the red chassis fills the frame (the "solid red" report).
+    const build = { levelId: FEELTRACK.id, pieces: [], seed: 1 };
+    const world = await World.create(FEELTRACK, build, { visuals: false });
+    const trace = stepAndRecord(world, build);
+    world.dispose();
+    expect(trace.status).toBe('fell');
+    const last = trace.steps - 1;
+    const fellAt = new THREE.Vector3(trace.pos[last * 3]!, trace.pos[last * 3 + 1]!, trace.pos[last * 3 + 2]!);
+    const d = new ReplayDirector({ trace, box: new THREE.Box3(), cup: null });
+    const finish = trace.plan.shots.find((s) => s.kind === 'finish')!;
+    for (const t of [finish.start + 0.1, (finish.start + finish.end) / 2, finish.end - 0.1]) {
+      d.poseAt(t);
+      const eyeGap = d.position.distanceTo(fellAt);
+      // BEFORE the guard: 0.033 m (inside the chassis). The law's full
+      // offset on this span is dFinish*|(-0.45, +0.42)| ≈ 0.68 m.
+      expect(eyeGap, `finish eye inside the car at t=${t}`).toBeGreaterThan(0.4);
+      expect(d.position.y).toBeGreaterThan(fellAt.y);
+    }
+    // purity preserved: the guard is constructor math, the pose stays a
+    // function of sim time alone
+    const e = new ReplayDirector({ trace, box: new THREE.Box3(), cup: null });
+    d.poseAt(0.7);
+    e.poseAt(0.7);
+    expect(d.position.toArray()).toEqual(e.position.toArray());
+  });
 });

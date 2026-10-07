@@ -218,7 +218,7 @@ sig = "23d6349a19a9619e"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/replay/cinematic.ts"
-sig = "5e74818ce3a61832"
+sig = "619a4fa143b7b799"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -248,7 +248,7 @@ sig = "1aaecfe34cf587a6"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/playtest-tu.spec.ts"
-sig = "c907ce2240f2ba76"
+sig = "bf95f5eb568b64f5"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -273,7 +273,7 @@ sig = "f00a6dbe45a90d4a"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/unit/cinematic.test.ts"
-sig = "e30f378dcba417b3"
+sig = "6ce6e35a7a631caa"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -513,7 +513,7 @@ sig = "10f27663eaecf619"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "src/replay/cinematic.ts"
-sig = "5e74818ce3a61832"
+sig = "619a4fa143b7b799"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -532,6 +532,11 @@ sig = "a9ef19f44fc7b9f8"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
+target = "tests/e2e/replay-red.spec.ts"
+sig = "07fe61ba016b343d"
+
+[[bindings]]
+doc = "docs/vault/Modules/replay.md"
 target = "tests/e2e/replay.spec.ts"
 sig = "3d3537c9c8b3f35a"
 
@@ -543,7 +548,7 @@ sig = "15d71dc0ab19dd84"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "tests/unit/cinematic.test.ts"
-sig = "e30f378dcba417b3"
+sig = "6ce6e35a7a631caa"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -748,7 +753,7 @@ sig = "a38e01706f33daf6"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/replay/cinematic.ts"
-sig = "5e74818ce3a61832"
+sig = "619a4fa143b7b799"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -823,7 +828,7 @@ sig = "79d4ae0679f88eef"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/playtest-tu.spec.ts"
-sig = "c907ce2240f2ba76"
+sig = "bf95f5eb568b64f5"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -1043,7 +1048,7 @@ sig = "79d4ae0679f88eef"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/playtest-tu.spec.ts"
-sig = "c907ce2240f2ba76"
+sig = "bf95f5eb568b64f5"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1108,7 +1113,7 @@ sig = "60f975ea6fcc355d"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "docs/vault/Modules/replay.md"
-sig = "b66f6ddbf1db2544"
+sig = "86152d46be06060f"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"

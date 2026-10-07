@@ -236,7 +236,7 @@ capture centre (cup |ndc| ≤ 0.28 vs 0.43/0.46 cornering when N could not
 find the goal; every track corner still ≤ 0.49 — and SINCE playtest U
 round 4 the promise is SWEPT, not asserted: the shell's `__gwGoalNdc`
 seam projects the cup at build framing and
-`tests/e2e/playtest-tu.spec.ts` asserts |ndc| ≤ 0.9 on ALL 21 campaign
+`tests/e2e/playtest-tu.spec.ts` asserts |ndc| ≤ 0.9 on ALL 26 campaign
 rungs at fresh framing AND on the full par line, bedroom02 included —
 U's "never located the cup" was the PANNED view with the broken
 Esc-home (fixed), the law itself verified in-frame ≤ 0.30); and the RUN-END (end-hold)
