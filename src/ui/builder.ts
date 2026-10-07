@@ -99,6 +99,7 @@ import { PIECES, PIECE_KINDS, pieceGeometries, pieceLabel, type PieceKind, type 
 import { socketMatrix, transformSocket, type Socket } from '../track/socket.ts';
 import type { Build, PlacedPiece } from '../track/build.ts';
 import type { Level } from '../world/level.ts';
+import { worldToClientPx } from './aim-transform.ts';
 
 /** Two socket origins this close are joined (metres; well above float noise). */
 export const JOIN_TOL = 0.004;
@@ -202,6 +203,11 @@ export interface Builder {
    *  Among screen-space near-ties the NEARER socket (camera distance)
    *  wins, and the tie list becomes walkable (`cycleAim`). */
   aimAt(clientX: number, clientY: number): void;
+  /** Re-derive the target for the LAST pointer position under the LIVE
+   *  transform — fired whenever the canvas rect may have moved without a
+   *  new pointer event (toolbar rows appearing/wrapping above the canvas,
+   *  window resize). The ghost-offset defence (playtests V+W round5). */
+  revalidateAim(): void;
   /** Walk the ring among the near-ties of the last aim point ([ / ] /
    *  Tab): when screen space cannot separate two sockets, the player —
    *  not the projector — picks which one the ghost means. */
@@ -840,8 +846,54 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
    *  (the ties belong to a screen point, not to the build). */
   let aimTies: number[] = [];
   let aimTieCursor = 0;
+  /** The last pointer position aim/place were asked about, in CLIENT px —
+   *  the position `revalidateAim` re-derives the target from whenever the
+   *  canvas RECT moves under a still cursor (playtests V+W round5: the
+   *  hint lines ABOVE the canvas appear/hide mid-session and teleport the
+   *  canvas ~40–80 px; the per-event rect read is then correct but stale
+   *  until the NEXT mousemove, and the ghost sits at a constant offset).
+   *  The layout itself is steadied (`min-height` reservations in
+   *  `src/ui/shell.css`); this converges every residual shift — wrap,
+   *  resize, anything above the canvas changing — immediately. */
+  let lastAim: { x: number; y: number } | null = null;
+  /** The canvas rect `lastAim` was decided UNDER (cheap identity: four
+   *  numbers). `revalidateAim` compares, so an unchanged layout costs one
+   *  `getBoundingClientRect` per frame and nothing else. */
+  let aimRect = { l: NaN, t: NaN, w: NaN, h: NaN };
+
+  /** Re-run the hover aim for the LAST pointer position when the canvas
+   *  RECT has moved since the aim was decided — the ghost-offset defence
+   *  (playtests V+W round5). Runs every animation frame (and on any
+   *  pointer event through `aimAt`'s own rect read); an idle, unmoved
+   *  page pays one rect comparison. A moved rect re-derives the target
+   *  for the still cursor — the ghost is ALWAYS the answer to "where
+   *  would a click here place", recomputed, never a stale freeze-frame
+   *  left hovering where the canvas used to be. Scroll included: a
+   *  scrolling page genuinely moves the world under a still cursor.
+   *
+   *  The fast path — CURRENT target still a legitimate pick of this
+   *  cursor point — returns without churning the tie list, so a `]`-walk
+   *  tie selection survives a layout move in which it remains an option. */
+  function revalidateAim(): void {
+    if (!lastAim || !canvasEl || !camera) return;
+    const rect = canvasEl.getBoundingClientRect();
+    if (rect.left === aimRect.l && rect.top === aimRect.t && rect.width === aimRect.w && rect.height === aimRect.h) return;
+    aimRect = { l: rect.left, t: rect.top, w: rect.width, h: rect.height };
+    const list = targets();
+    const idx = list.length > 0 ? Math.min(targetIndex, list.length - 1) : -1;
+    if (idx >= 0) {
+      const p = worldToClientPx(canvasEl, camera, list[idx]!.socket.pos);
+      if (p && Math.hypot(p.x - lastAim.x, p.y - lastAim.y) <= HOVER_PX) {
+        const fresh = socketCandidates(lastAim.x, lastAim.y);
+        if (fresh.includes(idx)) return; // still the right pick
+      }
+    }
+    aimAt(lastAim.x, lastAim.y);
+  }
 
   function aimAt(clientX: number, clientY: number): void {
+    lastAim = { x: clientX, y: clientY };
+    aimRect = { l: NaN, t: NaN, w: NaN, h: NaN }; // re-sampled next frame
     const cands = socketCandidates(clientX, clientY);
     if (cands.length === 0) {
       aimTies = [];
@@ -870,6 +922,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   }
 
   function clickPlaceAt(clientX: number, clientY: number): void {
+    lastAim = { x: clientX, y: clientY };
     // THE CLICK IS THE GHOST'S SOCKET, EXACTLY (playtests T+U round 4:
     // "the ghost showed one socket, the click landed elsewhere / nowhere,
     // and the failure line never fired"). If the RING is within click
@@ -896,14 +949,9 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     const list = targets();
     const t = list[Math.min(targetIndex, list.length - 1)];
     if (!t) return false;
-    const rect = canvasEl.getBoundingClientRect();
-    const v = t.socket.pos.clone().project(camera);
-    if (v.z > 1) return false;
-    const d = Math.hypot(
-      (v.x * 0.5 + 0.5) * rect.width - (clientX - rect.left),
-      (0.5 - v.y * 0.5) * rect.height - (clientY - rect.top),
-    );
-    return d <= HOVER_PX;
+    const p = worldToClientPx(canvasEl, camera, t.socket.pos);
+    if (!p) return false;
+    return Math.hypot(p.x - clientX, p.y - clientY) <= HOVER_PX;
   }
 
   /** The open sockets a pointer position could mean, ordered NEAR-DEPTH
@@ -916,13 +964,11 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
    *  socket is farther than `HOVER_PX`. */
   function socketCandidates(clientX: number, clientY: number): number[] {
     if (!camera || !canvasEl) return [];
-    const rect = canvasEl.getBoundingClientRect();
-    const v = new THREE.Vector3();
     const near: { i: number; dPx: number; dCam: number }[] = [];
     targets().forEach((t, i) => {
-      v.copy(t.socket.pos).project(camera!);
-      if (v.z > 1) return; // behind the camera
-      const d = Math.hypot((v.x * 0.5 + 0.5) * rect.width - (clientX - rect.left), (0.5 - v.y * 0.5) * rect.height - (clientY - rect.top));
+      const p = worldToClientPx(canvasEl!, camera!, t.socket.pos);
+      if (!p) return; // behind the camera
+      const d = Math.hypot(p.x - clientX, p.y - clientY);
       if (d <= HOVER_PX) near.push({ i, dPx: d, dCam: camera!.position.distanceTo(t.socket.pos) });
     });
     if (near.length === 0) return [];
@@ -1032,6 +1078,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     },
     aimAt,
     clickPlaceAt,
+    revalidateAim,
     setKind,
     cycleKind,
     cycleTarget,

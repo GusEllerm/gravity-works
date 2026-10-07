@@ -306,11 +306,16 @@ answer is `src/camera/build-camera.ts`, the RESTRICTED build orbit:
   void"): a press whose release is LOST (up off the window, capture
   stolen) used to leave the recogniser believing the button was down, so
   every later HOVER moved the framing until the yaw pinned at its clamp.
-  Four defences, none trusting one event: every `pointermove` reconciles
+  Five defences, none trusting one event: every `pointermove` reconciles
   the physical `ev.buttons` mask against the pressed button (a lost
   release dies on the next hover — hover can NEVER move the framing);
   `pointerup`/`pointercancel` are decided on `window` (a release the
-  canvas misses still ends the press); a `pointerdown` RECONCILES AT
+  canvas misses still ends the press); a release whose press DOWN was
+  never tracked at all — it fell outside the window or tooling dropped
+  it (playtests V+W round 5: an eaten click while Enter worked) — is
+  fresh PLACE intent when the release point is over the canvas, routed
+  through the same verb and deduped against the `click` fallback, never
+  an event the page eats; a `pointerdown` RECONCILES AT
   PRESS (playtests T+U round 4: the zombie could still eat exactly the
   NEXT left click — the old join rule handed any press arriving before
   the first reconciling hover to the stale right-button verb, and that

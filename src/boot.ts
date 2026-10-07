@@ -520,6 +520,36 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   renderer.setSize(960, 540, false);
   renderer.domElement.id = 'gw-canvas';
   stage.appendChild(renderer.domElement);
+  // THE GRAPHICS HICCUP (playtest W round5: a tab that went BLACK and
+  // silent mid-drag — no message, no console, nothing to click). If the
+  // WebGL context is ever lost the page must never rot silently: the
+  // frame loop PAUSES CLEANLY (no physics steps into a dead render, no
+  // giant catch-up dt on return), an overlay SAYS what happened and the
+  // way back, and the `preventDefault` on `lost` is what lets the browser
+  // (or the click, via `forceContextRestore`) hand a context back.
+  // three re-uploads its resources on restore; the next live frame paints
+  // the full world again.
+  let contextLost = false;
+  const hiccup = document.createElement('div');
+  hiccup.id = 'gw-hiccup';
+  hiccup.hidden = true;
+  hiccup.textContent = 'graphics hiccup — click to restore';
+  stage.appendChild(hiccup);
+  renderer.domElement.addEventListener('webglcontextlost', (ev) => {
+    ev.preventDefault(); // no preventDefault = the browser never restores
+    contextLost = true;
+    hiccup.hidden = false;
+  });
+  renderer.domElement.addEventListener('webglcontextrestored', () => {
+    contextLost = false;
+    hiccup.hidden = true;
+  });
+  hiccup.addEventListener('click', () => {
+    if (contextLost) renderer.forceContextRestore();
+  });
+  // the e2e seam for the recovery contract (debug surface, not UI)
+  (window as unknown as Record<string, unknown>).__gwForceContextLoss = () =>
+    renderer.forceContextLoss();
   const camera = new THREE.PerspectiveCamera(35, 960 / 540, 0.01, 20);
   // FIRST PAINT (playtest F: “black screen for seconds”): the canvas must
   // never show an unpainted WebGL buffer while `World.create` awaits the
@@ -834,6 +864,15 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     requestAnimationFrame(frame);
     const dt = Math.min((now - last) / 1000, 0.25);
     last = now;
+    // PAUSED FOR THE HICCUP: no stepping, no rendering, no catch-up — the
+    // world waits exactly where it was until the context returns (see the
+    // `gw-hiccup` overlay above).
+    if (contextLost) return;
+    // THE AIM NEVER GOES STALE UNDER A STILL CURSOR (playtests V+W round5:
+    // the ghost sat at a constant offset because layout above the canvas
+    // moved the canvas rect between pointer events). One rect comparison;
+    // an unmoved page pays nothing. See `revalidateAim` in `src/ui/builder.ts`.
+    builder.revalidateAim();
     const w = world;
     if (!w || !w.scene) return;
     if (launchQueued && w.status === 'idle') {
