@@ -50,8 +50,9 @@
  *   misfire-placed pieces (playtest Q item 6: "left-drag on canvas PLACES
  *   a piece — no way to orbit"). The gesture recognition lives once, in
  *   `attachBuildView` (`src/camera/build-camera.ts`), which calls back
- *   into `aimAt` / `clickPlaceAt`; with nothing held a click only moves
- *   the marker, and says nothing false.
+ *   into `aimAt` / `clickPlaceAt`; with nothing held a click MOVES the
+ *   marker and the status line says the piece is not in hand (playtests
+ *   T+U round 4: an intent that ends with nothing placed is never silent).
  * - KEYBOARD PARITY (the stage-6 requirement arriving early): the SAME keys
  *   drive the SAME visible marker — ↑/↓ pick the piece, ←/→ move the target
  *   ring, Enter places, R flips the fit, Delete removes. The handler lives
@@ -352,7 +353,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   const hint = document.createElement('p');
   hint.id = 'gw-tray-hint';
   hint.setAttribute('aria-live', 'polite');
-  hint.textContent = 'Aim: hover the world or ←→ · Place: click the world or Enter · Flip: R · Look: right-drag · Home: Esc Esc';
+  hint.textContent = 'Aim: hover the world or ←→ · Place: click the world or Enter · Flip: R · Look: right-drag · Home: press Esc twice';
   hint.hidden = true;
   root.appendChild(hint);
   // the VISIBLE reason behind every greyed/spent tray button — one counter,
@@ -859,8 +860,40 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   }
 
   function clickPlaceAt(clientX: number, clientY: number): void {
-    aimAt(clientX, clientY);
+    // THE CLICK IS THE GHOST'S SOCKET, EXACTLY (playtests T+U round 4:
+    // "the ghost showed one socket, the click landed elsewhere / nowhere,
+    // and the failure line never fired"). If the RING is within click
+    // reach of the release point the player clicked THE SHOWN GHOST, so
+    // the placement binds to the ring's own socket rather than re-
+    // projecting a rival: the pose keeps damping for ~0.5 s after an
+    // orbit or pan, and a click that re-decides the aim on its own can
+    // land on a socket the ghost never showed. Only a click AWAY from
+    // the ring re-aims (clicking somewhere else means "aim there", the
+    // same rule hover-aim implements — this shares the aim transform
+    // rather than duplicating it). Either way the intent then SPEAKS:
+    // `place` explains every refusal, and an empty-handed click says the
+    // piece is not in hand (never a silent no-op).
+    if (!ringWithinReach(clientX, clientY)) aimAt(clientX, clientY);
     if (kind) place();
+    else ghostState.textContent = 'nothing in hand — pick a piece from the tray, then click to place';
+  }
+
+  /** True when the CURRENT target (the socket the ring/ghost sits on)
+   *  projects within `HOVER_PX` of this screen point — the reach a click
+   *  has, identical to `socketCandidates`' rule. */
+  function ringWithinReach(clientX: number, clientY: number): boolean {
+    if (!camera || !canvasEl) return false;
+    const list = targets();
+    const t = list[Math.min(targetIndex, list.length - 1)];
+    if (!t) return false;
+    const rect = canvasEl.getBoundingClientRect();
+    const v = t.socket.pos.clone().project(camera);
+    if (v.z > 1) return false;
+    const d = Math.hypot(
+      (v.x * 0.5 + 0.5) * rect.width - (clientX - rect.left),
+      (0.5 - v.y * 0.5) * rect.height - (clientY - rect.top),
+    );
+    return d <= HOVER_PX;
   }
 
   /** The open sockets a pointer position could mean, ordered NEAR-DEPTH
@@ -940,7 +973,12 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       Delete: () => removeLast(),
       Backspace: () => removeLast(),
     };
-    const fn = keys[ev.key];
+    // the bracket tie-keys are CODE names (playtest S follow-through:
+    // the label advertises "[ ] to pick the other", but `]` arrives as
+    // key ']' with code 'BracketRight' — keying the table by ev.key
+    // alone made the advertised chord DEAD (aim-depth gate red at
+    // HEAD round 4). Look up key first, code second.
+    const fn = keys[ev.key] ?? keys[ev.code];
     if (!fn) return;
     // a focused <button> keeps its native Enter activation — preventing the
     // default there would CANCEL the click, not just the page action

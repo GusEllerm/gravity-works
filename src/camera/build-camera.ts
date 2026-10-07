@@ -102,9 +102,13 @@ export const BUILD_VIEW = {
  *  framing drag. */
 export const CANVAS_DRAG_PX = 20;
 
-/** s — the window between two Escape presses that recenters the build
- *  view (playtests R+S: the orbit's only recovery hatch). */
-export const RECENTER_MS = 600;
+/** ms — the window between two Escape presses that recenters the build
+ *  view (playtests R+S: the orbit's only recovery hatch). 600 → 1500
+ *  (playtests T+U round 4: the hatch was INERT for real hands — a
+ *  deliberate "Esc … Esc" following a hint that SAYS two presses is a
+ *  two-KEY SEQUENCE, not a double-TAP, lands well past 600 ms apart;
+ *  the round-4 e2e proves homing at 300 ms AND 900 ms gaps). */
+export const RECENTER_MS = 1500;
 
 /**
  * The player-adjustable layer over `frameCamera`'s static table framing.
@@ -436,10 +440,33 @@ export function attachBuildView(
   canvas.addEventListener('pointerdown', (ev) => {
     if (ev.pointerType === 'mouse' && ev.button !== 0 && ev.button !== 2) return;
     if (press && press.id === ev.pointerId) {
-      // a second button joining an open press: RIGHT takes the verb
-      // (orbit intent wins), the click origin never re-anchors
-      if (ev.button === 2) press.button = 2;
-      return;
+      // THE STALE-ORBIT RECONCILE AT PRESS (playtests T+U round 4: after
+      // an orbit, exactly the NEXT left click died SILENTLY — "fits here"
+      // on screen, nothing placed, Enter worked). A right-drag whose
+      // pointerup was lost (menu-up, release over chrome) leaves the press
+      // believing the RIGHT button is down; the old join rule then handed
+      // every later left press to that zombie (button 2 wins the verb),
+      // and its release could never be a clean click. The same physical
+      // mask the hover reconcile uses decides it HERE: a LEFT press whose
+      // right bit is physically UP cannot be joining an orbit — it is a
+      // NEW press, and the zombie dies here rather than eating the click.
+      if (ev.button === 2) {
+        // a second button joining an open press: RIGHT takes the verb
+        // (orbit intent wins), the click origin never re-anchors
+        press.button = 2;
+        return;
+      }
+      if (press.button !== 0 && (ev.buttons & 1) !== 0 && (ev.buttons & 2) === 0) {
+        // stale (its button is physically up) and a left button is
+        // physically DOWN: fall through and re-anchor as this left press
+        try {
+          canvas.releasePointerCapture?.(ev.pointerId);
+        } catch {
+          // best-effort; the fresh setPointerCapture below replaces it
+        }
+      } else {
+        return;
+      }
     }
     press = {
       id: ev.pointerId,
