@@ -67,6 +67,12 @@ declare global {
     __pixelStats?: () => PixelStats
     __perfStats?: () => PerfStats
     __postCycle?: (cycles: number) => PostCycleReport
+    /** Dev probe seam (added for the 2026-10-09 inlay/stripe re-measures, the
+     *  scripts under tmp/ that had to run against a patched build): the live
+     *  scene graph + camera + the exact render call, so ablations (hide a
+     *  mesh, re-render, diff) run against the committed build. Dev harness
+     *  only; draws no pixels of its own — every URL still renders identically. */
+    __h?: { scene: THREE.Scene; camera: THREE.Camera; render: () => void }
   }
 }
 
@@ -140,6 +146,7 @@ function start(): void {
 
   requestAnimationFrame(() => {
     renderFrame()
+    window.__h = { scene: entry.scene, camera: entry.camera, render: renderFrame }
     window.__pixelStats = () => readPixelStats(renderer)
     window.__postCycle = (cycles: number) => postCycleReport(renderer, entry, cycles)
     if (perfFrames > 0) startPerfProbe(renderer, perfFrames, renderFrame, { scene: sceneName, shot, post: postParam, quality, frames: perfFrames })

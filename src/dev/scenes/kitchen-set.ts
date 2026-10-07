@@ -53,6 +53,15 @@ function props(mesh: THREE.Object3D, cast = true, receive = true): void {
 // Tyres ride the warm-brown lightness floor (stage-1 send-back).
 const TYRE_BROWN = clampLightness('#4A3527')
 
+// The roof-stripe cream (TA fix 2026-10, AD fixture-signal addendum): the
+// tile-B putty #F6E9D2 under the kitchen's full key pegged the roof band to
+// sRGB 255/255/210 (L* 98.6) — a blown high the census attributes entirely
+// to the stripe (1319 px of the K3 hero's 1367). Same hue one step deeper,
+// with a small direct-diffuse gain cut (the garage round-2 precedent), lands
+// the lit roof at L* ~90 max and the frame's stripe-attributed ≥ 243 count
+// to ~0 — the stripe stays the brightest thing on the car, never clipped.
+const STRIPE_CREAM = '#E8D5B0'
+
 /** The tile-B stand-in car for set renders (the car-a re-render through the
  *  kitchen grade is the car scene's job — this keeps the set reference's
  *  silhouette byte-comparable). */
@@ -66,7 +75,7 @@ function car(): THREE.Group {
   g.add(body)
   const stripe = new THREE.Mesh(
     new THREE.BoxGeometry(0.062, 0.004, 0.011),
-    dieCastPaint(tokens, '#F6E9D2', { fillHigh: rig.fillHigh, fillLow: rig.fillLow, shadowTint: rig.shadowTint, fillStrength: rig.fillStrength }),
+    dieCastPaint(tokens, STRIPE_CREAM, { fillHigh: rig.fillHigh, fillLow: rig.fillLow, shadowTint: rig.shadowTint, fillStrength: rig.fillStrength, diffuseStrength: 0.85 }),
   )
   stripe.position.y = 0.027
   props(stripe)
