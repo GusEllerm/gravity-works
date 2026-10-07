@@ -778,7 +778,7 @@ sig = "c907ce2240f2ba76"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/result.spec.ts"
-sig = "f6f42ba52c63ad13"
+sig = "48135c8e914380bf"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -1003,7 +1003,7 @@ sig = "e397f326893db777"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/result.spec.ts"
-sig = "f6f42ba52c63ad13"
+sig = "48135c8e914380bf"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"

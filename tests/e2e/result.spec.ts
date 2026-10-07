@@ -235,6 +235,71 @@ test('the panel Next agrees with the level select for already-starred rungs (clo
   await expect(page.locator('#gw-level-kitchen02')).not.toHaveAttribute('aria-disabled', 'true')
 })
 
+test.describe('toolbar under the open panel (close-review F4: panel z 6 vs sticky toolbar z 5)', () => {
+  // The mirror image of the Z round7 bug: the panel's buttons ride ABOVE
+  // the sticky toolbar (z 6 vs 5), so the shape to check is the one the
+  // review flagged — a page that SCROLLS with the panel open: does the
+  // panel's Retry/Next row ever sit on Launch/Remove and eat their
+  // clicks? It cannot structurally: the overlap needs a scroll range of
+  // ~(panel row − toolbar controls) ≈ 370 px, which needs a viewport
+  // OVER 700 px (below that the compact variant fires and the whole page
+  // fits the window, docHeight == viewport) AND a page ~370 px taller
+  // than it — but above 700 px the page is chrome + one ≤ 540 px canvas
+  // + reserved lines ≈ 960 px, so the sticky toolbar's controls row can
+  // never meet the panel's button row. Pinned at the two shapes: the
+  // tall scrollable page and the narrow WRAPPED toolbar.
+  const hitTest = async (page: import('@playwright/test').Page) => {
+    const covered = await page.evaluate(() =>
+      ['#gw-launch', '#gw-remove-piece'].filter((sel) => {
+        const el = document.querySelector(sel)!
+        const r = el.getBoundingClientRect()
+        if (r.bottom < 0 || r.top > window.innerHeight) return false // off-window, not covered
+        const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+        return top !== el && !el.contains(top ?? null)
+      }),
+    )
+    expect(covered).toEqual([])
+  }
+
+  test.describe('the tall scrollable page (1280x720)', () => {
+    test.use({ viewport: { width: 1280, height: 720 } })
+
+    test('Launch/Remove stay hittable at every scroll depth with the panel open', async ({ page }) => {
+      await page.goto('/?level=kitchen01&build=par&launch=1')
+      await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
+      // the page genuinely scrolls (the regime the review flagged)
+      expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeGreaterThan(720)
+      await hitTest(page)
+      await page.evaluate(() => window.scrollTo(0, 9999))
+      expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+      await hitTest(page)
+      // and a REAL Launch click lands with the panel open and the page
+      // scrolled — Playwright's own actionability would hang on an eaten
+      // click; the panel hiding is the run actually having started
+      await page.click('#gw-launch')
+      await expect(page.locator('#gw-result')).toBeHidden({ timeout: 5_000 })
+    })
+  })
+
+  test.describe('the wrapped toolbar (520x760)', () => {
+    test.use({ viewport: { width: 520, height: 760 } })
+
+    test('the tray wraps to extra rows and Launch/Remove still hit with the panel open', async ({ page }) => {
+      await page.goto('/?level=kitchen01&build=par&launch=1')
+      await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
+      // the toolbar WRAPPED — its host is far taller than the unwrapped
+      // ~210 px, which is what puts the controls rows lower on the page
+      const host = await page.locator('#gw-builder-host').boundingBox()
+      expect(host!.height, 'toolbar must be wrapped for this cell to mean anything').toBeGreaterThan(250)
+      await hitTest(page)
+      await page.evaluate(() => window.scrollTo(0, 9999))
+      await hitTest(page)
+      await page.click('#gw-launch')
+      await expect(page.locator('#gw-result')).toBeHidden({ timeout: 5_000 })
+    })
+  })
+})
+
 test('the help drawer lists the unlocked pieces and its renders are not black', async ({ page }) => {
   const errors: string[] = []
   page.on('console', (msg) => {
