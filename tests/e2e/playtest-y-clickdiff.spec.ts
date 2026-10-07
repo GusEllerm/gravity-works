@@ -363,6 +363,42 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
       throw err
     })
   })
+
+  test('T13 press begins on a CONTROL, releases in the world — not fresh intent, nothing places', async ({ page }) => {
+    // Stage-4 close review F3: hold a piece, press Launch (button DOWN),
+    // drag into the world, RELEASE on the canvas. The canvas never saw the
+    // press (it is a canvas listener), so the release was untracked — and
+    // the coordinates guard used to call it FRESH INTENT and place at the
+    // release point. A press that began on a control is that control's
+    // gesture: it places nothing (and the button gets no activation click
+    // either — down and up targets differ — the sequence is neither verb).
+    await page.goto('/?level=kitchen01')
+    await ready(page)
+    await grabViaDom(page, 'drop')
+    const spot = await ringSpot(page)
+    const launch = await page.locator('#gw-launch').boundingBox()
+    expect(launch).not.toBeNull()
+    const cdp = await cdpInput(page)
+    const bx = launch!.x + launch!.width / 2
+    const by = launch!.y + launch!.height / 2
+    await cdp.down(bx, by)
+    for (let i = 1; i <= 8; i++)
+      await cdp.move(bx + ((spot.x - bx) * i) / 8, by + ((spot.y - by) * i) / 8)
+    await cdp.up(spot.x, spot.y)
+    await page.waitForTimeout(400)
+    await expect(count(page)).toHaveText('0 of 3 pieces used') // a control-begun drag never places
+    // and the Launch button never activated (no click fires when the
+    // down/up targets differ): the run did not start
+    await expect(page.locator('#gw-status')).toContainText('ready')
+    // POSITIVE CONTROL: an ordinary canvas press+release right after
+    // places — the refusal is provenance, not broken input.
+    await cdp.down(spot.x, spot.y)
+    await cdp.up(spot.x, spot.y)
+    await expect(count(page), 'T13: canvas-origin click regressed').toHaveText('1 of 3 pieces used', { timeout: 5_000 }).catch(async (err) => {
+      await dump(page, 'T13')
+      throw err
+    })
+  })
 })
 
 test.describe('X round6 short-viewport geometry (1280x633)', () => {
@@ -414,30 +450,47 @@ test.describe('X round6 short-viewport geometry (1280x633)', () => {
   })
 })
 
-test.describe('Y matrix, below-fold release at canvas coords (1280x633)', () => {
-  test.use({ viewport: { width: 1280, height: 633 }, deviceScaleFactor: 1 })
+test.describe('below-fold release at canvas coords (1280x721 — the shape where the guard is LIVE)', () => {
+  test.use({ viewport: { width: 1280, height: 721 }, deviceScaleFactor: 1 })
   test.beforeEach(({ context }) => context.addInitScript(installProbe))
 
   test('T11 release inside the canvas RECT past the viewport fold PLACES', async ({ page }) => {
-    // X round6: content visible at y 660-700 with the viewport only 633
-    // tall — Chrome routes such a release to <html> (target HTML), and
-    // the page used to eat it silently on the `ev.target === canvas` test.
-    // The stuck-press guard now asks COORDINATES, not identity: a release
-    // AT the canvas rect that lands on no control is fresh place intent.
+    // X round6: content visible past a short window's fold — Chrome routes
+    // a release whose point lies inside the canvas RECT but below the fold
+    // to <html> (target HTML), and the page used to eat it silently on the
+    // `ev.target === canvas` test. The stuck-press guard now asks
+    // COORDINATES, not identity: a release AT the canvas rect that lands on
+    // no control is fresh place intent.
+    // STAGE-4 CLOSE REVIEW F2: the cell used to run at 1280x633, where the
+    // Z round7 compact variant (<= 700 px height) caps the canvas INSIDE
+    // the fold — the skip made this guard UNTESTABLE anywhere. 721 is the
+    // product shape the guard exists for: over 700 px tall the compact
+    // variant is off, the chrome (~319 px) plus the full 540 px canvas
+    // still runs the RECT past the fold (bottom ~859), and the release
+    // point below the fold is routed OFF the canvas by the browser —
+    // asserted below, so this cell can only pass on the COORDINATES path.
     await page.goto('/?level=kitchen01')
     await ready(page)
     await grabViaDom(page, 'drop')
     const s = await live(page)
-    const y = Math.min(s.box.y + s.box.height - 10, 700)
-    // the shipped short-window layout (playtest Z round7) caps the canvas to
-    // the window height under ~700 px: at 1280x633 the canvas now fits
-    // inside the fold and this below-fold case is STRUCTURALLY GONE — skip
-    // it the way T6b skips its variant (the guard stays live on any viewport
-    // where a canvas still reaches past the fold).
-    test.skip(y <= 633, 'canvas fits inside the fold at this viewport — no below-fold release exists')
+    const fold = 721
+    // PRECONDITION (never a silent skip): the rect must genuinely cross the fold
+    expect(
+      s.box.y + s.box.height,
+      'canvas rect bottom must run past the fold for this cell to mean anything',
+    ).toBeGreaterThan(fold + 20)
+    const y = Math.min(s.box.y + s.box.height - 60, fold + 30) // below the fold, well inside the rect
+    expect(y, 'release point must sit BELOW the fold').toBeGreaterThan(fold)
     const cdp = await cdpInput(page)
     await cdp.down(s.box.x + 400, y)
     await cdp.up(s.box.x + 400, y)
+    // the ANTI-VACUITY half: the release must have ARRIVED with a non-canvas
+    // target — if the browser delivered it to the canvas, this cell would
+    // only be re-testing the identity path the fix replaced.
+    const evs = (await probe(page)) as { events: { type: string; y: number; id: string }[] }
+    const downs = evs.events.filter((e) => e.type === 'pointerup' && e.y > fold)
+    expect(downs.length, 'the browser must route the below-fold release to <html>, not the canvas').toBeGreaterThan(0)
+    expect(downs.some((e) => e.id !== 'gw-canvas'), 'guard exercised by COORDINATES, not identity').toBe(true)
     await expect(count(page), 'T11: below-fold in-rect release placed nothing').toHaveText(
       '1 of 3 pieces used',
       { timeout: 5_000 },

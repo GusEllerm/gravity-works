@@ -413,6 +413,33 @@ export function attachBuildView(
     dragged: boolean;
   }
   let press: Press | null = null;
+  /** Where the last mouse press BEGAN (window capture — the canvas
+   *  listener cannot see a press that started on a control), and whether
+   *  it began on one. Close-review F3: the untracked-release fresh-intent
+   *  rule below must know its provenance. A press that began ON a control
+   *  and travelled into the world before releasing is the button's
+   *  gesture, not a fresh canvas intent — its activation click, if the
+   *  release never lands on the button, belongs to their common ancestor
+   *  and never fires the button, so the sequence is neither a click nor
+   *  a place: placing here was the Q-item-6 class of misfire arriving
+   *  through the door the coordinates guard opened. */
+  interface PressOrigin {
+    id: number;
+    onControl: boolean;
+  }
+  let lastPressOrigin: PressOrigin | null = null;
+  /** the controls whose clicks are their own (the veto list `overCanvasAt`
+   *  uses for releases — a press that BEGAN on one of these owns its verb). */
+  const controlAt = (ev: PointerEvent): boolean =>
+    !!(ev.target as HTMLElement | null)?.closest?.('button, a, input, select, textarea, #gw-result, #gw-hiccup, #gw-help-list');
+  window.addEventListener(
+    'pointerdown',
+    (ev) => {
+      if (ev.pointerType !== 'mouse') lastPressOrigin = null;
+      else if (ev.button === 0) lastPressOrigin = { id: ev.pointerId, onControl: controlAt(ev) };
+    },
+    true,
+  );
   /** the last release the POINTER path already placed on — the dedupe
    *  key for the `click` fallback below. */
   let placedAt = { t: -1e9, x: 0, y: 0 };
@@ -543,6 +570,10 @@ export function attachBuildView(
   // lost) the element under the pointer gets them — and they STILL bubble
   // here. One listener, every release seen.
   const release = (ev: PointerEvent): void => {
+    // the press origin belongs to THIS press-release pair, whoever it
+    // started on; a later press re-records it (capture order above).
+    const origin = lastPressOrigin;
+    if (origin && origin.id === ev.pointerId) lastPressOrigin = null;
     if (!press) {
       // THE STUCK-PRESS GUARD (playtests T+U round4 / tooling: a press
       // whose DOWN we never saw — released over browser chrome, a dropped
@@ -554,7 +585,19 @@ export function attachBuildView(
       // recorded in `placedAt` so the `click` fallback below cannot
       // double-place it. A release whose press IS tracked keeps the
       // exact old rules (a latched framing drag still never places).
-      if (ev.type === 'pointerup' && ev.button === 0 && overCanvasAt(ev)) {
+      // canvas misses, and no release the page has seen could
+      // consume it), the press began on a CONTROL — a button the player
+      // was pressing when this drag started — and the release lands on
+      // that control or inside the canvas rect, it is NOT fresh intent
+      // (close-review F3: hold a piece, press Launch, drag into the
+      // world, release — the button never got its activation click, but
+      // nothing places either).
+      if (
+        ev.type === 'pointerup' &&
+        ev.button === 0 &&
+        !(origin && origin.onControl && (ev.target === canvas || overCanvasAt(ev))) &&
+        overCanvasAt(ev)
+      ) {
         placedAt = { t: performance.now(), x: ev.clientX, y: ev.clientY };
         handlers.onPlace(ev.clientX, ev.clientY);
       }

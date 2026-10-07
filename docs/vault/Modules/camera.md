@@ -330,9 +330,19 @@ answer is `src/camera/build-camera.ts`, the RESTRICTED build orbit:
   inside the rect but Chrome delivers it to `<html>` — the old
   `ev.target === canvas` test ate those silently; controls, the verdict
   panel, and the help drawer keep their own clicks and never double as
-  a place) — routed
+  a place) — UNLESS the press BEGAN on one of those controls
+  (stage-4 close review F3: a window-capture listener records the press
+  origin the canvas listener cannot see — hold a piece, press Launch,
+  drag into the world, release: the button's gesture, NOT fresh intent,
+  and nothing places; `tests/e2e/playtest-y-clickdiff.spec.ts` T13, with
+  the ordinary-canvas-click positive control in the same cell) — routed
   through the same verb and deduped against the `click` fallback, never
-  an event the page eats; a `pointerdown` RECONCILES AT
+  an event the page eats; the coordinates path is asserted in the shape
+  where it is LIVE (close review F2): the T11 cell moved from the
+  never-run 633 skip to 1280x721 — over 700 px tall the compact variant
+  is off and the chrome + 540 px canvas still run the rect past the
+  fold — and the cell asserts the release ARRIVED off-canvas before it
+  asserts it placed, so it can only pass on coordinates; a `pointerdown` RECONCILES AT
   PRESS (playtests T+U round 4: the zombie could still eat exactly the
   NEXT left click — the old join rule handed any press arriving before
   the first reconciling hover to the stale right-button verb, and that
