@@ -39,6 +39,7 @@
  *    aria-live, no panel chrome beyond the world palette, shown once per run.
  */
 import { starsFor, starGlyphs, type Par, type RunResult } from '../world/stars.ts';
+import type { PieceKind } from '../track/pieces.ts';
 
 // ---- witnesses --------------------------------------------------------------
 
@@ -194,7 +195,9 @@ export function createRunRecorder(): RunRecorder {
  * map at the top of this file and in docs/vault/Modules/ui.md:
  *
  *   hazard touched        -> "a hazard took the run" (which one, once props report it)
- *   fell, nose-down touchdown -> fell off nose-first
+ *   fell, nose-down touchdown -> fell off nose-first (BUILD-AWARE tail:
+ *                              the lip advice only when a lip is IN the
+ *                              build — see `buildKinds` below)
  *   any slow-at-apex      -> fell off / stalled — too slow at the top of the loop
  *   fell after a long flight that ROSE off the deck -> fell off after a long jump
  *   fell otherwise        -> fell off the set
@@ -222,8 +225,22 @@ export function createRunRecorder(): RunRecorder {
  *
  * A finished run gets no note — the panel already shows what finishing looked
  * like (§11: text never explains what a picture shows).
+ *
+ * BUILD-AWARE NOTES (stage 4, playtest M item: "'lower the lip' advice when I
+ * had NO lip placed"). `buildKinds` is the set of piece KINDS in the build
+ * that just ran (plumbed from `src/boot.ts` — UI-side derivation only; the
+ * physics, and therefore the run hash, never sees it). A tail that tells the
+ * player to change a piece they never placed is not advice, it is noise —
+ * the nose-first line's `lower the lip` tail prints only when a `gapLip` is
+ * actually in the build; the landing-flattening half of the advice stands on
+ * its own either way. Every tail stays admissible for the evidence that
+ * printed it: a note is never printed that the run could not have produced.
  */
-export function physicsNote(result: RunResult, ev: RunEvidence): string {
+export function physicsNote(
+  result: RunResult,
+  ev: RunEvidence,
+  buildKinds: ReadonlySet<PieceKind> | null = null,
+): string {
   if (result.status === 'finished') return '';
   if (result.hazardsTouched > 0) return 'a hazard took the run — line up to miss it';
 
@@ -233,7 +250,11 @@ export function physicsNote(result: RunResult, ev: RunEvidence): string {
 
   if (result.status === 'fell') {
     if (ev.lastTouchdownPitch !== null && ev.lastTouchdownPitch < NOSE_FIRST_PITCH) {
-      return 'fell off nose-first — flatten the landing or lower the lip';
+      // the lip tail names a piece the player can only lower if it is in
+      // front of them (playtest M's straight+drop build had no lip at all)
+      return buildKinds && !buildKinds.has('gapLip')
+        ? 'fell off nose-first — flatten the landing'
+        : 'fell off nose-first — flatten the landing or lower the lip';
     }
     if (tooSlowAtApex) return 'fell off — too slow at the top of the loop; give it more height before it';
     // Stage-4 (playtest K: "'flew off — a long jump' on a run that never
@@ -286,18 +307,21 @@ export interface ResultModel {
   bestStarsBefore: number;
 }
 
-/** Stars + note for one finished-or-not run: the panel's whole content. */
+/** Stars + note for one finished-or-not run: the panel's whole content.
+ *  `buildKinds` (the kinds in the build that ran) makes the note tails
+ *  build-aware — see `physicsNote`; it never reaches the physics. */
 export function resultModel(
   result: RunResult,
   par: Par,
   ev: RunEvidence,
   bestStarsBefore = 0,
+  buildKinds: ReadonlySet<PieceKind> | null = null,
 ): ResultModel {
   return {
     stars: starsFor(result, par),
     time: result.time,
     piecesUsed: result.piecesUsed,
-    note: physicsNote(result, ev),
+    note: physicsNote(result, ev, buildKinds),
     status: result.status,
     par,
     bestStarsBefore,

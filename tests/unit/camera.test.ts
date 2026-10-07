@@ -4,7 +4,7 @@
  * KitRig — the camera only consumes {railPointAt, frameAt, length}, so this
  * keeps the timing assertions exact and the test fast.
  */
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { RunCamera, RUN_CAMERA } from '../../src/camera/run-camera.ts';
 import type { RunCameraSolid } from '../../src/camera/run-camera.ts';
@@ -290,10 +290,12 @@ describe('stage 3: the beige-wall proof (L01–L04 par runs, harness-rendered me
       let worstNdc = 0;
       let minDist = Infinity;
       let maxDist = 0;
+      let maxFinishDist = 0;
       for (; steps < 12 / DT && world.status === 'running'; steps++) {
         world.step();
         const s = world.state();
-        cam.update(DT, rig.nearestArc(s.car.pos), s.car.speed, s.car.pos);
+        const carArc = rig.nearestArc(s.car.pos);
+        cam.update(DT, carArc, s.car.speed, s.car.pos);
         // — frustum test
         const q = cam.rotation.clone().invert();
         const v = new THREE.Vector3(s.car.pos.x, s.car.pos.y, s.car.pos.z)
@@ -304,7 +306,18 @@ describe('stage 3: the beige-wall proof (L01–L04 par runs, harness-rendered me
         const ny = Math.abs(v.y / (-v.z * tan));
         worstNdc = Math.max(worstNdc, nx, ny);
         minDist = Math.min(minDist, v.length());
-        maxDist = Math.max(maxDist, v.length());
+        // The eye→car BAND splits at the finish fade (stage 4 watchability,
+        // playtest M): OUTSIDE the last `FINISH_ARC` the chase must stay
+        // within the stage-3 0.15–0.7 m band (a car the player can pick out
+        // mid-run), and INSIDE it the deliberate finish clip — eye lifted,
+        // trailed back and swung off the rail so cup, car and props share
+        // one frame — is allowed to widen, but only to 0.85 m: past that
+        // the car is a dot in a wide shot and the run's last second stops
+        // being readable, which is the failure this whole pass exists to
+        // kill. An earlier candidate (0.55 m trail + 0.5 m side) measured
+        // 1.15 m here and failed on all four rungs.
+        if (carArc > rig.length - RUN_CAMERA.FINISH_ARC) maxFinishDist = Math.max(maxFinishDist, v.length());
+        else maxDist = Math.max(maxDist, v.length());
         // — solid test (raw boxes, no margin: the INTERSECTION promise)
         const e = cam.position;
         for (const b of solids) {
@@ -319,8 +332,106 @@ describe('stage 3: the beige-wall proof (L01–L04 par runs, harness-rendered me
       expect(steps).toBeGreaterThan(100);
       expect(worstNdc).toBeLessThanOrEqual(0.95);
       expect(minDist).toBeGreaterThan(0.1);
-      expect(maxDist).toBeLessThan(0.7);
+      expect(maxDist, 'cruise eye→car distance').toBeLessThan(0.7);
+      expect(maxFinishDist, 'finish-window eye→car distance').toBeLessThan(0.85);
       world.dispose();
     }, 30_000);
   }
+});
+
+/**
+ * STAGE 4 WATCHABILITY — THE FRAMING PROOFS (playtest N item: "the goal cup
+ * is NEVER framed by the build camera"; playtest M item 6: "the result panel
+ * hides where the car died"). Both live in `frameCamera` (`src/boot.ts`):
+ * the static table framing biases its look-at toward the finish CUP's
+ * capture centre (the goal sits in the middle thirds of the load frame, not
+ * at an edge where a stranger cannot find it), and the run-end (end-hold)
+ * pass boxes the car's final position into the subject so a fallen car
+ * settles INSIDE the frame the verdict panel then appears over.
+ */
+describe('stage 4: the goal-framing + end-hold proofs', () => {
+  const FOV = 35; // boot's PerspectiveCamera fov
+  const ASPECT = 960 / 540;
+
+  const ndcOf = (camera: THREE.PerspectiveCamera, p: THREE.Vector3) => {
+    camera.updateMatrixWorld(true);
+    camera.updateProjectionMatrix();
+    return p.clone().project(camera);
+  };
+
+  let _buildTrackMeshes: ((b: any) => THREE.Group) | null = null;
+  beforeAll(async () => {
+    _buildTrackMeshes = (await import('../../src/world/world.ts')).buildTrackMeshes;
+  });
+
+  // the ladder lines that have a cup, both builds each addressable
+  const lines: { name: string; level: any; mode: 'fixtures' | 'par' | 'alt' }[] = [
+    { name: 'L01 fixtures', level: KITCHEN01, mode: 'fixtures' },
+    { name: 'L01 par', level: KITCHEN01, mode: 'par' },
+    { name: 'L02 fixtures', level: KITCHEN02, mode: 'fixtures' },
+    { name: 'L02 par', level: KITCHEN02, mode: 'par' },
+    { name: 'L02 alt (arc line)', level: KITCHEN02, mode: 'alt' },
+    { name: 'L04 par', level: KITCHEN04, mode: 'par' },
+  ];
+
+  for (const line of lines) {
+    it(`${line.name}: the load framing frames the finish cup in the middle thirds`, async () => {
+      const { finishCapture } = await import('../../src/feel/kittrack.ts');
+      const { frameCamera, initialBuild } = await import('../../src/boot.ts');
+      const { kitchen02ArcBuild } = await import('../../src/world/levels/kitchen02.level.ts');
+      const build =
+        line.mode === 'par'
+          ? line.level.placeholderBuild()
+          : line.mode === 'alt'
+            ? kitchen02ArcBuild()
+            : initialBuild(line.level);
+      const cup = finishCapture(build);
+      expect(cup, `${line.name}: no cup in build`).not.toBeNull();
+      const scene = new THREE.Scene();
+      scene.add(_buildTrackMeshes!(build));
+      const camera = new THREE.PerspectiveCamera(FOV, ASPECT, 0.01, 20);
+      frameCamera(camera, scene, cup!.center);
+      const ndc = ndcOf(camera, cup!.center);
+      expect(ndc.z, `${line.name}: cup past the far plane`).toBeLessThan(1);
+      // MIDDLE THIRDS: |ndc| <= 0.5 on both axes sits well inside the 0.67
+      // third-lines; the corner framing the playtester could not find
+      // measured 0.43/0.46 with the box-centre look-at
+      expect(Math.abs(ndc.x), `${line.name}: cup x ndc`).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(ndc.y), `${line.name}: cup y ndc`).toBeLessThanOrEqual(0.5);
+      // and the whole build still fits: every track-box corner in frame
+      const box = new THREE.Box3().setFromObject(scene.getObjectByName('track')!);
+      for (const x of [box.min.x, box.max.x])
+        for (const y of [box.min.y, box.max.y])
+          for (const z of [box.min.z, box.max.z]) {
+            const c = ndcOf(camera, new THREE.Vector3(x, y, z));
+            expect(Math.abs(c.x), `${line.name}: corner x`).toBeLessThanOrEqual(0.95);
+            expect(Math.abs(c.y), `${line.name}: corner y`).toBeLessThanOrEqual(0.95);
+          }
+    });
+  }
+
+  it('end-hold framing: a car that settles half a metre off the track box is still in frame', async () => {
+    const { frameCamera } = await import('../../src/boot.ts');
+    const build = KITCHEN01.placeholderBuild();
+    const scene = new THREE.Scene();
+    scene.add(_buildTrackMeshes!(build));
+    // a death spot under the gap: below the deck, beside the line — OUTSIDE
+    // the track's own box (that is what makes it the old bug)
+    const death = new THREE.Vector3(0.9, -0.75, 0.35);
+    const camera = new THREE.PerspectiveCamera(FOV, ASPECT, 0.01, 20);
+    frameCamera(camera, scene, null, death);
+    const ndc = ndcOf(camera, death);
+    expect(ndc.z, 'death spot past the far plane').toBeLessThan(1);
+    expect(Math.abs(ndc.x), 'death spot x ndc').toBeLessThanOrEqual(0.9);
+    expect(Math.abs(ndc.y), 'death spot y ndc').toBeLessThanOrEqual(0.9);
+    // and the wide hold is still a WIDE shot: the whole track fits too
+    // (the panel appears beside the car, not instead of the level)
+    const box = new THREE.Box3().setFromObject(scene.getObjectByName('track')!);
+    for (const x of [box.min.x, box.max.x])
+      for (const z of [box.min.z, box.max.z]) {
+        const c = ndcOf(camera, new THREE.Vector3(x, box.min.y, z));
+        expect(Math.abs(c.x), 'track corner x').toBeLessThanOrEqual(0.95);
+        expect(Math.abs(c.y), 'track corner y').toBeLessThanOrEqual(0.95);
+      }
+  });
 });

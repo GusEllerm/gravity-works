@@ -153,9 +153,13 @@ probe across every socket of two real builds, the §7.3 lead/63 %
 measurements on the loop rig's real run-out rail, and the stage-3 proof:
 every L01–L04 par run through the boot wiring asserts the car projects
 inside the frustum on EVERY step (|ndc| ≤ 0.95, never behind the eye
-plane) and the eye never sits inside a set solid. `tests/e2e/filmstrip.spec.ts`
+plane) and the eye never sits inside a set solid — plus (stage 4 round 3)
+the eye→car band SPLIT at the finish fade (cruise < 0.7 m unchanged,
+finish window ≤ 0.85 m) and the goal-framing + end-hold proofs on
+`frameCamera`. `tests/e2e/filmstrip.spec.ts`
 (port 4210, `npm run test:e2e:filmstrip`) repeats the in-frame claim on the
-BUILT page as the 250 ms filmstrip (≤ 60 % single-colour per frame).
+BUILT page as the 250 ms filmstrip (≤ 60 % single-colour per frame) and the
+dense final-second gate on L01/L04 and BOTH L02 lines (`build=par`+`alt`).
 
 ## Depends on / used by
 
@@ -178,3 +182,53 @@ OVER the end furniture instead of through it. The filmstrip gate
 the FINAL second of the L01+L04 par runs — no frame may be >60 % single
 colour — which is the assertion that was missing when "mid-run fixed"
 still shipped a wall at the end.
+
+## Stage 4 round 3: watchability resumed (playtests M+N, measured)
+
+M/N could still not WATCH a failure: "the cup and death spot were NEVER
+visible", "the whole far half of Two Ways stays off-frame", "the build
+camera never frames the cup". Four fixes, all camera-side:
+
+- **The fade keys the CUP, not the rail end.** boot projects the build's
+  `finishCapture` centre onto the rail (`KitRig.nearestArcInfo`) and passes
+  it as `RunCamera`'s `finishArc` option; `finishWeight` counts DOWN from
+  that witness and stays 1 past it. L02's rail runs 0.84 m of visible
+  curve PAST its cup, so the rail-end-keyed round-2 fade never fired on
+  either L02 line at all — 0 % weight the whole run.
+- **The finish pose is a finish CLIP**: `FINISH_ARC` 1.2 m (the last second
+  at ladder speeds), `FINISH_LIFT` 0.22, `FINISH_TRAIL` 0.25 pull-back and
+  `FINISH_SIDE` 0.25 off-rail step (direction matters: the yawed L04 mount
+  measures 63 % dense-left / 43 % dense-right), `FINISH_LEAD_TAPER` 0.4
+  aiming at the CAR by 40 % of the fade (the L04 sink drops the car ~35 cm
+  mid-fade; a lead-point azimuth put it off the bottom edge), and the
+  ROTATION lag tightening to 0.05 s across the same weight — anticipation
+  is corner language, and a 350 ms rotation lag on a diving subject is the
+  complaint itself. Lift target is `max(requiredLift, FINISH_LIFT·w)`: the
+  crane does NOT stack on the clearance lift (stacking measured 1.5+ m
+  eye→car and broke the distance contract at the tap).
+- **The beige-wall proof splits at the fade** (`tests/unit/camera.test.ts`):
+  OUTSIDE the finish window the cruise contract is unchanged (|ndc| ≤ 0.95
+  every step, eye→car < 0.7 m, never inside a solid — measured cruise max
+  0.47 m); INSIDE it the deliberate wide shot may widen to ≤ 0.85 m. The
+  0.55 m trail / 0.5 m side a tuning pass briefly carried measured 1.15 m
+  there and broke it on all four rungs.
+- **THE GATE'S OWN METER was broken.** The dense sampler's bucket key
+  shifted BLUE into the GREEN slot (`(b >> 4) << 4`), OR-ing the nibbles:
+  every cream/gold family colour merged into one bucket, so a warm frame
+  that measures 24–49 % on the 250 ms PNG sampler read 63–89 % on the
+  dense one — the two halves of the gate were measuring different cameras,
+  and a full-resolution tuning pass ("all frames ≤ 60 %") could not see
+  either number. Fixed (key identical to the PNG sampler) and re-measured:
+  shipped dense worst L01 40.1 %, L04 49.2 %, L02-par 40.2 %, L02-alt
+  40.2 %, whole-run/post-terminal worst 50.4 %, bar 60 %. The dense gate
+  now shoots BOTH L02 lines (`?build=alt` = `kitchen02ArcBuild`, addressed
+  by boot's `ALT_LINES` table — level DATA untouched).
+
+Framing lives with `frameCamera` (`src/boot.ts`, exported for the proof):
+the static/table/load framing biases its look-at 35 % toward the cup's
+capture centre (cup |ndc| ≤ 0.28 vs 0.43/0.46 cornering when N could not
+find the goal; every track corner still ≤ 0.49) and the RUN-END (end-hold)
+pass unions the car's FINAL position — clamped to the track's ±0.6 m
+neighbourhood — into the subject, so the verdict panel lands over a frame
+that CONTAINS the death spot (M item 6). Proved per-line in
+`tests/unit/camera.test.ts` (goal-framing + end-hold block).
