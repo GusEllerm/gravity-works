@@ -13,7 +13,7 @@ import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts'
  * 2. A reload preserves the WORKING build (S: reload "silently wiped my
  *    in-progress build") — and starts fresh exactly where the save rules say
  *    fresh (?build=par recorded addressing).
- * 3. Target labels name the THING plainly: "where the car starts", "cup on
+ * 3. Target labels name the THING plainly: "the car\u2019s start point", "cup on
  *    the table" — no internal words ("level start", "end of cup", "the set")
  *    on any player line.
  * 4. After Remove the piece counts agree EVERYWHERE: the idle status line and
@@ -148,7 +148,7 @@ test('target labels name the thing, never the internals (R+S)', async ({ page })
   // kitchen01: the cup's open exit is the CUP they can see, not "end of cup"
   await page.goto('/?level=kitchen01')
   await ready(page)
-  await expect(page.locator('#gw-target-label')).toHaveText('target: end of ramp')
+  await expect(page.locator('#gw-target-label')).toHaveText('target: end of the pre-built ramp')
   await page.keyboard.press('ArrowRight')
   await expect(page.locator('#gw-target-label')).toHaveText('target: cup on the table')
 
@@ -156,7 +156,7 @@ test('target labels name the thing, never the internals (R+S)', async ({ page })
   await page.goto('/?level=kitchen04')
   await ready(page)
   await page.keyboard.press('ArrowLeft')
-  await expect(page.locator('#gw-target-label')).toHaveText('target: where the car starts')
+  await expect(page.locator('#gw-target-label')).toHaveText('target: the car\u2019s start point')
 
   // no internal word on any spoken line of the idle page
   const speak = await page.evaluate(() =>

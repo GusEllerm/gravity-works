@@ -75,7 +75,7 @@ test('keyboard-only: kitchen01 is built, finished and advanced with arrows + Ent
 
   // build the whole par line with keys alone: hold → aim → Enter, ×3
   await holdKind(page, 'gapLip')
-  await aimAt(page, 'end of ramp')
+  await aimAt(page, 'end of the pre-built ramp')
   await page.keyboard.press('Enter')
   await expect(page.locator('#gw-piece-count')).toHaveText('1 of 3 pieces used')
 

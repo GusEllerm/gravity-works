@@ -29,7 +29,7 @@
  *   (playtest N's eight-try wall: the default aimed `drop@start`, a legal
  *   build that cannot win, and the arrows were the only clue). The bare
  *   release socket stays a target — the arrows and hover still walk there —
- *   and names itself PLAINLY ("where the car starts", playtest R: "level
+ *   and names itself PLAINLY ("the car's start point", playtest R: "level
  *   start???"), as does the cup ("cup on the table", never "end of cup" —
  *   the cup is a fixture the kit never offers as a piece).
  * - HOVERING the canvas moves the target to the nearest open socket on
@@ -499,11 +499,12 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     const startTaken = all.some(({ sockets }) =>
       sockets.some((s) => s.pos.distanceTo(level.startSocket.pos) < JOIN_TOL),
     );
-    // THE START SOCKET, NAMED PLAINLY (playtest R: "target: level start???"):
-    // an open start socket is the car's RELEASE point — the line says exactly
-    // that; the internal word "level" never reaches the screen. (Once a piece
-    // is seated on it the socket is taken and the piece's own exit labels aim.)
-    if (!startTaken) out.push({ socket: level.startSocket, label: 'where the car starts' });
+    // THE START SOCKET, NAMED PLAINLY (playtest R: "target: level start???";
+    // playtests Y+X round6: "where the car starts" READ AS A PIECE NAME):
+    // an open start socket is the car's RELEASE POINT — the label is a
+    // plain NOUN of place that cannot parse as a kit piece. Once a piece is
+    // seated on it the socket is taken and the piece's own exit labels aim.)
+    if (!startTaken) out.push({ socket: level.startSocket, label: 'the car\u2019s start point' });
     for (const { piece, sockets } of all) {
       const [, exit] = sockets;
       const taken = all.some(
@@ -514,12 +515,22 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       // THE CUP IS THE CUP, not a piece (playtests R+S: "target: end of cup"
       // named a piece the kit never offered; the cup is the object they can
       // SEE). Its open exit — where a run-out line would chain — names the
-      // visible thing instead. Every other kind keeps the measured-good
-      // "end of X" the playtesters read as chain order.
+      // visible thing instead. A piece of a kind the TRAY never stocks (a
+      // fixture: kitchen02's run-out `curve`, greyed in the tray — playtest
+      // Y round6: "target: end of curve" with "Curve is greyed; none exists",
+      // read as advice to place an unplaceable piece) says PRE-BUILT first:
+      // the label may name the visible object, but must never name a greyed
+      // kind as if it were an option. Every tray-stockable kind keeps the
+      // measured-good "end of X" the playtesters read as chain order.
       if (!taken)
         out.push({
           socket: exit,
-          label: piece.def === 'finishCup' ? 'cup on the table' : `end of ${pieceLabel(piece.def).toLowerCase()}`,
+          label:
+            piece.def === 'finishCup'
+              ? 'cup on the table'
+              : locked(piece.def)
+                ? `end of the pre-built ${pieceLabel(piece.def).toLowerCase()}`
+                : `end of ${pieceLabel(piece.def).toLowerCase()}`,
         });
     }
     return out;
@@ -591,8 +602,12 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
             // brackets never named"; the bracket pair was read as a checkbox
             // glyph, not keys). Shown ONLY while a near-tie is live (the
             // same `aimTies.length > 1` gate — no ambiguity, no hint); the
-            // ring itself shows WHICH socket is marked.
-            aimTies.length === 2
+            // ring itself shows WHICH socket is marked. THE LINE CHANGES
+            // UNDER THE KEY (playtest X round6: with exactly two ties the
+            // two states read IDENTICALLY — "press ] for the other one" in
+            // both — so `]` looked dead; the counter tail now also speaks
+            // from the second pick onward, the states differ in the words).
+            aimTies.length === 2 && aimTieCursor === 0
               ? `target: ${list[targetIndex]!.label} · two spots fit here — press ] for the other one`
               : `target: ${list[targetIndex]!.label} · ${aimTies.length} spots fit here — press ] for the next one (${aimTieCursor + 1} of ${aimTies.length})`
           : `target: ${list[targetIndex]!.label}`

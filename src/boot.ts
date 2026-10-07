@@ -45,7 +45,7 @@ import { PIECES } from './track/pieces.ts';
 import { fitSocket } from './track/snap.ts';
 import { transformSocket } from './track/socket.ts';
 import type { Level } from './world/level.ts';
-import { createBuilder } from './ui/builder.ts';
+import { createBuilder, type Builder } from './ui/builder.ts';
 import { parseShareUrl } from './share/share.ts';
 import { replayRun } from './replay/replay.ts';
 import { createBuildAutosave, loadSave, rememberBuild, recordStars, savedBuild } from './save/save.ts';
@@ -562,6 +562,31 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     renderer.render(warm, camera);
   }
 
+  // stage 4 BUILD VIEW (playtest Q: "built 4 levels from ONE FIXED ANGLE,
+  // left-drag PLACES"): the player-adjustable layer over the static table
+  // framing — right-drag (or Space+drag) = damped yaw-only orbit clamped
+  // to the table's sensible hemisphere, left-drag past the click threshold
+  // = pan, and a click that TRAVELLED places NOTHING (the one gesture
+  // contract lives in `attachBuildView`, src/camera/build-camera.ts)
+  const buildView = new BuildCamera();
+  // THE GESTURE OWNER ATTACHES AT CANVAS MOUNT, NOT AT LEVEL-READY
+  // (playtest Y round6: "every level: clicks inert, Enter always placed"
+  // while a scripted down/up in a director session placed fine — the
+  // suspect space was an event arriving at a canvas that had no listeners
+  // yet). The canvas is live the moment the warm frame paints, so the
+  // gesture recogniser mounts HERE — before the set module's dynamic
+  // import and before `World.create` await the physics wasm — rather
+  // than ~0.5 s later on the other side of those awaits. The handlers
+  // dispatch through `builderRef`, which stays null until the builder
+  // exists: events in the boot window resolve to aim/place as soon as
+  // there is a builder to answer, and press state is tracked from the
+  // FIRST event the canvas sees, never from mid-sequence.
+  let builderRef: Builder | null = null;
+  attachBuildView(renderer.domElement, buildView, {
+    onHover: (x, y) => builderRef?.aimAt(x, y),
+    onPlace: (x, y) => builderRef?.clickPlaceAt(x, y),
+  });
+
   // Stage 3 wiring, stage 4 registry: a level that declares a set (or a
   // `?set=` dev override) renders INSIDE it. The set is mounted under the
   // world root beside the track group as a VISUAL only — no colliders, no
@@ -599,13 +624,6 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // the build's finish-cup capture centre (null when the build has no cup):
   // the run camera's finish witness AND the static framing's goal bias
   let framingFocus: THREE.Vector3 | null = null;
-  // stage 4 BUILD VIEW (playtest Q: "built 4 levels from ONE FIXED ANGLE,
-  // left-drag PLACES"): the player-adjustable layer over the static table
-  // framing — right-drag (or Space+drag) = damped yaw-only orbit clamped
-  // to the table's sensible hemisphere, left-drag past the click threshold
-  // = pan, and a click that TRAVELLED places NOTHING (the one gesture
-  // contract lives in `attachBuildView`, src/camera/build-camera.ts)
-  const buildView = new BuildCamera();
   // the FAILURE end-hold's witness (playtest R round3, see the frame loop):
   // the car's last seeable point while the wide death-hold owns the static
   // framing after a failed run; null whenever any other framing owns the
@@ -701,7 +719,14 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // word-button at page bottom”); the drawer itself is an overlay, never
   // inline content pushing the page down (`src/ui/help.ts`).
 
-  const builder = createBuilder(builderHost, {
+  // THE ONE CANVAS GESTURE OWNER (playtest Q item 6): hover aims, a clean
+  // click places, a travelling press frames (left-drag pans, right-drag or
+  // Space+drag orbits) and never places. The builder no longer registers
+  // pointer listeners of its own — press-move-release counted as a place
+  // there, which WAS the accidental-placement bug. The listeners
+  // themselves attached at canvas MOUNT (see `builderRef` above,
+  // playtest Y round6); this only hands the live builder to them.
+  const builder = (builderRef = createBuilder(builderHost, {
     level,
     build: startBuild,
     tray,
@@ -718,17 +743,8 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       resultPanel.hide(); // an edited build invalidates the last result
       void rebuild(build);
     },
-  });
+  }));
   builder.attachCanvas(renderer.domElement, camera);
-  // THE ONE CANVAS GESTURE OWNER (playtest Q item 6): hover aims, a clean
-  // click places, a travelling press frames (left-drag pans, right-drag or
-  // Space+drag orbits) and never places. The builder no longer registers
-  // pointer listeners of its own — press-move-release counted as a place
-  // there, which WAS the accidental-placement bug.
-  attachBuildView(renderer.domElement, buildView, {
-    onHover: (x, y) => builder.aimAt(x, y),
-    onPlace: (x, y) => builder.clickPlaceAt(x, y),
-  });
   builder.elements.launch.addEventListener('click', startRun);
   // the progression loop closed on the buttons (§9.1 retry, ladder next):
   // Retry = as-built, one click back to Launch; Next = the following rung,

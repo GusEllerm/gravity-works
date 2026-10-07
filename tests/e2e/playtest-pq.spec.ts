@@ -144,7 +144,7 @@ test('the ring names itself once per session and retires at the first placement'
   await expect(page.locator('#gw-ring-hint')).toHaveText('the ring is where it will land')
   // the ring keeps its socket's label with NOTHING held (it always answers
   // "where will it go", so the label line is never silent while it shows)
-  await expect(page.locator('#gw-target-label')).toContainText('target: end of ramp')
+  await expect(page.locator('#gw-target-label')).toContainText('target: end of the pre-built ramp')
 
   // the first successful placement retires the line — for good, this session
   await page.click('#gw-tray-gapLip')

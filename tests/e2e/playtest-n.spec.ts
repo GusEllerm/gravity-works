@@ -179,7 +179,7 @@ test('fresh kitchen01 aims the FIRST Place at the par rail and the pure-UI build
   // start ramp's OPEN EXIT — the socket the par line begins on (N's
   // eight-try wall was the default aiming `level start`, a legal dead end)
   await page.click('#gw-tray-gapLip')
-  await expect(page.locator('#gw-target-label')).toHaveText('target: end of ramp')
+  await expect(page.locator('#gw-target-label')).toHaveText('target: end of the pre-built ramp')
 
   // the first Place at the default target ADVANCES the par chain: the
   // placed piece's exit becomes the new target

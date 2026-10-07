@@ -62,7 +62,7 @@ const buildAndLaunch = async (
 const finishKitchen05 = async (page: import('@playwright/test').Page): Promise<void> => {
   await page.goto('/?level=kitchen05')
   await ready(page)
-  await buildAndLaunch(page, ['booster', 'gapLip', 'drop', 'gapLip', 'drop', 'landing'], 'end of ramp')
+  await buildAndLaunch(page, ['booster', 'gapLip', 'drop', 'gapLip', 'drop', 'landing'], 'end of the pre-built ramp')
   await expect(page.locator('#gw-status')).toContainText('finished')
 }
 
@@ -167,7 +167,7 @@ test('bedroom01 is finishable through the real UI, reached via the unlocked rung
 
   // the cable-dip line: straight -> drop -> straight, tray buttons + Place,
   // then Launch — the guard must never block the drop onto the cable lane
-  await buildAndLaunch(page, ['straight', 'drop', 'straight'], 'end of ramp')
+  await buildAndLaunch(page, ['straight', 'drop', 'straight'], 'end of the pre-built ramp')
   await expect(page.locator('#gw-status')).toContainText('finished')
   const stars = (await page.textContent('#gw-result-stars')) ?? ''
   expect(stars.includes('★')).toBe(true)

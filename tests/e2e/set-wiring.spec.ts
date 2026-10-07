@@ -81,11 +81,11 @@ test('the builder ghost goes red on a set solid (L03 bowl-rim socket)', async ({
   // in-socket) — riding the rim, where a straight would drive through the
   // ceramic. ("cup" — the target line speaks the PIECE_LABELS word,
   // playtest M.)
-  await expect(page.locator('#gw-target-label')).toContainText('end of ramp')
+  await expect(page.locator('#gw-target-label')).toContainText('end of the pre-built ramp')
   await page.locator('#gw-builder').press('ArrowRight') // the cup's run-out
   await expect(page.locator('#gw-target-label')).toContainText('cup on the table')
-  await page.locator('#gw-builder').press('ArrowRight') // end of curve -> bowl.out
-  await expect(page.locator('#gw-target-label')).toContainText('end of curve')
+  await page.locator('#gw-builder').press('ArrowRight') // the pre-built curve -> bowl.out
+  await expect(page.locator('#gw-target-label')).toContainText('end of the pre-built curve')
   await expect(page.locator('#gw-ghost-state')).toContainText('blocked', { timeout: 10_000 })
 
   // the red ghost is the guard's claim; a seat attempt (Enter — a blocked

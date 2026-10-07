@@ -291,7 +291,14 @@ answer is `src/camera/build-camera.ts`, the RESTRICTED build orbit:
   per frame in boot's loop when the run camera is off; Retry/Reset bring
   the framing home (`reset()` zeroes the targets).
 - **`attachBuildView(canvas, view, {onHover, onPlace})`** is the app's ONE
-  canvas gesture owner, and the click-vs-drag disambiguation is explicit:
+  canvas gesture owner, ATTACHED AT CANVAS MOUNT, not at level-ready
+  (playtest Y round6: "every level: clicks inert, Enter always placed" —
+  the owner used to wire itself on the far side of the set module's and
+  the world's awaits, ~0.5 s after the canvas was live; boot.ts now
+  attaches it straight after the warm frame with the handlers dispatching
+  through a null-able builder reference, and `tests/e2e/playtest-y-clickdiff.spec.ts`
+  is the ordering matrix: every permutation of zero-move / pre-listener
+  move / boot-window CDP input places). The click-vs-drag disambiguation is explicit:
   hover AIMS; a press released within `CANVAS_DRAG_PX` (**20** CSS px —
   raised from 6 by playtest R round 3, where an ordinary click with a
   little finger travel latched as a drag and SILENTLY placed nothing)
@@ -313,7 +320,13 @@ answer is `src/camera/build-camera.ts`, the RESTRICTED build orbit:
   canvas misses still ends the press); a release whose press DOWN was
   never tracked at all — it fell outside the window or tooling dropped
   it (playtests V+W round 5: an eaten click while Enter worked) — is
-  fresh PLACE intent when the release point is over the canvas, routed
+  fresh PLACE intent when the release point is over the canvas —
+  "over" decided by COORDINATES inside the canvas RECT, not by event
+  identity (playtest X round6: a click past a short window's fold lands
+  inside the rect but Chrome delivers it to `<html>` — the old
+  `ev.target === canvas` test ate those silently; controls, the verdict
+  panel, and the help drawer keep their own clicks and never double as
+  a place) — routed
   through the same verb and deduped against the `click` fallback, never
   an event the page eats; a `pointerdown` RECONCILES AT
   PRESS (playtests T+U round 4: the zombie could still eat exactly the

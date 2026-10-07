@@ -35,7 +35,7 @@ const buildAllThree = async (page: import('@playwright/test').Page): Promise<voi
       // the boot default target sits on the PAR rail — the start ramp's
       // open exit — so the first Place begins the par line with no aiming
       // at all (playtest N's chain-order wall)
-      await expect(page.locator('#gw-target-label')).toContainText('end of ramp')
+      await expect(page.locator('#gw-target-label')).toContainText('end of the pre-built ramp')
     }
     await page.click('#gw-place')
     await expect(page.locator('#gw-piece-count')).toContainText(

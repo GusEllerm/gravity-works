@@ -420,6 +420,31 @@ export function attachBuildView(
   // right-drag is ORBIT here, so the browser menu must not ride along
   canvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
 
+  /** Is this release AT the canvas — even when the browser delivered it
+   *  to something else? The stuck-press guard's original test was
+   *  `ev.target === canvas`, and playtest X round6 found the hole: a
+   *  click whose point lies inside the canvas RECT but past the viewport
+   *  fold (a short window; the canvas runs below it) is routed by Chrome
+   *  to `<html>` — target not canvas, the intent silently eaten while the
+   *  full-page picture showed live content at that point. A release
+   *  AT canvas coordinates is therefore the same fresh intent, EXCEPT
+   *  when it landed on a control or an overlay that owns its own clicks
+   *  (buttons, links, fields, the verdict panel, the hiccup card) —
+   *  those keep their single-verb meaning and never double as a place. */
+  const overCanvasAt = (ev: PointerEvent): boolean => {
+    if (ev.target === canvas) return true;
+    const rect = canvas.getBoundingClientRect();
+    if (
+      ev.clientX < rect.left ||
+      ev.clientX > rect.right ||
+      ev.clientY < rect.top ||
+      ev.clientY > rect.bottom
+    )
+      return false;
+    const t = ev.target as HTMLElement | null;
+    return !t?.closest?.('button, a, input, select, textarea, #gw-result, #gw-hiccup, #gw-help-list');
+  };
+
   /** Is the button this press was made with PHYSICALLY down? (mouse: the
    *  exact bit; touch/pen: any contact). The reconcile the zombie-camera
    *  fix is built on — hover must never move the framing. */
@@ -529,7 +554,7 @@ export function attachBuildView(
       // recorded in `placedAt` so the `click` fallback below cannot
       // double-place it. A release whose press IS tracked keeps the
       // exact old rules (a latched framing drag still never places).
-      if (ev.type === 'pointerup' && ev.button === 0 && ev.target === canvas) {
+      if (ev.type === 'pointerup' && ev.button === 0 && overCanvasAt(ev)) {
         placedAt = { t: performance.now(), x: ev.clientX, y: ev.clientY };
         handlers.onPlace(ev.clientX, ev.clientY);
       }
