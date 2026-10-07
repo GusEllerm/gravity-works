@@ -128,7 +128,7 @@ sig = "c7d9abdf2d44719f"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "tests/unit/kitchen-levels.test.ts"
-sig = "3ff368e36c737fed"
+sig = "01a43379f62aea63"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -738,7 +738,7 @@ sig = "f00a6dbe45a90d4a"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/unit/kitchen-levels.test.ts"
-sig = "3ff368e36c737fed"
+sig = "01a43379f62aea63"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -938,7 +938,7 @@ sig = "b654a3f081d42b62"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/kitchen-levels.test.ts"
-sig = "3ff368e36c737fed"
+sig = "01a43379f62aea63"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1143,4 +1143,4 @@ sig = "c7d9abdf2d44719f"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "tests/unit/kitchen-levels.test.ts"
-sig = "3ff368e36c737fed"
+sig = "01a43379f62aea63"

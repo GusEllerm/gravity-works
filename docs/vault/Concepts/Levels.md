@@ -524,9 +524,20 @@ gapLip` runs 2.47 s. Wrong SUBSETS stay real geometry: G's partials
 longer than a flat roll-off can fly). The par line FLIES the sink
 (`gapLip` → `drop` → `landing` → run-out) and replays BIT-IDENTICAL wet vs
 dry (grip-independent to the bit, 2.517 s on the pre-pass chain,
-unchanged by the zone). For every line a player can BUILD, the patch is a
-TELLS-not-a-TOLL: the drips mark the sink, and no finishing line touches
-the zone. The zone's grip physics are still measured — on
+unchanged by the zone). STAGE-4 K4 TAP-WALL PASS (Playtest R) measured the
+stronger claim the learnability pass used to make — "no finishing line
+touches the zone" — FALSE on the builder mount: 10 of the 24 whole-tray
+orders deck the sink's near half and roll THROUGH the zone (grip 0.5 for
+0.11–0.29 s) yet finish at 2.53–2.61 s, inside the fly lines' clock; the
+patch is a TELLS with a COSTLESS toll, and the tray-minus-`drop` order
+`gapLip → straight → landing` FINISHES wet where it `fell` dry (wet-can-rescue,
+bathroom03's twin; both test-pinned). No buildable line DIES of grip — the
+toll has no stakes yet (ask #2b's lateral half). R's wall itself was a
+REVERSED `gapLip` mount (the R flag left up), pinned falling at the sink
+(2.192 s) and past the cup (2.533 s) under one identical note — the
+advice-honesty fix is note-side, see
+`Sessions/2026-10-09 Stage 4 - K4 tap wall`. The zone's grip physics are
+still measured — on
 `kitchen04GroundBuild()`, which is now explicitly the HAZARD/JUICE PROBE it
 physically always was: two loose `straight`s bridge the sink at ramp height
 and drive THROUGH the patch, the hash diverges and the probe runs 0.06 s
