@@ -8,12 +8,12 @@ sig = "e4e17cd7588ac713"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "scripts/gen-pars.mjs"
-sig = "17598bed0f73a9df"
+sig = "e17a284b1d0036b1"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/boot.ts"
-sig = "0f7cb5cf084adf16"
+sig = "10f27663eaecf619"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -39,6 +39,11 @@ sig = "39eebe9f4715d7e0"
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/sets/garden/data.ts"
 sig = "85fea3da970c0e69"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Levels.md"
+target = "src/sets/porch/data.ts"
+sig = "c6f64cb86daf87db"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -88,12 +93,12 @@ sig = "e123971bb17db1e4"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/world/pars.json"
-sig = "8b4d61fa3cc9742e"
+sig = "b00fd762c889070b"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/world/setPlacement.ts"
-sig = "cf1a547ff60f3d04"
+sig = "87d6a609c65df868"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -108,7 +113,7 @@ sig = "b99bbc25b7209004"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "tests/unit/bedroom-levels.test.ts"
-sig = "00e8689cf4882e8b"
+sig = "ca0951fceb40b127"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -132,6 +137,11 @@ sig = "01a43379f62aea63"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
+target = "tests/unit/porch-levels.test.ts"
+sig = "d7f0ed8a1317d79c"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Levels.md"
 target = "tests/unit/set-wiring.test.ts"
 sig = "9d3eaca58139464d"
 
@@ -143,7 +153,7 @@ sig = "2648b709ac3796c8"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/boot.ts"
-sig = "0f7cb5cf084adf16"
+sig = "10f27663eaecf619"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -163,12 +173,12 @@ sig = "978a50ed48201287"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/world/campaign.ts"
-sig = "3422122b9708ccd8"
+sig = "0b0a00d07a6922ed"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/world/setPlacement.ts"
-sig = "cf1a547ff60f3d04"
+sig = "87d6a609c65df868"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -188,7 +198,7 @@ sig = "cb7dd5d5414784c4"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/boot.ts"
-sig = "0f7cb5cf084adf16"
+sig = "10f27663eaecf619"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -498,7 +508,7 @@ sig = "0f065f90d47289b6"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "src/boot.ts"
-sig = "0f7cb5cf084adf16"
+sig = "10f27663eaecf619"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -633,7 +643,7 @@ sig = "30af55b32a0f0f22"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/boot.ts"
-sig = "0f7cb5cf084adf16"
+sig = "10f27663eaecf619"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -698,7 +708,7 @@ sig = "befa699b906bc793"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/world/setPlacement.ts"
-sig = "cf1a547ff60f3d04"
+sig = "87d6a609c65df868"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -711,14 +721,19 @@ target = "tests/unit/bathroom-levels.test.ts"
 sig = "b99bbc25b7209004"
 
 [[bindings]]
+doc = "docs/vault/Modules/sets.md"
+target = "tests/unit/porch-levels.test.ts"
+sig = "d7f0ed8a1317d79c"
+
+[[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "scripts/gen-pars.mjs"
-sig = "17598bed0f73a9df"
+sig = "e17a284b1d0036b1"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/boot.ts"
-sig = "0f7cb5cf084adf16"
+sig = "10f27663eaecf619"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -773,12 +788,12 @@ sig = "978a50ed48201287"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/world/campaign.ts"
-sig = "3422122b9708ccd8"
+sig = "0b0a00d07a6922ed"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/world/pars.json"
-sig = "8b4d61fa3cc9742e"
+sig = "b00fd762c889070b"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -793,7 +808,7 @@ sig = "956a5f92a21353d6"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/campaign.spec.ts"
-sig = "c8f823c5f653cce1"
+sig = "218db57daee66f67"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -828,7 +843,7 @@ sig = "3dc33ac21de385ff"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/unit/boot.test.ts"
-sig = "12a8c593f0f970f8"
+sig = "8b14578671ba8134"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -843,7 +858,7 @@ sig = "01a43379f62aea63"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "src/boot.ts"
-sig = "0f7cb5cf084adf16"
+sig = "10f27663eaecf619"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -908,7 +923,7 @@ sig = "4e0fc998b5b96411"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/boot.ts"
-sig = "0f7cb5cf084adf16"
+sig = "10f27663eaecf619"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -968,7 +983,7 @@ sig = "978a50ed48201287"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/world/campaign.ts"
-sig = "3422122b9708ccd8"
+sig = "0b0a00d07a6922ed"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -993,7 +1008,7 @@ sig = "08b28fa0582747ff"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/campaign.spec.ts"
-sig = "c8f823c5f653cce1"
+sig = "218db57daee66f67"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1068,7 +1083,7 @@ sig = "0fc4d437eb235619"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/campaign.test.ts"
-sig = "b654a3f081d42b62"
+sig = "a20dc5d3793a3e09"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1098,12 +1113,12 @@ sig = "b66f6ddbf1db2544"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "scripts/gen-pars.mjs"
-sig = "17598bed0f73a9df"
+sig = "e17a284b1d0036b1"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/boot.ts"
-sig = "0f7cb5cf084adf16"
+sig = "10f27663eaecf619"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1133,7 +1148,7 @@ sig = "b10082b8262b15be"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/campaign.ts"
-sig = "3422122b9708ccd8"
+sig = "0b0a00d07a6922ed"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1153,12 +1168,12 @@ sig = "fb06ede3e0b45cba"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/pars.json"
-sig = "8b4d61fa3cc9742e"
+sig = "b00fd762c889070b"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/setPlacement.ts"
-sig = "cf1a547ff60f3d04"
+sig = "87d6a609c65df868"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1178,12 +1193,12 @@ sig = "b99bbc25b7209004"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/bedroom-levels.test.ts"
-sig = "00e8689cf4882e8b"
+sig = "ca0951fceb40b127"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/campaign.test.ts"
-sig = "b654a3f081d42b62"
+sig = "a20dc5d3793a3e09"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1204,6 +1219,11 @@ sig = "c7d9abdf2d44719f"
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/juice.test.ts"
 sig = "f560623ad3d27479"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "tests/unit/porch-levels.test.ts"
+sig = "d7f0ed8a1317d79c"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1238,12 +1258,12 @@ sig = "c6f64cb86daf87db"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "scripts/gen-pars.mjs"
-sig = "17598bed0f73a9df"
+sig = "e17a284b1d0036b1"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/boot.ts"
-sig = "0f7cb5cf084adf16"
+sig = "10f27663eaecf619"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
@@ -1258,7 +1278,7 @@ sig = "75dc55d9dbf5c389"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/world/pars.json"
-sig = "8b4d61fa3cc9742e"
+sig = "b00fd762c889070b"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
@@ -1273,7 +1293,7 @@ sig = "b99bbc25b7209004"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "tests/unit/bedroom-levels.test.ts"
-sig = "00e8689cf4882e8b"
+sig = "ca0951fceb40b127"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"

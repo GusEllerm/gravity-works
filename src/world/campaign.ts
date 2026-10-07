@@ -49,6 +49,11 @@ import { GARAGE01_ID } from './levels/garage01.level.ts';
 import { GARAGE02_ID } from './levels/garage02.level.ts';
 import { GARAGE03_ID } from './levels/garage03.level.ts';
 import { GARAGE04_ID } from './levels/garage04.level.ts';
+import { PORCH01_ID } from './levels/porch01.level.ts';
+import { PORCH02_ID } from './levels/porch02.level.ts';
+import { PORCH03_ID } from './levels/porch03.level.ts';
+import { PORCH04_ID } from './levels/porch04.level.ts';
+import { PORCH05_ID } from './levels/porch05.level.ts';
 
 /** One room of the campaign: an ordered run of rung ids under a heading. */
 export interface CampaignRoom {
@@ -85,6 +90,11 @@ export const CAMPAIGN: readonly CampaignRoom[] = [
     id: 'garage',
     label: 'Garage',
     levelIds: [GARAGE01_ID, GARAGE02_ID, GARAGE03_ID, GARAGE04_ID],
+  },
+  {
+    id: 'porch',
+    label: 'Porch',
+    levelIds: [PORCH01_ID, PORCH02_ID, PORCH03_ID, PORCH04_ID, PORCH05_ID],
   },
 ];
 

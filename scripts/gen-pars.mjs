@@ -70,6 +70,11 @@ await import('../src/world/levels/garage01.level.ts');
 await import('../src/world/levels/garage02.level.ts');
 await import('../src/world/levels/garage03.level.ts');
 await import('../src/world/levels/garage04.level.ts');
+await import('../src/world/levels/porch01.level.ts');
+await import('../src/world/levels/porch02.level.ts');
+await import('../src/world/levels/porch03.level.ts');
+await import('../src/world/levels/porch04.level.ts');
+await import('../src/world/levels/porch05.level.ts');
 const { LEVELS } = await import('../src/world/levels/feeltrack.level.ts');
 const { replayRun } = await import('../src/replay/replay.ts');
 

@@ -25,7 +25,8 @@
  * rung's claim is the strongest in the ladder: par replays BIT-IDENTICAL
  * wet vs dry and the dry sweep doubles as the wet sweep (asserted). The
  * tell is the sheen in the blade's dark edge; the toll is only for a line
- * the tray cannot build. The campaign's last rung, under the ratified
+ * the tray cannot build. The garage's last rung (stage 5 opened the porch
+ * beyond it — `nextInCampaign('garage04') === 'porch01'`), under the ratified
  * door-gap sunblade — the wheel tunnel stands at the end of the straight,
  * staging, exactly as ratified.
  */
