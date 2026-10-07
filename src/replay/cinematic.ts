@@ -374,6 +374,25 @@ export class ReplayDirector {
     } else {
       this.finishTangent.set(-1, 0, 0);
     }
+    // NOSE-FIRST FELL GUARD (playtest AA stage 5: "replay stage rendered
+    // solid red"): the finish pose offsets the eye by `tangent * -0.45d +
+    // UP * 0.42d`. When the run's final tangent is VERTICAL — the cup-less
+    // `fell` line of a build that fell straight down (a hand-forged link
+    // with no deck under the release falls exactly this way) — the two
+    // terms almost cancel (0.45 − 0.42 = 0.03 of d, ~3 cm) and the eye ends
+    // up INSIDE the chassis: the red car box fills the frame wall to wall,
+    // lit maroon, for the whole 70 %-of-the-timeline finish hold. A
+    // vertical vector is not a camera direction: flatten a near-vertical
+    // tangent onto the floor plane (an analytic +x when the fall was dead
+    // straight down) so the lock-off keeps its full offset and a proper
+    // `finishRight`. Runs on every path — a cup line's rail tangent never
+    // exceeds the kit's steepest drop (~45°), so the guard never touches a
+    // shot the game actually frames.
+    if (Math.abs(this.finishTangent.y) > 0.95) {
+      this.finishTangent.y = 0;
+      if (this.finishTangent.lengthSq() < 1e-12) this.finishTangent.set(1, 0, 0);
+      this.finishTangent.normalize();
+    }
     this.finishRight.crossVectors(UP, this.finishTangent).normalize();
     // a lock-off that frames the cup AND its approach: at fov 28 a d of
     // ~1.3 m shows ~1 m across — the cup, the last stretch of deck and a

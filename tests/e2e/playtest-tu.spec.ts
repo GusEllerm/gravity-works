@@ -381,11 +381,9 @@ test('T+U 2: the hint states the home chord once, honestly', async ({ page }) =>
 
 test('T+U 3: the finish cup is inside the build framing on every campaign rung', async ({ page }) => {
   test.slow()
-  // the sweep's rung count is the ladder's law: 21 through stage 4, and the
-  // stage-5 porch ladder grew it to 26 (kitchen 5 + bedroom 4 + bathroom 4 +
-  // garden 4 + garage 4 + porch 5) — the merge grew the campaign and left
-  // this literal at 21 (playtest AA pass repair; the porch rungs now sweep
-  // their cup framing here too)
+  // the sweep is the LADDER, not a remembered head-count — the porch ladder
+  // merge (stage 5) grew the campaign 21 → 26 and pinned constants here went
+  // stale; the cup-framing law holds rung by rung for however many there are
   expect(CAMPAIGN_LADDER.length).toBe(26)
   for (const id of CAMPAIGN_LADDER) {
     for (const build of ['', '&build=par']) {
