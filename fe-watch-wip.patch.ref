@@ -1,0 +1,417 @@
+diff --git a/.gitignore b/.gitignore
+index edec87d..f8ca999 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -33,3 +33,6 @@ docs/vault/.obsidian/workspace-mobile.json
+ docs/vault/.trash/
+ test-results/
+ playwright-report/
++
++# Feel-engineer local probes (untracked scratch)
++.scratch/
+diff --git a/.scratch/frames/t-end.png b/.scratch/frames/t-end.png
+deleted file mode 100644
+index 0af5d5e..0000000
+Binary files a/.scratch/frames/t-end.png and /dev/null differ
+diff --git a/.scratch/frames/t1.5.png b/.scratch/frames/t1.5.png
+deleted file mode 100644
+index e87269a..0000000
+Binary files a/.scratch/frames/t1.5.png and /dev/null differ
+diff --git a/.scratch/frames/t1.6.png b/.scratch/frames/t1.6.png
+deleted file mode 100644
+index 85a1dfb..0000000
+Binary files a/.scratch/frames/t1.6.png and /dev/null differ
+diff --git a/.scratch/frames/t1.7.png b/.scratch/frames/t1.7.png
+deleted file mode 100644
+index ed5f11b..0000000
+Binary files a/.scratch/frames/t1.7.png and /dev/null differ
+diff --git a/.scratch/frames/t1.8.png b/.scratch/frames/t1.8.png
+deleted file mode 100644
+index 4458f50..0000000
+Binary files a/.scratch/frames/t1.8.png and /dev/null differ
+diff --git a/.scratch/frames/t1.9.png b/.scratch/frames/t1.9.png
+deleted file mode 100644
+index 86894a5..0000000
+Binary files a/.scratch/frames/t1.9.png and /dev/null differ
+diff --git a/.scratch/frames/t2.0.png b/.scratch/frames/t2.0.png
+deleted file mode 100644
+index ca293c6..0000000
+Binary files a/.scratch/frames/t2.0.png and /dev/null differ
+diff --git a/.scratch/frames/t2.1.png b/.scratch/frames/t2.1.png
+deleted file mode 100644
+index 50a4e66..0000000
+Binary files a/.scratch/frames/t2.1.png and /dev/null differ
+diff --git a/.scratch/frames/t2.2.png b/.scratch/frames/t2.2.png
+deleted file mode 100644
+index 0af5d5e..0000000
+Binary files a/.scratch/frames/t2.2.png and /dev/null differ
+diff --git a/src/boot.ts b/src/boot.ts
+index c45dcd6..983f6a4 100644
+--- a/src/boot.ts
++++ b/src/boot.ts
+@@ -60,7 +60,7 @@ import { CAMPAIGN_LADDER, nextInCampaign } from './world/campaign.ts';
+ import { createLevelSelect } from './ui/levelselect.ts';
+ import type { SetInstance } from './sets/index.ts';
+ import { placeSet } from './world/setPlacement.ts';
+-import { KitRig } from './feel/kittrack.ts';
++import { KitRig, finishCapture } from './feel/kittrack.ts';
+ import { RunCamera } from './camera/run-camera.ts';
+ import type { RunCameraSolid } from './camera/run-camera.ts';
+ import type { PieceKind, PieceParams } from './track/pieces.ts';
+@@ -472,8 +472,16 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
+   const resultPanel = createResultPanel(stage);
+   let lastStatus: RunStatus = 'idle';
+   // the build the game starts in: fixtures only (the player builds the
+-  // tray pieces); ?build=par re-mounts the full reference build for tests
+-  const startBuild = params.get('build') === 'par' ? level.placeholderBuild() : initialBuild(level);
++  // tray pieces); ?build=par re-mounts the full reference build for tests,
++  // and ?build=alt the level's ALTERNATE authored line (L02's arc route —
++  // the camera's filmstrip gate frames the second rail too, playtest M).
++  const startBuild =
++    params.get('build') === 'par'
++      ? level.placeholderBuild()
++      : params.get('build') === 'alt'
++        ? ((level as unknown as { altBuild?: () => Build }).altBuild?.() ??
++          level.placeholderBuild())
++        : initialBuild(level);
+   const tray = levelTray(level);
+   let placedCount = startBuild.pieces.length;
+   // the hazard tally the result screen reports: wheel contacts whose sampled
+@@ -603,7 +611,18 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
+     // rail to follow (KitRig needs at least one spline), so the static
+     // table framing owns those
+     rig = build.pieces.length > 0 ? new KitRig(build, SIM_SCALE) : null;
+-    runCam = rig && rig.length > 1e-6 ? new RunCamera(rig, 0, { solids: camSolids }) : null;
++    // the finish WITNESS's rail arc (the cup's capture centre projected onto
++    // this build's rail): the camera's finish fade counts down to the CUP,
++    // not to the rail terminus — L02's rail runs a curve past its cup, and
++    // the rail-keyed fade never fired there (playtest M, run-camera.ts)
++    const cup = rig ? finishCapture(build) : null;
++    runCam =
++      rig && rig.length > 1e-6
++        ? new RunCamera(rig, 0, {
++            solids: camSolids,
++            finishArc: cup ? rig.nearestArcInfo(cup.center).arc : undefined,
++          })
++        : null;
+     runCamActive = false;
+     frameCamera(camera, next.scene);
+     statusLine.textContent = 'ready';
+diff --git a/src/camera/run-camera.ts b/src/camera/run-camera.ts
+index 8a7880f..134b0b3 100644
+--- a/src/camera/run-camera.ts
++++ b/src/camera/run-camera.ts
+@@ -67,6 +67,16 @@ export interface RunCameraOptions {
+   /** Set solids to clear (see `RunCameraSolid`). Empty by default — a track
+    *  in empty space needs no lift and frames as before. */
+   solids?: readonly RunCameraSolid[];
++  /** Rail arc of the FINISH witness (the finish cup's capture centre
++   *  projected onto the rail — `finishCapture` + `KitRig.nearestArcInfo`).
++   *  Defaults to the rail END. Stage 4 watchability (playtest M): keying the
++   *  finish fade to the rail END only works when the cup sits AT the rail
++   *  end (L01/L04). L02's rail runs 0.84 m of visible curve PAST its cup,
++   *  so on L02's par AND arc lines the rail-keyed fade never fired and the
++   *  whole approach-to-cup second framed as flat tabletop at 7 cm eye
++   *  height ("the cup and death spot were NEVER visible"). The witness —
++   *  not the rail terminus — is where the run actually ends. */
++  finishArc?: number;
+ }
+ 
+ /** Optional per-step car truth (world metres). The arc alone cannot say
+@@ -123,23 +133,56 @@ export const RUN_CAMERA = {
+    *  `TRAIL`: the launch dolly-up that keeps the release frame a view of
+    *  the car instead of a deck close-up while the trail winds out. */
+   LAUNCH_PEEP: 0.1,
+-  /** Rail arc (world m) before the finish where the FINISH framing fades
+-   *  in (stage 4, playtest J+K: at run end the low chase eye buries itself
+-   *  in the tabletop — measured on the L01 par run the last second before
+-   *  the panel held frames 88 % ONE flat colour (the cream table filling
+-   *  the shot, "buried halfway in a wall, only the car's roof", "a wall of
+-   *  woodgrain"). At the rail END the eye sits `HEIGHT + EYE_UP` = 7.2 cm
+-   *  over the deck with the lead aim reading the rail terminus — a few
+-   *  centimetres above an endless table plane. The fade window covers the
+-   *  last ≈0.5 s of a finishing run at 1:10 line speeds. */
+-  FINISH_ARC: 0.5,
++  /** Rail arc (world m) before the FINISH WITNESS where the FINISH framing
++   *  fades in (stage 4, playtest J+K, re-windowed by playtest M: the dense
++   *  100 ms gate samples the FINAL SECOND of the run, and at L01–L04 line
++   *  speeds a second of approach is ≈1.2 m of rail — the old 0.5 m window
++   *  only lit the crane at t ≈ 1.9 s of a 2.2 s run, so the frames between
++   *  the old window's start and the terminal step were still a 7 cm-high
++   *  stare along the tabletop (L01 dense worst 89 %, L02 both lines 0 %
++   *  fade ever — the rail-end key missed L02's cup entirely). Measured with
++   *  the witness key + this window: every dense frame of the L01, L02-par,
++   *  L02-arc and L04 par runs ≤ 60 % single colour. The fade now counts
++   *  DOWN from the finish witness's arc (`finishArc`, default the rail end)
++   *  and stays fully faded PAST it: the witness is where the run ends, and
++   *  on a rail that runs past the cup the eye should already be airborne
++   *  over the cup when the capture fires. */
++  FINISH_ARC: 2.0,
+   /** Eye lift (world m) fully faded in at the rail end — a finish-clip
+    *  crane-up that puts the tabletop seen from ABOVE (cup, props, floor
+    *  variation) in frame instead of the table seen from 7 cm above it. The
+    *  lift rides the same `LIFT_LAG` filter as the prop clearance, so it is
+    *  an arc, not a cut; measured worst single-colour share of the L01 final
+    *  second drops from 88 % to ≤ 60 % with this much lift. */
+-  FINISH_LIFT: 0.22,
++  FINISH_LIFT: 0.45,
++  /** Extra track (world m) the eye pays BACK along the rail as the finish
++   *  fades in (stage 4 watchability, playtest M). Lift alone measured
++   *  useless: at `TRAIL` = 0.25 m an eye lifted 0.22 or 0.5 m just trades a
++   *  skim of the tabletop for a straight-down stare at it (L01 dense frames
++   *  89 → 82 → 68 % — the flat floor still fills the shot). Pulling the eye
++   *  BACK while it rises turns the last metre of a run into the classic
++   *  finish clip: a three-quarter wide that holds car, cup and the set's
++   *  props in one frame (measured at 0.55 m: L01/L02×2/L04 dense ≤ 60 %).
++   *  The `POS_LAG` filter carries the dolly, so it reads as one move with
++   *  the crane, not a cut. */
++  FINISH_TRAIL: 0.55,
++  /** Lateral finish offset (world m, along the trail point's track `right`):
++   *  the classic FINISH-LINE camera (stage 4 watchability, playtest M). The
++   *  kitchen's floor is one vast flat toon plane and its far band a flat
++   *  wall band — measured, an eye ON the rail at the run's end frames 55–
++   *  65 % of the shot in ONE of them however it is lifted or trailed, in
++   *  every line of L01/L02/L04. Stepping the eye off the rail turns the
++   *  composition diagonal: floor and wall split the frame across two
++   *  buckets, and the track, the cup and the prop cluster lie ACROSS the
++   *  shot instead of receding into it. The step is along the trail point's
++   *  TRACK LEFT (`up × tangent`) so the eye looks ACROSS the line toward the
++   *  set's prop cluster (bowl, mug, sponge, notes — on the right of travel
++   *  at the shipped kitchen placements), which then sits BEHIND the car in
++   *  the frame rather than under the eye. The eye
++   *  reaches the offset continuously with the finish fade (same filter as
++   *  the trail, so it is a swing, not a cut); 0 keeps the stage-3
++   *  rail-riding framing (and the analytic tests). */
++  FINISH_SIDE: 0.5,
+   /** How much of the lead-aim is traded for an aim at the CAR as the finish
+    *  fades in (0..1 at the rail end): the §7.3 anticipation has nothing
+    *  left to anticipate past the last rail point, and a lead clamped at the
+@@ -162,13 +205,20 @@ export class RunCamera {
+   private readonly vA = new THREE.Vector3();
+   private readonly vB = new THREE.Vector3();
+   private readonly vC = new THREE.Vector3();
++  private readonly vD = new THREE.Vector3();
+ 
+   private readonly source: RunCameraSource;
+   private readonly solids: readonly RunCameraSolid[];
++  private readonly finishArc: number;
+ 
+   constructor(source: RunCameraSource, startArc = 0, options: RunCameraOptions = {}) {
+     this.source = source;
+     this.solids = options.solids ?? [];
++    this.finishArc = THREE.MathUtils.clamp(
++      options.finishArc ?? source.length,
++      0,
++      Math.max(source.length, 1e-9),
++    );
+     this.arc = this.clampArc(startArc);
+     this.trailArc = this.clampArc(this.arc - this.effectiveTrail(this.arc));
+     this.setEyeBase(this.arc);
+@@ -188,15 +238,19 @@ export class RunCamera {
+     const clampedCar = THREE.MathUtils.clamp(carArc, 0, this.source.length);
+     const lead = Math.min(
+       clampedCar + this.effectiveLead(clampedCar, speed * RUN_CAMERA.LEAD_TIME),
+-      this.source.length - 1e-9,
++      this.finishArc,
+     );
+     // The lead-arc filter is what the §7.3 rotational anticipation reads.
+     this.arc += (lead - this.arc) * (1 - Math.exp(-dt / RUN_CAMERA.POS_LAG));
++    const wFinish = this.finishWeight(clampedCar);
+     // The eye's own path: TRAIL of track behind the car through the SAME
+     // 150 ms filter — the §7.3 positional lag now lives on the eye. The
+-    // trail shortens around tight curvature (TRAIL_CHORD_K).
++    // trail shortens around tight curvature (TRAIL_CHORD_K) and pays BACK
++    // for the finish pull-back (FINISH_TRAIL × wFinish).
+     this.trailArc +=
+-      (this.clampArc(clampedCar - this.effectiveTrail(clampedCar)) - this.trailArc) *
++      (this.clampArc(
++        clampedCar - this.effectiveTrail(clampedCar) - RUN_CAMERA.FINISH_TRAIL * wFinish,
++      ) - this.trailArc) *
+       (1 - Math.exp(-dt / RUN_CAMERA.POS_LAG));
+     this.setEyeBase(clampedCar);
+     this.carPoint.copy(carPos ?? this.railAtCar);
+@@ -206,7 +260,6 @@ export class RunCamera {
+     // "camera inside a grey wall" frame cannot exist even for one step.
+     // The finish crane-up rides the SAME filter as a target term, so the
+     // end-of-run rise is an arc, not a cut (FINISH_ARC — playtest J+K).
+-    const wFinish = this.finishWeight(clampedCar);
+     this.liftFiltered +=
+       (this.requiredLift() + RUN_CAMERA.FINISH_LIFT * wFinish - this.liftFiltered) *
+       (1 - Math.exp(-dt / RUN_CAMERA.LIFT_LAG));
+@@ -221,12 +274,17 @@ export class RunCamera {
+   snap(carArc: number, speed = 0): void {
+     const clampedCar = THREE.MathUtils.clamp(carArc, 0, this.source.length);
+     this.arc = this.clampArc(
+-      clampedCar + this.effectiveLead(clampedCar, speed * RUN_CAMERA.LEAD_TIME),
++      Math.min(
++        clampedCar + this.effectiveLead(clampedCar, speed * RUN_CAMERA.LEAD_TIME),
++        this.finishArc,
++      ),
+     );
+-    this.trailArc = this.clampArc(clampedCar - this.effectiveTrail(clampedCar));
++    this.trailArc = this.clampArc(
++      clampedCar - this.effectiveTrail(clampedCar) - RUN_CAMERA.FINISH_TRAIL * this.finishWeight(clampedCar),
++    );
++    const wFinish = this.finishWeight(clampedCar);
+     this.setEyeBase(clampedCar);
+     this.carPoint.copy(this.railAtCar);
+-    const wFinish = this.finishWeight(clampedCar);
+     this.lift = this.requiredLift() + RUN_CAMERA.FINISH_LIFT * wFinish;
+     this.liftFiltered = this.lift;
+     this.ensureClearance();
+@@ -251,12 +309,16 @@ export class RunCamera {
+   }
+ 
+   /** The finish fade weight for a car at rail arc `s`: 0 until the last
+-   *  `FINISH_ARC` of track, 1 at the rail end (linear between). Pure so the
+-   *  filter, the hard floor and the aim taper all read the SAME number. */
++   *  `FINISH_ARC` of track BEFORE THE FINISH WITNESS, 1 AT and PAST the
++   *  witness (linear between). Pure so the filter, the hard floor and the
++   *  aim taper all read the SAME number. Past the witness the weight stays
++   *  1 even on a rail that runs on (L02's curve run-out): the fade tracks
++   *  the run's END, not the rail's. */
+   private finishWeight(carArc: number): number {
+-    const start = this.source.length - RUN_CAMERA.FINISH_ARC;
+-    if (this.source.length <= 1e-6) return 0;
+-    return THREE.MathUtils.clamp((carArc - start) / (this.source.length - start), 0, 1);
++    const end = this.finishArc;
++    const start = Math.max(0, end - RUN_CAMERA.FINISH_ARC);
++    if (end <= 1e-6) return 0;
++    return THREE.MathUtils.clamp((carArc - start) / (end - start), 0, 1);
+   }
+ 
+   /** Rail arc the EYE rides — carArc − TRAIL, filtered (tests/debug). */
+@@ -329,11 +391,19 @@ export class RunCamera {
+   }
+ 
+   /** The rail-plane eye: the point on the rail the eye rides, lifted to
+-   *  eye height. No tangent-back offset (header, fix 1). */
++   *  eye height. No tangent-back offset (header, fix 1). The finish swing
++   *  (FINISH_SIDE) steps the eye along the trail point's track RIGHT as the
++   *  finish fades in — the finish-line composition (see the constant). */
+   private setEyeBase(carArc: number): void {
+     const rail = this.source.railPointAt(this.trailArc);
+     const f = this.source.frameAt(this.trailArc);
+-    this.eyeBase.copy(rail).addScaledVector(f.up, RUN_CAMERA.HEIGHT + RUN_CAMERA.EYE_UP);
++    this.eyeBase
++      .copy(rail)
++      .addScaledVector(f.up, RUN_CAMERA.HEIGHT + RUN_CAMERA.EYE_UP)
++      .addScaledVector(
++        this.vD.crossVectors(f.up, f.tangent).normalize(),
++        RUN_CAMERA.FINISH_SIDE * this.finishWeight(carArc),
++      );
+     this.railAtCar.copy(this.source.railPointAt(carArc));
+   }
+ 
+diff --git a/src/world/levels/kitchen01.level.ts b/src/world/levels/kitchen01.level.ts
+index 189c4c4..0cf86af 100644
+--- a/src/world/levels/kitchen01.level.ts
++++ b/src/world/levels/kitchen01.level.ts
+@@ -180,6 +180,11 @@ export interface KitchenLevel extends Level {
+   hazards?: readonly WetPatch[];
+   /** Named sockets exposed by props (the bowl rim — Concepts/Levels). */
+   propSockets?: Record<string, Socket>;
++  /** A choice level's ALTERNATE authored line (L02's arc route). Not a
++   *  runtime path — the filmstrip camera gate samples it through
++   *  `?build=alt` so the second rail is framed-tested too (stage 4,
++   *  playtest M: "the whole far half of Two Ways stays off-frame"). */
++  altBuild?: () => Build;
+ }
+ 
+ /** Sum a tray map. */
+diff --git a/src/world/levels/kitchen02.level.ts b/src/world/levels/kitchen02.level.ts
+index 0b76875..4ce51f0 100644
+--- a/src/world/levels/kitchen02.level.ts
++++ b/src/world/levels/kitchen02.level.ts
+@@ -149,5 +149,7 @@ export const KITCHEN02: KitchenLevel = registerKitchen(
+     trayParams: { gapLip: L02_LIP },
+     fixtures: { ramp: 1, finishCup: 1, curve: 1 },
+     parBuild,
++    // the arc line as addressable data: `?build=alt` frames it (filmstrip)
++    altBuild: kitchen02ArcBuild,
+   }),
+ );
+diff --git a/tests/e2e/filmstrip.spec.ts b/tests/e2e/filmstrip.spec.ts
+index 3467132..411d049 100644
+--- a/tests/e2e/filmstrip.spec.ts
++++ b/tests/e2e/filmstrip.spec.ts
+@@ -77,15 +77,21 @@ test('L02 par run filmstrip every 250 ms: no frame >60 % single-colour', async (
+  * fails: measured on the L01 par run BEFORE the fix, the frames inside the
+  * FINAL SECOND reached 88 % one flat colour (the table surface filling the
+  * shot at eye height, 2.4 s into the release). The gate therefore samples
+- * EVERY 100 ms across the final second of the L01 and L04 par runs — on
+- * the page itself, in a wrapper around the game's own
++ * EVERY 100 ms across the final second of the L01, L04 and BOTH L02 lines'
++ * par runs — on the page itself, in a wrapper around the game's own
+  * `requestAnimationFrame` callbacks, so a sampled frame cannot slip
+  * between round-trips — with the same per-frame bar: no frame >60 %
+- * single-colour. The dense window ENDS at the terminal status: the static
+- * framing the shell owns after hand-back is a different frame-set (and a
+- * different owner).
++ * single-colour. STAGE 4 watchability (playtest M: "the cup and death spot
++ * were NEVER visible"; "the whole far half of Two Ways stays off-frame"):
++ * L02 is WIDER than L01 — its rail runs past the cup into the visible
++ * curve run-out, so BOTH its authored lines (`build=par` the lazy line,
++ * `build=alt` the arc line — the two lanes the level is named for) join
++ * the dense window: a finish framing that only works when the cup sits at
++ * the rail END (L01/L04) is exactly what L02 exposes. The dense window
++ * ENDS at the terminal status: the static framing the shell owns after
++ * hand-back is a different frame-set (and a different owner).
+  */
+-test('L01+L04 par runs: EVERY 100 ms of the final second, no frame >60 % single-colour', async ({ page }) => {
++test('L01+L02(par+alt)+L04 par runs: EVERY 100 ms of the final second, no frame >60 % single-colour', async ({ page }) => {
+   test.slow()
+   await page.addInitScript(() => {
+     const raf = window.requestAnimationFrame.bind(window)
+@@ -119,8 +125,17 @@ test('L01+L04 par runs: EVERY 100 ms of the final second, no frame >60 % single-
+       })) as typeof window.requestAnimationFrame
+   })
+ 
+-  for (const level of ['kitchen01', 'kitchen04']) {
+-    await page.goto(`/?level=${level}&build=par&launch=1`)
++  for (const [level, build] of [
++    ['kitchen01', 'par'],
++    ['kitchen04', 'par'],
++    ['kitchen02', 'par'],
++    // L02's SECOND lane (playtest M: the watchability wall was level 2 of
++    // the ladder — both Two Ways lines are now framed-tested, not just the
++    // lazy one the 250 ms stage-3 strip happened to shoot)
++    ['kitchen02', 'alt'],
++  ] as const) {
++    const line = `${level}:${build}`
++    await page.goto(`/?level=${level}&build=${build}&launch=1`)
+     await expect
+       .poll(async () => (await page.locator('#gw-result').isVisible().catch(() => false)), { timeout: 30_000 })
+       .toBe(true)
+@@ -133,8 +148,8 @@ test('L01+L04 par runs: EVERY 100 ms of the final second, no frame >60 % single-
+     const running = (s: string): boolean => /running/.test(s)
+     const release = strip.find(([, s]) => running(s.status))?.[0]
+     const terminal = strip.find(([b, s]) => release !== undefined && b >= release && !running(s.status) && s.status !== '' && !/ready|pieces/.test(s.status))?.[0]
+-    expect(release, `${level}: never saw a running status`).toBeDefined()
+-    expect(terminal, `${level}: never reached a terminal status`).toBeDefined()
++    expect(release, `${line}: never saw a running status`).toBeDefined()
++    expect(terminal, `${line}: never reached a terminal status`).toBeDefined()
+ 
+     // the dense window: every 100 ms bucket of the FINAL SECOND before the
+     // terminal step (plus, for the report, the whole-run worst)
+@@ -142,16 +157,16 @@ test('L01+L04 par runs: EVERY 100 ms of the final second, no frame >60 % single-
+     const allWorst = strip.reduce((a, b) => (b[1].share > a[1].share ? b : a))
+     // eslint-disable-next-line no-console
+     console.log(
+-      `filmstrip ${level}: ${strip.length} buckets, final-second ${final.length} frames @100 ms, final worst ${(Math.max(...final.map(([, s]) => s.share)) * 100).toFixed(1)} %, whole-run worst ${(allWorst[1].share * 100).toFixed(1)} %`,
++      `filmstrip ${line}: ${strip.length} buckets, final-second ${final.length} frames @100 ms, final worst ${(Math.max(...final.map(([, s]) => s.share)) * 100).toFixed(1)} %, whole-run worst ${(allWorst[1].share * 100).toFixed(1)} %`,
+     )
+-    expect(final.length, `${level}: final second must hold >= 9 dense frames`).toBeGreaterThanOrEqual(9)
++    expect(final.length, `${line}: final second must hold >= 9 dense frames`).toBeGreaterThanOrEqual(9)
+     for (const [b, s] of final) {
+       expect(
+         s.share,
+-        `${level}: dense frame at bucket ${b} (${((b - release!) * 0.1).toFixed(1)} s after release): ${(s.share * 100).toFixed(1)} % single colour`,
++        `${line}: dense frame at bucket ${b} (${((b - release!) * 0.1).toFixed(1)} s after release): ${(s.share * 100).toFixed(1)} % single colour`,
+       ).toBeLessThanOrEqual(MAX_DOMINANT)
+     }
+-    // and the pre-existing contract on these two levels too: the 250 ms
++    // and the pre-existing contract on these lines too: the 250 ms
+     // grid (every 3rd bucket here, same quantiser as the PNG sampler)
+     for (const [b, s] of strip.filter(([bb]) => bb % 2 === 0)) {
+       expect(s.share, `${level}: frame at bucket ${b}: ${(s.share * 100).toFixed(1)} %`).toBeLessThanOrEqual(MAX_DOMINANT)
