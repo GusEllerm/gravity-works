@@ -30,11 +30,13 @@ import type { KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
 import { replayRun } from '../../src/replay/replay.ts';
 import { World } from '../../src/world/world.ts';
 import { KitRig } from '../../src/feel/kittrack.ts';
-import { PIECES } from '../../src/track/pieces.ts';
+import { PIECES, pieceGeometries } from '../../src/track/pieces.ts';
+import { fitSocket } from '../../src/track/snap.ts';
+import { solidWord } from '../../src/ui/builder.ts';
 import { transformSocket } from '../../src/track/socket.ts';
 import { buildKitchenSet } from '../../src/sets/kitchen/index.ts';
 import { BOWL, BOWL_SOCKET_FRAMES, HAZARDS, TAP } from '../../src/sets/kitchen/data.ts';
-import { kitchenSetPlacement, transformByPlacement } from '../../src/world/setPlacement.ts';
+import { kitchenSetPlacement, transformByPlacement, placeSet } from '../../src/world/setPlacement.ts';
 import { setPlacementGuard } from '../../src/boot.ts';
 
 beforeAll(() => initRapier());
@@ -237,20 +239,61 @@ describe('the builder placement guard', () => {
     const set = buildKitchenSet(THREE);
     set.group.position.set(...p.position);
     set.group.rotation.set(0, p.yaw, 0);
-    const boxes = setPlacementGuard(set.group);
-    expect(boxes.length).toBeGreaterThanOrEqual(8);
-    for (const b of boxes) {
+    const guards = setPlacementGuard(set.group);
+    expect(guards.length).toBeGreaterThanOrEqual(8);
+    // stage 6: every guard box knows the object it belongs to, so a refused
+    // seat can name it (see `SetGuard` / `solidWord` in src/ui/builder.ts)
+    for (const g of guards) expect(g.name.length).toBeGreaterThan(0);
+    for (const { box: b } of guards) {
       expect(b.isEmpty()).toBe(false);
       expect(Number.isFinite(b.min.x + b.min.y + b.min.z + b.max.x + b.max.y + b.max.z)).toBe(true);
     }
     // the wet-patch films are never solids: no guard box centres on the
     // placed hazard footprint
     const zone = transformByPlacement(p, HAZARDS.tapSplash.center.x, 0, HAZARDS.tapSplash.center.z);
-    for (const b of boxes) {
+    for (const { box: b } of guards) {
       const c = b.getCenter(new THREE.Vector3());
       const onPatch = Math.hypot(c.x - zone[0], c.z - zone[2]) < HAZARDS.tapSplash.radius;
       if (onPatch) expect(b.max.y - b.min.y, 'a film must not be a guard solid').toBeGreaterThan(0.004);
     }
+  });
+
+  it('the guard names come from the set\u2019s own object names (naming authority)', () => {
+    // The blocked line a player reads is `solidWord` of a guard NAME, so the
+    // name must be an object the set really builds — never a string a UI
+    // module invented. This asserts the chain end to end on the mounted
+    // kitchen: every guard path resolves to a named Object3D under `dress`, a
+    // leaf path is a real mesh, and the case the copy was written for — the
+    // bowl that walls kitchen03 twice — is the CERAMIC BOWL itself.
+    const p = kitchenSetPlacement('kitchen03')!;
+    const set = buildKitchenSet(THREE);
+    placeSet(set.group, p);
+    const guards = setPlacementGuard(set.group);
+    const named = new Set<string>();
+    set.group.traverse((o) => {
+      if (o.name !== '') named.add(o.name);
+    });
+    expect(guards.length).toBeGreaterThan(0);
+    for (const g of guards) {
+      for (const segment of g.name.split('/')) expect(named.has(segment), `guard path ${g.name} names no set object`).toBe(true);
+    }
+    // kitchen03's wall, stated as geometry: the rim\u2019s out-socket seats a
+    // straight INSIDE the cereal bowl, and the bowl is the object that owns
+    // the box that refuses it.
+    expect(guards.some((g) => g.name === 'cereal-bowl')).toBe(true);
+    const rimOut = KITCHEN03.propSockets!['bowl.out']!;
+    const seat = fitSocket(rimOut, PIECES.straight.sockets({ length: 0.22 })[0]);
+    const box = new THREE.Box3();
+    for (const geo of pieceGeometries('straight', { length: 0.22 })) {
+      geo.computeBoundingBox();
+      if (geo.boundingBox) box.union(geo.boundingBox.clone().applyMatrix4(seat));
+    }
+    box.expandByScalar(-0.002);
+    const bowl = guards.find((g) => g.name === 'cereal-bowl')!;
+    expect(bowl.box.intersectsBox(box), 'the bowl must be what refuses the rim socket').toBe(true);
+    // and the word the player reads is the object name, spaced and lowercased
+    expect(solidWord('cereal-bowl')).toBe('cereal bowl');
+    expect(solidWord('mug/mug-body')).toBe('mug');
   });
 
   it('no built chain sits inside a solid — shipped builds stay placeable', async () => {
@@ -259,7 +302,7 @@ describe('the builder placement guard', () => {
       const p = kitchenSetPlacement(level.id)!;
       set.group.position.set(...p.position);
       set.group.rotation.set(0, p.yaw, 0);
-      const boxes = setPlacementGuard(set.group);
+      const guards = setPlacementGuard(set.group);
       const rig = new KitRig(level.parBuild(), 1);
       const build = level.parBuild();
       for (let s = 0; s <= rig.length; s += 0.02) {
@@ -267,7 +310,7 @@ describe('the builder placement guard', () => {
         const i = rig.starts.findLastIndex((x) => x <= s);
         if (build.pieces[i]?.def === 'bank' || build.pieces[i]?.def === 'curve') continue;
         const q = rig.frameAt(s).pos;
-        expect(boxes.some((b) => b.containsPoint(q)), `${level.id}: rail ${s.toFixed(2)} inside a set solid`).toBe(false);
+        expect(guards.some((g) => g.box.containsPoint(q)), `${level.id}: rail ${s.toFixed(2)} inside a set solid`).toBe(false);
       }
     }
   }, 30_000);

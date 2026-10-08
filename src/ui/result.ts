@@ -40,6 +40,8 @@
  */
 import { starsFor, starGlyphs, type Par, type RunResult } from '../world/stars.ts';
 import type { PieceKind } from '../track/pieces.ts';
+import { AIM_WALK_COPY } from './callouts.ts';
+import type { AimHint } from './builder.ts';
 
 // ---- witnesses --------------------------------------------------------------
 
@@ -291,6 +293,28 @@ export function createRunRecorder(): RunRecorder {
  * (`null` — shared/replay pages, no builder context) keeps the bare head
  * exactly as shipped.
  *
+ * THE WHERE TAIL (stage 6, kitchen03's SECOND wall — playtests BB and DD, the
+ * same rung, two strangers, six launches each: "the only snap is a curve exit
+ * the game itself says is blocked — furniture is in the way", "building
+ * backwards from the cup runs off-table", "] swaps to the car's start
+ * point"). The drive-off tail names the KIND the tray still holds, which is
+ * honest but LOCALITY-FREE: DD obeyed it six times and each time seated the
+ * named kind at whichever end the ring happened to mark, so the advice kept
+ * extending a line that pointed away from the cup. The rule this pass adds:
+ * an ADD tail that names a kind ALSO names the end that kind extends —
+ * `aimHint` (`builder.aimHint()` in `src/boot.ts`) is the far open exit of the
+ * START-CONNECTED chain, the same socket `chainHeadIndex` aims the boot ring
+ * at (playtest N's law: that socket IS the head of the par line), so the
+ * sentence is a fact about the build graph, never a guess about intent: "add
+ * a straight or a lip · place at: end of the pre-built ramp". The walk phrase
+ * (`AIM_WALK_COPY`, shared with the builder's blocked line so one key keeps
+ * one wording) appears ONLY when the ring marks some other end — teaching a
+ * key the player does not need is noise. The tail rides the drive-off branch
+ * ONLY: the nose-first family's advice is a HOW about a piece already placed
+ * (the `flippedKinds` law above), and telling a player to place something
+ * while telling them to re-place something is one sentence too many. Unknown
+ * (`null` — a shared/replay page, no builder) keeps the shipped line exactly.
+ *
  * HOW PHRASING (stage 5, playtest BB item 3: the nose-first tail "names a
  * change but never says HOW — Rotate only flips"). When the advice target
  * is a landing that was PLACED-AND-ROTATED, the nose-first line says the
@@ -311,6 +335,7 @@ export function physicsNote(
   goalNoun: string | null = null,
   stockedKinds: ReadonlySet<PieceKind> | null = null,
   flippedKinds: ReadonlySet<PieceKind> | null = null,
+  aimHint: AimHint | null = null,
 ): string {
   if (result.status === 'finished') return '';
   if (result.hazardsTouched > 0) return 'a hazard took the run — line up to miss it';
@@ -334,6 +359,35 @@ export function physicsNote(
   const apexFloor = Math.sqrt(NOTE_G * (climb / 2));
   const tooSlowAtApex = climb > APEX_MIN_CLIMB && ev.apexSpeed < apexFloor;
 
+  /**
+   * THE WHERE TAIL (stage 6, kitchen03's SECOND wall — playtests BB and DD,
+   * the same rung, two strangers, six launches each: "the only snap is a
+   * curve exit the game itself says is blocked — furniture is in the way",
+   * "building backwards from the cup runs off-table", "] swaps to the car's
+   * start point"). An ADD tail names a KIND and no PLACE, so DD obeyed it six
+   * times and each time seated the named kind at whichever end the ring
+   * happened to mark — extending a line that pointed away from the cup.
+   * `builder.aimHint()` (plumbed in `src/boot.ts`) is the far open exit of the
+   * START-CONNECTED chain, the socket `chainHeadIndex` aims the boot ring at
+   * (playtest N's law: that socket IS the head of the par line) — so the
+   * sentence states a fact about the build graph, never a guess about intent:
+   * "add a straight or a lip · place at: end of the pre-built ramp". The walk
+   * phrase (`AIM_WALK_COPY`, shared with the builder's blocked line so one key
+   * keeps one wording) appears ONLY when the ring marks some other end —
+   * teaching a key the player does not need is noise.
+   *
+   * TWO rules bound it, and they are why it is not simply glued to every
+   * failure line: it rides an ADD tail ONLY (a critique — "flatten the
+   * landing", "lower the lip", "re-place it flat (no R)" — is advice about a
+   * piece already on the track, and "place something" stacked on "re-place
+   * something" is one sentence too many), and `null` (`aimHint` unknown: a
+   * shared or replay page, no builder) leaves the shipped line byte-identical.
+   */
+  const whereTail =
+    aimHint === null
+      ? ''
+      : ` · place at: ${aimHint.label}${aimHint.ringHere ? '' : ` · ${AIM_WALK_COPY}`}`;
+
   if (result.status === 'fell') {
     if (ev.lastTouchdownPitch !== null && ev.lastTouchdownPitch < NOSE_FIRST_PITCH) {
       // each half of the advice names only a piece the player can reach
@@ -352,7 +406,16 @@ export function physicsNote(
           : null,
         canAct('gapLip') ? (isPlaced('gapLip') ? 'lower the lip' : 'add a lip') : null,
       ].filter((s): s is string => s !== null);
-      return advice.length > 0 ? `fell off nose-first — ${advice.join(' or ')}` : 'fell off nose-first';
+      // THE WHERE TAIL rides this line when — and only when — a half of the
+      // advice is an ADD ("add a flat landing", "add a lip"): playtest BB's
+      // kitchen03 notes ARE this line, and each time the named kind landed on
+      // the wrong end because nothing said which end. A CRITIQUE half
+      // ("flatten…", "lower…", "re-place…") is about a piece already on the
+      // track, and it stands exactly as shipped.
+      const adding = advice.some((a) => a.startsWith('add '));
+      return advice.length > 0
+        ? `fell off nose-first — ${advice.join(' or ')}${adding ? whereTail : ''}`
+        : 'fell off nose-first';
     }
     if (tooSlowAtApex) return 'fell off — too slow at the top of the loop; give it more height before it';
     // Stage-4 (playtest K: "'flew off — a long jump' on a run that never
@@ -385,7 +448,20 @@ export function physicsNote(
     if (named.length === 0) return head; // tray spent or empty — nothing honest to add
     const list =
       named.length === 1 ? named[0]! : `${named.slice(0, -1).join(', ')} or ${named[named.length - 1]!}`;
-    return `${head}; add ${list}`;
+    // THE WHERE TAIL (stage 6, kitchen03's second wall — playtest DD: "the
+    // only snap is a curve exit the game itself says is blocked — furniture is
+    // in the way… building backwards from the cup runs off-table… ] swaps to
+    // the car's start point"). The kind tail was honest but LOCALITY-FREE, so
+    // six builds went and added the named kind AT THE WRONG END. The build
+    // graph knows the end the next piece extends the line from — the far open
+    // end of the start-connected chain, the same socket the boot ring is
+    // bound to (playtest N's law) — so the note NAMES it, and names the key
+    // that walks there only when the visible ring is on some other end
+    // (nothing in this tail is a guess: `aimHint` is read off the build, and
+    // an unknown/null hint leaves the shipped line exactly as it was).
+    // THE WHERE TAIL (see `whereTail`): the kind list is honest but
+    // LOCALITY-FREE, so the sentence also names the end the kind goes on.
+    return `${head}; add ${list}${whereTail}`;
   }
   if (result.status === 'stalled') {
     if (tooSlowAtApex) return 'stalled — too slow at the top of the loop; give it more height before it';
@@ -454,12 +530,16 @@ export function resultModel(
   goalNoun: string | null = null,
   stockedKinds: ReadonlySet<PieceKind> | null = null,
   flippedKinds: ReadonlySet<PieceKind> | null = null,
+  /** Where the drive-off tail sends the player next (`builder.aimHint()` in
+   *  `src/boot.ts`, the far open end of the start-connected chain) — UI-side
+   *  advice only, the physics and the run hash never see it. */
+  aimHint: AimHint | null = null,
 ): ResultModel {
   return {
     stars: starsFor(result, par),
     time: result.time,
     piecesUsed: result.piecesUsed,
-    note: physicsNote(result, ev, actionableKinds, placedKinds, goalNoun, stockedKinds, flippedKinds),
+    note: physicsNote(result, ev, actionableKinds, placedKinds, goalNoun, stockedKinds, flippedKinds, aimHint),
     status: result.status,
     par,
     bestStarsBefore,

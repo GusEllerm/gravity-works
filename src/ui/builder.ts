@@ -82,6 +82,21 @@
  *                                           — retired by the next action,
  *                                           the first place included
  *   a tray kind's stock                     "drop ×1" → "drop ×0" (counts LEFT)
+ *   a seat a SET SOLID refuses             "blocked — the <object> is in the
+ *                                           way · press ] to walk the open
+ *                                           ends" (stage 6: the object is
+ *                                           NAMED — `solidWord` of the guard's
+ *                                           own object path — because "furniture"
+ *                                           over the cereal bowl on a rung
+ *                                           called "The Bowl" read to two
+ *                                           strangers as "move it", and the
+ *                                           walk phrase is the actionable half)
+ *   a legal seat PAST the finish fixture    "fits here — the run ends at the
+ *                                           cup, so nothing past it is ever
+ *                                           travelled" (the seat IS legal; the
+ *                                           line built past the goal is what
+ *                                           is not — playtest DD built six of
+ *                                           them backwards off the cup)
  *   car events (notes, camera)             the Feel Engineer's lines only
  *
  * The words "snapped" and "seated" never reach the screen; the internal
@@ -103,6 +118,7 @@ import type { Build, PlacedPiece } from '../track/build.ts';
 import type { Level } from '../world/level.ts';
 import { worldToClientPx } from './aim-transform.ts';
 import { prefersReducedMotion } from './motion.ts';
+import { AIM_WALK_COPY } from './callouts.ts';
 
 /** Two socket origins this close are joined (metres; well above float noise). */
 export const JOIN_TOL = 0.004;
@@ -255,10 +271,13 @@ export interface BuilderOptions {
   trayParams?: Partial<Record<PieceKind, PieceParams>>;
   /** Called after every mutation with the canonical new build. */
   onChange?: (build: Build) => void;
-  /** Stage-3 set wiring: world-space AABBs of the set's solid props. A seat
-   *  whose piece box overlaps one of them is REJECTED — the ghost goes red
-   *  and `place` refuses. AABB-vs-AABB per ghost update, nothing per frame. */
-  solids?: readonly THREE.Box3[];
+  /** Stage-3 set wiring: the set's solid props as NAMED world-space boxes. A
+   *  seat whose piece box overlaps one of them is REJECTED — the ghost goes
+   *  red and `place` refuses. AABB-vs-AABB per ghost update, nothing per
+   *  frame. Since the stage-6 K3 pass the box arrives WITH the name of the
+   *  object that owns it (`setPlacementGuard`), because the refused line has
+   *  to NAME the thing that refused it — see `solidWord`. */
+  solids?: readonly SetGuard[];
   /** Called at the TOP of every `place()` INTENT (button click, Enter, and
    *  the canvas click that holds a piece) BEFORE the attempt decides — the
    *  shell uses it to collapse a still-open result panel into the build
@@ -322,6 +341,11 @@ export interface Builder {
   /** The tie candidate SOCKETS (full frames) of the last aim — the e2e
    *  seam that recomputes the dry-run hashes test-side. */
   tieSockets(): Socket[];
+  /** What the failure note should name as the place to build NEXT, plus
+   *  whether the visible ring already marks it — the build-graph side of the
+   *  WHERE tail (see `AimHint`; stage 6, playtest DD). Null when the build
+   *  has no open end at all. */
+  aimHint(): AimHint | null;
   /** The CURRENT ring's socket in CSS client px — where a click must land
    *  to be a click ON the shown ghost (`ringWithinReach`'s own reach) —
    *  null when it is off-screen or behind the camera. The e2e seam for
@@ -353,9 +377,51 @@ export interface Builder {
   targetSocket(): Socket | null;
 }
 
+/**
+ * One solid of the mounted set, with the name of the object that owns it
+ * (`cereal-bowl`, `tap`, `lazy-pencil/pencil-shaft`). The builder only asks
+ * whether a seat overlaps a box, but stage 6 made it ask WHICH box: the
+ * kitchen03 wall was a red ghost that said "blocked — furniture is in the
+ * way" over the cereal BOWL, on a rung named "The Bowl" — read by two
+ * strangers as "move the furniture" (playtest DD: "the only snap is a curve
+ * exit the game itself says is blocked"), so the refusal names the object.
+ */
+export interface SetGuard {
+  name: string;
+  box: THREE.Box3;
+}
+
+/** The player word for a guard name: the top-level object's own name, words
+ *  apart (`cereal-bowl` → "cereal bowl"; `mug/mug-body` → "mug", the group
+ *  name, never the mesh's). Lowercased to sit inside a sentence.
+ *  Exported so the note and the specs read the SAME word the ghost speaks. */
+export function solidWord(name: string): string {
+  return (name.split('/')[0] ?? name).replaceAll('-', ' ').trim().toLowerCase();
+}
+
+/** Where the failure note should send the player NEXT (stage 6, playtest DD:
+ *  "the only snap is a curve exit the game itself says is blocked; building
+ *  backwards from the cup runs off-table" — the advice named kinds, never a
+ *  place, so every retry extended the WRONG end). `label` is the socket the
+ *  NEXT piece extends the line from — the far open end of the chain as built,
+ *  the same socket `chainHeadIndex` aims the boot default at (playtest N's
+ *  law: that socket IS the head of the par line) — and `ringHere` says whether
+ *  the visible ring already marks it, so the note only teaches the walk when
+ *  the ring is somewhere else. UI-side advice only: nothing here reaches the
+ *  physics or a run hash. */
+export interface AimHint {
+  label: string;
+  ringHere: boolean;
+}
+
 interface Target {
   socket: Socket;
   label: string;
+  /** Set when this open end belongs to the FINISH fixture: the run ENDS at
+   *  that object, so a piece seated past it can never be reached — the ghost
+   *  still seats (it is a legal seat) but the line must not read as an
+   *  invitation (playtest DD built six backwards lines off the cup). */
+  goal?: string;
 }
 
 function button(id: string, label: string, parent: HTMLElement): HTMLButtonElement {
@@ -406,6 +472,13 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   let flipped = false;
   let targetIndex = chainHeadIndex();
   let state: GhostState = 'hidden';
+  // WHAT THE VERDICT LINE IS REACTING TO (stage 6, kitchen03 pass): the set
+  // solid that refused the AIMED seat (`aimBlocker`, the object's player word)
+  // and the goal word when the aimed socket is the FINISH fixture's own open
+  // exit (`aimGoal`). Both are recomputed by `updateGhost` on every aim, so a
+  // line never carries a stale tell.
+  let aimBlocker: string | null = null;
+  let aimGoal: string | null = null;
   // a one-shot explanation line that OUTLIVES the async world rebuild an
   // emit triggers (`setScene` re-runs `updateGhost`, which would otherwise
   // erase it); any NEXT player action retires it (playtest Q's spent-hold
@@ -671,6 +744,12 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
               : locked(piece.def)
                 ? `end of the pre-built ${pieceLabel(piece.def).toLowerCase()}`
                 : `end of ${pieceLabel(piece.def).toLowerCase()}`,
+          // THE GOAL'S OPEN END is flagged for the verdict line: seating a
+          // piece here is legal (the ghost says so) but the run ENDS at the
+          // goal object, so a line built past it is a line no car ever
+          // travels — the trap two strangers fell into on kitchen03
+          // (playtest DD: "building backwards from the cup runs off-table").
+          goal: piece.def === 'finishCup' ? pieceLabel(piece.def).toLowerCase() : undefined,
         });
     }
     return out;
@@ -705,17 +784,61 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     return flipPlacement(target, held, heldParams(held), flipped);
   }
 
-  /** True when a placed piece's world AABB overlaps one of the set's solids. */
-  function overlapsSolid(transform: THREE.Matrix4, held: PieceKind): boolean {
-    if (solids.length === 0) return false;
+  /** Which set solid (if any) the seat's world AABB overlaps — and WHICH
+   *  object owns it, so the refusal can name it. The kitchen03 lesson: on a
+   *  rung called "The Bowl" the blocker is the cereal bowl itself, and a line
+   *  that said only "furniture" read as "move it" (playtest DD, wall #1). */
+  function blockerOf(transform: THREE.Matrix4, held: PieceKind): string | null {
+    if (solids.length === 0) return null;
     const box = new THREE.Box3();
     for (const geo of pieceGeometries(held, heldParams(held))) {
       geo.computeBoundingBox();
       if (geo.boundingBox) box.union(geo.boundingBox.clone().applyMatrix4(transform));
     }
-    if (box.isEmpty()) return false;
+    if (box.isEmpty()) return null;
     box.expandByScalar(-0.002);
-    return solids.some((s) => s.intersectsBox(box));
+    const hit = solids.find((s) => s.box.intersectsBox(box));
+    // NO hit is the whole answer: the seat is free. (Returning a word here
+    // would mark every legal seat blocked.)
+    if (hit === undefined) return null;
+    return hit.name === '' ? 'furniture' : solidWord(hit.name);
+  }
+
+  /** THE VERDICT LINE, with the two tells the kitchen03 wall needed
+   *  (playtest DD: "the only snap is a curve exit the game itself says is
+   *  blocked — furniture is in the way"; "building backwards from the cup
+   *  runs off-table"). A red seat NAMES the object that refused it and
+   *  points at the verb that has an answer (`AIM_WALK_COPY`); a GREEN seat
+   *  past the finish fixture says what the seat cannot do — a piece beyond
+   *  the goal is never travelled, because the run ends at the goal. Both
+   *  stay inside the VERB TABLE: the words are `blocked` and `fits here`,
+   *  never a new state name.
+   *
+   *  `blocker` is the solid's player word (`solidWord`), `goal` the finish
+   *  fixture's word when the aimed socket is the finish's own open exit;
+   *  both null everywhere else, which leaves the shipped copy untouched.
+   *  The FIRST flipped fit of a session still appends `FLIP_WHY` once. */
+  function ghostCopy(
+    echo: boolean,
+    blocker: string | null = aimBlocker,
+    goal: string | null = aimGoal,
+  ): string {
+    if (state === 'blocked') {
+      const head =
+        blocker === null || blocker === 'furniture'
+          ? GHOST_LABEL.blocked
+          : `blocked — the ${blocker} is in the way`;
+      return `${head} · ${AIM_WALK_COPY}`;
+    }
+    const verb = echo && state !== 'hidden' ? `${GHOST_LABEL[state]} · rotated` : GHOST_LABEL[state];
+    const why = state === 'reversed' && !flipWhyShown;
+    if (state === 'reversed') flipWhyShown = true;
+    const line = why ? `${verb} — ${FLIP_WHY}` : verb;
+    // the past-the-goal tell rides a legal GREEN seat only — a flipped fit
+    // past the cup already carries the reversed WHY on this line
+    return state === 'snapped' && goal !== null
+      ? `${line} — the run ends at the ${goal}, so nothing past it is ever travelled`
+      : line;
   }
 
   function updateGhost(animate = false, echo = false): void {
@@ -771,6 +894,8 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       marker.visible = true;
       if (!kind) {
         state = 'hidden';
+        aimBlocker = null;
+        aimGoal = null;
         ghostGroup.visible = false;
       } else {
         const m = placement(target, kind);
@@ -783,7 +908,9 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
         // cup capture in world.ts. A reverse mount is a half turn about
         // the target's up: deck lines match, tangents deliberately do
         // not, so the snap gate reports it honestly (amber).
-        state = overlapsSolid(m, kind)
+        aimBlocker = blockerOf(m, kind);
+        aimGoal = list[targetIndex]!.goal ?? null;
+        state = aimBlocker !== null
           ? 'blocked'
           : snapSocket(target, seated) !== null
             ? 'snapped'
@@ -797,7 +924,12 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     }
     // the VERB TABLE's copy — never the internal state word; a stuck
     // one-shot note wins the line, else the copy (echo tail on R; the FIRST
-    // reversed ghost of the session also says WHY, once — playtests P/Q)
+    // reversed ghost of the session also says WHY, once — playtests P/Q;
+    // the blocked and past-the-goal tails are the stage-6 K3 tells)
+    if (list.length === 0) {
+      aimBlocker = null;
+      aimGoal = null;
+    }
     ghostState.textContent = stuckNote ?? ghostCopy(echo);
     // ONE counter, ONE verb: this tally line and the shell's idle status
     // line (`runStatusLine`, boot.ts) state the SAME numbers in the SAME
@@ -843,12 +975,6 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   // R's K4 wall): the FIRST press that ARMS the reversal with nothing
   // held says so once; later arms and every un-arm stay quiet.
   let reversingShown = false;
-  function ghostCopy(echo: boolean): string {
-    const verb = echo && state !== 'hidden' ? `${GHOST_LABEL[state]} · rotated` : GHOST_LABEL[state];
-    const why = state === 'reversed' && !flipWhyShown;
-    if (state === 'reversed') flipWhyShown = true;
-    return why ? `${verb} — ${FLIP_WHY}` : verb;
-  }
 
   function emit(): void {
     outcomeMemo.clear(); // the tie-outcome fingerprints saw the OLD build
@@ -962,8 +1088,15 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     }
     const target = list[targetIndex]!.socket;
     const transform = placement(target, kind);
-    if (overlapsSolid(transform, kind)) {
-      ghostState.textContent = GHOST_LABEL.blocked;
+    const blocker = blockerOf(transform, kind);
+    if (blocker !== null) {
+      // the REFUSAL says who refused it and where the walk is (the same line
+      // the red ghost already wears — a click that changes nothing is never
+      // quieter than the ghost that warned about it)
+      state = 'blocked';
+      aimBlocker = blocker;
+      aimGoal = list[targetIndex]!.goal ?? null;
+      ghostState.textContent = ghostCopy(false);
       return false;
     }
     pieces = [
@@ -1354,6 +1487,17 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     targetSocket: () => {
       const list = targets();
       return list.length > 0 ? list[Math.min(targetIndex, list.length - 1)]!.socket : null;
+    },
+    aimHint: () => {
+      // The place the NEXT piece extends the line from — the far open end of
+      // the start-connected chain (`chainHeadIndex`, the socket the boot
+      // default is bound to) — and whether the ring already marks it. The
+      // failure note's WHERE tail reads this (stage 6, playtest DD); it is
+      // advice about the build graph, never about the physics.
+      const list = targets();
+      if (list.length === 0) return null;
+      const head = Math.min(chainHeadIndex(), list.length - 1);
+      return { label: list[head]!.label, ringHere: head === Math.min(targetIndex, list.length - 1) };
     },
     targetSocketPx: () => {
       const list = targets();

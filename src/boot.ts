@@ -55,7 +55,7 @@ import { fitSocket, SNAP_ANGLE_TOL, SNAP_TRANSLATION_TOL } from './track/snap.ts
 import { socketGap, tangentAngle, transformSocket } from './track/socket.ts';
 import type { Socket } from './track/socket.ts';
 import type { Level } from './world/level.ts';
-import { createBuilder, type Builder } from './ui/builder.ts';
+import { createBuilder, type Builder, type SetGuard } from './ui/builder.ts';
 import { encodeShareUrl, parseShareUrl, type SharePayload } from './share/share.ts';
 import { replayRun } from './replay/replay.ts';
 import { TapeRecorder, ReplayDirector, cupView, REPLAY_FOV } from './replay/cinematic.ts';
@@ -95,11 +95,22 @@ function levelSet(level: Level): string | null {
   return typeof set === 'string' && isRegisteredSet(set) ? set : null;
 }
 
-/** The named solid props of a built kitchen set as world-space AABBs — the
+/** The named solid props of a built set as world-space NAMED boxes — the
  *  builder's placement-guard input (cheap: boxes, never mesh tests). Films
  *  and the counter floor are excluded: a wet patch must never block a piece,
- *  and the deck the track rides on is not an obstacle. */
-export function setPlacementGuard(group: THREE.Group): THREE.Box3[] {
+ *  and the deck the track rides on is not an obstacle.
+ *
+ *  STAGE 6 (kitchen03's second wall): each box carries the NAME of the object
+ *  that owns it, because the refusal line has to name the thing that refused
+ *  the seat — "blocked — furniture is in the way" over the cereal bowl on a
+ *  rung called "The Bowl" read to two strangers as "move the furniture"
+ *  (playtests BB/DD). The name is the object's own path (`cereal-bowl`,
+ *  `lazy-pencil/pencil-shaft`), which is the SAME naming convention the guard
+ *  walker already uses to decide what is a solid; `solidWord` in
+ *  `src/ui/builder.ts` turns it into the player words, and
+ *  `tests/unit/named-props.test.ts` proves the authority: the guard's names
+ *  and a walk of the mounted set's meshes agree box-for-box. */
+export function setPlacementGuard(group: THREE.Group): SetGuard[] {
   return collectSetBoxes(group, false);
 }
 
@@ -112,11 +123,11 @@ export function setPlacementGuard(group: THREE.Group): THREE.Box3[] {
  *  beneath. Leaf boxes are the actual solids: the column beside the lane,
  *  the spout above it, none of them on the corridor. */
 export function setCameraSolids(group: THREE.Group): THREE.Box3[] {
-  return collectSetBoxes(group, true);
+  return collectSetBoxes(group, true).map((g) => g.box);
 }
 
-function collectSetBoxes(group: THREE.Group, leaves: boolean): THREE.Box3[] {
-  const boxes: THREE.Box3[] = [];
+function collectSetBoxes(group: THREE.Group, leaves: boolean): SetGuard[] {
+  const boxes: SetGuard[] = [];
   // Box3.setFromObject does not refresh PARENT matrices — a freshly repositioned
   // mount would otherwise box the props at their UNPLACED coordinates
   group.updateMatrixWorld(true);
@@ -125,20 +136,27 @@ function collectSetBoxes(group: THREE.Group, leaves: boolean): THREE.Box3[] {
   // surfaces outside the dress, `wet-patch-films` and anything named *film*
   // are never solids.
   const skip = new Set(['counter', 'shell', 'wet-patch-films']);
-  const collect = (root: THREE.Object3D): void => {
+  const collect = (root: THREE.Object3D, path: string[]): void => {
     for (const child of root.children) {
       if (child.name.includes('film') || skip.has(child.name)) continue;
       const namedSolid =
         child.children.length === 0 || child.name === 'book-stack' || child.name === 'tap';
       if (leaves ? child.children.length === 0 : namedSolid) {
-        boxes.push(new THREE.Box3().setFromObject(child));
+        // the object's PATH under the dress, joined with `/` — the mesh's own
+        // name is often generic (`mug-body`), the group it hangs under is the
+        // object a player would name (`mug`); `solidWord` reads the first
+        path.push(child.name);
+        boxes.push({ name: path.join('/'), box: new THREE.Box3().setFromObject(child) });
+        path.pop();
         continue;
       }
-      collect(child);
+      path.push(child.name);
+      collect(child, path);
+      path.pop();
     }
   };
   const dress = group.getObjectByName('dress');
-  if (dress) collect(dress);
+  if (dress) collect(dress, []);
   return boxes;
 }
 
@@ -1938,6 +1956,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         goalNounFor(level),
         stockedKindsFor(currentBuild, tray),
         flippedKindsFor(level, currentBuild),
+        // THE WHERE of the drive-off tail: the end the next piece extends the
+        // line from, read off the builder's socket graph (stage 6, kitchen03).
+        // null with no builder (a shared/replay page) keeps the shipped line.
+        builder.aimHint(),
       );
       resultPanel.show(model);
       // the run's OUTCOME is an audio event exactly once per run: the

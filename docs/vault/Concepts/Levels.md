@@ -611,6 +611,44 @@ drivable today on the way to the bowl. The bowl's intended banked line
 becomes a data edit — seat a `bank` between the rim sockets — the day
 steering lands AND the builder can seat a piece on a PROP socket (ask #4);
 that half of the rung is BLOCKED.
+STAGE-6 DISCOVERABILITY PASS (playtest DD 2026-10-08: the bowl walled a
+SECOND fresh-eyes stranger — 6+ builds, "the only snap is a curve exit the
+game itself says is blocked — furniture is in the way", "building backwards
+from the cup runs off-table", "] swaps to the car's start point". BB's five
+builds earlier said the same three things). NOTHING MOVED: no piece
+geometry, no tray, no par, no set mount — the rung was already SOLVABLE
+(the par replays verify and 60/60 whole-tray orders finish), so per the law
+(PROMPT §12: confused twice → fix the level or the callout, never the length
+of the explanation) the fix went into the CALLOUT, and the reason is
+measured, not taste: the thing that refuses the rim seat is not furniture,
+it is `cereal-bowl`'s own box (`tests/unit/set-wiring.test.ts` now pins
+that the guard name which blocks a straight at `bowl.out` IS the bowl), and
+the bowl is ONE prop for every kitchen rung; and the kitchen02 idiom that
+closes a cup's dangling exit with a run-out fixture cannot be used here
+because the cup sits at the rim of the round counter (the dress spans
+x 0.52–1.47 against a cup entry at x 2.218), so a run-out deck would float
+over the floor — DD's own "runs off-table". What the rung now says instead
+(the three tells and their proofs are in [[Modules/ui]]): a red seat NAMES
+the object that refused it ("the cereal bowl is in the way") and the verb
+that has an answer; a legal green seat past the finish says the run ends at
+the cup so nothing past it is ever travelled; and the failure note's ADD
+tail names the END the kind goes on, which is the far open exit of the
+start-connected chain — the socket the boot ring is already bound to, so the
+blind five-Place build still stands as the rung's floor. The aim walk also
+gets its own gate now: `]`/`←→` reach every open end, and two of the four
+ends on this rung are dead ends the copy has to be honest about (the bowl
+rim: blocked by the bowl; the cup's far side: past the goal), which is what
+made the OTHER two — the ramp's exit and the chain's own end — invisible.
+Geometry, pars and the determinism anchor are untouched by this pass:
+`a1a50d05` still holds (no `a1a50d05` Decision Log line is owed, because no
+geometry moved), `npm run pars --check` and `replay:all` 30/30 green.
+Residual, honestly open: a player who ignores the past-the-finish tell and
+fills the tray on the far side gets the BARE head (the stock tail needs
+stock, and a spent tray has none) and `Remove piece` is last-in-first-out,
+so the recovery is clear-and-rebuild — the tell is what prevents arriving
+there, and the ask (an ORPHAN-PAST-GOAL clause naming the stranded kind, or
+a Remove that can name which piece it will take) is a systems ask, filed in
+`Sessions/2026-10-08 Stage 6 k3 discoverability`.
 
 **KITCHEN 04 — The Tap** (`kitchen04.level.ts`). Teaches: the hazard enters;
 affordance (the tap dripping, upstream, visibly) before hazard (its splash

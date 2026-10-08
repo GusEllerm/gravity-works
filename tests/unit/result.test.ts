@@ -493,3 +493,91 @@ describe('the nose-first tail says HOW when the landing was rotated (playtest BB
     ).toBe('fell off nose-first — add a flat landing');
   });
 });
+
+/**
+ * THE WHERE TAIL (stage 6, kitchen03's second wall — playtests BB and DD: six
+ * launches each, the same rung, and every advice line named a KIND with no
+ * PLACE: "the line let go before the cup; add a straight or a lip"). The
+ * builder's socket graph knows the end the next piece extends the line from
+ * (`builder.aimHint()`, the far open exit of the start-connected chain), so an
+ * ADD tail now names it — and the walk phrase rides only when the visible ring
+ * marks a different end. Two laws this pins: a CRITIQUE line never grows one
+ * (it is advice about a piece already on the track), and an unknown hint (a
+ * shared or replay page, no builder) leaves every shipped line byte-identical.
+ */
+describe('the WHERE tail names the end an ADD asks for (stage 6, playtest DD)', () => {
+  const fell = { status: 'fell', time: 1.4, piecesUsed: 1, hazardsTouched: 0 } as const;
+  const nose = { ...emptyEvidence(0), lastTouchdownPitch: NOSE_FIRST_PITCH - 0.05 };
+  const rampEnd = { label: 'end of the pre-built ramp', ringHere: false };
+  const stockAll = new Set<PieceKind>(['straight', 'drop', 'gapLip', 'landing']);
+
+  test('the drive-off tail names the end, and the key, when the ring is elsewhere', () => {
+    expect(physicsNote(fell, emptyEvidence(0), null, null, null, stockAll, null, rampEnd)).toBe(
+      'fell off — the line let go before the cup; add a straight, a drop, a lip or a landing' +
+        ' · place at: end of the pre-built ramp · press ] to walk the open ends',
+    );
+  });
+
+  test('with the ring ALREADY on that end, no key is taught', () => {
+    const note = physicsNote(
+      fell,
+      emptyEvidence(0),
+      null,
+      null,
+      null,
+      new Set<PieceKind>(['straight']),
+      null,
+      { label: 'end of the pre-built ramp', ringHere: true },
+    );
+    expect(note).toBe('fell off — the line let go before the cup; add a straight · place at: end of the pre-built ramp');
+    expect(note).not.toContain(']');
+  });
+
+  test('the nose-first ADD line names the end too (BB\u2019s kitchen03 notes are this line)', () => {
+    expect(
+      physicsNote(
+        fell,
+        nose,
+        new Set<PieceKind>(['ramp', 'landing', 'gapLip']),
+        new Set<PieceKind>(['ramp']),
+        null,
+        null,
+        null,
+        rampEnd,
+      ),
+    ).toBe(
+      'fell off nose-first — add a flat landing or add a lip · place at: end of the pre-built ramp · press ] to walk the open ends',
+    );
+  });
+
+  test('a CRITIQUE line never grows a WHERE tail', () => {
+    // both halves name pieces already in the build ("flatten", "lower") — the
+    // advice is about changing a piece, not placing one, so a place sentence
+    // would contradict it
+    const critique = physicsNote(
+      fell,
+      nose,
+      new Set<PieceKind>(['landing', 'gapLip']),
+      new Set<PieceKind>(['landing', 'gapLip']),
+      null,
+      null,
+      null,
+      rampEnd,
+    );
+    expect(critique).toBe('fell off nose-first — flatten the landing or lower the lip');
+    expect(critique).not.toContain('place at');
+    // and the spent-tray drive-off head (nothing honest to ADD) stays bare
+    expect(
+      physicsNote(fell, emptyEvidence(0), null, null, null, new Set<PieceKind>(), null, rampEnd),
+    ).toBe('fell off — the line let go before the cup');
+  });
+
+  test('unknown aim (no builder: a shared or replay page) keeps every shipped line', () => {
+    expect(physicsNote(fell, emptyEvidence(0), null, null, null, stockAll)).toBe(
+      'fell off — the line let go before the cup; add a straight, a drop, a lip or a landing',
+    );
+    expect(
+      physicsNote(fell, nose, new Set<PieceKind>(['ramp', 'landing', 'gapLip']), new Set<PieceKind>(['ramp'])),
+    ).toBe('fell off nose-first — add a flat landing or add a lip');
+  });
+});
