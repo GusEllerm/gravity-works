@@ -26,8 +26,8 @@ box and lower ports belong to other agents' suites.
 
 ## Tests
 
-    npm test                    # unit (vitest) — 755 tests
-    E2E_PORT=4460 npm run test:e2e   # Playwright e2e — 183 passed / 1 skip
+    npm test                    # unit (vitest) — 761 tests
+    E2E_PORT=4460 npm run test:e2e   # Playwright e2e — 189 passed / 1 skip
     npm run test:e2e:filmstrip   # mid-run readability gate (owns port 4210, own config)
     npm run replay:all           # every rung's par build replayed twice — 30/30 verified
     npm run perf:table           # per-set 60 fps harness (tools/perf-table.mjs)
