@@ -389,7 +389,7 @@ test('T+U 3: the finish cup is inside the build framing on every campaign rung',
   // the sweep is the LADDER, not a remembered head-count — the porch ladder
   // merge (stage 5) grew the campaign 21 → 26 and pinned constants here went
   // stale; the cup-framing law holds rung by rung for however many there are
-  expect(CAMPAIGN_LADDER.length).toBe(26)
+  expect(CAMPAIGN_LADDER.length).toBe(30) // the stage-6 encore pass: 26 → 30
   for (const id of CAMPAIGN_LADDER) {
     for (const build of ['', '&build=par']) {
       await page.goto(`/?level=${id}${build}`)

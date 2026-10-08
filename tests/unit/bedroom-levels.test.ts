@@ -26,6 +26,7 @@ import { BEDROOM01 } from '../../src/world/levels/bedroom01.level.ts';
 import { BEDROOM02, bedroom02StepBuild } from '../../src/world/levels/bedroom02.level.ts';
 import { BEDROOM03, bedroom03SoftBuild } from '../../src/world/levels/bedroom03.level.ts';
 import { BEDROOM04 } from '../../src/world/levels/bedroom04.level.ts';
+import { BEDROOM05, bedroom05BoosterBuild } from '../../src/world/levels/bedroom05.level.ts';
 import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts';
 import { trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
 import { KITCHEN02, kitchen02ArcBuild } from '../../src/world/levels/kitchen02.level.ts';
@@ -36,14 +37,17 @@ import { BATHROOM01 } from '../../src/world/levels/bathroom01.level.ts';
 import { BATHROOM02, bathroom02DrainBuild } from '../../src/world/levels/bathroom02.level.ts';
 import { BATHROOM03, bathroom03SplashBuild } from '../../src/world/levels/bathroom03.level.ts';
 import { BATHROOM04 } from '../../src/world/levels/bathroom04.level.ts';
+import { BATHROOM05, bathroom05BoosterBuild } from '../../src/world/levels/bathroom05.level.ts';
 import { GARDEN01 } from '../../src/world/levels/garden01.level.ts';
 import { GARDEN02, garden02BoreBuild } from '../../src/world/levels/garden02.level.ts';
 import { GARDEN03, garden03SprinklerBuild } from '../../src/world/levels/garden03.level.ts';
 import { GARDEN04 } from '../../src/world/levels/garden04.level.ts';
+import { GARDEN05, garden05BoosterBuild } from '../../src/world/levels/garden05.level.ts';
 import { GARAGE01 } from '../../src/world/levels/garage01.level.ts';
 import { GARAGE02, garage02FloorBuild } from '../../src/world/levels/garage02.level.ts';
 import { GARAGE03, garage03OilLaneBuild } from '../../src/world/levels/garage03.level.ts';
 import { GARAGE04 } from '../../src/world/levels/garage04.level.ts';
+import { GARAGE05, garage05BoosterBuild } from '../../src/world/levels/garage05.level.ts';
 import { PORCH01 } from '../../src/world/levels/porch01.level.ts';
 import { PORCH02, porch02DoorBuild } from '../../src/world/levels/porch02.level.ts';
 import { PORCH03, porch03BounceBuild } from '../../src/world/levels/porch03.level.ts';
@@ -64,7 +68,7 @@ import { replayRun } from '../../src/replay/replay.ts';
  *  shapes without the literal set id (the seams the invariants read). */
 type Rung = Omit<KitchenLevel, 'set'>;
 
-const LADDER: readonly Rung[] = [BEDROOM01, BEDROOM02, BEDROOM03, BEDROOM04];
+const LADDER: readonly Rung[] = [BEDROOM01, BEDROOM02, BEDROOM03, BEDROOM05, BEDROOM04];
 const KITCHEN_LADDER: readonly Rung[] = [
   KITCHEN01,
   KITCHEN02,
@@ -161,9 +165,9 @@ describe('bedroom ladder — level contracts', () => {
 
 describe('ladders (kitchen + bedroom + bathroom + garden + garage + porch) — tray ⊇ parBuild on EVERY authored level', () => {
   /** Every line ALL SIX ladders author, in the level files' own data. */
-  const BATHROOM_LADDER: readonly Rung[] = [BATHROOM01, BATHROOM02, BATHROOM03, BATHROOM04];
-  const GARDEN_LADDER: readonly Rung[] = [GARDEN01, GARDEN02, GARDEN03, GARDEN04];
-  const GARAGE_LADDER: readonly Rung[] = [GARAGE01, GARAGE02, GARAGE03, GARAGE04];
+  const BATHROOM_LADDER: readonly Rung[] = [BATHROOM01, BATHROOM02, BATHROOM03, BATHROOM05, BATHROOM04];
+  const GARDEN_LADDER: readonly Rung[] = [GARDEN01, GARDEN02, GARDEN03, GARDEN05, GARDEN04];
+  const GARAGE_LADDER: readonly Rung[] = [GARAGE01, GARAGE02, GARAGE03, GARAGE05, GARAGE04];
   const PORCH_LADDER: readonly Rung[] = [PORCH01, PORCH02, PORCH03, PORCH04, PORCH05];
   const LINES: readonly { level: Rung; label: string; build: Build }[] = [
     ...[...KITCHEN_LADDER, ...LADDER, ...BATHROOM_LADDER, ...GARDEN_LADDER, ...GARAGE_LADDER, ...PORCH_LADDER].map((level) => ({
@@ -183,6 +187,10 @@ describe('ladders (kitchen + bedroom + bathroom + garden + garage + porch) — t
     { level: PORCH02, label: 'door line', build: porch02DoorBuild() },
     { level: PORCH03, label: 'bounce line', build: porch03BounceBuild() },
     { level: PORCH05, label: 'catch-first line', build: porch05CatchFirstBuild() },
+    { level: BEDROOM05, label: 'booster line', build: bedroom05BoosterBuild() },
+    { level: BATHROOM05, label: 'booster line', build: bathroom05BoosterBuild() },
+    { level: GARDEN05, label: 'booster line', build: garden05BoosterBuild() },
+    { level: GARAGE05, label: 'booster line', build: garage05BoosterBuild() },
   ];
 
   function multiset(pieces: Build['pieces']): Map<PieceKind, number> {
@@ -422,12 +430,81 @@ describe('bedroom04 — the whole tray is the answer (Playtest-G lesson, capston
   }, 60_000);
 });
 
+describe('bedroom05 — the ENCORE: the double crossing, every omission fatal, the booster a choice', () => {
+  // The encore's promise law, strongest in the house: the rung pins its
+  // dip on the porch THRESHOLD's long lead (span 0.3566 m > the ~0.31 m a
+  // roll-off can fly at this release — a stated rung-local deviation like
+  // `PORCH_STEP`), so no half-line exists. The room ships no live zones
+  // and neither does the encore (the bedroom's law).
+  const spec = (kinds: string[]): PieceKind[] =>
+    kinds.map((k) => ({ dr: 'drop', st: 'straight', la: 'landing', bo: 'booster' }[k]! as PieceKind));
+
+  test('EVERY omission falls — the encore’s promise law, 11 builds sampled', async () => {
+    for (const kinds of [
+      ['dr'], ['st'], ['la'],
+      ['dr', 'st'], ['st', 'dr'], ['dr', 'la'], ['st', 'la'],
+      ['dr', 'st', 'dr'], ['dr', 'st', 'la'], ['st', 'dr', 'la'], ['dr', 'la', 'st'],
+    ]) {
+      const run = await replayRun(BEDROOM05, placed(BEDROOM05, spec(kinds)));
+      expect(run.status, kinds.join('>')).not.toBe('finished');
+    }
+  }, 180_000);
+
+  test('the ORDER is the line: deck-first never catches dip two; the par order is beatable within the tray', async () => {
+    const deckFirst = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['st', 'dr', 'dr', 'la'])));
+    expect(deckFirst.status).not.toBe('finished'); // measured fall at 2.808 — the plank first strands the second sink
+    const beat = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['dr', 'la', 'dr', 'st'])));
+    const par = await replayRun(BEDROOM05, BEDROOM05.parBuild());
+    expect(beat.status).toBe('finished');
+    expect(beat.time).toBeLessThan(par.time); // measured 2.783 vs 3.017 — kitchen04's law holds here too
+  }, 90_000);
+
+  test('the spare straight is a decoy: TAIL-placed it finishes at the par’s OWN hash, mid-line it kills the run, after the catcher it drags', async () => {
+    const par = await replayRun(BEDROOM05, BEDROOM05.parBuild());
+    const tail = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['dr', 'st', 'dr', 'la', 'st'])));
+    expect(tail.status).toBe('finished');
+    expect(tail.hash).toBe(par.hash); // the extra deck stands past the cup: a piece bought, nothing earned
+    const mid = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['dr', 'st', 'st', 'dr', 'la'])));
+    expect(mid.status).not.toBe('finished'); // deck-first again, in disguise: dip two goes uncrossed
+    const runout = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['dr', 'st', 'dr', 'st', 'la'])));
+    expect(runout.status).toBe('finished');
+    expect(runout.time).toBeGreaterThan(par.time + 0.3); // measured 3.408 — the extra plank before the catch drags
+  }, 120_000);
+
+  test('the booster is a CHOICE both ways: spent EARLY it buys dip two whole (exported hidden line); spent LAST it is trim at the par’s hash', async () => {
+    const par = await replayRun(BEDROOM05, BEDROOM05.parBuild());
+    expect((await replayRun(BEDROOM05, bedroom05BoosterBuild())).status).toBe('finished'); // chained export
+    const early = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['bo', 'dr', 'st', 'la'])));
+    expect(early.status).toBe('finished');
+    expect(early.time).toBeLessThan(par.time); // measured 2.442 — the room's hidden 3★, porch03's bounce law
+    const last = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['dr', 'st', 'dr', 'la', 'bo'])));
+    expect(last.status).toBe('finished');
+    expect(last.hash).toBe(par.hash); // measured: the par's own clock and hash — one piece wasted
+    const full = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['bo', 'dr', 'st', 'dr', 'la'])));
+    expect(full.status).toBe('finished');
+    expect(full.time).toBeLessThan(par.time); // measured 2.425 — kitchen05's rule: spend EARLY
+    expect(full.time).toBeCloseTo(early.time, 1); // the pop across dip two buys the same clock as the pop skipping it
+  }, 150_000);
+
+  test('the whole tray is a CHOICE tray: the tail order finishes poor, the booster-first six-piece order falls', async () => {
+    const tail = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['dr', 'st', 'dr', 'la', 'st', 'bo'])));
+    expect(tail.status).toBe('finished'); // 6 placed, the par's clock: the 2★ consolation — Playtest-G's wall, priced not walled
+    const front = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['bo', 'dr', 'st', 'st', 'dr', 'la'])));
+    expect(front.status).not.toBe('finished'); // the early pop overruns the extra plank — the tray punishes gluttony
+  }, 90_000);
+
+  test('the encore ships no live zone — the bedroom’s law, kept by the fifth rung', () => {
+    expect((BEDROOM05 as { hazards?: unknown[] }).hazards ?? []).toHaveLength(0);
+  });
+});
+
 describe('bedroom set wiring — the placement table is derived, not folklore', () => {
   const LINES_BY_LEVEL: Record<string, Build[]> = {
     bedroom01: [BEDROOM01.parBuild()],
     bedroom02: [BEDROOM02.parBuild(), bedroom02StepBuild()],
     bedroom03: [BEDROOM03.parBuild(), bedroom03SoftBuild()],
     bedroom04: [BEDROOM04.parBuild()],
+    bedroom05: [BEDROOM05.parBuild(), bedroom05BoosterBuild()],
   };
 
   for (const level of LADDER) {

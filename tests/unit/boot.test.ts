@@ -66,21 +66,25 @@ describe('boot shell', () => {
     ).toBe(KITCHEN01.placeholderBuild().pieces.length);
   });
 
-  test('the ladder walks kitchen01..05 into bedroom01..04 into bathroom01..04 into garden01..04 into garage01..04 into porch01..05 and nothing is anyone’s next beyond it', () => {
+  test('the ladder walks kitchen01..05 into bedroom01..05 into bathroom01..05 into garden01..05 into garage01..05 into porch01..05 and nothing is anyone’s next beyond it', () => {
     expect(nextLevelId('kitchen01')).toBe('kitchen02');
     expect(nextLevelId('kitchen04')).toBe('kitchen05');
     expect(nextLevelId('kitchen05')).toBe('bedroom01'); // the kitchen era hands off to the bedroom
     expect(nextLevelId('bedroom01')).toBe('bedroom02');
-    expect(nextLevelId('bedroom03')).toBe('bedroom04');
+    expect(nextLevelId('bedroom03')).toBe('bedroom05'); // the encore slots in before the room's finale
+    expect(nextLevelId('bedroom05')).toBe('bedroom04');
     expect(nextLevelId('bedroom04')).toBe('bathroom01'); // the bedroom era hands off to the bathroom
     expect(nextLevelId('bathroom01')).toBe('bathroom02');
-    expect(nextLevelId('bathroom03')).toBe('bathroom04');
+    expect(nextLevelId('bathroom03')).toBe('bathroom05');
+    expect(nextLevelId('bathroom05')).toBe('bathroom04');
     expect(nextLevelId('bathroom04')).toBe('garden01'); // the bathroom era hands off to the garden
     expect(nextLevelId('garden01')).toBe('garden02');
-    expect(nextLevelId('garden03')).toBe('garden04');
+    expect(nextLevelId('garden03')).toBe('garden05');
+    expect(nextLevelId('garden05')).toBe('garden04');
     expect(nextLevelId('garden04')).toBe('garage01'); // the garden era hands off to the garage
     expect(nextLevelId('garage01')).toBe('garage02');
-    expect(nextLevelId('garage03')).toBe('garage04');
+    expect(nextLevelId('garage03')).toBe('garage05');
+    expect(nextLevelId('garage05')).toBe('garage04');
     expect(nextLevelId('garage04')).toBe('porch01'); // the garage closes and the porch OPENS (the campaign's last room)
     expect(nextLevelId('porch01')).toBe('porch02');
     expect(nextLevelId('porch03')).toBe('porch04');

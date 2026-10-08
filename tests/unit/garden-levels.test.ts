@@ -26,6 +26,7 @@ import { GARDEN01 } from '../../src/world/levels/garden01.level.ts';
 import { GARDEN02, garden02BoreBuild } from '../../src/world/levels/garden02.level.ts';
 import { GARDEN03, garden03SprinklerBuild } from '../../src/world/levels/garden03.level.ts';
 import { GARDEN04, garden04ProbeBuild } from '../../src/world/levels/garden04.level.ts';
+import { GARDEN05, garden05BoosterBuild, garden05ProbeBuild } from '../../src/world/levels/garden05.level.ts';
 import { trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
 import { levelTrayParams } from '../../src/boot.ts';
 import { PARS } from '../../src/world/stars.ts';
@@ -42,7 +43,7 @@ import { replayRun } from '../../src/replay/replay.ts';
 /** The structural rung the ladders all satisfy (the bathroom twin). */
 type Rung = Omit<KitchenLevel, 'set'>;
 
-const LADDER: readonly Rung[] = [GARDEN01, GARDEN02, GARDEN03, GARDEN04];
+const LADDER: readonly Rung[] = [GARDEN01, GARDEN02, GARDEN03, GARDEN05, GARDEN04];
 
 /** The same level with its zones deleted — the dry side of every wet/dry
  *  hash assertion (`x * 1 === x` discipline, Modules/hazards). */
@@ -133,6 +134,7 @@ describe('garden ladder — level contracts', () => {
   test('the sprinkler zones name their head (source: sprinkler)', () => {
     expect(GARDEN03.hazards![0]!.source).toBe('sprinkler');
     expect(GARDEN04.hazards![0]!.source).toBe('sprinkler');
+    expect(GARDEN05.hazards![0]!.source).toBe('sprinkler'); // the encore keeps the room's verb (in sink two's mouth, FLOWN)
   });
 });
 
@@ -302,12 +304,92 @@ describe('garden04 — everything, one tray, a live sprawl under the flight (cap
   }, 90_000);
 });
 
+describe('garden05 — the ENCORE: the double crossing in the eye, and the sprinkler flies over sink two', () => {
+  // The eye rung: the par's ORDER carries the whole lesson (deck-first
+  // falls), every omission FALLS on the rung's pinned long-lead dip (span
+  // 0.3566 m > a roll-off's flight), and the sprinkler sprawl lies in the
+  // second crossing's mouth at the waterline a BRIDGED deck would roll —
+  // the ridden dip flies it (bit-identical par), the unbuyable bridge
+  // probe rolls the film and runs wet-faster (garden03's low-drag law).
+  const spec = (kinds: string[]): PieceKind[] =>
+    kinds.map((k) => ({ dr: 'drop', st: 'straight', la: 'landing', bo: 'booster' }[k]! as PieceKind));
+
+  test('EVERY omission falls — the encore’s promise law, 11 builds sampled', async () => {
+    for (const kinds of [
+      ['dr'], ['st'], ['la'],
+      ['dr', 'st'], ['st', 'dr'], ['dr', 'la'], ['st', 'la'],
+      ['dr', 'st', 'dr'], ['dr', 'st', 'la'], ['st', 'dr', 'la'], ['dr', 'la', 'st'],
+    ]) {
+      const run = await replayRun(GARDEN05, placed(GARDEN05, spec(kinds)));
+      expect(run.status, kinds.join('>')).not.toBe('finished');
+    }
+  }, 180_000);
+
+  test('the ORDER is the line: deck-first never catches the second crossing; the par order is beatable within the tray', async () => {
+    const deckFirst = await replayRun(GARDEN05, placed(GARDEN05, spec(['st', 'dr', 'dr', 'la'])));
+    expect(deckFirst.status).not.toBe('finished'); // measured fall at 2.808 — eye rung or not, the plank-first line strands the ride
+    const beat = await replayRun(GARDEN05, placed(GARDEN05, spec(['dr', 'la', 'dr', 'st'])));
+    const par = await replayRun(GARDEN05, GARDEN05.parBuild());
+    expect(beat.status).toBe('finished');
+    expect(beat.time).toBeLessThan(par.time); // measured 2.783 vs 3.017
+  }, 90_000);
+
+  test('the spare straight is a decoy: TAIL-placed it finishes at the par’s OWN hash, mid-line it kills the run, after the catcher it drags', async () => {
+    const par = await replayRun(GARDEN05, GARDEN05.parBuild());
+    const tail = await replayRun(GARDEN05, placed(GARDEN05, spec(['dr', 'st', 'dr', 'la', 'st'])));
+    expect(tail.status).toBe('finished');
+    expect(tail.hash).toBe(par.hash);
+    const mid = await replayRun(GARDEN05, placed(GARDEN05, spec(['dr', 'st', 'st', 'dr', 'la'])));
+    expect(mid.status).not.toBe('finished');
+    const runout = await replayRun(GARDEN05, placed(GARDEN05, spec(['dr', 'st', 'dr', 'st', 'la'])));
+    expect(runout.status).toBe('finished');
+    expect(runout.time).toBeGreaterThan(par.time + 0.3); // measured 3.408
+  }, 120_000);
+
+  test('the booster is a CHOICE both ways: spent EARLY it buys the second crossing whole (exported hidden line); spent LAST it is trim at the par’s hash', async () => {
+    const par = await replayRun(GARDEN05, GARDEN05.parBuild());
+    expect((await replayRun(GARDEN05, garden05BoosterBuild())).status).toBe('finished');
+    const early = await replayRun(GARDEN05, placed(GARDEN05, spec(['bo', 'dr', 'st', 'la'])));
+    expect(early.status).toBe('finished');
+    expect(early.time).toBeLessThan(par.time); // measured 2.442 — the garden's hidden 3★
+    const last = await replayRun(GARDEN05, placed(GARDEN05, spec(['dr', 'st', 'dr', 'la', 'bo'])));
+    expect(last.status).toBe('finished');
+    expect(last.hash).toBe(par.hash); // the par's own clock and hash — one piece wasted
+    const full = await replayRun(GARDEN05, placed(GARDEN05, spec(['bo', 'dr', 'st', 'dr', 'la'])));
+    expect(full.status).toBe('finished');
+    expect(full.time).toBeLessThan(par.time); // 2.425 — kitchen05's rule, re-derived in the eye's room
+  }, 150_000);
+
+  test('the whole tray is a CHOICE tray: the tail order finishes poor, the booster-first six-piece order falls', async () => {
+    const tail = await replayRun(GARDEN05, placed(GARDEN05, spec(['dr', 'st', 'dr', 'la', 'st', 'bo'])));
+    expect(tail.status).toBe('finished'); // 6 placed, the par's clock: the 2★ consolation
+    const front = await replayRun(GARDEN05, placed(GARDEN05, spec(['bo', 'dr', 'st', 'st', 'dr', 'la'])));
+    expect(front.status).not.toBe('finished');
+  }, 90_000);
+
+  test('the film is FLOWN: the par rides both crossings and replays bit-identical wet vs dry', async () => {
+    const wet = await replayRun(GARDEN05, GARDEN05.parBuild());
+    const dryRun = await replayRun(dry(GARDEN05), GARDEN05.parBuild());
+    expect(wet.hash).toBe(dryRun.hash);
+  }, 60_000);
+
+  test('the BRIDGE PROBE rolls through the sprawl: diverges wet, finishes, wet FASTER (garden03’s law, flown)', async () => {
+    const wet = await replayRun(GARDEN05, garden05ProbeBuild());
+    const dryRun = await replayRun(dry(GARDEN05), garden05ProbeBuild());
+    expect(wet.status).toBe('finished');
+    expect(dryRun.status).toBe('finished');
+    expect(wet.hash).not.toBe(dryRun.hash);
+    expect(wet.time).toBeLessThan(dryRun.time); // measured 3.125 vs 3.342
+  }, 90_000);
+});
+
 describe('garden set wiring — the placement table is derived, not folklore', () => {
   const LINES_BY_LEVEL: Record<string, Build[]> = {
     garden01: [GARDEN01.parBuild()],
     garden02: [GARDEN02.parBuild(), garden02BoreBuild()],
     garden03: [GARDEN03.parBuild(), garden03SprinklerBuild()],
     garden04: [GARDEN04.parBuild()],
+    garden05: [GARDEN05.parBuild(), garden05BoosterBuild()],
   };
 
   for (const level of LADDER) {

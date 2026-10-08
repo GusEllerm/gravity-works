@@ -125,6 +125,10 @@ const BEDROOM_ROWS: Record<string, readonly [number, number, number]> = {
   bedroom02: [1.23998, -0.48732, -0.15],
   bedroom03: [1.1825, -0.42567, -0.15],
   bedroom04: [1.2165, -0.44809, -0.15],
+  // bedroom05 (encore): the double-crossing rail — same rule (x = the par
+  // rail's midpoint, floor 5 mm under the finish deck), 12.6 cm deeper
+  // than the finale's row because the par rides TWO 0.12 m dips.
+  bedroom05: [1.3602, -0.57419, -0.15],
 };
 
 /** The mount transform for one bedroom level id (null = no placement — the
@@ -155,6 +159,9 @@ const BATH_ROWS: Record<string, readonly [number, number, number]> = {
   bathroom02: [1.0912, -0.46809, -BATH_AXIS_OFFSET],
   bathroom03: [1.1825, -0.42567, -BATH_AXIS_OFFSET],
   bathroom04: [1.2165, -0.44809, -BATH_AXIS_OFFSET],
+  // bathroom05 (encore): same rule; 12.6 cm under the finale's row (the
+  // par rides two sink dips — see the bedroom05 row note).
+  bathroom05: [1.3602, -0.57419, -BATH_AXIS_OFFSET],
 };
 
 /** The mount transform for one bathroom level id (null = no placement — the
@@ -200,6 +207,10 @@ const GARDEN_ROWS: Record<string, readonly [number, number, number]> = {
   garden02: [1.09123, -0.47409, -GARDEN_AXIS_OFFSET],
   garden03: [1.1825, -0.43167, -GARDEN_AXIS_OFFSET],
   garden04: [1.21654, -0.45409, -GARDEN_AXIS_OFFSET],
+  // garden05 (encore): same rule; 12.6 cm under the finale's row (the par
+  // rides two crossings — see the bedroom05 row note), the paving's own
+  // 6 mm surface carried as always.
+  garden05: [1.3602, -0.58019, -GARDEN_AXIS_OFFSET],
 };
 
 /** The mount transform for one garden level id (null = no placement — the
@@ -241,6 +252,9 @@ const GARAGE_ROWS: Record<string, readonly [number, number, number]> = {
   garage02: [1.07272, -0.47419, -GARAGE_AXIS_OFFSET],
   garage03: [1.1825, -0.42567, -GARAGE_AXIS_OFFSET],
   garage04: [1.21654, -0.44809, -GARAGE_AXIS_OFFSET],
+  // garage05 (encore): same rule; 12.6 cm under the finale's row (the par
+  // rides two floor cuts — see the bedroom05 row note).
+  garage05: [1.3602, -0.57419, -GARAGE_AXIS_OFFSET],
 };
 
 /** The mount transform for one garage level id (null = no placement — the
