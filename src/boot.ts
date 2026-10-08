@@ -492,7 +492,7 @@ async function bootSharedRun(root: HTMLElement): Promise<void> {
   root.appendChild(title);
   const tagline = document.createElement('p');
   tagline.id = 'gw-replay-tagline';
-  tagline.textContent = 'One build, one release — this page re-runs it here and rolls the tape.';
+  tagline.textContent = 'One build, one release — this page replays it exactly.';
   root.appendChild(tagline);
   const badge = document.createElement('p');
   badge.id = 'gw-replay-badge';
@@ -521,7 +521,7 @@ async function bootSharedRun(root: HTMLElement): Promise<void> {
   const verifyNote = document.createElement('p');
   verifyNote.id = 'gw-replay-verify-note';
   verifyNote.textContent =
-    'The link carries the final state hash of the run; this page replays the level, build and seed on this machine and compares. Same machine, same engine, the same run — cross-platform equality is still an open question (see the Determinism notes).';
+    'The link carries the run’s final state hash. This page replays the level, build and seed on this machine and compares. Same machine, same engine — the same run.';
   verify.appendChild(verifyNote);
   root.appendChild(verify);
 
@@ -1641,7 +1641,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         return navigator.clipboard
           ?.writeText(url)
           .then(() => {
-            resultPanel.shareNote.textContent = 'link copied — send it to a friend';
+            resultPanel.shareNote.textContent = 'link copied';
           })
           .catch(() => {
             resultPanel.shareNote.textContent = 'copy the link below';

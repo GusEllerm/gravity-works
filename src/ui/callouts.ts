@@ -29,9 +29,9 @@ export const PIECE_CALLOUTS: Record<PieceKind, string> = {
   ramp: 'Turns height into speed — the engine of every track.',
   gapLip: 'A launch lip sets the angle of the jump, never its speed.',
   landing: 'A sloped catcher — match it to the flight, not to the floor.',
-  booster: 'One push, paid from the budget — spend it EARLY; speed saved for later overshoots.',
+  booster: 'One push, paid from the budget — spend it early; speed saved for later overshoots.',
   springLauncher: 'A stored shove at the start — a cold car’s engine.',
-  finishCup: 'Roll in and the run is scored: this is the finish.',
+  finishCup: 'Roll in and the run is scored.',
 };
 
 /** Prop callouts, keyed by full id (`prop:<name>`), registered by each set's

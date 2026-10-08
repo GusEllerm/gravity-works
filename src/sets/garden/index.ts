@@ -77,7 +77,7 @@ export * from './data.ts'
 // sprinkler's sprawl, the garden's variant of the wet patch (a timed head
 // is a hazard-KIND ask, stated in the ladder's session log; the always-wet
 // sprawl is what the solver runs). One line each, on the record.
-PROP_CALLOUTS['prop:shadowBars'] = "Cool strips are the sun's shadow — same stone, same grip. Read them, never fear them."
+PROP_CALLOUTS['prop:shadowBars'] = "Cool strips are the sun's shadow — same stone, same grip."
 PROP_CALLOUTS['prop:sprinkler'] = "Sprinkler spray halves grip, not speed — the dry line still wins."
 
 export interface GardenSetOptions {

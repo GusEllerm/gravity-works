@@ -1,5 +1,5 @@
 /**
- * GARAGE 05 — "Dyno Run" (the encore rung: the DOUBLE CROSSING, at speed).
+ * GARAGE 05 — "Spill Course" (the encore rung: the DOUBLE CROSSING, at speed).
  *
  * The garage's ladder crossed one floor cut per rung. The encore crosses
  * the shop lane TWICE on one line — `drop → straight → drop → landing`
@@ -125,7 +125,7 @@ function shopFilm(): WetPatch {
 export const GARAGE05: GarageLevel = registerGarage(
   garageLevel({
     id: GARAGE05_ID,
-    name: 'Dyno Run',
+    name: 'Spill Course',
     set: 'garage',
     seed: 1,
     startSocket: startSocketFromBuild(parBuild(), GAR_GEOM.release * GAR_GEOM.rampBlend),

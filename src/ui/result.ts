@@ -211,7 +211,7 @@ export function createRunRecorder(): RunRecorder {
  *   stalled nose-high     -> stalled going uphill
  *   stalled after a push  -> stalled after its last push
  *   stalled otherwise     -> stalled on the flat (friction won)
- *   timeout               -> timed out — never made it inside the limit
+ *   timeout               -> timed out — shorten the line or give it more speed
  *   anything unexplained  -> the catch-all (never a guess)
  *
  * STAGE 3 VOCABULARY PASS (playtest E "snapped vs seated"; G "status line
@@ -406,7 +406,7 @@ export function physicsNote(
       : 'stalled on the flat — friction won; start higher';
   }
   if (result.status === 'timeout') {
-    return 'timed out — the run went past the time limit';
+    return 'timed out — shorten the line or give it more speed';
   }
   if (result.status === 'hazard') {
     // a hazard status without a counted touch should not happen; honest line
