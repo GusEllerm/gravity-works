@@ -38,6 +38,18 @@ export const PIECE_CALLOUTS: Record<PieceKind, string> = {
  * prop module when it lands. */
 export const PROP_CALLOUTS: Record<string, string> = {};
 
+/**
+ * THE AIM-WALK PHRASE, ONCE (stage 6, playtest DD: kitchen03 walled a second
+ * stranger — the fail lines named KINDS but never a PLACE, so six builds went
+ * on building the wrong end). The verb-table line `builder.ts` speaks on a
+ * blocked fit and the WHERE tail of the failure note
+ * (`resultModel`/`physicsNote`) both send the player to the open ends of the
+ * line with THESE words, so the key they press is the key the tray lesson
+ * already taught (playtest AA's one-key law, extended from the key to the
+ * phrase: one verb, one wording, everywhere it appears).
+ */
+export const AIM_WALK_COPY = 'press ] to walk the open ends';
+
 /** The callout text for an id (a piece kind or `prop:<name>`), or undefined. */
 export function calloutText(id: string): string | undefined {
   if (id in PROP_CALLOUTS) return PROP_CALLOUTS[id];
