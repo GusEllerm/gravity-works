@@ -48,7 +48,7 @@ sig = "c6f64cb86daf87db"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/ui/builder.ts"
-sig = "e057c260aaee904e"
+sig = "60301a02a64b0536"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -1053,7 +1053,7 @@ sig = "85920b82ecda91cd"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/builder.ts"
-sig = "e057c260aaee904e"
+sig = "60301a02a64b0536"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1139,6 +1139,11 @@ sig = "e339b79c89d210f5"
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/loop.spec.ts"
 sig = "d1c73cfbb03c0f29"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
+target = "tests/e2e/place-honesty.spec.ts"
+sig = "d037ea1761fa55f2"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1403,7 +1408,7 @@ sig = "6485563f5203b12f"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/ui/builder.ts"
-sig = "e057c260aaee904e"
+sig = "60301a02a64b0536"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"

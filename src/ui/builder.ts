@@ -54,6 +54,19 @@
  *   into `aimAt` / `clickPlaceAt`; with nothing held a click MOVES the
  *   marker and the status line says the piece is not in hand (playtests
  *   T+U round 4: an intent that ends with nothing placed is never silent).
+ * - THE TRAY PLACE BUTTON NAMES ITS DROP SPOT (playtest DD's kitchen01
+ *   wall: ~10 launches burned because the button silently auto-dropped at
+ *   "a fixed right-side socket" — hover-aim legitimately follows the mouse
+ *   EVERYWHERE it crosses the canvas, including on the way to this button,
+ *   so the press landed where the transit last aimed, not where the player
+ *   had aimed). The button places at the CURRENT aim — the same ring the
+ *   ghost wears — and its label CARRIES that socket's name ("Place — the
+ *   car's start point"), updated wherever the aim updates. The button is
+ *   the last thing under the eyes before a press, so a transit re-aim can
+ *   no longer be silent: the screen never disagrees with the placement
+ *   (the input-truth law). Empty-handed, no target, or budget spent, the
+ *   button says plain "Place" and is aria-disabled — a button that cannot
+ *   place names no drop spot.
  * - KEYBOARD PARITY (the stage-6 requirement arriving early): the SAME keys
  *   drive the SAME visible marker — ↑/↓ pick the piece, ←/→ move the target
  *   ring, Enter places, R flips the fit, Delete removes. The handler lives
@@ -826,13 +839,22 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
           ? `no ${pieceLabel(k)} left in the tray (${cap} placed)`
           : '';
     }
-    placeBtn.setAttribute(
-      'aria-disabled',
-      String(
-        !(kind && targets().length > 0 && trayPlaced() < level.budget &&
-          (allowance(kind) === null || placedOf(kind) < allowance(kind)!)),
-      ),
-    );
+    // THE BUTTON NAMES ITS DROP SPOT (playtest DD: the plain "Place" label
+    // hid every re-aim the mouse transit made on the way to it, so ~10
+    // kitchen01 launches built the wrong track). One truth with the ring:
+    // the button places at `list[targetIndex]` — this label is that
+    // socket's ratified name, the SAME words `#gw-target-label` speaks
+    // (minus the aim verb and the tie tail), so the line and the button
+    // can never disagree. When the button cannot place it names no spot.
+    const canPlace =
+      kind !== null &&
+      list.length > 0 &&
+      trayPlaced() < level.budget &&
+      (allowance(kind) === null || placedOf(kind) < allowance(kind)!);
+    placeBtn.textContent = canPlace
+      ? `Place \u2014 ${list[Math.min(targetIndex, list.length - 1)]!.label}`
+      : 'Place';
+    placeBtn.setAttribute('aria-disabled', String(!canPlace));
   }
 
   /** Once-per-session flip legibility: the reversed label carries the WHY
