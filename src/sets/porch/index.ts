@@ -73,7 +73,7 @@ export * from './data.ts'
 // documents (the garden `prop:shadowBars` precedent, applied to the set's
 // own key light): the weave is the porch's read-only rhythm and the flume
 // is its affordance. One line each, on the record.
-PROP_CALLOUTS['prop:weaveShadow'] = "The checked grid is the screen door's shade — same boards, same grip. Drive through the light."
+PROP_CALLOUTS['prop:weaveShadow'] = "The checked grid is the screen door's shade — same boards, same grip."
 PROP_CALLOUTS['prop:gutterFlume'] = "The rain gutter runs along the boards — a crossing, not a cliff."
 
 export interface PorchSetOptions {

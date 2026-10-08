@@ -43,10 +43,13 @@ export interface ShareCardState {
   verified?: boolean;
 }
 
-/** The caption line — stars via the one star readout the result panel uses. */
+/** The caption line — stars via the one star readout the result panel uses.
+ *  The rung's NAME (registry truth, as the level select prints it), never
+ *  the codename — a card a friend reads must read as a place, not an id. */
 export function cardCaption(state: ShareCardState): string {
   const t = `${Math.max(0, state.time).toFixed(2)} s`;
-  return `Gravity Works — ${state.levelId} — ${t} — ${starGlyphs(state.stars)}${
+  const rung = LEVELS[state.levelId]?.name ?? state.levelId;
+  return `Gravity Works — ${rung} — ${t} — ${starGlyphs(state.stars)}${
     state.verified === undefined ? '' : state.verified ? ' — verified' : ' — hash mismatch'
   }`;
 }

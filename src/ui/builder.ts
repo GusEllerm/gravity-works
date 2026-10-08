@@ -235,7 +235,7 @@ export const GHOST_LABEL: Record<GhostState, string> = {
   hidden: '',
   snapped: 'fits here',
   reversed: 'flipped fit',
-  invalid: 'no seat at this socket',
+  invalid: 'no seat at this end',
   blocked: 'blocked — furniture is in the way',
 };
 
@@ -936,7 +936,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     if (list.length === 0) {
       // NEVER SILENT (playtest R: "fits here shown, click = nothing") — a
       // place-intent with nowhere to land says so on the status line
-      ghostState.textContent = 'no open socket to place at — the line has no free end';
+      ghostState.textContent = 'nowhere to place — the line has no free end';
       return false;
     }
     if (trayPlaced() >= level.budget) {
@@ -945,8 +945,8 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       // on a TRAY level the legend already tells this story per kind; the
       // line only appears where the tray cannot say it (sandbox budgets)
       ghostState.textContent = trayKinds
-        ? 'every piece in the tray is placed — the ×0 buttons are the count'
-        : 'out of budget';
+        ? 'every piece in the tray is placed'
+        : 'no pieces left to place';
       return false;
     }
     const cap = allowance(kind);

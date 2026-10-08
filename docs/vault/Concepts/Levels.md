@@ -684,7 +684,7 @@ C (playtest Q round 2): every par piece in par order and the booster saved
 LAST — `fell` 2.47 s, the build a "place the booster last" hint would
 teach; the rung has NO such hint and the one shipped copy that reads as an
 ORDER — the `booster` first-sight callout (`src/ui/callouts.ts`) — now
-says spend it EARLY (it used to read "in the middle of a run"; measured,
+says spend it early (caps lowered by the 2026-10-08 copy pass; it used to read "in the middle of a run"; measured,
 mid-chain finishes but pays +0.11 s, last falls, early is the fast line,
 so on this rung the booster belongs FIRST in the tray line, not
 mid-chain — the level file's header carries the verdict; there is no
@@ -847,7 +847,7 @@ tray seats its one straight at 0.30.
 
 The campaign-30 pass adds ONE rung to each four-rung room — `bedroom05`
 "Cable Snake", `bathroom05` "Twin Drains", `garden05` "Two Shadows",
-`garage05` "Dyno Run" — the campaign 26 → 30. The NEW IDEA every one of
+`garage05` "Spill Course" (named "Dyno Run" until the 2026-10-08 copy pass de-jargoned it) — the campaign 26 → 30. The NEW IDEA every one of
 them teaches is the house's founding sentence DOUBLED: **the DOUBLE
 CROSSING** — the lane is crossed TWICE on one line, `drop → straight →
 drop → landing`, and the rung's pinned `ENCORE_DIP` (the ladder's 0.12 m

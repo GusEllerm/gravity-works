@@ -18,10 +18,13 @@ import {
 describe('cardCaption', () => {
   const base = { levelId: 'feeltrack', time: 3.0083, stars: 2 as const, url: 'https://x/#s=abc' };
 
-  test('carries level, time and the star readout', () => {
+  test('carries the rung NAME, the time and the star readout', () => {
     const text = cardCaption(base);
     expect(text).toContain('Gravity Works');
-    expect(text).toContain('feeltrack');
+    // the card shows the rung's display name (registry truth), never the
+    // codename — copy pass 2026-10-08: a shared card is a player surface
+    expect(text).toContain('Feel track');
+    expect(text).not.toContain('feeltrack');
     expect(text).toContain('3.01 s');
     expect(text).toContain('★★☆');
   });
