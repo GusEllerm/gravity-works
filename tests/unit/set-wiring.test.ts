@@ -73,11 +73,13 @@ const PINNED: Record<string, string> = {
   // `2026-10-08 Stage 4 - L02 discoverability`.
   kitchen02: '0b4dbab2',
   // kitchen03 re-pinned at the stage-5 K3 RE-SWEEP pass (playtests AA+BB):
-  // the rung moved to the fail-timing geometry (−29° chute, 0.22 m
-  // equality-law straights, the 0.10 m drop step, the shallow sink). The
+  // the rung moved to the fail-timing geometry (−29°/0.34 m chute with a
+  // 0.16 m camera-tuned blend, 0.22 m equality-law straights, the 0.11 m
+  // drop step on 0.11 m leads — the wedge fix — the shallow sink, and the
+  // par ORDER now lays the sink at the chute toe: the bowl's mouth). The
   // bowl rim fixtures ride the set sockets UNCHANGED; the timed chain
   // legitimately moved. See `2026-10-10 Stage 5 - K3 re-sweep`.
-  kitchen03: '006b16e1',
+  kitchen03: 'a1a50d05',
   kitchen04: 'c6a63a80',
   kitchen05: '1d8d1713',
   'kitchen-sandbox': '7f008f48',

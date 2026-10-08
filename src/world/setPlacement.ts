@@ -69,11 +69,14 @@ const STANDARD: Record<string, readonly [number, number, number]> = {
   // L03 re-derived at the stage-5 K3 RE-SWEEP pass (playtests AA+BB): its
   // ramp is now the same kind of short steep chute (0.34 m at −29°), so the
   // timed rail starts nearer the books — the centre follows the run — and
-  // the shallow-sink finish deck sits 1 cm lower than the old KITCHEN_GAP
-  // line's.
+  // the shallow-sink finish deck sits a hair under 1.5 cm lower than the
+  // old KITCHEN_GAP line's. Re-derived once more when the 0.11 m drop step
+  // replaced 0.10 (the wedge order wall fix — the whole finish segment
+  // rides 1 cm lower, and the rule is counter-top = finishCup in-socket +
+  // DECK_CLEARANCE).
   kitchen01: [0.9111, -0.3980919, AXIS_OFFSET],
   kitchen02: [0.51896, -0.27917623256124524, AXIS_OFFSET],
-  kitchen03: [1.0885, -0.4827847, AXIS_OFFSET],
+  kitchen03: [1.1063, -0.5008434, AXIS_OFFSET],
   kitchen05: [1.308, -0.6395241, AXIS_OFFSET],
   'kitchen-sandbox': [1.2719, -0.4780919, AXIS_OFFSET],
 };

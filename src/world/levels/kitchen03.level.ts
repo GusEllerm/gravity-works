@@ -86,47 +86,69 @@ export const KITCHEN03_BOWL = {
  *
  *  THE GEOMETRY NOW (all level-local; the ladder deviations are the K2
  *  precedent, like L04's gap):
- *    ramp — a short steep chute (0.34 m at −29°, 0.12 m blend), the kit's
- *      fail-timing tool. The whole timed line moves nearer the start
- *      (exit x 0.78 vs the old 1.52, cup x 2.18 vs 2.50) and the set's
- *      placement rule re-centres the counter under it, while the whole
- *      death clock moves from 2.6–3.0 s down to ≤ 1.8 s;
+ *    ramp — a short steep chute (0.34 m at −29°, 0.16 m blend — the blend
+ *      is camera-tuned, see its constant), the kit's fail-timing tool.
+ *      The whole timed line moves nearer the start (exit x 0.84 vs the old
+ *      1.52, cup x 2.22 vs 2.50) and the set's placement rule re-centres
+ *      the counter under it, while the whole death clock moves from
+ *      2.6–3.0 s down to ≤ 1.75 s;
  *    one `straight` geometry, 0.22 m — and the lip's SPAN equals it (the
  *      equality law from kitchen02's fail-timing pass), so a missing deck
  *      piece and a missing launch leave the SAME 0.22 m belly hole;
- *    `drop` — kitchen02's proven numbers: a 0.10 m step, 0.125 m leads
- *      (pair bellies die, pop catches land);
+ *    `drop` — a 0.11 m step, 0.11 m leads: kitchen02's fail-timing pair
+ *      re-tuned here — the checkpoint's 0.10 (kitchen02's verbatim
+ *      numbers) left the whole-tray order `s,s,d,g,l` a hard wedge (the
+ *      lip-launched car slammed the sink's rising tail nose-first at
+ *      1.63 s on EVERY seed and launch, since the rail is seed-
+ *      independent). 0.11 — still under the ladder's 0.12 belly threshold
+ *      — clears the wedge to 60/60 with no subset finishing anywhere, and
+ *      the leads came 0.125 → 0.11 to keep the `sink → drop` pairs honest
+ *      once the chute blend went 0.16 (0.125 wedged two orders again);
  *    `landing` — a SHALLOW sink (level 0.26, 8°): 0.377 m of span, 0.045 m
  *      of finish-plane drop. NOT the tutorial's soft catch — the old
  *      KITCHEN_GAP geometry was the forgiving gap whose omissions hop;
  *      here the sink's own span is the hole a missing `landing` leaves.
+ *      In the REFERENCE ORDER the sink sits at the chute TOE (the par line
+ *      lays `landing` first — the car drops off the books straight into
+ *      the bowl's mouth, kitchen02's toe idiom): the only rung position
+ *      whose pitch step at 2.4 m/s stays inside the run camera's rotation
+ *      lag — sink-last put the par run's toe 0.2 s out of frame (worst
+ *      |ndc| 1.28, the beige-wall gate). Behaviour is order-invariant;
+ *      only the camera (and the star line's flavour) picked this one.
  *  Tray, budget and the par multiset are UNCHANGED (2 `straight`,
  *  `gapLip`, `drop`, `landing` = 5 = par): the 5-piece full line is the
  *  pay-off again.
  *
  *  WHAT FAILING TEACHES (measured on the shipped builder mount, EVERY
- *  chainable build enumerated — 171 builds, seeds 1–6 + launch jitter):
- *    ~1.05–1.15 s — bare ramps and 1–2-piece builds fly off the chute end
+ *  chainable build enumerated — 171 builds, default seed and launch):
+ *    1.07–1.24 s — the bare ramp and 1-piece builds fly off the chute end
  *      at the rail;
- *    ~1.3–1.6 s   — 3-piece bridges land IN the void a rail-length out;
- *    ~1.6–1.8 s   — every 4-piece build (one piece short) dies at the
+ *    1.27–1.40 s — 2-piece bridges belly at the first hole;
+ *    1.38–1.55 s — 3-piece bridges land IN the void a rail-length out;
+ *    1.56–1.74 s — every 4-piece build (one piece short) dies at the
  *      doorstep: at the first hole (a deck/lip omitted — belly) or at the
  *      far end of the sink (a crossing omitted) — on screen, at counter
  *      height, the cup in frame;
- *  NO ≤ 4-piece build finishes (151/151 subsets fall — the strongest
- *  anti-cheat the bowl has had), 59–60/60 whole-tray orders finish (the
- *  single order `s,s,d,g,l` is the pinned borderline: it falls at 1.63 s on
- *  the seed-1 default and completes on several other seeds/jitters — the
- *  porch03 wedge family announced early), no failing build is airborne
- *  past the cup mouth any more, and the failure note names the kind each
- *  build actually lacks (the stock-tail rule). Par line: measured 1.475 s
- *  (par 1.50); flat orders run 1.4–1.7 (beatable par, the K2/K4
- *  precedent). */
+ *  NO ≤ 4-piece build finishes (111/111 subset orders fall — the strongest
+ *  anti-cheat the bowl has had), 60/60 whole-tray orders finish (the one
+ *  wedge the checkpoint pinned at 0.10 is cleared, above), no failing
+ *  build is airborne past the cup mouth any more, and the failure note
+ *  names the kind each build actually lacks (the stock-tail rule). Par
+ *  line: measured 1.433 s (par 1.45); whole-tray orders run 1.43–1.61, 7
+ *  of 60 UNDER the par clock (a tight, honest star line — the pay-off for
+ *  the FIRST try at the whole tray is the finish itself, 60/60). */
 
 /** L03's own launch ramp: the fail-timing tool (kitchen02's finding — the
  *  death clock is ramp-end arrival + the constant fall; the shared
  *  −12°/0.3 m ramp's ~2 s crawl was this level's clustering engine). */
-const L03_RAMP_BLEND = 0.12;
+/** The chute's blend is CAMERA-FRAMING-TUNED, not rail-tuned (the kitchen02
+ *  convention, run-camera.ts): at 0.12 m the car crossed the toe at 2.5 m/s,
+ *  the run camera's 0.35 s rotation lag kept the axis 20° down the dead
+ *  chute while the car levelled on the deck, and the par run broke the
+ *  in-frame gate (worst |ndc| 1.28 — the beige-wall law, camera.test). At
+ *  0.16 m the toe step is slow enough for the lag to keep up (worst 0.92)
+ *  and every behaviour number on the sweep still holds. */
+const L03_RAMP_BLEND = 0.16;
 const L03_RAMP = {
   angle: -29,
   blend: L03_RAMP_BLEND,
@@ -142,9 +164,12 @@ const L03_STRAIGHT = 0.22;
  *  missing deck piece. Launch stays 12°. */
 const L03_LIP = { length: 0.1507, angle: 12, blend: 0.05 };
 
-/** L03's `drop` — kitchen02's stage-4 fail-timing pair: a 0.10 m step
- *  (below the ladder's 0.12) with 0.125 m leads. */
-const L03_DROP = { height: 0.1, angle: 45, radius: 0.02, lead: 0.125 };
+/** L03's `drop` — kitchen02's stage-4 fail-timing pair, re-tuned here: a
+ *  0.11 m step (still below the ladder's 0.12 belly threshold) on 0.11 m
+ *  leads. The +1 cm over kitchen02's 0.10 is the whole-tray wedge fix
+ *  (level header); the shorter leads (0.125 → 0.11) keep the `sink → drop`
+ *  pairs honest once the chute's blend went to 0.16. */
+const L03_DROP = { height: 0.11, angle: 45, radius: 0.02, lead: 0.11 };
 
 /** L03's `landing` — a shallow sink, NOT the tutorial's soft catch (see
  *  the header: the soft catch made 4-piece guesses finishable). */
@@ -178,11 +203,11 @@ function parBuild(): Build {
   const timed = lay(
     [
       { def: 'ramp', params: L03_RAMP }, // the books (fixture) — the stage-5 chute
-      { def: 'straight', params: { length: L03_STRAIGHT } }, // tray: the counter lip
-      { def: 'gapLip', params: L03_LIP }, // tray
+      { def: 'landing', params: L03_LANDING }, // tray: the mouth of the bowl
+      { def: 'straight', params: { length: L03_STRAIGHT } }, // tray: deck out
+      { def: 'straight', params: { length: L03_STRAIGHT } }, // tray: deck on
       { def: 'drop', params: L03_DROP }, // tray
-      { def: 'landing', params: L03_LANDING }, // tray
-      { def: 'straight', params: { length: L03_STRAIGHT } }, // tray: past the bowl
+      { def: 'gapLip', params: L03_LIP }, // tray: the lip into the cup
       { def: 'finishCup' }, // fixture: the cup BEFORE the rim line
     ],
     KITCHEN03_ID,
@@ -213,7 +238,7 @@ export const KITCHEN03: KitchenLevel = registerKitchen(
     set: 'kitchen',
     seed: 1,
     startSocket: startSocketFromBuild(parBuild(), KITCHEN_GEOM.release * L03_RAMP_BLEND),
-    par: { pieces: 5, time: 1.5 }, // the par line places the WHOLE 5-piece tray (measured 1.475 — regenerate via pars)
+    par: { pieces: 5, time: 1.45 }, // the par line places the WHOLE 5-piece tray (measured 1.433 — regenerate via pars)
     maxTime: 12,
     tray: { straight: 2, gapLip: 1, drop: 1, landing: 1 },
     fixtures: { ramp: 1, finishCup: 1, bank: 1, curve: 1 },
