@@ -13,7 +13,7 @@ sig = "e17a284b1d0036b1"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/boot.ts"
-sig = "31c3aa320007b90f"
+sig = "ca835e84cb0a7a41"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -48,7 +48,7 @@ sig = "c6f64cb86daf87db"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/ui/builder.ts"
-sig = "49cf64078d53e6cd"
+sig = "4756b0ffca1fc733"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -153,7 +153,7 @@ sig = "2648b709ac3796c8"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/boot.ts"
-sig = "31c3aa320007b90f"
+sig = "ca835e84cb0a7a41"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
