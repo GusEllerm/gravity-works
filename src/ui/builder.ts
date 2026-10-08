@@ -100,11 +100,24 @@ import { PIECES, PIECE_KINDS, pieceGeometries, pieceLabel, type PieceKind, type 
 import { socketMatrix, transformSocket, type Socket } from '../track/socket.ts';
 import type { Build, PlacedPiece } from '../track/build.ts';
 import type { Level } from '../world/level.ts';
-import { clientPxToWorldRay, worldToClientPx } from './aim-transform.ts';
+import { worldToClientPx } from './aim-transform.ts';
 
 /** Two socket origins this close are joined (metres; well above float noise). */
 export const JOIN_TOL = 0.004;
-/** Screen radius (CSS px) in which a canvas hover/click claims a socket. */
+/** Screen radius (CSS px) in which a canvas hover/click claims a socket —
+ *  THE AIM SNAP RANGE CAP itself (playtest BB bug 4, the round-3
+ *  recurrence: "click at 700,600 placed a lip 150 px away and it
+ *  counted"). The claim is a cone test through the cursor, and a screen
+ *  radius states that cone EXACTLY: perpendicular world distance says
+ *  nothing perspective has not already said at the same cone angle, so a
+ *  metre-cap on top of this radius would only refuse legitimate aims at
+ *  deep framing (verified: a constant 0.5 m ray cap refuses the
+ *  ladder's own far-rung clicks, which stand in this cone at 159 px).
+ *  What made BB's click count was never this radius (the click was 150 px
+ *  out, ALREADY beyond it) — it was the place-after-failed-aim that kept
+ *  the stale ring as a target; `clickPlaceAt`'s aim-or-speak is the fix,
+ *  and this radius is the range. Beyond it the ring shows nothing and a
+ *  click says so (`nothing fits out here`). */
 export const HOVER_PX = 120;
 /** Screen px of separation two sockets must exceed to be DIFFERENT aims.
  *  Within it they are NEAR-TIES: screen space cannot tell them apart, so
@@ -113,20 +126,6 @@ export const HOVER_PX = 120;
  *  alternates are walkable with [ ] / Tab (the choice is EXPOSED, never a
  *  silent coin-flip). */
 export const AIM_TIE_PX = 28;
-/** World-space reach of an aim (metres, perpendicular distance from the
- *  cursor's camera ray to the socket origin). THE SAME `HOVER_PX` pick
- *  radius, stated where perspective cannot fudge it: 120 CSS px at the
- *  nearest a campaign-framed socket ever sits to the eye (≈ 3.3 m at the
- *  ladder's 1280×720 framing, f ≈ 856 px) is ≈ 0.46 m — so INSIDE the
- *  framed track the two rules agree and no legible hover (a cursor at or
- *  near the ring it aims — the ring is ~13 px) is ever refused, while a
- *  click into open space — where the ray runs deep past the canvas point
- *  and 120 px means half a metre, a metre on the feel rig — aims NOTHING
- *  (playtests R/S → V/W → BB, three rounds: "click at 700,600 placed a
- *  lip 150 px away and it counted"). Beyond the reach the ring shows
- *  nothing and a click says so (`nothing fits out here`) instead of
- *  placing at whatever socket the ring happened to rest on. */
-export const AIM_WORLD_RANGE_M = 0.5;
 /** The flip animation length — short enough to feel instant, long enough
  *  to be SEEN (playtest G: "clicked R; ghost never visibly changed"). */
 export const ROTATE_MS = 150;
@@ -319,6 +318,20 @@ export interface Builder {
   /** The tie candidate SOCKETS (full frames) of the last aim — the e2e
    *  seam that recomputes the dry-run hashes test-side. */
   tieSockets(): Socket[];
+  /** The CURRENT ring's socket in CSS client px — where a click must land
+   *  to be a click ON the shown ghost (`ringWithinReach`'s own reach) —
+   *  null when it is off-screen or behind the camera. The e2e seam for
+   *  specs that must express a LEGITIMATE place intent under the aim
+   *  reach law (playtest R's click-places contract is about the click
+   *  gesture, not about aiming at empty space). */
+  targetSocketPx(): { x: number; y: number } | null;
+  /** What is IN HAND right now — kind, the EXACT params the ghost and the
+   *  dry run seat with (the tray override when there is one, else the
+   *  kind default), and the flip flag. The e2e seam that lets the
+   *  test-side dry-run recomputation share the app's inputs (a hash
+   *  recomputed at DEFAULT params while the tray holds level-gap params
+   *  would disagree about geometry, not about the tie law). */
+  heldState(): { kind: PieceKind | null; params: PieceParams; flipped: boolean };
   /** A clean click (no drag travel — the gesture gate upstream decides):
    *  aim, then place the held piece at the aimed socket. */
   clickPlaceAt(clientX: number, clientY: number): void;
@@ -1014,9 +1027,6 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
    *  (the ties belong to a screen point, not to the build). */
   let aimTies: number[] = [];
   let aimTieCursor = 0;
-  /** Scratch for `socketCandidates`' cursor ray (a fresh Ray per call would
-   *  do too — this is once per pointer event). */
-  const scratchRay = new THREE.Ray();
   /** Memo for the dry-run rig fingerprints (`aimCandidates`) — keyed by
    *  kind + flip + socket origin; the fingerprint depends on the CURRENT
    *  piece list too, so `emit` (the single mutation choke point: every
@@ -1113,22 +1123,28 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     // rather than duplicating it). Either way the intent then SPEAKS:
     // `place` explains every refusal, and an empty-handed click says the
     // piece is not in hand (never a silent no-op).
-    if (!ringWithinReach(clientX, clientY)) {
-      // THE CLICK AIMS OR IT SPEAKS (playtest BB bug 4, the round-3
-      // recurrence: "click at 700,600 placed a lip 150 px away and it
-      // counted"). The old sequence re-aimed and then placed UNCONDITIONALLY
-      // — and when the aim found nothing the UNMOVED ring was still a
-      // target, so the click silently placed the stale aim metres from the
-      // cursor. A click that is neither ON the shown ring nor within aim
-      // reach of any socket is a click on open space: it places NOTHING,
-      // moves nothing, and says so.
-      if (!aimAt(clientX, clientY)) {
-        ghostState.textContent = 'nothing fits out here — click nearer the ring or an end of the line';
-        return;
-      }
+    if (!kind) {
+      // EMPTY-HANDED speaks FIRST (playtest U): the missing thing is the
+      // piece, not the aim — say that wherever the click fell, and let
+      // the aim ride along as feedback only (a reachable point refreshes
+      // the ring, a far one moves nothing).
+      aimAt(clientX, clientY);
+      ghostState.textContent = 'nothing in hand — pick a piece from the tray, then click to place';
+      return;
     }
-    if (kind) place();
-    else ghostState.textContent = 'nothing in hand — pick a piece from the tray, then click to place';
+    // THE CLICK AIMS OR IT SPEAKS (playtest BB bug 4, the round-3
+    // recurrence: "click at 700,600 placed a lip 150 px away and it
+    // counted"). The old sequence re-aimed and then placed UNCONDITIONALLY
+    // — and when the aim found nothing the UNMOVED ring was still a
+    // target, so the click silently placed the stale aim metres from the
+    // cursor. A click that is neither ON the shown ring nor within aim
+    // reach of any socket is a click on open space: it places NOTHING,
+    // moves nothing, and says so.
+    if (!ringWithinReach(clientX, clientY) && !aimAt(clientX, clientY)) {
+      ghostState.textContent = 'nothing fits out here — click nearer the ring or an end of the line';
+      return;
+    }
+    place();
   }
 
   /** True when the CURRENT target (the socket the ring/ghost sits on)
@@ -1145,28 +1161,23 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   }
 
   /** The open sockets a pointer position could mean, ordered NEAR-DEPTH
-   *  first: everything within `HOVER_PX` on screen AND within the
-   *  world-space aim reach (`AIM_WORLD_RANGE_M` from the cursor ray — the
-   *  same pick radius perspective can never inflate), reduced to the
-   *  near-ties of the screen-nearest one (within `AIM_TIE_PX` of its
-   *  screen distance), then sorted by CAMERA distance ascending — the
+   *  first: everything within the `HOVER_PX` SNAP RANGE on screen (the
+   *  cone the cursor points — see `HOVER_PX`'s note: the range cap lives
+   *  here, not in a redundant metre constant), reduced to the near-ties
+   *  of the screen-nearest one (within `AIM_TIE_PX` of its screen
+   *  distance), then sorted by CAMERA distance ascending — the
    *  nearer depth wins a screen-space tie (playtest S K3: the landing
    *  "always snapped onto the chain BEHIND the cup" because the far
    *  socket happened to project a few px closer). Empty when every open
-   *  socket is farther than `HOVER_PX` or out of world reach. */
+   *  socket is farther than `HOVER_PX`. */
   function socketCandidates(clientX: number, clientY: number): number[] {
     if (!camera || !canvasEl) return [];
-    const ray = clientPxToWorldRay(canvasEl, camera, clientX, clientY, scratchRay);
     const near: { i: number; dPx: number; dCam: number }[] = [];
     targets().forEach((t, i) => {
       const p = worldToClientPx(canvasEl!, camera!, t.socket.pos);
       if (!p) return; // behind the camera
       const d = Math.hypot(p.x - clientX, p.y - clientY);
-      // THE WORLD REACH (AIM_WORLD_RANGE_M's comment): the screen test
-      // alone lets perspective fake a pick — 120 px on a ray that runs
-      // deep past the point is half a metre of empty room.
-      if (d <= HOVER_PX && ray.distanceToPoint(t.socket.pos) <= AIM_WORLD_RANGE_M)
-        near.push({ i, dPx: d, dCam: camera!.position.distanceTo(t.socket.pos) });
+      if (d <= HOVER_PX) near.push({ i, dPx: d, dCam: camera!.position.distanceTo(t.socket.pos) });
     });
     if (near.length === 0) return [];
     const best = Math.min(...near.map((c) => c.dPx));
@@ -1327,12 +1338,19 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       const list = targets();
       return aimTies.map((i) => list[i]!.socket).filter(Boolean);
     },
+    heldState: () => ({ kind, params: kind ? heldParams(kind) : {}, flipped }),
     playerCount: () => trayPlaced(),
     kind: () => kind,
     ghost: () => state,
     targetSocket: () => {
       const list = targets();
       return list.length > 0 ? list[Math.min(targetIndex, list.length - 1)]!.socket : null;
+    },
+    targetSocketPx: () => {
+      const list = targets();
+      const t = list.length > 0 ? list[Math.min(targetIndex, list.length - 1)] : undefined;
+      if (!t || !canvasEl || !camera) return null;
+      return worldToClientPx(canvasEl, camera, t.socket.pos);
     },
   };
 }

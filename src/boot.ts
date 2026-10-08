@@ -1223,6 +1223,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       up: [s.up.x, s.up.y, s.up.z],
     }));
   (window as unknown as Record<string, unknown>).__gwBuildJson = (): string => serialize(builder.build());
+  // the held piece's EXACT ghosting state (kind, tray-override params,
+  // flip) — so the test-side dry run of the tie law recomputes hashes at
+  // the inputs the app actually seats with (debug surface)
+  (window as unknown as Record<string, unknown>).__gwHeldState = () => builder.heldState();
   // the e2e seam for the FAILURE end-hold: the car's settled world
   // position — the death site the wide hold must keep in frame (debug
   // surface, not UI)
@@ -1393,6 +1397,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   (window as unknown as Record<string, unknown>).__gwTargetSocket = (): number[] | null => {
     const s = builder.targetSocket();
     return s ? [s.pos.x, s.pos.y, s.pos.z] : null;
+  };
+  // where a click lands ON the shown ring (client px) — the legit aim point
+  // for gesture specs under the aim reach law (debug surface)
+  (window as unknown as Record<string, unknown>).__gwTargetSocketPx = (): number[] | null => {
+    const p = builder.targetSocketPx();
+    return p ? [p.x, p.y] : null;
   };
 
   /** Star-gated progression (§9.2, playtest E/F/G): `Next level` appears

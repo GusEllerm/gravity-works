@@ -18,12 +18,15 @@
  *    ≥ 0.7 %), and the cup must be projected in-frame at the terminal
  *    beats. The cuts carry the subject through their blends and the
  *    finish shot owns the last 0.4 s before capture (REPLAY_FINISH_LEAD).
- * 3. AIM HAS A WORLD REACH (BB bug 4, the round-3 recurrence: "click at
- *    700,600 placed a lip 150 px away and it counted"): a clean click far
- *    from every socket (screen AND world — `AIM_WORLD_RANGE_M`) places
- *    NOTHING, moves no ring, and says "nothing fits out here"; the
- *    near-tie midpoint still snaps to the nearer socket exactly as
- *    `aim-depth.spec.ts` proves empty-handed — here proven WHILE HOLDING.
+ * 3. AIM HAS A SNAP RANGE (BB bug 4, the round-3 recurrence: "click at
+ *    700,600 placed a lip 150 px away and it counted"): the range is the
+ *    screen pick cone `HOVER_PX` — a clean click beyond it from every
+ *    socket places NOTHING, moves no ring, and says "nothing fits out
+ *    here" (the old code's crime was placing at the STALE ring when the
+ *    aim found nothing, not the radius — the click was 150 px out,
+ *    already beyond 120); the near-tie midpoint still snaps to the nearer
+ *    socket exactly as `aim-depth.spec.ts` proves empty-handed — here
+ *    proven WHILE HOLDING.
  * 4. `]` COUNTS DISTINCT BUILD OUTCOMES (BB bug 3: "']' other spot
  *    sometimes silently does nothing — two runs byte-identical at
  *    1.94 s"): the tie hint's count must equal the number of DISTINCT
@@ -44,7 +47,8 @@ import { replayRun } from '../../src/replay/replay.ts'
 import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts'
 import { encodeShareUrl, type ShareCodec } from '../../src/share/share.ts'
 import { dryRunHash } from '../../src/ui/builder.ts'
-import { deserialize, serialize } from '../../src/track/build.ts'
+import { deserialize } from '../../src/track/build.ts'
+import type { PieceKind, PieceParams } from '../../src/track/pieces.ts'
 import type { Build } from '../../src/track/build.ts'
 
 const zlibCodec: ShareCodec = {
@@ -174,12 +178,12 @@ test.describe('stage 5 playtest-BB feel fixes', () => {
     const count0 = (await page.locator('#gw-piece-count').textContent())!
 
     // THE FAR CLICK: every open socket is projected; the click point is
-    // the canvas corner farthest from all of them (> HOVER_PX on screen —
-    // and its ray misses the track entirely, so the WORLD reach refuses it
-    // however the perspective lies).
+    // the canvas corner farthest from all of them — beyond the snap range
+    // (`HOVER_PX`, the screen pick cone) of every socket, which is where
+    // the aim law must speak instead of placing at the resting ring.
     const pose = (await page.evaluate(() => (window as unknown as Record<string, () => { pos: number[]; quat: number[] }>).__gwCameraPose())) as { pos: number[]; quat: number[] }
     const sockets = (await page.evaluate(() => (window as unknown as Record<string, () => number[][]>).__gwOpenSockets())) as number[][]
-    const proj = sockets.map((p) => projectPoint(pose, box, p)).filter((p): p is { x: number; y: number } => p !== null)
+    const proj = sockets.map((p) => projectPoint(pose, box, p)).filter((p): p is Projected => p !== null)
     const corners = [
       { x: box.x + 12, y: box.y + 12 },
       { x: box.x + box.width - 12, y: box.y + 12 },
@@ -289,17 +293,22 @@ test.describe('stage 5 playtest-BB feel fixes', () => {
     // dry-run hashes — recomputed test-side from the exposed tie sockets
     // (full frames) and the exposed build, through the SAME `dryRunHash`
     // the builder memoises.
-    const [seamHashes, buildJson, tieSockets] = (await page.evaluate(() => [
+    const [seamHashes, buildJson, tieSockets, held] = (await page.evaluate(() => [
       (window as unknown as Record<string, () => string[]>).__gwTieOutcomes!(),
       (window as unknown as Record<string, () => string>).__gwBuildJson!(),
       (window as unknown as Record<string, () => { pos: number[]; tangent: number[]; up: number[] }[]>).__gwTieSockets!(),
-    ])) as [string[], string, { pos: number[]; tangent: number[]; up: number[] }[]]
+      (window as unknown as Record<string, () => { kind: string | null; params: PieceParams; flipped: boolean }>).__gwHeldState!(),
+    ])) as [string[], string, { pos: number[]; tangent: number[]; up: number[] }[], { kind: string | null; params: PieceParams; flipped: boolean }]
+    expect(held.kind, 'nothing held for the tie dry run').not.toBeNull()
     const build = deserialize(buildJson) as Build
     const label = (await page.locator('#gw-target-label').textContent())!
     const count = label.includes('two spots') ? 2 : Number(/(\d+) spots/.exec(label)?.[1] ?? '1')
+    // the dry run's INPUTS come from the app (the held kind's EXACT ghost
+    // params — the tray override, not the kind default — and the flip
+    // flag); the COMPUTATION is independent node-side through the same
+    // exported dryRunHash
     const { Vector3 } = await import('three')
-    const { PIECES } = await import('../../src/track/pieces.ts')
-    const own = dryRunHash(build.levelId, build.seed, build.pieces, 'landing', PIECES.landing.params, false)
+    const own = dryRunHash(build.levelId, build.seed, build.pieces, held.kind as PieceKind, held.params, held.flipped)
     const ownHashes = tieSockets.map((s) =>
       own({ pos: new Vector3(...s.pos), tangent: new Vector3(...s.tangent), up: new Vector3(...s.up) }),
     )

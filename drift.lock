@@ -508,7 +508,7 @@ sig = "0f065f90d47289b6"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "src/boot.ts"
-sig = "223cbd1aa9650494"
+sig = "08fa7a641223e98c"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -549,6 +549,11 @@ sig = "3d3537c9c8b3f35a"
 doc = "docs/vault/Modules/replay.md"
 target = "tests/e2e/share-replay.spec.ts"
 sig = "15d71dc0ab19dd84"
+
+[[bindings]]
+doc = "docs/vault/Modules/replay.md"
+target = "tests/e2e/stage5-bb-feel.spec.ts"
+sig = "ef43fcd05c80b300"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -658,7 +663,7 @@ sig = "30af55b32a0f0f22"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/boot.ts"
-sig = "223cbd1aa9650494"
+sig = "08fa7a641223e98c"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -748,7 +753,7 @@ sig = "e17a284b1d0036b1"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/boot.ts"
-sig = "223cbd1aa9650494"
+sig = "08fa7a641223e98c"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -838,7 +843,7 @@ sig = "79d4ae0679f88eef"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/playtest-tu.spec.ts"
-sig = "ca5113fff7d1e552"
+sig = "89ce45080fa95f46"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -873,7 +878,7 @@ sig = "01a43379f62aea63"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "src/boot.ts"
-sig = "223cbd1aa9650494"
+sig = "08fa7a641223e98c"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -938,7 +943,7 @@ sig = "4e0fc998b5b96411"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/boot.ts"
-sig = "223cbd1aa9650494"
+sig = "08fa7a641223e98c"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -963,12 +968,12 @@ sig = "657bd550d4a7c899"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/aim-transform.ts"
-sig = "f84389269214ae7a"
+sig = "85920b82ecda91cd"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/builder.ts"
-sig = "5fce77f8dd5a8038"
+sig = "09d8d234761b45f0"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1028,7 +1033,7 @@ sig = "218db57daee66f67"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/click-place.spec.ts"
-sig = "2502a3d04f98b300"
+sig = "468de52685960611"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1048,7 +1053,7 @@ sig = "576d95a1fb26c5b4"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/playtest-n.spec.ts"
-sig = "a496feae751c975c"
+sig = "e27bc419fed1e0ff"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1063,12 +1068,12 @@ sig = "79d4ae0679f88eef"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/playtest-tu.spec.ts"
-sig = "ca5113fff7d1e552"
+sig = "89ce45080fa95f46"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/playtest-y-clickdiff.spec.ts"
-sig = "e397f326893db777"
+sig = "d5b3f3ece12aa46f"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1088,7 +1093,12 @@ sig = "87c92c266d308daf"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/viewport-aim.spec.ts"
-sig = "010ab7e7a8f82893"
+sig = "0374c7c04390d6a4"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
+target = "tests/unit/aim-outcomes.test.ts"
+sig = "d106187865764449"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1128,7 +1138,7 @@ sig = "60f975ea6fcc355d"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "docs/vault/Modules/replay.md"
-sig = "77fa38ae68482299"
+sig = "c908786e69da6528"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1138,7 +1148,7 @@ sig = "e17a284b1d0036b1"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/boot.ts"
-sig = "223cbd1aa9650494"
+sig = "08fa7a641223e98c"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1283,7 +1293,7 @@ sig = "e17a284b1d0036b1"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/boot.ts"
-sig = "223cbd1aa9650494"
+sig = "08fa7a641223e98c"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
@@ -1293,7 +1303,7 @@ sig = "6485563f5203b12f"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/ui/builder.ts"
-sig = "5fce77f8dd5a8038"
+sig = "09d8d234761b45f0"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"

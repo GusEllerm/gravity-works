@@ -21,11 +21,10 @@
  * equals the distinct-dry-run count on a real kitchen03 tie.
  */
 import { describe, expect, test } from 'vitest';
-import * as THREE from 'three';
-import { chain } from '../../track/build.ts';
-import { PIECES } from '../../track/pieces.ts';
-import { transformSocket, type Socket } from '../../track/socket.ts';
-import { distinctOutcomes, dryRunHash } from '../../ui/builder.ts';
+import { chain } from '../../src/track/build.ts';
+import { PIECES } from '../../src/track/pieces.ts';
+import { transformSocket, type Socket } from '../../src/track/socket.ts';
+import { distinctOutcomes, dryRunHash } from '../../src/ui/builder.ts';
 
 const build = chain(['straight', 'straight'], { seed: 7, levelId: 'aimlaw' });
 const exitSocket = transformSocket(
@@ -50,7 +49,11 @@ function shifted(s: Socket, d: number): Socket {
   };
 }
 
-function probe(sockets: Socket[], held: 'straight' | 'gapLip' = 'straight', flipped = false): (i: number) => number[] {
+function probe(
+  sockets: Socket[],
+  held: 'straight' | 'gapLip' = 'straight',
+  flipped = false,
+): (indices: readonly number[]) => number[] {
   const hash = dryRunHash('aimlaw', 7, build.pieces, held, PIECES[held].params, flipped);
   return (indices) => distinctOutcomes(indices, (i) => sockets[i], hash);
 }
@@ -84,7 +87,6 @@ describe('distinct-outcome tie law (playtest BB: ] on byte-identical sockets)', 
     const h0 = dryRunHash('aimlaw', 7, build.pieces, 'straight', PIECES.straight.params, false)(exitSocket);
     const h1 = dryRunHash('aimlaw', 7, build.pieces, 'straight', PIECES.straight.params, true)(exitSocket);
     expect(h0).not.toBe(h1);
-    void THREE;
   });
 
   test('a single candidate is its own distinct outcome (dedup never shrinks a non-tie)', () => {

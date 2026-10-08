@@ -479,11 +479,23 @@ test.describe('below-fold release at canvas coords (1280x721 — the shape where
       s.box.y + s.box.height,
       'canvas rect bottom must run past the fold for this cell to mean anything',
     ).toBeGreaterThan(fold + 20)
-    const y = Math.min(s.box.y + s.box.height - 60, fold + 30) // below the fold, well inside the rect
+    // Stage 5 BB aim-reach law: a below-fold release PLACES only if the
+    // point is a legitimate place intent — aim-reachable. It is: straight
+    // below the socket that sits closest ABOVE the fold. The guard under
+    // test (COORDINATE routing of a below-fold release) is untouched —
+    // the release is still below the fold, inside the rect, and delivered
+    // off the canvas target.
+    const sockets = (await page.evaluate(() => ((window as unknown as Record<string, () => number[][]>).__gwOpenSockets)())) as number[][]
+    const projs = sockets.map((p) => project(s.pose, s.box, p)).filter((p): p is { x: number; y: number } => p !== null)
+    expect(projs.length, 'the canvas shows no socket').toBeGreaterThan(0)
+    const near = projs.reduce((a, b) => (b.y > a.y ? b : a)) // the socket nearest the fold
+    expect(near.y, 'a socket must sit above the fold for this cell to place').toBeLessThan(fold)
+    const y = Math.min(s.box.y + s.box.height - 60, Math.max(fold + 6, near.y + 45))
     expect(y, 'release point must sit BELOW the fold').toBeGreaterThan(fold)
+    expect(y - near.y, 'release must sit within aim reach of the nearest socket').toBeLessThanOrEqual(110)
     const cdp = await cdpInput(page)
-    await cdp.down(s.box.x + 400, y)
-    await cdp.up(s.box.x + 400, y)
+    await cdp.down(near.x, y)
+    await cdp.up(near.x, y)
     // the ANTI-VACUITY half: the release must have ARRIVED with a non-canvas
     // target — if the browser delivered it to the canvas, this cell would
     // only be re-testing the identity path the fix replaced.
