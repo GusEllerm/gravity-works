@@ -44,7 +44,7 @@ kitchen01, no pointer, no focus() shortcut: Tab to the tray button → its nativ
 
 ## Contrast table
 
-Printed by `node scripts/a11y-contrast.mjs` (25 pairs incl. composites: the panel over paper AND over a bright canvas, the badge over its own alpha, the dimmed states marked EXEMPT-with-number, the two focus-ring layers). All non-exempt pairs pass; the script exits non-zero on any regression.
+Printed by `node scripts/a11y-contrast.mjs` (26 pairs incl. composites: the panel over paper AND over a bright canvas, the badge over its own alpha, the dimmed states marked EXEMPT-with-number, the two focus-ring layers). Every color is RESOLVED AT RUN TIME from `src/ui/shell.css` (plus the sound toggle's one inline cssText in `src/boot.ts`) — a color edited in the stylesheet moves these numbers, a vanished declaration goes red with DRIFT (stage-6 close: the table is no longer hand-keyed). All non-exempt pairs pass; the script exits non-zero on any regression.
 
 ## How to reproduce the audit
 

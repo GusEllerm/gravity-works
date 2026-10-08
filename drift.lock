@@ -1033,7 +1033,7 @@ sig = "4e0fc998b5b96411"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "scripts/a11y-contrast.mjs"
-sig = "2e09efc5e72a2c4b"
+sig = "8fccf7ad9cd3d485"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1068,7 +1068,7 @@ sig = "85920b82ecda91cd"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/builder.ts"
-sig = "9e4dfe69e0d38e9d"
+sig = "255d8cdd0891d905"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1258,7 +1258,7 @@ sig = "df368cf2410c6b13"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/set-wiring.test.ts"
-sig = "c1bd593fb5465376"
+sig = "68f378bf54ee5d36"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
