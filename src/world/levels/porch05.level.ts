@@ -32,11 +32,13 @@
  * over the porch the player just crossed.
  */
 import type { Build } from '../../track/build.ts';
+import { PIECE_KINDS, type PieceKind } from '../../track/pieces.ts';
 import {
   PORCH_GEOM,
   THRESHOLD_GAP,
   porchChute,
   porchLevel,
+  PORCH_STRAIGHT,
   PORCH_SINK,
   registerPorch,
   type PorchLevel,
@@ -94,5 +96,51 @@ export const PORCH05: PorchLevel = registerPorch(
     tray: { gapLip: 2, drop: 1, landing: 1 },
     fixtures: { ramp: 1, finishCup: 1 },
     parBuild,
+  }),
+);
+
+// ---- the porch sandbox -----------------------------------------------------
+//
+// The set's no-budget room, mirroring `kitchen-sandbox` exactly: every piece
+// unlocked (`sandbox: true`, budget 999 — "no budget" with the number the
+// contract demands), NOT a campaign rung (invisible to `CAMPAIGN`, nobody's
+// next, addressable by `?level=` like every off-ladder rig), and the
+// reference build is one clean lap of the PORCH verbs at this ladder's own
+// geometry: the chute, the threshold pop, the sink that carries, the pinned
+// step and ONE 0.11 m plank seating. Measured: 1.158 s.
+
+export const PORCH_SANDBOX_ID = 'porch-sandbox';
+
+function sandboxBuild(): Build {
+  return lay(
+    [
+      { def: 'ramp', params: porchChute() }, // the hall-side step (fixture) — the chute tool
+      { def: 'gapLip', params: THRESHOLD_GAP.lip }, // the door-mouth pop
+      { def: 'landing', params: PORCH_SINK }, // the dipped plank — sink and CARRY
+      { def: 'drop', params: THRESHOLD_GAP.drop }, // the threshold step
+      { def: 'straight', params: { length: PORCH_STRAIGHT } }, // the plank to the cup
+      { def: 'finishCup' }, // fixture
+    ],
+    PORCH_SANDBOX_ID,
+    1,
+  );
+}
+
+const EVERY_PIECE = Object.fromEntries(PIECE_KINDS.map((kind: PieceKind) => [kind, 99]));
+
+export const PORCH_SANDBOX: PorchLevel = registerPorch(
+  porchLevel({
+    id: PORCH_SANDBOX_ID,
+    name: 'Porch sandbox',
+    set: 'porch',
+    seed: 1,
+    startSocket: startSocketFromBuild(sandboxBuild(), PORCH_GEOM.release * PORCH_GEOM.rampBlend),
+    budget: 999, // no budget; the contract wants a number
+    par: { pieces: 4, time: 1.2 }, // measured 1.158 s on the lap (regenerate via pars)
+    maxTime: 20,
+    sandbox: true,
+    tray: EVERY_PIECE,
+    fixtures: { ramp: 1, finishCup: 1 },
+    parBuild: sandboxBuild,
   }),
 );

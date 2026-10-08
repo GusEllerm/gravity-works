@@ -24,6 +24,7 @@
  * the room's: the water is a tell, the tray is the test.
  */
 import type { Build } from '../../track/build.ts';
+import { PIECE_KINDS, type PieceKind } from '../../track/pieces.ts';
 import { KitRig } from '../../feel/kittrack.ts';
 import {
   KITCHEN_GAP,
@@ -132,5 +133,52 @@ export const BATHROOM05: BathroomLevel = registerBathroom(
     fixtures: { ramp: 1, finishCup: 1 },
     hazards: [drainFilm()],
     parBuild,
+  }),
+);
+
+// ---- the bathroom sandbox -----------------------------------------------------
+//
+// The set's no-budget room, mirroring `kitchen-sandbox` exactly: every piece
+// unlocked (`sandbox: true`, budget 999 — "no budget" with the number the
+// contract demands), NOT a campaign rung (invisible to `CAMPAIGN`, nobody's
+// next, addressable by `?level=` like every off-ladder rig), and the
+// reference build is one clean lap of the gap verbs at THIS ladder's own
+// geometry: the 02-rung shelf (ramp 0.28), the ladder's single 0.2 m
+// straight seating, the shared `KITCHEN_GAP`. Measured: 2.733 s.
+
+export const BATHROOM_SANDBOX_ID = 'bathroom-sandbox';
+
+function sandboxBuild(): Build {
+  return lay(
+    [
+      { def: 'ramp', params: kitchenRamp(0.28) }, // the shelf (fixture)
+      { def: 'straight', params: { length: BATH_STRAIGHT } }, // the deck before the gap
+      { def: 'gapLip', params: KITCHEN_GAP.lip }, // the launch
+      { def: 'drop', params: KITCHEN_GAP.drop }, // the gap + catch
+      { def: 'landing', params: KITCHEN_GAP.landing }, // the run-out
+      { def: 'straight', params: { length: BATH_STRAIGHT } }, // ride to the cup
+      { def: 'finishCup' }, // fixture
+    ],
+    BATHROOM_SANDBOX_ID,
+    1,
+  );
+}
+
+const EVERY_PIECE = Object.fromEntries(PIECE_KINDS.map((kind: PieceKind) => [kind, 99]));
+
+export const BATHROOM_SANDBOX: BathroomLevel = registerBathroom(
+  bathroomLevel({
+    id: BATHROOM_SANDBOX_ID,
+    name: 'Bathroom sandbox',
+    set: 'bathroom',
+    seed: 1,
+    startSocket: startSocketFromBuild(sandboxBuild(), BATH_GEOM.release * BATH_GEOM.rampBlend),
+    budget: 999, // no budget; the contract wants a number
+    par: { pieces: 5, time: 2.75 }, // measured 2.733 s on the lap (regenerate via pars)
+    maxTime: 20,
+    sandbox: true,
+    tray: EVERY_PIECE,
+    fixtures: { ramp: 1, finishCup: 1 },
+    parBuild: sandboxBuild,
   }),
 );

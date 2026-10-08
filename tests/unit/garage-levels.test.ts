@@ -1,3 +1,4 @@
+import { campaignIndex, nextInCampaign } from '../../src/world/campaign.ts';
 /**
  * Garage ladder playability proof (stage 4, Level Designer's gate) — the
  * bathroom/garden ladder test's twin, with the same hazard gates
@@ -26,14 +27,14 @@ import { GARAGE01, garage01ProbeBuild } from '../../src/world/levels/garage01.le
 import { GARAGE02, garage02FloorBuild } from '../../src/world/levels/garage02.level.ts';
 import { GARAGE03, garage03OilLaneBuild } from '../../src/world/levels/garage03.level.ts';
 import { GARAGE04, garage04ProbeBuild } from '../../src/world/levels/garage04.level.ts';
-import { GARAGE05, garage05BoosterBuild, garage05ProbeBuild } from '../../src/world/levels/garage05.level.ts';
+import { GARAGE05, GARAGE_SANDBOX, garage05BoosterBuild, garage05ProbeBuild } from '../../src/world/levels/garage05.level.ts';
 import { trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
-import { levelTrayParams } from '../../src/boot.ts';
+import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
 import { PARS } from '../../src/world/stars.ts';
-import { PIECES, type PieceKind } from '../../src/track/pieces.ts';
+import { PIECE_KINDS, PIECES, type PieceKind } from '../../src/track/pieces.ts';
 import { fitSocket } from '../../src/track/snap.ts';
 import { transformSocket } from '../../src/track/socket.ts';
-import { type Build } from '../../src/track/build.ts';
+import { serialize, type Build } from '../../src/track/build.ts';
 import { KitRig } from '../../src/feel/kittrack.ts';
 import { garageSetPlacement, GARAGE_AXIS_OFFSET } from '../../src/world/setPlacement.ts';
 import { buildGarageSet } from '../../src/sets/garage/index.ts';
@@ -341,25 +342,35 @@ describe('garage05 — the ENCORE: the double crossing at speed, the film flown 
     }
   }, 180_000);
 
-  test('the ORDER is the line: deck-first never catches cut two; the par order is beatable within the tray', async () => {
-    const deckFirst = await replayRun(GARAGE05, placed(GARAGE05, spec(['st', 'dr', 'dr', 'la'])));
-    expect(deckFirst.status).not.toBe('finished'); // measured 2.808
-    const beat = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'la', 'dr', 'st'])));
+  test('the ORDER is the line — porch-clocked (stage-6 brevity trim): deck-first finishes but must LOSE the clock; the par order is beatable within the tray', async () => {
     const par = await replayRun(GARAGE05, GARAGE05.parBuild());
+    const deckFirst = await replayRun(GARAGE05, placed(GARAGE05, spec(['st', 'dr', 'dr', 'la'])));
+    // The stage-6 brevity trim moved the release to the fail-timing chute
+    // and the two adjacent cuts now CARRY at chute speed — the −12° law's
+    // measured fall (2.808 s) died with the crawl it rode. Re-stated as
+    // measured, porch05's own exception idiom: an order that finishes is
+    // only honest if it is LATE.
+    expect(deckFirst.status).toBe('finished'); // measured 1.367 vs the 1.342 par
+    expect(deckFirst.time).toBeGreaterThan(par.time); // pieces star, never the time star
+    const beat = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'la', 'dr', 'st'])));
     expect(beat.status).toBe('finished');
-    expect(beat.time).toBeLessThan(par.time); // measured 2.783 vs 3.017
+    expect(beat.time).toBeLessThan(par.time); // measured 1.225 vs 1.342 — the par order stays beatable
   }, 90_000);
 
-  test('the spare plate is a decoy: TAIL-placed it finishes at the par’s OWN hash, mid-line it kills the run, after the catcher it drags', async () => {
+  test('the spare plate is a decoy: TAIL-placed it finishes at the par’s OWN hash, mid-line it finishes SLOW (the trim’s re-stated law), after the catcher it drags', async () => {
     const par = await replayRun(GARAGE05, GARAGE05.parBuild());
     const tail = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'st', 'dr', 'la', 'st'])));
     expect(tail.status).toBe('finished');
     expect(tail.hash).toBe(par.hash);
     const mid = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'st', 'st', 'dr', 'la'])));
-    expect(mid.status).not.toBe('finished');
+    // the two-plank bridge ROLLS at chute speed (the −12° kill died with
+    // the crawl) — but the decoy law's teeth survive on the clock: the
+    // double plate is never the fast line.
+    expect(mid.status).toBe('finished'); // measured 1.425 vs the 1.342 par
+    expect(mid.time).toBeGreaterThan(par.time);
     const runout = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'st', 'dr', 'st', 'la'])));
     expect(runout.status).toBe('finished');
-    expect(runout.time).toBeGreaterThan(par.time + 0.3); // measured 3.408
+    expect(runout.time).toBeGreaterThan(par.time); // measured 1.433 — the porch clock compresses the old +0.3 s drag
   }, 120_000);
 
   test('the shop sells the booster BOTH ways: EARLY buys the second cut whole (exported hidden line, garage03’s speed idiom); LAST is trim at the par’s hash', async () => {
@@ -367,13 +378,18 @@ describe('garage05 — the ENCORE: the double crossing at speed, the film flown 
     expect((await replayRun(GARAGE05, garage05BoosterBuild())).status).toBe('finished');
     const early = await replayRun(GARAGE05, placed(GARAGE05, spec(['bo', 'dr', 'st', 'la'])));
     expect(early.status).toBe('finished');
-    expect(early.time).toBeLessThan(par.time); // measured 2.433 — the dyno special: faster than the ride, porch03's bounce law
+    expect(early.time).toBeLessThan(par.time); // measured 1.108 vs 1.342 — the dyno special, porch-clocked: faster than the ride, porch03's bounce law
     const last = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'st', 'dr', 'la', 'bo'])));
     expect(last.status).toBe('finished');
     expect(last.hash).toBe(par.hash); // the par's own clock and hash — one piece wasted at the counter
     const full = await replayRun(GARAGE05, placed(GARAGE05, spec(['bo', 'dr', 'st', 'dr', 'la'])));
-    expect(full.status).toBe('finished');
-    expect(full.time).toBeLessThan(par.time); // 2.417 — spend EARLY
+    // stage-6 brevity trim: at chute speed the booster SPENT and the cuts
+    // RIDDEN is the over-earned line — the extra Δv arrives with both
+    // crossings already flown and overshoots the catch (measured `fell`
+    // 1.492). The buy stays a SUBSTITUTION for the far crossing, never an
+    // addition to the ride — kitchen05's rule, sharpened by the faster
+    // release (it finished at 2.417 on the −12° crawl).
+    expect(full.status).not.toBe('finished');
   }, 150_000);
 
   test('the whole tray is a CHOICE tray: the tail order finishes poor, the booster-first six-piece order falls', async () => {
@@ -473,5 +489,46 @@ describe('garage set wiring — the placement table is derived, not folklore', (
     expect(insideFloor(-0.09, -0.14)).toBe(true); // the oil film
     expect(insideFloor(-0.3, 0.2)).toBe(true); // the flattened cardboard
     expect(insideFloor(0.22, 0.1)).toBe(true); // the nail spill
+  });
+});
+
+describe('Garage sandbox — the no-budget room (mirrors kitchen-sandbox, stage 6)', () => {
+  test('the sandbox has no budget and everything unlocked', () => {
+    expect(GARAGE_SANDBOX.sandbox).toBe(true);
+    expect(GARAGE_SANDBOX.budget).toBeGreaterThanOrEqual(999);
+    for (const kind of PIECE_KINDS) expect(GARAGE_SANDBOX.tray[kind], kind).toBe(99);
+  });
+
+  test('the sandbox is NOT a campaign rung: off the ladder, nobody\'s next, `?level=`-addressable like the kitchen one', () => {
+    expect(campaignIndex('garage-sandbox')).toBe(-1);
+    expect(nextInCampaign('garage-sandbox')).toBeNull();
+  });
+
+  test('the sandbox lap finishes (headless)', async () => {
+    const result = await replayRun(GARAGE_SANDBOX, GARAGE_SANDBOX.parBuild());
+    expect(result.status).toBe('finished');
+  }, 30_000);
+
+  test("the tray's own seating reproduces the sandbox lap byte-for-byte", () => {
+    expect(serialize(trayParityBuild(GARAGE_SANDBOX))).toBe(serialize(GARAGE_SANDBOX.parBuild()));
+  });
+
+  test("pars.json's par piece count is the sandbox's tray basis", () => {
+    expect(PARS[GARAGE_SANDBOX.id]?.pieces).toBe(GARAGE_SANDBOX.par.pieces);
+  });
+
+  test('the sandbox set mount follows the rung rule (centred on the lap, deck-cleared)', () => {
+    const p = garageSetPlacement('garage-sandbox')!;
+    expect(p.yaw).toBe(0);
+    expect(p.position[2]).toBe(-GARAGE_AXIS_OFFSET);
+    const rig = new KitRig(GARAGE_SANDBOX.parBuild(), 1);
+    let mn = Infinity;
+    let mx = -Infinity;
+    for (let s = 0; s <= rig.length; s += 0.005) {
+      mn = Math.min(mn, rig.frameAt(s).pos.x);
+      mx = Math.max(mx, rig.frameAt(s).pos.x);
+    }
+    expect(Math.abs(p.position[0] - (mn + mx) / 2)).toBeLessThan(0.002);
+    expect(p.position[1]).toBeCloseTo(finishDeckY(GARAGE_SANDBOX.parBuild()) - 0.005, 5);
   });
 });

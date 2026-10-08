@@ -6,6 +6,54 @@ livedocs: snapshot
 
 Dated entries tagged `[agent decision]`. Newest first.
 
+## 2026-10-08 — Six sandboxes ship, and the two longest encores move to the porch clock `[agent decision]` `[level designer]`
+
+Two items from the shipped Final Report's "next" list, both measured against
+playtest DD ("fresh skin, familiar bones… cut the encores' length, keep
+their sets… trim garden05/garage05 toward porch-level brevity").
+**(A) The sandbox promise, finished.** The kitchen's `kitchen-sandbox` was
+the pattern; now every room ships one — `bedroom-sandbox`,
+`bathroom-sandbox`, `garden-sandbox`, `garage-sandbox`, `porch-sandbox`,
+each registered by its room's `05` file with the kitchen's semantics
+verbatim: `sandbox: true`, budget 999, every kind ×99, a reference lap at
+the ladder's own geometry (four gap rooms 2.733 s on the shared
+`KITCHEN_GAP` off the 0.28 shelf; the porch laps its own verbs in 1.158 s),
+and NONE of the campaign surface — off `CAMPAIGN`, invisible to the level
+select, nobody's Next, `?level=`-addressable, badgeless (exactly the
+kitchen one's discoverability; the ladder stays THIRTY). No existing hash
+moved: these are new ids, and `replay:all` is 30/30 as before.
+**(B) The encore brevity trim — and the honest part: two par hashes moved.**
+`garden05` and `garage05` kept the rail, the pinned `ENCORE_DIP` and the
+tray EXACTLY and moved only the release to the ladder's fail-timing chute
+(−29°/0.24 m, blend 0.12) with a 21°/0.18 m run-out catch — the −12° ramp's
+~1.7 s crawl was the whole length. **Par replay hash `1b37dfed` →
+`1f99683a` on BOTH rungs** (parTime 3.05 → 1.35, measured 1.342; pieces
+unchanged at 4; their `setPlacement` rows re-derived). The four-rung encore
+family rail SPLIT IN TWO: `bedroom05`/`bathroom05` stay byte-identical on
+the −12° rail (`1b37dfed`, 3.05) — DD's trim was scoped to the two rooms
+whose encores read as pure remixes, and the light-pool and flood encores'
+staging IS their freshness — and no other rung's hash budged (kitchen's
+`PINNED` atlas intact). The trim could not be law-neutral and is not
+claimed as one: the promise law survives UNBROKEN (11/11 sampled omissions
+fall, earlier) and the tail-hash/EARLY-LATE booster laws survive byte-exact,
+but THREE laws flipped with the crawl and are re-stated with measured
+numbers in the level files and tests — deck-first FINISHES 0.025 s late
+(porch05's own exception idiom; it fell at 2.808), the two-plank mid bridge
+finishes SLOW, and booster-spent-AND-line-ridden overshoots and FALLS (the
+buy became a substitution, never an addition). A geometry-preserving
+alternative was measured first and is DEAD: on any −12° release the porch
+clock is unreachable (the crawl is ~60 % of the rung), and every grid cell
+tested (chute height × dip step × lead × catch face, 60+ cells) flips the
+same two ORDER laws — the trim's cell is the one that flips the fewest.
+Proof: `tests/unit/garden-levels.test.ts` + `tests/unit/garage-levels.test.ts`
+(104 green between them), `tests/e2e/stage6-encore-brevity.spec.ts` (fresh
+session, no instructions, four blind Places, ONE launch, finished — the k3
+floor on the porch clock), `tests/e2e/stage6-sandboxes.spec.ts` (screenshot
+smoke + campaign-invisibility per sandbox), pars re-derived by script,
+`replay:all` 30/30. See [[Concepts/Levels]] §Sandbox and §The encore
+brevity trim, [[Reference/Level Ladder]] §Sandboxes,
+`Sessions/2026-10-08 Stage 6 sandbox + encores`.
+
 ## 2026-10-08 — The Place button names the socket it drops into `[agent decision]` `[feel engineer]`
 
 Playtest DD burned ~10 launches and 18 minutes on kitchen01 — the first impression of the whole game — because the tray "Place" button, labelled nothing but "Place", dropped pieces at what read as "a fixed right-side socket" instead of the spot the aim had named. Diagnosis: there is no fixed socket — hover-aim legitimately follows the mouse wherever it crosses the canvas (`HOVER_PX`, the ratified aim law), INCLUDING the transit from the aimed socket up to the button, so the press answered the transit's last intermediate hover, not the aim the player had chosen, and nothing on screen said so at the press. Option (b) — removing or downgrading the button to the keyboard path — was rejected: it strands the pure-click player, exactly the player DD was. Chosen (a): **the Place button places at the CURRENT aim (the ring the ghost already wears — the placement code never changes) and its LABEL carries that socket's ratified name**, `Place — <socket>`, written by `updateGhost` wherever the aim moves (`src/ui/builder.ts`; the same words `#gw-target-label` speaks, minus the verb and the tie tail — one naming system, inherited socket-naming laws, greyed kinds stay unnameable); a button that cannot place names no spot. The law this pins: **no place verb may speak the generic word alone while a specific socket is about to be built** — the screen under the player's eyes at the press instant must name what the press will do (the input-truth law extended from status lines to BUTTON TEXT). Proof: `tests/e2e/place-honesty.spec.ts` (fresh kitchen01, mouse-only: every button press places at the socket the aim names, asserted through `__gwTargetSocket`/`__gwOpenSockets` and the counter — zero mis-drops — including the DD transit gesture with the mouse path crossing the canvas; the label rides every aim change), keyboard parity untouched (`tests/e2e/a11y.spec.ts` holds). Cross-reference the aim-or-speak law (Decision Log 2026-10-10) — same truth, new surface: that one says WHERE a canvas click may build, this one says WHAT the tray button must say about it. See `Modules/ui`, `Sessions/2026-10-08 Stage 6 place honesty.md`.

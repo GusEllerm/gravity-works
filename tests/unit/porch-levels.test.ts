@@ -1,3 +1,4 @@
+import { campaignIndex, nextInCampaign } from '../../src/world/campaign.ts';
 /**
  * PORCH ladder playability proof (stage 5, Level Designer's gate) — the
  * garage/garden ladder test's twin, with the porch's own additions:
@@ -45,14 +46,14 @@ import { PORCH01 } from '../../src/world/levels/porch01.level.ts';
 import { PORCH02, porch02DoorBuild } from '../../src/world/levels/porch02.level.ts';
 import { PORCH03, porch03BounceBuild } from '../../src/world/levels/porch03.level.ts';
 import { PORCH04 } from '../../src/world/levels/porch04.level.ts';
-import { PORCH05, porch05CatchFirstBuild } from '../../src/world/levels/porch05.level.ts';
+import { PORCH05, PORCH_SANDBOX, porch05CatchFirstBuild } from '../../src/world/levels/porch05.level.ts';
 import { trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
-import { levelTrayParams } from '../../src/boot.ts';
+import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
 import { PARS } from '../../src/world/stars.ts';
-import { PIECES, type PieceKind } from '../../src/track/pieces.ts';
+import { PIECE_KINDS, PIECES, type PieceKind } from '../../src/track/pieces.ts';
 import { fitSocket } from '../../src/track/snap.ts';
 import { transformSocket } from '../../src/track/socket.ts';
-import { type Build } from '../../src/track/build.ts';
+import { serialize, type Build } from '../../src/track/build.ts';
 import { KitRig } from '../../src/feel/kittrack.ts';
 import { porchSetPlacement, PORCH_AXIS_OFFSET } from '../../src/world/setPlacement.ts';
 import { buildPorchSet } from '../../src/sets/porch/index.ts';
@@ -526,5 +527,46 @@ describe('porch set wiring — the placement table is derived, not folklore', ()
       expect(Math.abs(socket.tangent.z), name).toBeCloseTo(1, 9); // across the +x lane
       expect(Math.abs(socket.tangent.x), name).toBeCloseTo(0, 9);
     }
+  });
+});
+
+describe('Porch sandbox — the no-budget room (mirrors kitchen-sandbox, stage 6)', () => {
+  test('the sandbox has no budget and everything unlocked', () => {
+    expect(PORCH_SANDBOX.sandbox).toBe(true);
+    expect(PORCH_SANDBOX.budget).toBeGreaterThanOrEqual(999);
+    for (const kind of PIECE_KINDS) expect(PORCH_SANDBOX.tray[kind], kind).toBe(99);
+  });
+
+  test('the sandbox is NOT a campaign rung: off the ladder, nobody\'s next, `?level=`-addressable like the kitchen one', () => {
+    expect(campaignIndex('porch-sandbox')).toBe(-1);
+    expect(nextInCampaign('porch-sandbox')).toBeNull();
+  });
+
+  test('the sandbox lap finishes (headless)', async () => {
+    const result = await replayRun(PORCH_SANDBOX, PORCH_SANDBOX.parBuild());
+    expect(result.status).toBe('finished');
+  }, 30_000);
+
+  test("the tray's own seating reproduces the sandbox lap byte-for-byte", () => {
+    expect(serialize(trayParityBuild(PORCH_SANDBOX))).toBe(serialize(PORCH_SANDBOX.parBuild()));
+  });
+
+  test("pars.json's par piece count is the sandbox's tray basis", () => {
+    expect(PARS[PORCH_SANDBOX.id]?.pieces).toBe(PORCH_SANDBOX.par.pieces);
+  });
+
+  test('the sandbox set mount follows the rung rule (centred on the lap, deck-cleared)', () => {
+    const p = porchSetPlacement('porch-sandbox')!;
+    expect(p.yaw).toBe(0);
+    expect(p.position[2]).toBe(-PORCH_AXIS_OFFSET);
+    const rig = new KitRig(PORCH_SANDBOX.parBuild(), 1);
+    let mn = Infinity;
+    let mx = -Infinity;
+    for (let s = 0; s <= rig.length; s += 0.005) {
+      mn = Math.min(mn, rig.frameAt(s).pos.x);
+      mx = Math.max(mx, rig.frameAt(s).pos.x);
+    }
+    expect(Math.abs(p.position[0] - (mn + mx) / 2)).toBeLessThan(0.002);
+    expect(p.position[1]).toBeCloseTo(finishDeckY(PORCH_SANDBOX.parBuild()) - 0.005 - 0.005, 5);
   });
 });

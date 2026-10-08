@@ -129,6 +129,9 @@ const BEDROOM_ROWS: Record<string, readonly [number, number, number]> = {
   // rail's midpoint, floor 5 mm under the finish deck), 12.6 cm deeper
   // than the finale's row because the par rides TWO 0.12 m dips.
   bedroom05: [1.3602, -0.57419, -0.15],
+  // bedroom-sandbox (stage 6): the no-budget room, same rule — the lap's own
+  // finish deck (one `KITCHEN_GAP` down from the 0.28 shelf) and rail midpoint.
+  'bedroom-sandbox': [1.31299, -0.468092, -0.15],
 };
 
 /** The mount transform for one bedroom level id (null = no placement — the
@@ -162,6 +165,9 @@ const BATH_ROWS: Record<string, readonly [number, number, number]> = {
   // bathroom05 (encore): same rule; 12.6 cm under the finale's row (the
   // par rides two sink dips — see the bedroom05 row note).
   bathroom05: [1.3602, -0.57419, -BATH_AXIS_OFFSET],
+  // bathroom-sandbox (stage 6): the no-budget room, same rule off the lap's
+  // own deck (one `KITCHEN_GAP` down from the 0.28 shelf).
+  'bathroom-sandbox': [1.31299, -0.468092, -BATH_AXIS_OFFSET],
 };
 
 /** The mount transform for one bathroom level id (null = no placement — the
@@ -207,10 +213,13 @@ const GARDEN_ROWS: Record<string, readonly [number, number, number]> = {
   garden02: [1.09123, -0.47409, -GARDEN_AXIS_OFFSET],
   garden03: [1.1825, -0.43167, -GARDEN_AXIS_OFFSET],
   garden04: [1.21654, -0.45409, -GARDEN_AXIS_OFFSET],
-  // garden05 (encore): same rule; 12.6 cm under the finale's row (the par
-  // rides two crossings — see the bedroom05 row note), the paving's own
-  // 6 mm surface carried as always.
-  garden05: [1.3602, -0.58019, -GARDEN_AXIS_OFFSET],
+  // garden05 (encore): same rule; re-derived at the stage-6 BREVITY TRIM
+  // (the rung's fail-timing chute sits the finish deck a hair lower than the
+  // finale's row and the rail is shorter — the centre follows the run).
+  garden05: [0.95817, -0.601429, -GARDEN_AXIS_OFFSET],
+  // garden-sandbox (stage 6): the no-budget room, same rule (the paving's own
+  // 6 mm surface carried as always) off the lap's deck.
+  'garden-sandbox': [1.31299, -0.474092, -GARDEN_AXIS_OFFSET],
 };
 
 /** The mount transform for one garden level id (null = no placement — the
@@ -252,9 +261,12 @@ const GARAGE_ROWS: Record<string, readonly [number, number, number]> = {
   garage02: [1.07272, -0.47419, -GARAGE_AXIS_OFFSET],
   garage03: [1.1825, -0.42567, -GARAGE_AXIS_OFFSET],
   garage04: [1.21654, -0.44809, -GARAGE_AXIS_OFFSET],
-  // garage05 (encore): same rule; 12.6 cm under the finale's row (the par
-  // rides two floor cuts — see the bedroom05 row note).
-  garage05: [1.3602, -0.57419, -GARAGE_AXIS_OFFSET],
+  // garage05 (encore): same rule; re-derived at the stage-6 BREVITY TRIM
+  // (the rung's fail-timing chute and its shorter rail move the row — the
+  // centre follows the run).
+  garage05: [0.95817, -0.595429, -GARAGE_AXIS_OFFSET],
+  // garage-sandbox (stage 6): the no-budget room, same rule off the lap's deck.
+  'garage-sandbox': [1.31299, -0.468092, -GARAGE_AXIS_OFFSET],
 };
 
 /** The mount transform for one garage level id (null = no placement — the
@@ -307,6 +319,9 @@ const PORCH_ROWS: Record<string, readonly [number, number, number]> = {
   porch03: [0.6274, -0.324734, -PORCH_AXIS_OFFSET],
   porch04: [0.7455, -0.43428, -PORCH_AXIS_OFFSET],
   porch05: [0.7513, -0.384837, -PORCH_AXIS_OFFSET],
+  // porch-sandbox (stage 6): the no-budget room, same rule (planks' flush
+  // finish surface, the two-clearance row) off the lap's deck.
+  'porch-sandbox': [0.75166, -0.39428, -PORCH_AXIS_OFFSET],
 };
 
 /** The mount transform for one porch level id (null = no placement — today
