@@ -1139,8 +1139,12 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     // target, so the click silently placed the stale aim metres from the
     // cursor. A click that is neither ON the shown ring nor within aim
     // reach of any socket is a click on open space: it places NOTHING,
-    // moves nothing, and says so.
+    // moves nothing, and says so. A standing result panel still retires
+    // FIRST (BB item 2's collapse law — a piece-in-hand build intent speaks
+    // TO the build view before it speaks to the player), so the refusal
+    // lands on the build page, never behind a modal (playtest N's swallow).
     if (!ringWithinReach(clientX, clientY) && !aimAt(clientX, clientY)) {
+      options.onPlaceIntent?.();
       ghostState.textContent = 'nothing fits out here — click nearer the ring or an end of the line';
       return;
     }

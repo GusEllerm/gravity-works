@@ -54,10 +54,11 @@ placement). Killed the squatter; rebuilt. Proof ports moved to the 4360+ lanes a
   frames, cup in-frame at the terminal beats (2); far held click places nothing, moves no ring,
   says "nothing fits out here", held near-tie still snaps nearer-depth (3); the kitchen03 held tie
   speaks the distinct-outcome count and the `]` walk visits distinct builds (4).
-- Full gates: `vitest run` 684 green; main playwright suite 155 run/1 skipped green; filmstrip
-  green (see below). Commit stamps the updated notes: [[ui]] (snap-range + aim-or-speak +
-  distinct-outcome tie law + the four seams), [[replay]] (Play-rewind + finish-lead + cut-carry),
-  [[src]] (the debug seams).
+- Full gates (final, post-rebase): `vitest run` 694 green; main playwright suite 164 run/1
+  skipped green (ports 4360+ lanes); filmstrip local-machine status in its own section below.
+  Commit stamps the updated notes: [[ui]] (snap-range + aim-or-speak + collapse-before-refusal +
+  distinct-outcome tie law + the four seams), [[replay]] (Play-rewind + finish-lead + cut-carry +
+  pace ledger), [[src]] (the debug seams).
 
 ## share-replay CI flake (the replay page's own red on main)
 `tests/e2e/share-replay.spec.ts` "the trace, the seek and the playhead are the deterministic sim"
@@ -65,13 +66,47 @@ is green 6/6 locally but RED on CI: the play/pause/4× section sampled the playh
 `waitForTimeout(300/350)` WALL-CLOCK waits. The playhead accumulates real time × rate with a
 0.25 s per-frame clamp, so on SwiftShader frame pacing a 300 ms window can contain ZERO rendered
 frames (t2 == t1) or burn the 1.2 s-of-sim budget unevenly off-step (the 15.8 s feeltrack run).
-Fix: no wall-clock playhead sampling — PLAY advances are asserted by polling the state seam for a
-≥ 4-STEP step-quantised advance (30 s generous timeouts), and the 4× rate is proven by covering
-1.2 s of sim in < 1 s of wall (a 1× playhead physically cannot); the paused-hold and the
-tick-seek state checks are seek-driven per sim step. Proven under CI truth with
+Fix: no wall-clock playhead sampling — PLAY advances are asserted by polling the state seam
+(30 s generous timeouts) and the RATE is asserted per rendered frame from the page's new pace
+ledger (`__gwReplayPace` in `src/boot.ts`, cleared at every seek/play/speed break): every
+interval of a contiguous session must advance the playhead by min(frame gap, 0.25 s) × rate,
+which no pacing regime can land off-step by construction; the paused-hold waits double-rAF
+instead of sleeping, and the tick-seek state checks remain seek-driven per sim step. Proven under CI truth with
 `GQA_FORCE_SOFTWARE_GL=1` × `--repeat-each` (see the commit; results appended here).
 
-## After the merge (main 002d453)
-Rebased onto main before pushing; the SE's `onPlaceIntent` collapse (place-with-modal) and the
-empty-handed button line meet the aim-or-speak precedence in `clickPlaceAt` — conflict resolutions
-and the final gates are noted here at landing.
+## After the merge (main moved twice more: 002d453 SE shell fixes, then bccbee2 with the K3 re-sweep)
+Rebased onto main before pushing. Where the laws meet:
+- **playtest-n's panel pass-through** — SE rewrote the test while I was making its click
+  aim-honest; the merge takes THEIR ended-read version (click a canvas pixel of the caption
+  strip; the intent must end READ — placed or refused), and the meeting point is in
+  `clickPlaceAt`: the refusal branch fires `onPlaceIntent` BEFORE speaking, so a held-piece
+  intent far from every socket collapses the panel and then says "nothing fits out here" —
+  BB item 2's collapse law and the aim law both hold; the button path already ran the same
+  dismissal inside `place()`.
+- **Empty-handed clicks** still speak the hand line without collapsing (no build intent).
+- **playtest-pq's rung table** was RED from the K3 merge (pars.json moved kitchen03 to
+  5/1.45 s, the spec row still said 2.65 — pre-existing on main). Fixed in the house way:
+  the table DERIVES from `pars.json` (imported with `{ type: 'json' }` — Node's ESM law for
+  spec-side JSON), so the next re-sweep cannot rot it again.
+
+## Flake-proof results (share-replay, the CI red)
+`src/boot.ts` carries a PACE LEDGER (`__gwReplayPace`, cleared at every seek/play/speed
+break, `__gwReplayState` unchanged): [wallMs, playheadS, rate] per advanced frame. The spec
+asserts the rate law per rendered interval — advance === min(gap, 0.25 s) × rate, 1 % tol —
+and replaces every wall-clock playhead sample with a poll (30 s) plus a double-rAF held-state
+check. Proofs run: `GQA_FORCE_SOFTWARE_GL=1` + real SwiftShader WebGL
+(`--disable-gpu --use-angle=swiftshader`, renderer string verified as the CI's) —
+share-replay ×6 serial 18/18, ×4 parallel 12/12, the replay family 9/9; a throttle probe at
+10×/20× CPU (CDP) held the interval law across ≥5 starved intervals and the progress poll
+caught 0.6 s of sim. By construction the assertion's expectation is derived from the gaps the
+page actually experienced, so no frame pacing — CI or worse — can land it off-step.
+
+## Filmstrip (main lane) — local-machine record, NOT touched
+`npm run test:e2e:filmstrip` L02 coverage floor (`≥5` frames) is red on THIS machine, 4/5
+samples every run, pixel bars green (worst 39.6 % vs the 60 % bar), IDENTICALLY at baseline
+`da2fc2a` in a scratch worktree — pre-existing, not this branch's. Measured cause: the run's
+wall clock from the sample clock's zero is ~0.8 s here (release lag + screenshot cadence),
+so the 1.0 s boundary is never inside the run; the floor was tuned on faster boxes, and the
+same wall-clock-against-a-run-clock shape as the share-replay flake. CI does not run this
+config (workflow runs the main suite only), so it is left for its owner with the measurement
+here rather than loosened silently from a feel branch.
