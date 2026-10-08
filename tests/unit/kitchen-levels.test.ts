@@ -22,7 +22,7 @@ import { describe, expect, test } from 'vitest';
 import * as THREE from 'three';
 import { KITCHEN01, KITCHEN_GEOM, trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
 import { serialize, type Build } from '../../src/track/build.ts';
-import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
+import { levelTrayParams, trayParityBuild, stockedKindsFor } from '../../src/boot.ts';
 import { PARS } from '../../src/world/stars.ts';
 import { PIECES, type PieceKind } from '../../src/track/pieces.ts';
 import { fitSocket } from '../../src/track/snap.ts';
@@ -72,10 +72,11 @@ describe('kitchen ladder — level contracts', () => {
       expect(level.budget).toBe(trayCount(level.tray));
       expect(level.par.pieces).toBeLessThanOrEqual(level.budget);
       // the release pose sits on the start ramp's descending blend (a level
-      // deck release stalls against the tuned rolling resistance). L02 is
-      // the one rung that deviates from the shared −12° ramp convention —
-      // its own contract test below pins its steeper chute.
-      if (level.id === KITCHEN02.id) return;
+      // deck release stalls against the tuned rolling resistance). L02 and
+      // L03 are the two rungs that deviate from the shared −12° ramp
+      // convention — each carries its own fail-timing chute contract,
+      // pinned below.
+      if (level.id === KITCHEN02.id || level.id === KITCHEN03.id) return;
       expect(level.startSocket.tangent.y).toBeLessThan(0);
       expect(level.startSocket.tangent.y).toBeCloseTo(Math.sin((KITCHEN_GEOM.rampAngle * Math.PI) / 180), 1);
     });
@@ -90,6 +91,17 @@ describe('kitchen ladder — level contracts', () => {
     expect(ramp.angle).toBe(-29); // steep chute; the height rides in `level` (rampLevelForDrop)
     expect(KITCHEN02.startSocket.tangent.y).toBeLessThan(0);
     expect(KITCHEN02.startSocket.tangent.y).toBeCloseTo(Math.sin((-29 * Math.PI) / 180), 1);
+  });
+
+  test('L03: its stage-5 re-sweep chute deviates from the ladder ramp convention — the death clock is the rung card', () => {
+    // the −12°/0.3 m shared ramp was the CLUSTERING ENGINE of the AA+BB
+    // double wall: its ~2 s crawl put every death at 2.58–2.96 s regardless
+    // of the mistake (level header). The angle is level-local, like L02's
+    // chute; everything else on the rung stays on convention.
+    const ramp = KITCHEN03.parBuild().pieces.find((p) => p.def === 'ramp')!.params as { angle: number };
+    expect(ramp.angle).toBe(-29); // steep fail-timing chute (0.34 m, blend 0.12)
+    expect(KITCHEN03.startSocket.tangent.y).toBeLessThan(0);
+    expect(KITCHEN03.startSocket.tangent.y).toBeCloseTo(Math.sin((-29 * Math.PI) / 180), 1);
   });
 
   test('the sandbox has no budget and everything unlocked', () => {
@@ -565,6 +577,130 @@ describe('kitchen04 — the wet route is real, and so is R\u2019s reversed-lip w
     expect(over.status).toBe('fell'); // measured 2.533 s past the cup
     expect(Math.abs(sink.time - over.time)).toBeGreaterThan(0.2); // the two families are clock-separated
   }, 60_000);
+});
+
+/**
+ * THE STAGE-5 K3 RE-SWEEP (playtests AA + BB: the bowl WALLED two strangers
+ * back to back — AA 4 builds, BB 6 and quit). Rebuilding their attempts and
+ * EVERY chainable build of the tray on the shipped mount (fixtures anchored
+ * at their par transforms via the `kitchenPlaced` emulation) says the wall
+ * was the OLD geometry: the −12°/0.3 m ramp's ~2 s crawl put every death at
+ * 2.58–2.96 s, and the forgiving KITCHEN_GAP spans left 15 of the 4-piece
+ * subsets finishing, so the failing that DID teach was a minority pattern
+ * (level header). The re-authored rung is gated here, whole build space:
+ *   NO ≤ 4-piece build finishes (the tray is the par multiset and the
+ *   equality-law spans make every omission a hole, not a hint);
+ *   59–60/60 whole-tray orders finish (the one order `s,s,d,g,l` is the
+ *   pinned borderline of the porch03 wedge family — it falls at ~1.6 s on
+ *   the seed-1 default and completes on other seeds/jitters, re-checked
+ *   below the enumeration);
+ *   every fail dies ≤ 1.9 s in ≥ 3 clock bands, airborne never past the
+ *   cup mouth (the K2 x-law);
+ *   the note names the kind the build actually lacks (stock-tail rule) —
+ *   AA's and BB's rebuilt attempts print FIVE different notes across their
+ *   ten builds, one informed retry each.
+ */
+describe('kitchen03 — the stage-5 re-sweep: every chainable build speaks', () => {
+  const trayKinds: PieceKind[] = ['straight', 'straight', 'gapLip', 'drop', 'landing'];
+  const keyOf = (kinds: PieceKind[]) =>
+    kinds.map((k) => (k === 'straight' ? 's' : k === 'gapLip' ? 'g' : k === 'drop' ? 'd' : 'l')).join('');
+  const chains = new Map<string, PieceKind[]>();
+  for (let mask = 0; mask < 32; mask++) {
+    const pool = trayKinds.filter((_, i) => mask & (1 << i));
+    for (const order of permutations<PieceKind>(pool)) {
+      const k = keyOf(order);
+      if (!chains.has(k)) chains.set(k, order);
+    }
+  }
+
+  test('the build space is the swept one (171 distinct chainable builds)', () => {
+    expect(chains.size).toBe(171);
+  });
+
+  test('NO ≤ 4-piece build finishes and every fail dies early and distinctly (seed 1)', async () => {
+    const par = KITCHEN03.parBuild();
+    const cup = [...par.pieces].reverse().find((p) => p.def === 'finishCup')!;
+    const cupMouth = cup.transform.elements[12]!;
+    const deckY = Math.min(...par.pieces.filter((p) => p.def === 'straight').map((p) => p.transform.elements[13]!));
+    const fails: number[] = [];
+    let wholeTrayFails = 0;
+    for (const [k, kinds] of chains) {
+      const world = await World.create(KITCHEN03, kitchenPlaced(KITCHEN03, kinds), { visuals: false });
+      world.launch();
+      let airX = 0;
+      while (world.stepCount < 15 * 120 && world.status === 'running') {
+        world.step();
+        const pose = world.carPose(1);
+        if (pose.pos.y > deckY - 0.03) airX = Math.max(airX, pose.pos.x);
+      }
+      const status = world.status;
+      const time = world.time;
+      world.dispose();
+      if (status === 'finished') {
+        expect(kinds.length, `subset build ${k} must NOT finish (the pay-off is the whole tray)`).toBe(5);
+        continue;
+      }
+      expect(time, `build ${k} dies late (${time.toFixed(2)} s)`).toBeLessThan(1.9);
+      expect(airX, `build ${k} flew past the cup mouth`).toBeLessThan(cupMouth + 0.005);
+      fails.push(Math.round(time * 100) / 100);
+      if (kinds.length === 5) wholeTrayFails++;
+    }
+    // 151 subset builds, all fall; at most ONE whole-tray order (the pinned
+    // borderline `ssdgl`) may fail on the default seed.
+    expect(wholeTrayFails).toBeLessThanOrEqual(1);
+    // the fail stream is EARLY and DISTINCT: band structure, not a wall
+    expect(Math.max(...fails) - Math.min(...fails)).toBeGreaterThan(0.5);
+    expect(new Set(fails).size).toBeGreaterThanOrEqual(12);
+    const bands = new Set(fails.map((t) => Math.floor(t * 4)));
+    expect(bands.size).toBeGreaterThanOrEqual(3);
+  }, 900_000);
+
+  test('the pinned borderline order falls on the default seed and finishes across the seed sweep (honest wedge)', async () => {
+    const wedge = kitchenPlaced(KITCHEN03, ['straight', 'straight', 'drop', 'gapLip', 'landing']);
+    const base = await replayRun(KITCHEN03, wedge);
+    expect(base.status).not.toBe('finished'); // measured ~1.63 s — an EARLY death, not the old invisible 2.9 s
+    let completions = 0;
+    for (let seed = 2; seed <= 6; seed++) {
+      const run = await replayRun({ ...KITCHEN03, seed }, { ...wedge, seed });
+      if (run.status === 'finished') completions++;
+    }
+    expect(completions).toBeGreaterThanOrEqual(3); // not a wall — the wedge is a dice roll off the default
+  }, 300_000);
+
+  test('the rebuilt AA/BB walls fail EARLY, and their notes’ admissible vocabulary differs per family', async () => {
+    const rebuilt: [string, PieceKind[]][] = [
+      // AA (quotes: the K1 fit; a flipped landing + lip build that printed
+      // the nose-first line; cleared on build 4 with the full tray)
+      ['A1 straight bridge', ['straight', 'straight', 'landing']],
+      ['A2 K1 fit', ['gapLip', 'drop', 'landing']],
+      ['A4 full tray', trayKinds],
+      // BB (quotes: lip+landing; straights bridge; lip cup-side; drop moved)
+      ['B1 lip+landing', ['gapLip', 'landing']],
+      ['B2 bridge', ['straight', 'straight', 'landing']],
+      ['B3 lip cup-side', ['straight', 'straight', 'gapLip']],
+      ['B4 drop last', ['gapLip', 'straight', 'drop']],
+    ];
+    const vocabularies = new Set<string>();
+    for (const [label, kinds] of rebuilt) {
+      const build = kitchenPlaced(KITCHEN03, kinds);
+      if (kinds.length < 5) {
+        const r = await replayRun(KITCHEN03, build);
+        expect(r.status, label).not.toBe('finished');
+        expect(r.time, `${label} dies late`).toBeLessThan(1.9);
+      }
+      // the stock-tail rule (B2 pass 2): the drive-off note may name ONLY
+      // the kinds with tray stock left — the set below IS the note’s
+      // admissible vocabulary for this build, and the shipped tail prints
+      // exactly it (physicsNote + stockedKindsFor, gated in result.test).
+      const stock = stockedKindsFor(build, KITCHEN03.tray);
+      vocabularies.add([...stock].sort().join('+'));
+    }
+    // different wrong builds must not read as one undifferentiated line
+    // (AA’s complaint verbatim): the rebuilt families list DIFFERENT stock,
+    // and the spent-tray full build lists none (bare honest head).
+    expect(vocabularies.size).toBeGreaterThanOrEqual(4);
+    expect(vocabularies.has('')).toBe(true);
+  }, 600_000);
 });
 
 /**

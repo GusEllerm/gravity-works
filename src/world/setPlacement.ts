@@ -66,9 +66,14 @@ const STANDARD: Record<string, readonly [number, number, number]> = {
   // ramp is a short 0.16 m chute (the rail is shorter — the centre moves
   // back) and the drop step is 0.10 m (the finish deck sits higher — the
   // counter rises with it).
+  // L03 re-derived at the stage-5 K3 RE-SWEEP pass (playtests AA+BB): its
+  // ramp is now the same kind of short steep chute (0.34 m at −29°), so the
+  // timed rail starts nearer the books — the centre follows the run — and
+  // the shallow-sink finish deck sits 1 cm lower than the old KITCHEN_GAP
+  // line's.
   kitchen01: [0.9111, -0.3980919, AXIS_OFFSET],
   kitchen02: [0.51896, -0.27917623256124524, AXIS_OFFSET],
-  kitchen03: [1.2469, -0.4780919, AXIS_OFFSET],
+  kitchen03: [1.0885, -0.4827847, AXIS_OFFSET],
   kitchen05: [1.308, -0.6395241, AXIS_OFFSET],
   'kitchen-sandbox': [1.2719, -0.4780919, AXIS_OFFSET],
 };
