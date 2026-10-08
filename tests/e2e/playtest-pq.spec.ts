@@ -233,21 +233,12 @@ test('every open rung and the first boot state THAT level’s par numbers', asyn
     return [String(row.parPieces), row.parTime.toFixed(2)]
   }
   const rungs: [string, string, string][] = [
-<<<<<<< HEAD
-    ['kitchen01', '3', '2.25'],
-    ['kitchen02', '3', '1.05'],
-    ['kitchen03', '5', '1.45'],
-    ['kitchen04', '4', '2.55'],
-    ['kitchen05', '6', '2.40'],
-    ['bedroom01', '3', '2.35'],
-=======
     ['kitchen01', ...par('kitchen01')],
     ['kitchen02', ...par('kitchen02')],
     ['kitchen03', ...par('kitchen03')],
     ['kitchen04', ...par('kitchen04')],
     ['kitchen05', ...par('kitchen05')],
     ['bedroom01', ...par('bedroom01')],
->>>>>>> fe13d59
   ]
   for (const [id, pieces, time] of rungs) {
     const line = page.locator(`#gw-level-${id} .gw-level-rules`)
@@ -266,13 +257,8 @@ test('every open rung and the first boot state THAT level’s par numbers', asyn
   await boot.goto('/?level=kitchen03')
   await ready(boot)
   await expect(boot.locator('#gw-callout')).toContainText('Stars: finish the run')
-<<<<<<< HEAD
-  await expect(boot.locator('#gw-callout')).toContainText('5 pieces (par)')
-  await expect(boot.locator('#gw-callout')).toContainText('1.45 s (par = the target time for this run)')
-=======
   await expect(boot.locator('#gw-callout')).toContainText(`${par('kitchen03')[0]} pieces (par)`)
   await expect(boot.locator('#gw-callout')).toContainText(`${par('kitchen03')[1]} s (par = the target time for this run)`)
->>>>>>> fe13d59
   await ctx2.close()
 
   expect(errors).toEqual([])
