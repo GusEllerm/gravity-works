@@ -10,7 +10,10 @@
  *      entry for `floor(t/dt)` — which just equals the node state at that
  *      step. No interpolation between steps exists to cheat with.
  *   2. The replay PLAYS (autoplays; play/pause and 1×/2×/4× are real
- *      controls whose effect is measured on the playhead) and cuts ≥ 3
+ *      controls whose effect is measured on the playhead — since the stage-5
+ *      CI-red salvage PER RENDERED FRAME via the page's pace ledger, never
+ *      by sampling after a wall-clock sleep, which SwiftShader frame pacing
+ *      made off-step on the 15.8 s feeltrack link) and cuts ≥ 3
  *      shots; the FINISH shot frames the cup (projected |ndc| ≤ 0.8 at the
  *      end of the timeline, on kitchen01).
  *   3. The page sells the moment above the fold — "Watch this run", the
@@ -63,6 +66,37 @@ async function replayState(page: Page): Promise<StateSeam> {
   return page.evaluate(() => (window as unknown as { __gwReplayState: () => StateSeam }).__gwReplayState())
 }
 
+/** PACING-PROOF rate proof (stage 5 salvage — the CI red): the playhead is
+ *  NEVER sampled after a wall-clock sleep — CI frame pacing (SwiftShader)
+ *  can make a 300 ms window hold zero rendered frames (the playhead reads
+ *  frozen) or one clamped giant (it reads off-step). The page's own pace
+ *  ledger (`__gwReplayPace`, cleared at every seek/play/speed discontinuity)
+ *  is polled instead, and the rate law is asserted PER RENDERED FRAME:
+ *  every interval of a contiguous play session must advance the playhead
+ *  by min(frame gap, 0.25 s) × rate. A multiplier cannot be faked by
+ *  waiting, and no frame rate is fast enough or slow enough to break it. */
+async function paceHeld(page: Page, rate: number): Promise<boolean> {
+  return page.evaluate(async (r: number) => {
+    const seam = () =>
+      (window as unknown as { __gwReplayPace?: () => [number, number, number][] }).__gwReplayPace?.() ?? []
+    const deadline = performance.now() + 30_000
+    for (;;) {
+      const p = seam()
+      let checked = 0
+      for (let i = 1; i < p.length; i++) {
+        if (p[i]![2] !== r || p[i - 1]![2] !== r) continue
+        checked++
+        const want = Math.min((p[i]![0]! - p[i - 1]![0]!) / 1000, 0.25) * r
+        const got = p[i]![1]! - p[i - 1]![1]!
+        if (Math.abs(got - want) > Math.max(1e-9, want * 0.01)) return false
+      }
+      if (checked >= 5) return true
+      if (performance.now() > deadline) return false
+      await new Promise((res) => requestAnimationFrame(res))
+    }
+  }, rate)
+}
+
 async function ensurePaused(page: Page): Promise<void> {
   // A click on Play at the END of the run restarts from 0 (real UX). If the
   // run auto-paused in the window between the aria read and the click, the
@@ -99,19 +133,23 @@ test.describe('stage 5 share link opens into the cinematic replay', () => {
       expect(tr.poses[i]).toEqual([...s.pos, ...s.quat])
     }
 
-    // ---- playback controls act on the playhead ----
+    // ---- playback controls act on the playhead — PACING-PROOF: paused
+    // means HELD across rendered frames (double-rAF, not a slept 350 ms),
+    // advance is POLLED on the state seam, and the rate is proven by the
+    // per-frame pace law above, never by a wall-clock snapshot ----
     const timeline = page.locator('#gw-replay-timeline')
     await timeline.focus()
     await page.keyboard.press('Home')
     await ensurePaused(page)
     const t1 = (await replayState(page)).t
-    await page.waitForTimeout(350)
-    expect((await replayState(page)).t).toBe(t1) // PAUSED holds the state
+    await page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => r())))))
+    expect((await replayState(page)).t, 'PAUSED must hold the state across rendered frames').toBe(t1)
 
     await page.click('#gw-replay-play') // play at 1x
-    await page.waitForTimeout(300)
-    const t2 = (await replayState(page)).t
-    expect(t2).toBeGreaterThan(t1)
+    await expect
+      .poll(async () => (await replayState(page)).t, { timeout: 30_000, message: 'Play never advanced the playhead' })
+      .toBeGreaterThan(t1)
+    expect(await paceHeld(page, 1), 'the 1x frames did not honour the pace law').toBe(true)
     await ensurePaused(page)
 
     await page.keyboard.press('Home')
@@ -119,9 +157,10 @@ test.describe('stage 5 share link opens into the cinematic replay', () => {
     const t3 = (await replayState(page)).t
     await page.click('.gw-replay-speed[data-speed="4"]')
     await page.click('#gw-replay-play')
-    await page.waitForTimeout(300)
-    const t4 = (await replayState(page)).t
-    expect(t4 - t3).toBeGreaterThanOrEqual(0.6) // 4x over 300 ms is 1.2 s of sim
+    await expect
+      .poll(async () => (await replayState(page)).t - t3, { timeout: 30_000, message: '4x never covered the sim window' })
+      .toBeGreaterThanOrEqual(0.6)
+    expect(await paceHeld(page, 4), 'the 4x frames did not honour the pace law').toBe(true)
     await ensurePaused(page)
 
     // ---- drag/click a tick: the seen state IS the node state at that step ----

@@ -44,7 +44,7 @@ import { PORCH03 } from './world/levels/porch03.level.ts';
 import { PORCH04 } from './world/levels/porch04.level.ts';
 import { PORCH05 } from './world/levels/porch05.level.ts';
 import { World, type RunStatus } from './world/world.ts';
-import { fixtureQuota, type Build } from './track/build.ts';
+import { fixtureQuota, serialize, type Build } from './track/build.ts';
 export { fixtureQuota };
 import { PIECES, pieceLabel } from './track/pieces.ts';
 import { fitSocket, SNAP_ANGLE_TOL, SNAP_TRANSLATION_TOL } from './track/snap.ts';
@@ -664,6 +664,22 @@ async function startReplayPlayer(
   let rate = 1;
   let dragging = false;
   let resumeAfterDrag = false;
+  /** Below this much remaining watchable motion a Play click rewinds to 0
+   *  (see the play-button comment — the dead-first-click fix). */
+  const PLAY_RESUME_MIN = Math.min(0.5, duration * 0.5);
+  /** The PACE LEDGER (e2e debug surface): [wallMs, playheadS, rate] for every
+   *  frame that ADVANCED the playhead. The share-replay rate law is asserted
+   *  from it PER RENDERED FRAME — advance === min(frame gap, 0.25 s) × rate —
+   *  because CI truth (SwiftShader) can make one frame outlast any fixed
+   *  wall-clock sampling wait: a 300 ms `waitForTimeout` on the 15.8 s
+   *  feeltrack link could hold zero frames (the playhead "never moved") or
+   *  one clamped giant. Any event that breaks frame-gap continuity (Play/
+   *  pause, seek, resume-after-drag, speed change) or clamps at the end
+   *  clears the ledger, so no asserted interval ever spans a discontinuity. */
+  const pace: [number, number, number][] = [];
+  const paceBreak = (): void => {
+    pace.length = 0;
+  };
 
   const renderAt = (t: number): void => {
     const k = stepAt(t);
@@ -698,8 +714,21 @@ async function startReplayPlayer(
     playBtn.setAttribute('aria-pressed', String(playing));
   };
   playBtn.addEventListener('click', () => {
-    if (!playing && time >= duration) time = 0;
+    // PLAY always STARTS MOTION when it is the resume click (playtest BB:
+    // "first Play click did nothing... second click worked"). The restart
+    // test used to be `time >= duration`, but the film LOOKS over long
+    // before it IS over: the finish lock-off holds on a settled cup for
+    // REPLAY_TAIL, and the last steps before the end crawl. A click that
+    // lands in that window (paused mid-tail from a scrub, or just after a
+    // pause taken during the hold) advanced one or two steps, hit the
+    // clamp, and re-paused — motion the eye cannot catch reads as a dead
+    // click, and only the NEXT click (now truly at the end) restarted.
+    // If the playable window left is shorter than a second of watchable
+    // motion, Play means REWIND AND PLAY — the tail's last sliver is the
+    // settle the viewer has already seen.
+    if (!playing && duration - time < PLAY_RESUME_MIN) time = 0;
     playing = !playing;
+    paceBreak();
     syncPlay();
   });
   const timeEl = document.createElement('span');
@@ -731,6 +760,7 @@ async function startReplayPlayer(
   };
   const seek = (t: number): void => {
     time = THREE.MathUtils.clamp(t, 0, duration);
+    paceBreak();
     syncBar();
     renderAt(time);
   };
@@ -758,6 +788,7 @@ async function startReplayPlayer(
     if (!dragging) return;
     dragging = false;
     playing = resumeAfterDrag && time < duration;
+    paceBreak();
     syncPlay();
     try {
       timeline.releasePointerCapture(ev.pointerId);
@@ -785,6 +816,7 @@ async function startReplayPlayer(
     b.textContent = `${s}×`;
     b.addEventListener('click', () => {
       rate = s;
+      paceBreak(); // the ledger's next interval carries the NEW multiplier
       for (const o of speedBtns) o.setAttribute('aria-pressed', String(o === b));
     });
     speedBtns.push(b);
@@ -832,7 +864,15 @@ async function startReplayPlayer(
       quat: [trace.quat[k * 4]!, trace.quat[k * 4 + 1]!, trace.quat[k * 4 + 2]!, trace.quat[k * 4 + 3]!],
     };
   };
+  // the pacing ledger of the CURRENT contiguous play session (see `pace`)
+  w.__gwReplayPace = (): [number, number, number][] => pace.map((p) => [p[0]!, p[1]!, p[2]!]);
   const cup = cupView(payload.build);
+  w.__gwReplayCarNdc = (): number[] | null => {
+    const k = stepAt(time);
+    camera.updateMatrixWorld();
+    const v = new THREE.Vector3(trace.pos[k * 3]!, trace.pos[k * 3 + 1]!, trace.pos[k * 3 + 2]!).project(camera);
+    return [v.x, v.y];
+  };
   w.__gwReplayGoalNdc = (): number[] | null => {
     if (!cup) return null;
     camera.updateMatrixWorld();
@@ -850,7 +890,11 @@ async function startReplayPlayer(
       if (time >= duration) {
         time = duration;
         playing = false;
+        paceBreak(); // a clamped final frame does not honour the law
         syncPlay();
+      } else {
+        pace.push([now, time, rate]);
+        if (pace.length > 240) pace.shift();
       }
       syncBar();
       renderAt(time);
@@ -1191,6 +1235,21 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // space near-tie and asserts which one the ring took (debug surface)
   (window as unknown as Record<string, unknown>).__gwOpenSockets = (): number[][] =>
     builder.openSockets().map((s) => [s.pos.x, s.pos.y, s.pos.z]);
+  // the e2e seam for the DISTINCT-OUTCOME tie law (playtest BB bug 3): the
+  // dry-run canonical hash of each tie candidate of the last aim, and the
+  // builder's current build for the test-side dry run (debug surface)
+  (window as unknown as Record<string, unknown>).__gwTieOutcomes = (): string[] => builder.tieOutcomes();
+  (window as unknown as Record<string, unknown>).__gwTieSockets = () =>
+    builder.tieSockets().map((s) => ({
+      pos: [s.pos.x, s.pos.y, s.pos.z],
+      tangent: [s.tangent.x, s.tangent.y, s.tangent.z],
+      up: [s.up.x, s.up.y, s.up.z],
+    }));
+  (window as unknown as Record<string, unknown>).__gwBuildJson = (): string => serialize(builder.build());
+  // the held piece's EXACT ghosting state (kind, tray-override params,
+  // flip) — so the test-side dry run of the tie law recomputes hashes at
+  // the inputs the app actually seats with (debug surface)
+  (window as unknown as Record<string, unknown>).__gwHeldState = () => builder.heldState();
   // the e2e seam for the FAILURE end-hold: the car's settled world
   // position — the death site the wide hold must keep in frame (debug
   // surface, not UI)
@@ -1361,6 +1420,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   (window as unknown as Record<string, unknown>).__gwTargetSocket = (): number[] | null => {
     const s = builder.targetSocket();
     return s ? [s.pos.x, s.pos.y, s.pos.z] : null;
+  };
+  // where a click lands ON the shown ring (client px) — the legit aim point
+  // for gesture specs under the aim reach law (debug surface)
+  (window as unknown as Record<string, unknown>).__gwTargetSocketPx = (): number[] | null => {
+    const p = builder.targetSocketPx();
+    return p ? [p.x, p.y] : null;
   };
 
   /** Star-gated progression (§9.2, playtest E/F/G): `Next level` appears

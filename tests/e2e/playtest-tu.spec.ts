@@ -285,12 +285,14 @@ test('T+U 1: a lost right-release cannot eat the next left click (zombie reconci
   page.on('pageerror', (err) => errors.push(String(err)))
   await page.goto('/?level=feeltrack')
   await ready(page)
-  const box = (await page.locator('#gw-canvas').boundingBox())!
-  const cx = box.x + box.width / 2
-  const cy = box.y + box.height / 2
   await page.hover('#gw-tray button[data-kind="straight"]')
   await expect(spoken(page)).not.toHaveText('', { timeout: 10_000 })
-  await page.mouse.move(cx, cy) // park the real pointer ON the ghost target
+  // park the real pointer ON the ghost target — the ring's own projection
+  // (the point the aim-reach law accepts as a click ON the shown ghost)
+  const tp = (await page.evaluate(() => (window as unknown as Record<string, () => number[] | null>).__gwTargetSocketPx())) as number[] | null
+  expect(tp, 'the ring must be on screen').not.toBeNull()
+  const [cx, cy] = tp!
+  await page.mouse.move(cx, cy)
   // a right press whose pointerup is LOST (menu-up / release over chrome):
   // dispatched here so no trusted pointerup ever reconciles it by hover
   await page.evaluate(
@@ -324,6 +326,9 @@ test('T+U 1: an empty-handed world click speaks instead of silently moving the r
   await ready(page)
   const box = (await page.locator('#gw-canvas').boundingBox())!
   await expect(spoken(page)).toHaveText('')
+  // nowhere in particular: the EMPTY-HAND line outranks the aim law's
+  // "nothing fits out here" — the missing thing is the piece (stage 5 BB
+  // ordering: a handless click about the hand, never about the aim)
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
   await expect(spoken(page)).toContainText('nothing in hand')
 })

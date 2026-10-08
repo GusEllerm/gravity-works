@@ -27,6 +27,7 @@
  *    not just the words "finish the run").
  */
 import { test, expect } from '@playwright/test'
+import PARS_JSON from '../../src/world/pars.json' with { type: 'json' }
 
 const ready = (page: import('@playwright/test').Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
@@ -222,16 +223,31 @@ test('every open rung and the first boot state THAT level’s par numbers', asyn
     )
   })
   await page.goto('/?levels=1')
-  // the rungs are the level's OWN par numbers from pars.json — asserted
-  // per rung (the N pass wired starRulesLine; the words alone proved the
-  // plumbing, not the addressing)
+  // the rungs are the level's OWN par numbers from pars.json — DERIVED from
+  // the table, not mirrored: the K3 re-sweep moved kitchen03's parTime and
+  // a hardcoded row went red on the merge. Asserted per rung (the N pass
+  // wired starRulesLine; the words alone proved the plumbing, not the
+  // addressing).
+  const par = (id: string): [string, string] => {
+    const row = (PARS_JSON as { levelId: string; parPieces: number; parTime: number }[]).find((p) => p.levelId === id)!
+    return [String(row.parPieces), row.parTime.toFixed(2)]
+  }
   const rungs: [string, string, string][] = [
+<<<<<<< HEAD
     ['kitchen01', '3', '2.25'],
     ['kitchen02', '3', '1.05'],
     ['kitchen03', '5', '1.45'],
     ['kitchen04', '4', '2.55'],
     ['kitchen05', '6', '2.40'],
     ['bedroom01', '3', '2.35'],
+=======
+    ['kitchen01', ...par('kitchen01')],
+    ['kitchen02', ...par('kitchen02')],
+    ['kitchen03', ...par('kitchen03')],
+    ['kitchen04', ...par('kitchen04')],
+    ['kitchen05', ...par('kitchen05')],
+    ['bedroom01', ...par('bedroom01')],
+>>>>>>> fe13d59
   ]
   for (const [id, pieces, time] of rungs) {
     const line = page.locator(`#gw-level-${id} .gw-level-rules`)
@@ -250,8 +266,13 @@ test('every open rung and the first boot state THAT level’s par numbers', asyn
   await boot.goto('/?level=kitchen03')
   await ready(boot)
   await expect(boot.locator('#gw-callout')).toContainText('Stars: finish the run')
+<<<<<<< HEAD
   await expect(boot.locator('#gw-callout')).toContainText('5 pieces (par)')
   await expect(boot.locator('#gw-callout')).toContainText('1.45 s (par = the target time for this run)')
+=======
+  await expect(boot.locator('#gw-callout')).toContainText(`${par('kitchen03')[0]} pieces (par)`)
+  await expect(boot.locator('#gw-callout')).toContainText(`${par('kitchen03')[1]} s (par = the target time for this run)`)
+>>>>>>> fe13d59
   await ctx2.close()
 
   expect(errors).toEqual([])

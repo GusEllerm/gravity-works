@@ -292,9 +292,13 @@ test('graphics hiccup: lost context pauses cleanly, one click restores a painted
     )
     .toBe(true)
   await page.hover('#gw-tray button[data-kind="straight"]')
-  const box = (await live(page)).box
   const before = await count(page).textContent()
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  // the ring's own projection — a LEGITIMATE place intent under the aim
+  // reach law (this cell proves the restored page is PLAYABLE, not that
+  // clicking empty space places)
+  const tp = (await page.evaluate(() => (window as unknown as Record<string, () => number[] | null>).__gwTargetSocketPx())) as number[] | null
+  expect(tp, 'the ring must be on screen after the restore').not.toBeNull()
+  await page.mouse.click(tp![0]!, tp![1]!)
   await expect(count(page)).not.toHaveText(before!, { timeout: 10_000 })
   expect(errors).toEqual([])
 })
