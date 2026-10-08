@@ -22,8 +22,16 @@
  * 4. THE WIND ANSWERS TO NO FRAME CLOCK — with the page BELIEVING it is
  *    backgrounded (visibilityState hidden) and rAF callbacks never firing
  *    (Chrome's hidden-tab behaviour: only timers run), the tape still
- *    winds to `ready` with the identical slice ledger. The chunk pump
- *    rides `setTimeout(0)`; rAF carries only the progress-label paint.
+ *    winds to `ready` with the identical slice ledger. The chunk pump rides
+ *    a MessageChannel port (`setTimeout(0)` only as the no-MessageChannel
+ *    fallback); rAF carries only the progress-label paint.
+ * 5. AND IT ANSWERS TO NO TIMER EITHER — with every page timer floored to
+ *    Chrome's intensive-throttling ONE WAKE PER MINUTE (what a tab hidden
+ *    past ~5 min actually gets), the tape still winds: the pump's clock is
+ *    a self-posted message-port task, which no timer clamp can stall.
+ *    (CDP offers no visibility override on this Playwright surface —
+ *    `Emulation.setPageVisibilityOverride` / `Browser.getWindowForContext`
+ *    probed absent — so the timer floor IS the hidden-tab harness.)
  */
 import { test, expect, type Page } from '@playwright/test'
 import zlib from 'node:zlib'
@@ -134,23 +142,47 @@ test.describe('stage 5 replay readiness (feel pass)', () => {
   test('2: an immediate Play click is remembered, the tape snaps to 0 and rolls to the end', async ({ page }) => {
     test.slow()
     const { url, node } = await kitchen01ShareUrl()
-    await page.goto(`/${url}`)
-    // click AS EARLY AS POSSIBLE — the moment a button exists. Landing on
-    // the waiting button (the CC stranger's move) is the queued-click
-    // proof; if the machine is fast and the tape is already rolling, do NOT
-    // click a playing film (that would PAUSE it) — autoplay carries the
-    // same ledger proof.
-    await page.waitForSelector('#gw-replay-play', { timeout: 15_000 })
-    const clickedWhileWaiting = await page.evaluate(() => {
-      const b = document.querySelector('#gw-replay-play') as HTMLButtonElement
-      if (b.dataset.phase !== 'waiting') return false
-      b.click()
-      return true
+    // THE WAITING STATE IS FORCED, NOT HOPED FOR (close review F-2 — no
+    // silent conditional): the `e2eWindSlice=1` knob makes the pump take
+    // ONE step per scheduled tick, and an init-script clicker presses the
+    // button in the microtask its own DOM append schedules — the first
+    // pump slice is a MESSAGE task, which cannot run before that
+    // microtask. The click therefore ALWAYS lands on the waiting button;
+    // both proofs below run ALWAYS, never behind an `if`.
+    await page.addInitScript(() => {
+      const rec = { clicked: false, phase: '' }
+      Object.defineProperty(window, '__gwEarlyClick', { value: rec })
+      const take = (): boolean => {
+        if (rec.clicked) return false
+        const b = document.querySelector('#gw-replay-play') as HTMLButtonElement | null
+        if (!b) return false
+        rec.clicked = true
+        rec.phase = b.dataset['phase'] ?? ''
+        b.click()
+        return true
+      }
+      const mo = new MutationObserver(() => {
+        if (take()) mo.disconnect()
+      })
+      // observe DOCUMENT, not documentElement — at init-script time the
+      // document may still have no root element to observe
+      mo.observe(document, { childList: true, subtree: true })
+      take()
     })
-    if (clickedWhileWaiting) {
-      // the click was QUEUED, not swallowed — and no second click follows
-      expect((await wind(page)).pendingPlay, 'the click during the wind must be remembered').toBe(true)
-    }
+    await page.goto(`/?e2eWindSlice=1${url}`)
+    // the click LANDED, and it landed on the WAITING face — always
+    await page.waitForFunction(
+      () => (window as never as { __gwEarlyClick: { clicked: boolean } }).__gwEarlyClick.clicked,
+      undefined,
+      { timeout: 15_000 },
+    )
+    const early = await page.evaluate(
+      () => (window as never as { __gwEarlyClick: { clicked: boolean; phase: string } }).__gwEarlyClick,
+    )
+    expect(early.clicked, 'the queued click must have happened').toBe(true)
+    expect(early.phase, 'the knob must force the click to land while WAITING').toBe('waiting')
+    // the click was QUEUED, not swallowed — and no second click follows
+    expect((await wind(page)).pendingPlay, 'the click during the wind must be remembered').toBe(true)
     // READY: the playhead SNAPS to 0 (never the pinned-at-end state of the
     // old build) and the film rolls without another click
     await page.waitForFunction(
@@ -180,6 +212,9 @@ test.describe('stage 5 replay readiness (feel pass)', () => {
         { timeout: 60_000 },
       )
       .toBe('ok')
+    // the queued click is VISIBLE in the ledger — unconditional now that the
+    // waiting state is forced: waiting → queued-click → playing → ended
+    expect(await phases(page), 'the ready path must honour the queued click').toContain('queued-click')
     // and it ENDS at the terminal time of the tape — the playhead is where
     // the run says it is
     const tEnd = await seam(page)
@@ -271,5 +306,55 @@ test.describe('stage 5 replay readiness (feel pass)', () => {
     expect(w.chunks.length, 'the hidden wind must still chunk').toBeGreaterThan(1)
     expect(w.chunks[w.chunks.length - 1]!.steps).toBe(node.steps)
     expect(w.chunks[w.chunks.length - 1]!.hash).toBe(node.hash)
+  })
+
+  test('5: a hidden tab with TIMERS clamped to one wake per minute still winds — the pump rides a message port', async ({ page }) => {
+    test.slow()
+    const { url, node } = await kitchen01ShareUrl()
+    // The hidden-tab TRUTH (close review F-1): a tab hidden past ~5 minutes
+    // gets Chrome's intensive throttling — chained timers aligned to roughly
+    // ONE WAKE PER MINUTE, so an N-slice timer-driven wind waits N minutes.
+    // The harness floors every page setTimeout/setInterval to 60 s (and
+    // swallows rAF, the other half of the hidden-tab story), which is the
+    // strongest clock a backgrounded page actually owns; the CDP page-
+    // visibility override does not exist on this Playwright surface (both
+    // `Emulation.setPageVisibilityOverride` and `Browser.getWindowForContext`
+    // were probed absent at write time), so the floor stands in for the
+    // real thing. On the old `setTimeout(0)` chain this test CANNOT pass
+    // inside its 30 s deadline; on the message-port pump the chunks arrive
+    // as message-loop tasks no clamp can stall.
+    await page.addInitScript(() => {
+      Object.defineProperty(document, 'visibilityState', { get: () => 'hidden', configurable: true })
+      Object.defineProperty(document, 'hidden', { get: () => true, configurable: true })
+      window.requestAnimationFrame = (): number => 0
+      const FLOOR = 60_000
+      const st = window.setTimeout.bind(window)
+      const si = window.setInterval.bind(window)
+      window.setTimeout = ((cb: TimerHandler, ms?: number, ...rest: unknown[]) =>
+        st(cb, Math.max(ms ?? 0, FLOOR), ...rest)) as typeof window.setTimeout
+      window.setInterval = ((cb: TimerHandler, ms?: number, ...rest: unknown[]) =>
+        si(cb, Math.max(ms ?? 0, FLOOR), ...rest)) as typeof window.setInterval
+    })
+    await page.goto(`/${url}`)
+    // THE PROBE CLOCK IS THIS PROCESS, not the page: every page-side timer
+    // is floored to a minute, so even `waitForFunction` with polling: 1000
+    // would pay a minute per tick. Node-side polling with REAL timers
+    // watches the seam; 30 s is several winds of the fixed pump.
+    const deadline = Date.now() + 30_000
+    let w: WindInfo | null = null
+    for (;;) {
+      try {
+        w = await wind(page)
+      } catch {
+        /* the seam is not up yet — keep polling */
+      }
+      if (w?.phase === 'ready' || Date.now() > deadline) break
+      await new Promise((r) => setTimeout(r, 200))
+    }
+    expect(await page.evaluate(() => document.visibilityState), 'the page must have believed it was hidden').toBe('hidden')
+    expect(w?.phase, 'the tape must wind to ready on message tasks alone').toBe('ready')
+    expect(w!.chunks.length, 'the floored wind must still chunk').toBeGreaterThan(1)
+    expect(w!.chunks[w!.chunks.length - 1]!.steps).toBe(node.steps)
+    expect(w!.chunks[w!.chunks.length - 1]!.hash).toBe(node.hash)
   })
 })

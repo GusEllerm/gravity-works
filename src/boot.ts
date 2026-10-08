@@ -767,19 +767,33 @@ async function startReplayPlayer(
   const recorder = new TapeRecorder(world, payload.build, { solids });
   const windT0 = performance.now();
   await new Promise<void>((resolve) => {
-    // THE PUMP CLOCK IS setTimeout(0) — rAF ONLY PAINTS (stage-5 CI-red +
-    // product-bug fix): the frame callback can be STARVED, not just slow.
-    // CI's SwiftShader compositor paces rAF coarsely, and Chrome stops
-    // firing rAF on a HIDDEN tab ENTIRELY — anything that waits on the
-    // frame callback for CHUNKS (the old 16 ms-timer-races-rAF arm) leaves
-    // the tape unwound there: CI's share-replay evaluate paid the wind and
-    // timed out at 30 s, and a visitor who backgrounded the tab today never
-    // got the tape. The slices now ride their OWN timer chain (a 0 ms
-    // timeout per slice, never more than one in flight), so chunks ALWAYS
-    // progress; rAF carries only the progress-label repaint — at most one
-    // paint in flight, skipped while no frames exist — so the bar still
+    // THE PUMP CLOCK IS A MESSAGE PORT — timers and rAF are BOTH untrusted
+    // (stage-5 CI-red fix, then the close-review F-1 fix on top of it). The
+    // frame callback can be STARVED, not just slow: CI's SwiftShader
+    // compositor paces rAF coarsely and Chrome stops firing rAF on a HIDDEN
+    // tab ENTIRELY, so the old rAF-raced arm left the tape unwound there.
+    // Its replacement — a chained setTimeout(0) — fixed the foreground and
+    // rAF never, but NOT the background: Chrome CLAMPS chained timers when
+    // hidden, and intensive throttling aligns a tab hidden past ~5 minutes
+    // to roughly ONE WAKE PER MINUTE, so an N-slice tape waits N minutes.
+    // The slices now ride their OWN MessageChannel port (a self-posted
+    // port message is a message-loop task — no timer to clamp), never more
+    // than one wake in flight, so chunks progress on ANY machine; the 0 ms
+    // timer survives only as the fallback for an engine without
+    // MessageChannel. rAF carries only the progress-label repaint — at most
+    // one paint in flight, skipped while no frames exist — so the bar still
     // counts on any machine that PAINTS, and the wind answers to no clock
-    // but its own budget.
+    // but its own budget (`tests/e2e/stage5-ready.spec.ts` item 4 proves
+    // rAF-independence, item 5 proves timer-clamp-independence).
+    // E2E SLICE KNOB — `?e2eWindSlice=N` forces EXACTLY N steps per
+    // scheduled tick (budget dropped) so a spec can make the WAITING state
+    // PERSIST and the queued-click proof never races the wind (close
+    // review F-2; the debug-param doctrine's line, as `?set=`). Absent the
+    // param — every real share link — the chunk law below is untouched.
+    const windSliceParam = new URLSearchParams(window.location.search).get('e2eWindSlice');
+    const windSteps =
+      windSliceParam === null ? WIND_CHUNK_STEPS : Math.max(1, Math.floor(Number(windSliceParam)) || 1);
+    const windBudgetMs = windSliceParam === null ? WIND_CHUNK_BUDGET_MS : 0;
     let pendingPaint = 0;
     const paint = (): void => {
       pendingPaint = 0;
@@ -787,19 +801,37 @@ async function startReplayPlayer(
       if (!wind.pendingPlay) windBtn.textContent = `⏳ winding the tape… ${pct}%`;
       windNote.textContent = `winding the tape… ${pct}%`;
     };
+    const pumpPort = typeof MessageChannel === 'function' ? new MessageChannel() : null;
+    let portArmed = false;
+    const schedulePump = (): void => {
+      if (pumpPort) {
+        if (portArmed) return; // never more than one wake in flight
+        portArmed = true;
+        pumpPort.port2.postMessage(0); // self-post: throttled by NOTHING
+      } else {
+        setTimeout(pumpSlice, 0); // fallback: an engine without MessageChannel
+      }
+    };
+    if (pumpPort) {
+      pumpPort.port1.onmessage = (): void => {
+        portArmed = false;
+        pumpSlice();
+      };
+    }
     const pumpSlice = (): void => {
       const t0 = performance.now();
       do {
-        recorder.pump(WIND_CHUNK_STEPS);
-      } while (!recorder.done && performance.now() - t0 < WIND_CHUNK_BUDGET_MS);
+        recorder.pump(windSteps);
+      } while (!recorder.done && performance.now() - t0 < windBudgetMs);
       wind.steps = recorder.totalSteps;
       if (recorder.done) {
         if (pendingPaint) cancelAnimationFrame(pendingPaint);
+        pumpPort?.port1.close();
         resolve();
         return;
       }
       if (!pendingPaint) pendingPaint = requestAnimationFrame(paint);
-      setTimeout(pumpSlice, 0);
+      schedulePump();
     };
     pumpSlice();
   });

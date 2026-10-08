@@ -39,7 +39,7 @@ in src/boot.ts:1525 and src/ui/levelselect.ts:112 — a search swap reloads), so
 | target | mutation | outcome |
 | stage5-ready.spec.ts item 4 | pump rides `requestAnimationFrame` instead of `setTimeout(0)` (src/boot.ts:802) | RED — never reaches `ready`, 90 s timeout (baseline 5.9 s green) |
 | share-replay pace/pump additions | playhead clamp removed in the replay loop (`dt = (now-last)/1000`, src/boot.ts:1058), run under `E2E_STARVE_RAF_MS=300` | RED — "the 1x frames did not honour the pace law" (baseline green) |
-| stage5-bb-feel item 3 (aim range) | NOT RUN — turn limit | unverified |
+| stage5-bb-feel item 3 (aim range) | `HOVER_PX` snap range widened 120 → 5000 px (src/ui/builder.ts:121) — RUN AT CLOSE-OUT, was the turn-limit skip | RED — the far click PLACES a Landing: `#gw-ghost-state` reads "last Landing placed — pick another piece", never "nothing fits out here" (baseline 4.9 s green, reverted) |
 | aim-outcomes tie law (unit) | `distinctOutcomes` dedup removed (src/ui/builder.ts:203) | RED — 3/5 fail (baseline 5/5 green) |
 | tools/replay-all.mjs | `kitchen01.parTime` −1.00 s in src/world/pars.json | RED — `FAIL: time 2.233 > 1.25`, exit 1 (baseline 26/26) |
 
@@ -69,3 +69,10 @@ the boot read sites coalesce (`loadSave().settings.reducedMotion ?? false`, mute
 run (4 of 5 targets, each RED), the sound frame sink is read-only and leak-free per document, and
 nothing in the diff is broken. Two follow-ups: F-1 (background-tab winding stall) and F-2
 (conditional proof), plus the unrun aim-range mutation.
+
+*(Close-out addendum, same day: all three follow-ups CLEARED pre-tag — the pump rides a
+self-posted `MessageChannel` port with the 0 ms timer as fallback (item 5 floors page timers to
+1/min; RED on the timer chain, GREEN on the port), the waiting state is forced deterministically
+(`e2eWindSlice` knob + init-script click, no conditional), and the aim-range mutation finally ran
+RED — table now 5 of 5. Trail:
+[[Sessions/2026-10-10 Stage 5 - BB feel fixes]].)*
