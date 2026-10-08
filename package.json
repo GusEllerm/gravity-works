@@ -14,7 +14,8 @@
     "pars": "node scripts/gen-pars.mjs",
     "render": "node tools/render.mjs",
     "feel": "node tools/feel.mjs",
-    "replay:all": "node tools/replay-all.mjs"
+    "replay:all": "node tools/replay-all.mjs",
+    "perf:table": "node tools/perf-table.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
