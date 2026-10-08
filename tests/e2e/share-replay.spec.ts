@@ -158,6 +158,12 @@ async function ensurePaused(page: Page): Promise<void> {
 
 test.describe('stage 5 share link opens into the cinematic replay', () => {
   test('the trace, the seek and the playhead are the deterministic sim', async ({ page }) => {
+    // CI's SwiftShader paces rAF frames at hundreds of ms; the pace-law clamp
+    // (honestly: never jump, at most 2 frames per tick) then covers the
+    // window slower than 4x wall. The law stays asserted exactly; only the
+    // patience grows (a bare 30 s budget flaked red under parallel load).
+    test.slow()
+    test.setTimeout(180_000) // the 90 s coverage poll must sit inside the budget
     const build = FEELTRACK.placeholderBuild()
     const node = await replayRun(FEELTRACK, build, { record: true })
     await openShare(page, build.levelId, build.seed, node.hash, build)
@@ -204,7 +210,7 @@ test.describe('stage 5 share link opens into the cinematic replay', () => {
     await page.click('.gw-replay-speed[data-speed="4"]')
     await page.click('#gw-replay-play')
     await expect
-      .poll(async () => (await replayState(page)).t - t3, { timeout: 30_000, message: '4x never covered the sim window' })
+      .poll(async () => (await replayState(page)).t - t3, { timeout: 90_000, message: '4x never covered the sim window' })
       .toBeGreaterThanOrEqual(0.6)
     expect(await paceHeld(page, 4), 'the 4x frames did not honour the pace law').toBe(true)
     await ensurePaused(page)

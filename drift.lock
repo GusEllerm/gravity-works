@@ -558,7 +558,7 @@ sig = "3d3537c9c8b3f35a"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "tests/e2e/share-replay.spec.ts"
-sig = "a8309bf8bad17539"
+sig = "5c68af0bc1a2ebd1"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
