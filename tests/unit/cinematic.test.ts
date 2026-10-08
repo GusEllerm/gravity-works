@@ -19,7 +19,7 @@ import * as THREE from 'three';
 import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts';
 import { World } from '../../src/world/world.ts';
 import { replayRun } from '../../src/replay/replay.ts';
-import { ReplayDirector, deriveEvents, planShots, stepAndRecord } from '../../src/replay/cinematic.ts';
+import { ReplayDirector, deriveEvents, planShots, stepAndRecord, TapeRecorder } from '../../src/replay/cinematic.ts';
 
 describe('cinematic replay record', () => {
   test('the recorded trace equals the node replay trace exactly, step for step', async () => {
@@ -67,6 +67,56 @@ describe('cinematic replay record', () => {
     // events match the node stream through the same pure derivation
     const node = await replayRun(FEELTRACK, build, { record: true });
     expect(deriveEvents(node.trace!, node.status)).toEqual(ta.events);
+  });
+
+  test('the chunked wind IS the one-shot wind: same trace, and every slice boundary lands on the same state hash', async () => {
+    // The share page pumps a `TapeRecorder` in rAF-sized slices (feel pass,
+    // Playtest CC: no six-second silent block). Chunking may only ever be a
+    // SCHEDULING decision — so the sliced record must equal the one-shot
+    // record EXACTLY, and the hash at every slice boundary must equal the
+    // one-shot sim's hash after the same number of steps.
+    const build = FEELTRACK.placeholderBuild();
+    const node = await replayRun(FEELTRACK, build, { record: true });
+    // (1) one-shot reference trace
+    const wa = await World.create(FEELTRACK, build, { visuals: false });
+    const oneShot = stepAndRecord(wa, build);
+    wa.dispose();
+    // (2) the one-shot law's hash after EVERY step, twin world stepped 1-by-1
+    const wc = await World.create(FEELTRACK, build, { visuals: false });
+    const hashAfterStep: string[] = [];
+    wc.launch();
+    while (wc.status === 'running' && wc.stepCount < node.steps) {
+      wc.step();
+      hashAfterStep.push(wc.hashHex());
+    }
+    wc.dispose();
+    expect(hashAfterStep.length).toBe(node.steps);
+    // (3) the chunked wind: 7-step slices (deliberately not a divisor of
+    // the run length, so the final short slice is exercised too)
+    const wd = await World.create(FEELTRACK, build, { visuals: false });
+    const rec = new TapeRecorder(wd, build);
+    const boundaries: { steps: number; hash: string }[] = [];
+    while (!rec.done) {
+      rec.pump(7);
+      boundaries.push({ steps: rec.totalSteps, hash: rec.hashHex });
+      // the invariant HOLDS AT EVERY SLICE, not just at the end
+      expect(rec.hashHex).toBe(hashAfterStep[rec.totalSteps - 1]!);
+    }
+    const trace = rec.finish();
+    wd.dispose();
+    expect(trace.steps).toBe(node.steps);
+    expect(trace.hash).toBe(node.hash);
+    expect(Array.from(trace.pos)).toEqual(Array.from(oneShot.pos));
+    expect(Array.from(trace.quat)).toEqual(Array.from(oneShot.quat));
+    expect(Array.from(trace.followPos)).toEqual(Array.from(oneShot.followPos));
+    expect(trace.events).toEqual(oneShot.events);
+    expect(trace.plan).toEqual(oneShot.plan);
+    // the recorder's own slice ledger agrees with the manual boundaries
+    expect(rec.sliceHashes.map((c) => c.steps)).toEqual(boundaries.map((c) => c.steps));
+    expect(rec.sliceHashes.map((c) => c.hash)).toEqual(boundaries.map((c) => c.hash));
+    const lastB = boundaries[boundaries.length - 1]!;
+    expect(lastB.steps).toBe(node.steps);
+    expect(lastB.hash).toBe(node.hash);
   });
 
   test('the plan is at least three contiguous shots tiling the replay', async () => {

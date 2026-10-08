@@ -110,3 +110,40 @@ so the 1.0 s boundary is never inside the run; the floor was tuned on faster box
 same wall-clock-against-a-run-clock shape as the share-replay flake. CI does not run this
 config (workflow runs the main suite only), so it is left for its owner with the measurement
 here rather than loosened silently from a feel branch.
+
+---
+
+## Addendum — replay readiness (feel pass on Playtest CC item (a), branch `stage5-ready`, worktree `gw-feel17`)
+
+CC's stranger clicked Play on a share link and the film answered ~6 s late, playhead pinned at the
+end the whole time — the double-click-and-give-up window. Cause, measured here: the ready path paid
+TWO one-shot simulations (the `replayRun` verdict and the synchronous `stepAndRecord` fast-forward)
+plus a one-time ~870 ms post-stack shader compile, all on a blocked main thread behind a button
+that still read "Play" (`livedocs: snapshot` of the pre-fix probe: bar up 1.36 s, one 925 ms block).
+
+What changed:
+
+- `TapeRecorder` (`src/replay/cinematic.ts`) — the old `stepAndRecord` loop as a resumable state
+  machine: `pump(n)` (≤ n fixed steps), `done`, `totalSteps`, `hashHex`, `sliceHashes` (state hash
+  at every pumped boundary), `finish()`. `stepAndRecord` is now the one-shot wrapper over it.
+- `bootSharedRun`/`startReplayPlayer` (`src/boot.ts`): ONE chunked wind replaces the two sims; the
+  wind settles the verdict (headless `replayRun` survives only as the could-not-mount fallback).
+  The bar goes up FIRST in a waiting state (`data-phase="waiting"`, `aria-busy`, "⏳ winding the
+  tape… N%" + `#gw-replay-progress`, no `aria-pressed`) with a pre-wind wide preview frame; a click
+  during the wind sets `pendingPlay` (label "queued"), honoured on ready with the playhead snapped
+  to 0; `__gwReplayWind()` / `__gwReplayPhases()` are the e2e seams. The post stack is built BEFORE
+  the wind — measured cheaper than scene-shaders-then-stack (1.20 s vs 1.96 s to first frame here).
+- Chunk law: `WIND_CHUNK_STEPS = 32` fixed steps per pump, `WIND_CHUNK_BUDGET_MS = 8` per slice;
+  the slice clock is rAF-armed but timer-raced, so a slow compositor cannot stretch the wind.
+
+Measured on this box: waiting bar at ~150 ms; wind is ~50 ms of sim work across 9 slices (label
+counts 0→96 % before the tape is ready); verdict `verified` the moment the wind ends; first painted
+traced frame ~1.2 s (dominated by the software-GL shader compile, now inside the honest waiting
+window); playhead 0.03 s at the ready sample, terminal 3.01 s at ~4 s of watching; ledger
+`waiting → queued-click → playing → paused → ended`. Hashes unchanged through all of it: 268 steps,
+`d32417dc`, equal to the one-shot `replayRun` result AND equal slice-by-slice against a Node
+`World` stepped to the same boundaries (`tests/e2e/stage5-ready.spec.ts` 3, `tests/unit/cinematic.test.ts`).
+
+Proofs: 695 unit green (one new chunking test); e2e full suite 166 passed / 1 skipped incl. the
+three new readiness specs and every prior share/replay gate (`share-replay`, `replay`, the BB
+`1a/1b` play-click laws, `determinism`, `replay-red`).

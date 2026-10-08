@@ -211,86 +211,194 @@ export interface StepAndRecordOptions {
 }
 
 /**
+ * The resumable half of `stepAndRecord` (stage 5 feel: replay readiness).
+ * The whole fast-forward used to be one synchronous loop — on a share link
+ * that opened straight into the film it was SIX SILENT SECONDS of blocked
+ * main thread behind a button that still read "Play" (Playtest CC: strangers
+ * double-click and give up). The recorder is the SAME stepping code cut into
+ * a state machine: `pump(n)` runs AT MOST `n` further fixed steps (fewer if
+ * the run is already over), so a caller can spread the wind across rAF
+ * slices, watch `steps` grow against a known denominator for an honest
+ * "winding the tape… 40%", and paint between slices. `finish()` does what the
+ * tail of the old loop did and is the ONLY place the trace is assembled.
+ *
+ * The determinism invariant: slicing changes only WHEN steps run, never
+ * their order or number — per slice the world hash advances exactly as the
+ * one-shot loop advances it, so `finish()` reports the identical trace and
+ * the identical terminal hash (`stepAndRecord` stays the one-shot wrapper,
+ * and `tests/e2e/share-replay.spec.ts` still compares step-for-step against
+ * `replayRun({record:true})`). Call `pump` until `done`, then `finish` once.
+ */
+export class TapeRecorder {
+  private readonly world: World;
+  private readonly cap: number;
+  private readonly rig: KitRig;
+  private readonly hasRail: boolean;
+  private readonly follow: RunCamera | null;
+  private readonly samples: (EventSample & { arc: number })[] = [];
+  private readonly carPos: number[] = [];
+  private readonly carQuat: number[] = [];
+  private readonly camPos: number[] = [];
+  private readonly camQuat: number[] = [];
+  private arc = 0;
+  private launched = false;
+  private readonly _sliceHashes: { steps: number; hash: string }[] = [];
+
+  constructor(world: World, build: Build, options: StepAndRecordOptions = {}) {
+    this.world = world;
+    this.cap = options.maxSteps ?? REPLAY_MAX_STEPS;
+    this.rig = new KitRig(build, SIM_SCALE);
+    this.hasRail = this.rig.length > 1e-9;
+    const cup = finishCapture(build);
+    const finishArc = cup && this.hasRail ? this.rig.nearestArcInfo(cup.center).arc : undefined;
+    this.follow = this.hasRail
+      ? new RunCamera(this.rig, 0, { solids: options.solids ?? [], finishArc })
+      : null;
+  }
+
+  /** Advance at most `n` fixed steps (a no-op-safe resume). */
+  pump(n: number): void {
+    if (!this.launched) {
+      this.launched = true;
+      this.world.launch();
+      this.arc = this.hasRail ? this.rig.nearestArcInfo(this.world.state().car.pos).arc : 0;
+      this.follow?.snap(this.arc, this.world.state().car.speed);
+    }
+    const world = this.world;
+    const from = world.stepCount;
+    const end = Math.min(this.cap, world.stepCount + Math.max(0, n | 0));
+    while (world.stepCount < end && world.status === 'running') {
+      world.step();
+      const s = world.state();
+      this.arc = this.hasRail ? this.rig.nearestArcInfo(s.car.pos).arc : this.arc + s.car.speed * FIXED_DT;
+      if (this.follow) {
+        this.follow.update(FIXED_DT, this.arc, s.car.speed, s.car.pos);
+        this.camPos.push(
+          this.follow.position.x,
+          this.follow.position.y,
+          this.follow.position.z,
+        );
+        this.camQuat.push(
+          this.follow.rotation.x,
+          this.follow.rotation.y,
+          this.follow.rotation.z,
+          this.follow.rotation.w,
+        );
+      } else {
+        // no rail to ride (a rail-less rig): a stiff low side-pass of the car —
+        // still a composed shot, never a chase cam welded to the chassis
+        const cx = s.car.pos.x;
+        const cy = s.car.pos.y;
+        const cz = s.car.pos.z;
+        this.camPos.push(cx - 0.28, cy + 0.16, cz + 0.28);
+        scratchLook.set(cx, cy, cz);
+        scratchEye.set(
+          this.camPos[this.camPos.length - 3]!,
+          this.camPos[this.camPos.length - 2]!,
+          this.camPos[this.camPos.length - 1]!,
+        );
+        scratchM.lookAt(scratchEye, scratchLook, UP);
+        scratchQ.setFromRotationMatrix(scratchM);
+        this.camQuat.push(scratchQ.x, scratchQ.y, scratchQ.z, scratchQ.w);
+      }
+      this.carPos.push(s.car.pos.x, s.car.pos.y, s.car.pos.z);
+      this.carQuat.push(s.car.quat.x, s.car.quat.y, s.car.quat.z, s.car.quat.w);
+      this.samples.push({ t: world.time, speed: s.car.speed, grounded: s.car.grounded, arc: this.arc });
+    }
+    if (world.stepCount !== from) {
+      this._sliceHashes.push({ steps: world.stepCount, hash: world.hashHex() });
+    }
+  }
+
+  /** One entry per `pump` call that advanced the world: the world step
+   *  reached and the STATE HASH at that slice boundary. Slicing is only
+   *  ever a scheduling decision — the k-th slice hash equals the one-shot
+   *  wind's hash after the same number of steps, which is what
+   *  `tests/e2e/stage5-ready.spec.ts` asserts slice by slice against a
+   *  Node `World` stepped to the same boundaries. */
+  get sliceHashes(): readonly { steps: number; hash: string }[] {
+    return this._sliceHashes;
+  }
+
+  /** The number of steps recorded so far (the progress numerator). */
+  get steps(): number {
+    return this.samples.length;
+  }
+
+  /** Fixed sim steps executed so far. The share page's CHUNK PROGRESS law
+   *  (feel pass, Playtest CC): a chunk that ends at world step `k` leaves
+   *  the world's state hash EQUAL to the hash the one-shot wind has after
+   *  `k` steps — the slice boundary is a mid-run hash, not just a terminal
+   *  one (`tests/e2e/stage5-ready.spec.ts` asserts this against
+   *  `replayRun({record:true})` step hashes). */
+  get totalSteps(): number {
+    return this.world.stepCount;
+  }
+
+  /** State hash at the LAST pumped step — the mid-run slice hash described
+   *  above; equals the trace's terminal `hash` once `done`. */
+  get hashHex(): string {
+    return this.world.hashHex();
+  }
+
+  /** The wind is over: terminal status or the cap (before the first pump
+   *  the run has not STARTED, so the wind is by definition not over). */
+  get done(): boolean {
+    return this.launched
+      && (this.world.status !== 'running' || this.world.stepCount >= this.cap);
+  }
+
+  /** The trace — call once, when `done`. */
+  finish(): RunTrace {
+    const world = this.world;
+    const n = this.samples.length;
+    const pos = new Float64Array(this.carPos);
+    const quat = new Float64Array(this.carQuat);
+    const speed = new Float64Array(n);
+    const arcs = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      speed[i] = this.samples[i]!.speed;
+      arcs[i] = this.samples[i]!.arc;
+    }
+    const events = deriveEvents(this.samples, world.status);
+    const time = n > 0 ? this.samples[n - 1]!.t : 0;
+    return {
+      dt: FIXED_DT,
+      steps: n,
+      time,
+      duration: time + REPLAY_TAIL,
+      status: world.status,
+      hash: world.hashHex(),
+      pos,
+      quat,
+      speed,
+      arc: arcs,
+      followPos: new Float64Array(this.camPos),
+      followQuat: new Float64Array(this.camQuat),
+      events,
+      plan: planShots(time, events),
+    };
+  }
+}
+
+/**
  * Launch the world, step it to the terminal status or the cap, and record
  * every step: the car state the sim itself produced (identical to what
  * `replayRun({record:true})` stores, so the two lists compare step for step)
  * plus the follow camera advanced at `FIXED_DT`. This IS the fast-forward:
  * the whole run's truth is stored before playback starts, and playback never
- * steps physics again.
+ * steps physics again. The share page does NOT call this — it pumps a
+ * `TapeRecorder` across rAF slices; this one-shot wrapper (everything in one
+ * slice) stays the reference the specs pin chunking against.
  */
 export function stepAndRecord(
   world: World,
   build: Build,
   options: StepAndRecordOptions = {},
 ): RunTrace {
-  const cap = options.maxSteps ?? REPLAY_MAX_STEPS;
-  const rig = new KitRig(build, SIM_SCALE);
-  const hasRail = rig.length > 1e-9;
-  const cup = finishCapture(build);
-  const finishArc = cup && hasRail ? rig.nearestArcInfo(cup.center).arc : undefined;
-  const follow = hasRail ? new RunCamera(rig, 0, { solids: options.solids ?? [], finishArc }) : null;
-
-  const samples: (EventSample & { arc: number })[] = [];
-  const carPos: number[] = [];
-  const carQuat: number[] = [];
-  const camPos: number[] = [];
-  const camQuat: number[] = [];
-  world.launch();
-  let arc = hasRail ? rig.nearestArcInfo(world.state().car.pos).arc : 0;
-  follow?.snap(arc, world.state().car.speed);
-  while (world.stepCount < cap && world.status === 'running') {
-    world.step();
-    const s = world.state();
-    arc = hasRail ? rig.nearestArcInfo(s.car.pos).arc : arc + s.car.speed * FIXED_DT;
-    if (follow) {
-      follow.update(FIXED_DT, arc, s.car.speed, s.car.pos);
-      camPos.push(follow.position.x, follow.position.y, follow.position.z);
-      camQuat.push(follow.rotation.x, follow.rotation.y, follow.rotation.z, follow.rotation.w);
-    } else {
-      // no rail to ride (a rail-less rig): a stiff low side-pass of the car —
-      // still a composed shot, never a chase cam welded to the chassis
-      const cx = s.car.pos.x;
-      const cy = s.car.pos.y;
-      const cz = s.car.pos.z;
-      camPos.push(cx - 0.28, cy + 0.16, cz + 0.28);
-      scratchLook.set(cx, cy, cz);
-      scratchEye.set(camPos[camPos.length - 3]!, camPos[camPos.length - 2]!, camPos[camPos.length - 1]!);
-      scratchM.lookAt(scratchEye, scratchLook, UP);
-      scratchQ.setFromRotationMatrix(scratchM);
-      camQuat.push(scratchQ.x, scratchQ.y, scratchQ.z, scratchQ.w);
-    }
-    carPos.push(s.car.pos.x, s.car.pos.y, s.car.pos.z);
-    carQuat.push(s.car.quat.x, s.car.quat.y, s.car.quat.z, s.car.quat.w);
-    samples.push({ t: world.time, speed: s.car.speed, grounded: s.car.grounded, arc });
-  }
-
-  const n = samples.length;
-  const pos = new Float64Array(carPos);
-  const quat = new Float64Array(carQuat);
-  const speed = new Float64Array(n);
-  const arcs = new Float64Array(n);
-  for (let i = 0; i < n; i++) {
-    speed[i] = samples[i]!.speed;
-    arcs[i] = samples[i]!.arc;
-  }
-  const events = deriveEvents(samples, world.status);
-  const time = n > 0 ? samples[n - 1]!.t : 0;
-  return {
-    dt: FIXED_DT,
-    steps: n,
-    time,
-    duration: time + REPLAY_TAIL,
-    status: world.status,
-    hash: world.hashHex(),
-    pos,
-    quat,
-    speed,
-    arc: arcs,
-    followPos: new Float64Array(camPos),
-    followQuat: new Float64Array(camQuat),
-    events,
-    plan: planShots(time, events),
-  };
+  const rec = new TapeRecorder(world, build, options);
+  rec.pump(options.maxSteps ?? REPLAY_MAX_STEPS);
+  return rec.finish();
 }
 
 /** The finish shot's anchor: the cup's capture centre and the rail tangent

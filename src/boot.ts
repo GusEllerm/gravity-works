@@ -54,7 +54,7 @@ import type { Level } from './world/level.ts';
 import { createBuilder, type Builder } from './ui/builder.ts';
 import { encodeShareUrl, parseShareUrl, type SharePayload } from './share/share.ts';
 import { replayRun } from './replay/replay.ts';
-import { stepAndRecord, ReplayDirector, cupView, REPLAY_FOV } from './replay/cinematic.ts';
+import { TapeRecorder, ReplayDirector, cupView, REPLAY_FOV } from './replay/cinematic.ts';
 import { createBuildAutosave, loadSave, rememberBuild, recordStars, savedBuild } from './save/save.ts';
 import { createSound, upAxisYOfQuat } from './sound/sound.ts';
 import { SET_TOKENS } from './render/tokens.ts';
@@ -466,13 +466,18 @@ function paragraph(id: string, parent: HTMLElement, role = 'status'): HTMLParagr
 // ---- shared-run page --------------------------------------------------------
 //
 // Stage 5: a share link OPENS INTO the replay. The verification half is
-// unchanged and still honest (`parseShareUrl` → `replayRun` → compare →
-// `verified`/`mismatch` in `#gw-replay-status`, now in the section BELOW the
-// fold); above it the page is a cinematic player — the same deterministic
-// run recorded step-for-step by `stepAndRecord` (`src/replay/cinematic.ts`)
-// and rendered through a three-shot camera sequence with the house post
-// stack, scrubber and all. Playback reads recorded sim states only: seeking
-// never invents a state between two steps.
+// unchanged and still honest — the tape IS the verification: the chunked
+// wind (`TapeRecorder`, below) steps the deterministic sim in rAF-sized
+// slices and its terminal hash is the verdict — `parseShareUrl` → wind →
+// compare → `verified`/`mismatch` in `#gw-replay-status`, now in the
+// section BELOW the fold; above it the page is a cinematic player — the
+// same deterministic run recorded step-for-step by `TapeRecorder.pump` and
+// rendered through a three-shot camera sequence with the house post stack,
+// scrubber and all. Playback reads recorded sim states only: seeking never
+// invents a state between two steps. Readiness has a SURFACE (feel pass,
+// Playtest CC: "the tape only starts ~6 s after the click"): the bar is
+// up-front WAITING with a progress label, a click during the wind is
+// QUEUED not swallowed, and on ready the playhead snaps to 0 and rolls.
 
 async function bootSharedRun(root: HTMLElement): Promise<void> {
   root.innerHTML = '';
@@ -526,37 +531,54 @@ async function bootSharedRun(root: HTMLElement): Promise<void> {
     return;
   }
   embedded.textContent = `link hash ${payload.hash}`;
-  let verified = false;
-  let runInfo: { time: number; status: RunStatus } = { time: 0, status: 'timeout' };
-  try {
-    const run = await replayRun(level, payload.build);
-    runInfo = { time: run.time, status: run.status };
-    computed.textContent = `replay hash ${run.hash}`;
-    verified = run.hash === payload.hash;
-    status.textContent = verified ? 'verified' : 'mismatch';
+  // The verdict is LAZY: the cinematic wind settles it as soon as the tape
+  // is done (`settle` below), and the share card reads `run` at click time.
+  // Nothing here blocks the bar on a simulation any more.
+  const run: { time: number; status: RunStatus; verified: boolean } = {
+    time: 0,
+    status: 'timeout',
+    verified: false,
+  };
+  let verdictSettled = false;
+  const settle = (hash: string, time: number, st: RunStatus): boolean => {
+    run.time = time;
+    run.status = st;
+    run.verified = hash === payload.hash;
+    verdictSettled = true;
+    computed.textContent = `replay hash ${hash}`;
+    status.textContent = run.verified ? 'verified' : 'mismatch';
     badge.hidden = false;
-    badge.textContent = verified ? '✓ verified on this machine' : '⚠ differs on this machine';
-  } catch {
-    status.textContent = 'mismatch';
-  }
-  wireShareCard(verify, payload, level, runInfo, verified);
+    badge.textContent = run.verified ? '✓ verified on this machine' : '⚠ differs on this machine';
+    return run.verified;
+  };
+  wireShareCard(verify, payload, level, run);
 
   // the cinematic layer — a failed WebGL build must never eat the verdict
-  // the specs (and the visitor) came for
+  // the specs (and the visitor) came for: if the player cannot mount (or
+  // died before the wind settled the verdict), fall back to the headless
+  // one-shot replay for the verdict alone.
   try {
-    await startReplayPlayer({ stage, bar }, level, payload, verified);
+    await startReplayPlayer({ stage, bar }, level, payload, settle);
   } catch {
     bar.hidden = true;
+    if (!verdictSettled) {
+      try {
+        const headless = await replayRun(level, payload.build);
+        settle(headless.hash, headless.time, headless.status);
+      } catch {
+        status.textContent = 'mismatch';
+      }
+    }
   }
 }
 
-/** Brief §9.4: the share page exports the run as a share-card PNG. */
+/** Brief §9.4: the share page exports the run as a share-card PNG. The run
+ *  fields are read at CLICK time from the lazy verdict object. */
 function wireShareCard(
   root: HTMLElement,
   payload: { levelId: string; build: Build; hash: string },
   level: Level,
-  run: { time: number; status: RunStatus },
-  verified: boolean,
+  run: { time: number; status: RunStatus; verified: boolean },
 ): void {
   const cardStatus = paragraph('gw-card-status', root, 'text');
   const button = document.createElement('button');
@@ -582,7 +604,7 @@ function wireShareCard(
       time: run.time,
       stars: starsFor(result, parFor(payload.levelId, level.par)),
       url: window.location.href,
-      verified,
+      verified: run.verified,
     })
       .then((blob) => {
         downloadBlob(blob, `gravity-works-${payload.levelId}.png`);
@@ -596,23 +618,88 @@ function wireShareCard(
 
 // ---- cinematic replay player (stage 5) ---------------------------------------
 
+/** The chunk law of the wind (feel pass, Playtest CC): pump at most 32
+ *  fixed sim steps per pump and no more than 8 ms of wall clock per rAF
+ *  slice — half a 60 Hz frame, so the page keeps painting and answering
+ *  clicks while the tape winds. 32 steps ≈ 0.27 s of film per slice, which
+ *  on a typical kitchen run (≈270 steps) finishes well inside 1.5 s of
+ *  first paint while staying interactive the whole way. */
+const WIND_CHUNK_STEPS = 32;
+const WIND_CHUNK_BUDGET_MS = 8;
+
 /**
  * The replay half of the shared-run page: mount the level's set and build in
- * a visual `World`, record the run step-for-step (`stepAndRecord` — the whole
- * sim fast-forward happens here, before the first painted frame), then hand
- * the trace to the shot-sequence director and a scrubber. Playback reads ONLY
- * recorded sim states (`stepAt` floors to a step, never blends two); the
- * camera poses are functions of sim time alone, so 1×/2×/4× and any seek
- * cannot perturb what is shown. The build-view gesture stack is untouched —
- * nothing here attaches to the game page.
+ * a visual `World`, wind the run step-for-step (`TapeRecorder` pumped
+ * across rAF slices — the tape BUILD is now a progress-reported, resumable
+ * wind, not a silent synchronous block), then hand the trace to the shot-
+ * sequence director and a scrubber. Playback reads ONLY recorded sim states
+ * (`stepAt` floors to a step, never blends two); the camera poses are
+ * functions of sim time alone, so 1×/2×/4× and any seek cannot perturb what
+ * is shown. The build-view gesture stack is untouched — nothing here
+ * attaches to the game page. `settle` gets the terminal hash the moment the
+ * wind ends — the tape IS the verification (the hash equals the headless
+ * `replayRun` hash by the determinism law the specs pin).
  */
 async function startReplayPlayer(
   host: { stage: HTMLElement; bar: HTMLElement },
   level: Level,
   payload: SharePayload,
-  verified: boolean,
+  settle: (hash: string, time: number, status: RunStatus) => boolean,
 ): Promise<void> {
   const { stage, bar } = host;
+  // ---- READINESS FIRST (feel pass, Playtest CC: "first Play click works,
+  // but the tape only starts ~6 s after the click… the button still reads
+  // Play, so a stranger double-clicks"). The bar goes up BEFORE any heavy
+  // work in a WAITING state: a spinner label with honest progress, never a
+  // dead button. A click during the wind is QUEUED — auto-plays from 0 the
+  // instant the tape is ready — never swallowed.
+  bar.innerHTML = '';
+  const windBtn = document.createElement('button');
+  windBtn.id = 'gw-replay-play';
+  windBtn.type = 'button';
+  windBtn.dataset['phase'] = 'waiting';
+  windBtn.setAttribute('aria-busy', 'true');
+  windBtn.setAttribute('aria-label', 'Play (tape winding)');
+  windBtn.textContent = '⏳ winding the tape… 0%';
+  const windNote = document.createElement('span');
+  windNote.id = 'gw-replay-progress';
+  windNote.setAttribute('role', 'status');
+  windNote.setAttribute('aria-live', 'polite');
+  windNote.textContent = 'winding the tape…';
+  const wind = {
+    phase: 'waiting' as 'waiting' | 'ready',
+    pendingPlay: false,
+    steps: 0,
+    estSteps: Math.max(120, Math.round(Math.min(Math.max(level.par.time, 0.5), level.maxTime) * (1 / FIXED_DT))),
+    chunks: [] as { steps: number; hash: string }[],
+    windMs: 0,
+    /** Wall-clock phase ledger of the ready path (ms since the bar went up):
+     *  mount = set + world build, post = stack + preview paint, wind = the
+     *  chunked sim, ready = full bar + first traced frame. The e2e asserts
+     *  the TOTAL against the ready bound and reads the breakdown to say
+     *  WHERE time went when it misses. */
+    marks: { mount: 0, post: 0, wind: 0, ready: 0 } as Record<string, number>,
+    t0: performance.now(),
+  };
+  windBtn.addEventListener('click', () => {
+    wind.pendingPlay = true;
+    windBtn.textContent = '⏳ queued — winding the tape…';
+  });
+  bar.append(windBtn, windNote);
+  bar.hidden = false;
+  /** The button-state ledger (e2e): waiting → playing/paused → ended, in
+   *  order, deduped — the proof there is no silent window. */
+  const phases: string[] = ['waiting'];
+  const phasePush = (p: string): void => {
+    if (phases[phases.length - 1] !== p) phases.push(p);
+  };
+  const seamWindow = window as unknown as Record<string, unknown>;
+  seamWindow.__gwReplayWind = (): typeof wind => ({
+    ...wind,
+    chunks: wind.chunks.map((c) => ({ steps: c.steps, hash: c.hash })),
+  });
+  seamWindow.__gwReplayPhases = (): string[] => phases.slice();
+
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   renderer.setSize(960, 540, false);
   renderer.domElement.id = 'gw-canvas';
@@ -633,15 +720,97 @@ async function startReplayPlayer(
       }))
     : [];
   const world = await World.create(level, payload.build, { visuals: true });
+  wind.marks.mount = Math.round(performance.now() - wind.t0);
   const scene = world.scene;
   if (!scene) throw new Error('replay player: world has no scene');
   if (setInstance && setReg) {
     scene.add(setInstance.group);
     scene.background = new THREE.Color(setReg.tokens.background);
   }
-  const trace = stepAndRecord(world, payload.build, { solids });
+  // the house look rides along: the quarter-res tilt-shift stack, focus band
+  // centred on the car at the step being shown (the game page's §7.3 rule).
+  // BUILT BEFORE THE WIND (feel pass): its first render compiles the post
+  // shaders as ONE early block — measured cheaper than compiling plain
+  // scene shaders first and the stack's after — and that block sits inside
+  // the WAITING label's window, with the rig already on stage: the visitor
+  // sees WHAT they are about to watch, not an empty stage.
+  const { createPostStack } = await import('./render/post/index.ts');
+  const post = createPostStack(renderer, camera, { tokens: setReg?.tokens ?? SET_TOKENS.kitchen });
   const track = scene.getObjectByName('track');
   const box = track ? new THREE.Box3().setFromObject(track) : new THREE.Box3();
+  // PRE-WIND PREVIEW FRAME (same analytic wide framing the director will
+  // open on — no trace needed).
+  {
+    const size = box.isEmpty() ? new THREE.Vector3(0.5, 0.2, 0.5) : box.getSize(new THREE.Vector3());
+    const center = box.isEmpty() ? new THREE.Vector3() : box.getCenter(new THREE.Vector3());
+    const tanV = Math.tan((REPLAY_FOV / 2) * (Math.PI / 180));
+    const tanH = tanV * (960 / 540);
+    const d = Math.max(
+      1.2,
+      1.25 * ((Math.max(size.x, size.z) / 2 + 0.25) / tanH),
+      1.25 * ((size.y / 2 + 0.2) / tanV),
+    );
+    camera.position.copy(center).add(new THREE.Vector3(0.55, 0.62, 0.75).normalize().multiplyScalar(d));
+    camera.lookAt(center);
+    post.setFocus([world.state().car.pos.x, world.state().car.pos.y, world.state().car.pos.z]);
+    post.render(scene);
+  }
+  wind.marks.post = Math.round(performance.now() - wind.t0);
+  wind.marks.post = Math.round(performance.now() - wind.t0);
+  // ---- THE CHUNKED WIND — the deterministic sim stepped in rAF-sized
+  // slices (WIND_CHUNK_STEPS per pump, WIND_CHUNK_BUDGET_MS per slice) so
+  // the page PAINTS and COUNTS while the tape winds: the label reports
+  // "winding the tape… 40%" (progress against the par-length estimate,
+  // capped at 99 % until the run is genuinely over — it never claims ready
+  // early). Slicing changes only WHEN steps run: the per-slice world state
+  // hash follows the one-shot wind step for step (`__gwReplayWind().chunks`
+  // is the evidence the e2e compares against the Node sim's hashes).
+  const recorder = new TapeRecorder(world, payload.build, { solids });
+  const windT0 = performance.now();
+  await new Promise<void>((resolve) => {
+    // The slice clock is rAF-ARMED BUT NOT rAF-GATED: on a slow compositor
+    // (CI's software GL paints a frame every ~100 ms) waiting on the frame
+    // callback alone would stretch a 50 ms wind across a second, and the
+    // ready bound would be a hostage to paint speed. Whichever clock
+    // arrives first runs the next slice — never more than one in flight —
+    // so the wind is paced by its OWN budget and the page still paints
+    // every frame in between.
+    let next = (): void => undefined;
+    const arm = (): void => {
+      let fired = false;
+      const go = (): void => {
+        if (fired) return;
+        fired = true;
+        next();
+      };
+      requestAnimationFrame(go);
+      setTimeout(go, 16);
+    };
+    next = (): void => {
+      const t0 = performance.now();
+      do {
+        recorder.pump(WIND_CHUNK_STEPS);
+      } while (!recorder.done && performance.now() - t0 < WIND_CHUNK_BUDGET_MS);
+      wind.steps = recorder.totalSteps;
+      if (recorder.done) {
+        resolve();
+        return;
+      }
+      const pct = Math.min(99, Math.round((recorder.totalSteps / wind.estSteps) * 100));
+      if (!wind.pendingPlay) windBtn.textContent = `⏳ winding the tape… ${pct}%`;
+      windNote.textContent = `winding the tape… ${pct}%`;
+      arm();
+    };
+    arm();
+  });
+  wind.chunks = recorder.sliceHashes.map((c) => ({ steps: c.steps, hash: c.hash }));
+  wind.windMs = performance.now() - windT0;
+  wind.phase = 'ready';
+  wind.marks.wind = Math.round(performance.now() - wind.t0);
+  if (!wind.pendingPlay) windBtn.textContent = '⏳ winding the tape… 100%';
+  const trace = recorder.finish();
+  // the tape IS the verdict: settle the honest half the moment the wind ends
+  const verified = settle(trace.hash, trace.time, trace.status);
   const reducedMotion = loadSave().settings.reducedMotion ?? false;
   const director = new ReplayDirector({
     trace,
@@ -651,16 +820,16 @@ async function startReplayPlayer(
     aspect: 960 / 540,
     reducedMotion,
   });
-  // the house look rides along: the quarter-res tilt-shift stack, focus band
-  // centred on the car at the step being shown (the game page's §7.3 rule)
-  const { createPostStack } = await import('./render/post/index.ts');
-  const post = createPostStack(renderer, camera, { tokens: setReg?.tokens ?? SET_TOKENS.kitchen });
 
   const duration = Math.max(trace.duration, 0.1);
   const stepAt = (t: number): number =>
     Math.min(trace.steps - 1, Math.max(0, Math.floor(t / trace.dt + 1e-6)));
   let time = 0;
-  let playing = !reducedMotion; // reduced motion opens on the wide shot, paused
+  // A click made while the tape was winding is HONOURED here, not lost: the
+  // queued click wins over the reduced-motion pause default, and the
+  // playhead starts at 0 either way (the snap — never at the end).
+  if (wind.pendingPlay) phases.push('queued-click');
+  let playing = wind.pendingPlay || !reducedMotion;
   let rate = 1;
   let dragging = false;
   let resumeAfterDrag = false;
@@ -712,6 +881,9 @@ async function startReplayPlayer(
     playBtn.textContent = playing ? '⏸' : '▶';
     playBtn.setAttribute('aria-label', playing ? 'Pause' : 'Play');
     playBtn.setAttribute('aria-pressed', String(playing));
+    playBtn.removeAttribute('aria-busy');
+    playBtn.dataset['phase'] = playing ? 'playing' : 'paused';
+    phasePush(playing ? 'playing' : 'paused');
   };
   playBtn.addEventListener('click', () => {
     // PLAY always STARTS MOTION when it is the resume click (playtest BB:
@@ -892,6 +1064,8 @@ async function startReplayPlayer(
         playing = false;
         paceBreak(); // a clamped final frame does not honour the law
         syncPlay();
+        playBtn.dataset['phase'] = 'ended';
+        phasePush('ended');
       } else {
         pace.push([now, time, rate]);
         if (pace.length > 240) pace.shift();
