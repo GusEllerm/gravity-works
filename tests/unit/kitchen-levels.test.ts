@@ -383,7 +383,7 @@ describe('kitchen ladder — the choices and the trade-off are real', () => {
  * the player places them — the same emulation that reproduced G's nine
  * failures byte-for-failure).
  */
-function kitchenPlaced(level: KitchenLevel, kinds: readonly PieceKind[]): Build {
+function kitchenPlaced(level: KitchenLevel, kinds: readonly PieceKind[], flipped: readonly PieceKind[] = []): Build {
   const par = level.parBuild();
   const fixtures = new Set(Object.keys(level.fixtures!));
   const pieces = par.pieces.filter((p) => fixtures.has(p.def)).map((p, i) => ({ ...p, seq: i }));
@@ -392,9 +392,19 @@ function kitchenPlaced(level: KitchenLevel, kinds: readonly PieceKind[]): Build 
   let cursor = transformSocket(PIECES.ramp.sockets(ramp.params)[1], ramp.transform);
   for (const def of kinds) {
     const p = { ...params[def] };
-    const t = fitSocket(cursor, PIECES[def].sockets(p)[0]);
-    pieces.push({ def, params: p, transform: t, seq: pieces.length });
-    cursor = transformSocket(PIECES[def].sockets(p)[1], t);
+    let transform = fitSocket(cursor, PIECES[def].sockets(p)[0]);
+    if (flipped.includes(def)) {
+      // the builder's flip: half turn about the socket UP at the socket
+      // point — `placement()` in src/ui/builder.ts, transform-exact
+      const axis = cursor.up.clone().normalize();
+      transform = new THREE.Matrix4()
+        .makeTranslation(cursor.pos.x, cursor.pos.y, cursor.pos.z)
+        .multiply(new THREE.Matrix4().makeRotationAxis(axis, Math.PI))
+        .multiply(new THREE.Matrix4().makeTranslation(-cursor.pos.x, -cursor.pos.y, -cursor.pos.z))
+        .multiply(transform);
+    }
+    pieces.push({ def, params: p, transform, seq: pieces.length });
+    cursor = transformSocket(PIECES[def].sockets(p)[1], transform);
   }
   return { levelId: level.id, pieces, seed: level.seed };
 }
@@ -589,16 +599,20 @@ describe('kitchen04 — the wet route is real, and so is R\u2019s reversed-lip w
  * subsets finishing, so the failing that DID teach was a minority pattern
  * (level header). The re-authored rung is gated here, whole build space:
  *   NO ≤ 4-piece build finishes (the tray is the par multiset and the
- *   equality-law spans make every omission a hole, not a hint);
- *   59–60/60 whole-tray orders finish (the one order `s,s,d,g,l` is the
- *   pinned borderline of the porch03 wedge family — it falls at ~1.6 s on
- *   the seed-1 default and completes on other seeds/jitters, re-checked
- *   below the enumeration);
+ *   equality-law spans make every omission a hole, not a hint) — measured
+ *   111/111 subset orders fall, deaths 1.07–1.74 s, monotonically later
+ *   per piece ADDED (0/1/2/3/4-piece bands ≈ 1.07 / 1.17–1.24 /
+ *   1.27–1.40 / 1.38–1.55 / 1.56–1.74);
+ *   60/60 whole-tray orders finish at the shipped launch (1.43–1.61 s —
+ *   the porch03-style wedge `s,s,d,g,l` the checkpoint pinned at the 0.10 m
+ *   step is cleared by the 0.11 m step + 0.11 m leads, and the sink moved
+ *   to the chute TOE in the par order — kitchen02's toe idiom, which is
+ *   also what keeps the fast toe inside the camera's in-frame gate);
  *   every fail dies ≤ 1.9 s in ≥ 3 clock bands, airborne never past the
  *   cup mouth (the K2 x-law);
  *   the note names the kind the build actually lacks (stock-tail rule) —
- *   AA's and BB's rebuilt attempts print FIVE different notes across their
- *   ten builds, one informed retry each.
+ *   AA's and BB's rebuilt attempts print SIX different vocabularies across
+ *   their ten builds, one informed retry each.
  */
 describe('kitchen03 — the stage-5 re-sweep: every chainable build speaks', () => {
   const trayKinds: PieceKind[] = ['straight', 'straight', 'gapLip', 'drop', 'landing'];
@@ -645,8 +659,10 @@ describe('kitchen03 — the stage-5 re-sweep: every chainable build speaks', () 
       fails.push(Math.round(time * 100) / 100);
       if (kinds.length === 5) wholeTrayFails++;
     }
-    // 151 subset builds, all fall; at most ONE whole-tray order (the pinned
-    // borderline `ssdgl`) may fail on the default seed.
+    // 111 subset builds (171 keys − 60 whole-tray orders), all fall; no
+    // whole-tray order may fail on the default seed (measured 0 fails —
+    // the 1-order tolerance is float-jitter insurance for other physics
+    // builds, the porch03 22/24 house shape would also PASS it honestly).
     expect(wholeTrayFails).toBeLessThanOrEqual(1);
     // the fail stream is EARLY and DISTINCT: band structure, not a wall
     expect(Math.max(...fails) - Math.min(...fails)).toBeGreaterThan(0.5);
@@ -655,38 +671,66 @@ describe('kitchen03 — the stage-5 re-sweep: every chainable build speaks', () 
     expect(bands.size).toBeGreaterThanOrEqual(3);
   }, 900_000);
 
-  test('the pinned borderline order falls on the default seed and finishes across the seed sweep (honest wedge)', async () => {
-    const wedge = kitchenPlaced(KITCHEN03, ['straight', 'straight', 'drop', 'gapLip', 'landing']);
-    const base = await replayRun(KITCHEN03, wedge);
-    expect(base.status).not.toBe('finished'); // measured ~1.63 s — an EARLY death, not the old invisible 2.9 s
-    let completions = 0;
-    for (let seed = 2; seed <= 6; seed++) {
-      const run = await replayRun({ ...KITCHEN03, seed }, { ...wedge, seed });
-      if (run.status === 'finished') completions++;
+  test('every whole-tray order finishes at the shipped launch — the wedge is cleared (0.11 m step)', async () => {
+    // The checkpoint pinned `s,s,d,g,l` as the porch03 wedge family at the
+    // 0.10 m drop step (fell at 1.63 s on EVERY seed — the rail is
+    // seed-independent, so the sweep this replaces found only launch-speed
+    // to lean on). Raising `L03_DROP.height` to 0.11 m (still under the
+    // ladder's 0.12 belly threshold) on 0.11 m leads pops the lip-launched
+    // car over the sink's rising tail instead of slamming its nose into
+    // it: all 60 orders now finish, 1.43–1.61 s, and the re-sweep
+    // re-verified no subset finishes anywhere (enumeration above).
+    const orders = new Set(permutations<PieceKind>(trayKinds).map(keyOf));
+    expect(orders.size).toBe(60);
+    let under = 0;
+    for (const order of permutations<PieceKind>(trayKinds)) {
+      const r = await replayRun(KITCHEN03, kitchenPlaced(KITCHEN03, order));
+      expect(r.status, `whole-tray order ${keyOf(order)} must pay off`).toBe('finished');
+      if (r.time < KITCHEN03.par.time) under++;
     }
-    expect(completions).toBeGreaterThanOrEqual(3); // not a wall — the wedge is a dice roll off the default
-  }, 300_000);
+    // whole-tray first-try payoff: EVERY order finishes and spends EXACTLY
+    // the par piece count (the tray IS the par multiset), so a first-try
+    // full tray is a piece-par 100 %; the par CLOCK is the tight axis —
+    // measured 7 of 60 orders beat it (1.43–1.61 s against the 1.45 line
+    // ceil'd from the 1.433 reference). Par is not inflated on either
+    // axis: the star line is the reference build, not a pad.
+    expect(under).toBeGreaterThanOrEqual(5);
+  }, 600_000);
 
   test('the rebuilt AA/BB walls fail EARLY, and their notes’ admissible vocabulary differs per family', async () => {
-    const rebuilt: [string, PieceKind[]][] = [
-      // AA (quotes: the K1 fit; a flipped landing + lip build that printed
-      // the nose-first line; cleared on build 4 with the full tray)
-      ['A1 straight bridge', ['straight', 'straight', 'landing']],
-      ['A2 K1 fit', ['gapLip', 'drop', 'landing']],
-      ['A4 full tray', trayKinds],
-      // BB (quotes: lip+landing; straights bridge; lip cup-side; drop moved)
-      ['B1 lip+landing', ['gapLip', 'landing']],
-      ['B2 bridge', ['straight', 'straight', 'landing']],
-      ['B3 lip cup-side', ['straight', 'straight', 'gapLip']],
-      ['B4 drop last', ['gapLip', 'straight', 'drop']],
+    // DOCUMENTED ASSUMPTIONS: AA's sheet names only the nose-first flip
+    // ("flipped landing + lip") and the 4th-build clear; BB's name
+    // lip+landing, a straights bridge, lip cup-side, drop at "2 spots" and
+    // the "]" second spot. The rest are the most probable stranger
+    // sequence on THIS tray {`straight`×2, `gapLip`, `drop`, `landing`}.
+    // A "flip" is the builder's half turn about the socket up, transform-
+    // exact with `placement()` in src/ui/builder.ts.
+    const rebuilt: [string, PieceKind[], PieceKind[]][] = [
+      // AA (4 builds; cleared on the 4th with the whole tray)
+      ['A1 straight bridge', ['straight', 'straight', 'landing'], []],
+      ['A2 K1 carry-over fit', ['gapLip', 'drop', 'landing'], []],
+      ['A3 flipped landing + lip', ['landing', 'gapLip'], ['landing']],
+      ['A4 full tray (AA clear)', trayKinds, []],
+      // BB (6 builds, quit): lip+landing; straights bridge; lip cup-side;
+      // drop at both "spots" (the "]" retry); last-ditch whole tray
+      ['B1 lip+landing', ['gapLip', 'landing'], []],
+      ['B2 straights bridge', ['straight', 'straight', 'landing'], []],
+      ['B3 lip cup-side', ['straight', 'straight', 'gapLip'], []],
+      ['B4 drop at spot 1', ['gapLip', 'straight', 'drop'], []],
+      ['B5 drop at the "]" spot', ['straight', 'gapLip', 'drop'], []],
+      ['B6 whole tray, deck-first', ['straight', 'straight', 'drop', 'gapLip', 'landing'], []],
     ];
     const vocabularies = new Set<string>();
-    for (const [label, kinds] of rebuilt) {
-      const build = kitchenPlaced(KITCHEN03, kinds);
+    for (const [label, kinds, flipped] of rebuilt) {
+      const build = kitchenPlaced(KITCHEN03, kinds, flipped);
+      const r = await replayRun(KITCHEN03, build);
       if (kinds.length < 5) {
-        const r = await replayRun(KITCHEN03, build);
         expect(r.status, label).not.toBe('finished');
         expect(r.time, `${label} dies late`).toBeLessThan(1.9);
+      } else {
+        // both strangers' whole-tray attempts PAY OFF on the new geometry
+        // (BB's deck-first order is the cleared wedge)
+        expect(r.status, label).toBe('finished');
       }
       // the stock-tail rule (B2 pass 2): the drive-off note may name ONLY
       // the kinds with tray stock left — the set below IS the note’s
@@ -697,7 +741,7 @@ describe('kitchen03 — the stage-5 re-sweep: every chainable build speaks', () 
     }
     // different wrong builds must not read as one undifferentiated line
     // (AA’s complaint verbatim): the rebuilt families list DIFFERENT stock,
-    // and the spent-tray full build lists none (bare honest head).
+    // and the spent-tray full builds list none (bare honest head).
     expect(vocabularies.size).toBeGreaterThanOrEqual(4);
     expect(vocabularies.has('')).toBe(true);
   }, 600_000);

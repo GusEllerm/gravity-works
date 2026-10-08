@@ -574,11 +574,37 @@ carried into world space by the level's set mount, `src/world/setPlacement.ts`),
 not chained off the timed line; the timed line runs past it into the cup.
 STAGE-3 COHERENCE — the bowl line is now a build a tray can place: the tray
 (2 `straight`, `gapLip`, `drop`, `landing` = 5 = budget) IS the multiset the
-par build places, and both straights are ONE 0.15 m geometry (was 0.1 + 0.2,
-a second geometry the tray could not seat — the player's run got two 0.1 m
-straights and a line 10 cm shorter than the one the cup is anchored against).
-Par 2.617 s (2.65), measured on that line; the rim fixtures ride the set's
-sockets, so mounting the set anywhere moves the bowl and the line with it.
+par build places, and both straights are ONE `straight` geometry (0.15 m at
+the time — was 0.1 + 0.2, a second geometry the tray could not seat — the
+player's run got two 0.1 m straights and a line 10 cm shorter than the one
+the cup is anchored against).
+STAGE-5 K3 RE-SWEEP (playtests AA + BB walled the bowl back to back — AA 4
+builds to the 3★, BB 6 and quit, "no advice text ever differentiated my six
+builds"): the rung moved onto kitchen02's fail-timing tools, all level-local
+— a short steep −29°/0.34 m chute (0.16 m BLEND, camera-framing-tuned like
+kitchen02's), ONE 0.22 m `straight` whose span EQUALS the 12° `gapLip`'s
+(the equality law), a 0.11 m `drop` step on 0.11 m leads, and a SHALLOW 8°
+sink `landing` instead of the tutorial's forgiving `KITCHEN_GAP` catch —
+with the sink at the chute TOE in the par order (the car drops off the
+books into the bowl's mouth: kitchen02's toe idiom, and the only position
+whose pitch step at 2.4 m/s stays inside the run camera's 0.35 s rotation
+lag — sink-last put the par run's toe out of frame, |ndc| 1.28). The old
+−12° crawl had put every death at 2.58–2.96 s while the old spans let 15 of
+the 4-piece subsets finish — strangers died late, invisibly and
+identically. The 171-build sweep now: 111/111 subset orders FALL,
+1.07–1.74 s in five size-monotone bands, never airborne past the cup
+mouth; 60/60 whole-tray orders finish (1.43–1.61 s, 7 under the par clock)
+— the 0.10 m step the checkpoint shipped wedged one order (`s,s,d,g,l`,
+nose-first into the sink's rising tail at EVERY seed — the rail is
+seed-independent); the +1 cm step under the ladder's 0.12 m belly
+threshold, with the leads shortened once the blend went 0.16, cleared it.
+The stock-tail note rule (B2 pass 2) prints SIX different admissible
+vocabularies across the ten rebuilt AA/BB attempts. Par 1.45 (measured
+1.433), piece-par exact by construction — the tray IS the par multiset, so
+the first try at the whole tray always pays the finish itself. The rim
+fixtures ride the set's sockets, so mounting the set anywhere moves the
+bowl and the line with it (the set-wiring row re-derived twice: the chute
+move, then the wedge/toe re-lay).
 Common failure: none on the par line — but the car visibly begs to
 take the rim, and cannot (ask #1). Par is the par because it is everything
 drivable today on the way to the bowl. The bowl's intended banked line
