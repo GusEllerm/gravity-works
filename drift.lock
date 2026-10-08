@@ -528,7 +528,7 @@ sig = "e5ff9f48c99e7ce4"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "src/world/pars.json"
-sig = "b00fd762c889070b"
+sig = "5f675491851225c0"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -723,7 +723,7 @@ sig = "befa699b906bc793"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/world/setPlacement.ts"
-sig = "2162e7005771e2d8"
+sig = "55405d89d49fb32a"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -808,7 +808,7 @@ sig = "0b0a00d07a6922ed"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/world/pars.json"
-sig = "b00fd762c889070b"
+sig = "5f675491851225c0"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -868,7 +868,7 @@ sig = "f00a6dbe45a90d4a"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/unit/kitchen-levels.test.ts"
-sig = "01a43379f62aea63"
+sig = "6ec63041339c8e9c"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -1113,7 +1113,7 @@ sig = "a20dc5d3793a3e09"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/kitchen-levels.test.ts"
-sig = "01a43379f62aea63"
+sig = "6ec63041339c8e9c"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1193,12 +1193,12 @@ sig = "fb06ede3e0b45cba"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/pars.json"
-sig = "b00fd762c889070b"
+sig = "5f675491851225c0"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/setPlacement.ts"
-sig = "2162e7005771e2d8"
+sig = "55405d89d49fb32a"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1258,7 +1258,7 @@ sig = "c55f143b9eaa05bc"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/set-wiring.test.ts"
-sig = "9d3eaca58139464d"
+sig = "0ed2ce1871d3736e"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1303,7 +1303,7 @@ sig = "4756b0ffca1fc733"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/world/pars.json"
-sig = "b00fd762c889070b"
+sig = "5f675491851225c0"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
@@ -1333,4 +1333,4 @@ sig = "c7d9abdf2d44719f"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "tests/unit/kitchen-levels.test.ts"
-sig = "01a43379f62aea63"
+sig = "6ec63041339c8e9c"
