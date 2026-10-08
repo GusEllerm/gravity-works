@@ -197,6 +197,11 @@ sig = "d5b3f3ece12aa46f"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
+target = "tests/e2e/sound.spec.ts"
+sig = "8b6d99b6cea551bc"
+
+[[bindings]]
+doc = "docs/vault/Home.md"
 target = "tests/e2e/stage5-ready.spec.ts"
 sig = "83df9f2b46efb33d"
 
