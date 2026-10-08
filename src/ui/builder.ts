@@ -412,6 +412,19 @@ export function solidWord(name: string): string {
   return (name.split('/')[0] ?? name).replaceAll('-', ' ').trim().toLowerCase();
 }
 
+/** The player word a REFUSAL speaks: `solidWord` of the guard's object path,
+ *  with an HONEST fallback when the path has no sayable top segment — a
+ *  guard whose FIRST path segment is anonymous (an unnamed group under
+ *  `dress` paths `/mug-body`) would otherwise print "blocked — the  is in
+ *  the way". The fallback is the VERB TABLE's own furniture word, so
+ *  `ghostCopy` renders exactly the shipped `GHOST_LABEL.blocked` line
+ *  ("blocked — furniture is in the way") — the blocked-rung copy law, never
+ *  a blank or an invented noun. */
+export function guardWord(name: string): string {
+  const word = solidWord(name);
+  return word === '' ? 'furniture' : word;
+}
+
 /** Where the failure note should send the player NEXT (stage 6, playtest DD:
  *  "the only snap is a curve exit the game itself says is blocked; building
  *  backwards from the cup runs off-table" — the advice named kinds, never a
@@ -814,7 +827,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     // NO hit is the whole answer: the seat is free. (Returning a word here
     // would mark every legal seat blocked.)
     if (hit === undefined) return null;
-    return hit.name === '' ? 'furniture' : solidWord(hit.name);
+    return guardWord(hit.name);
   }
 
   /** THE VERDICT LINE, with the two tells the kitchen03 wall needed

@@ -32,7 +32,7 @@ import { World } from '../../src/world/world.ts';
 import { KitRig } from '../../src/feel/kittrack.ts';
 import { PIECES, pieceGeometries } from '../../src/track/pieces.ts';
 import { fitSocket } from '../../src/track/snap.ts';
-import { solidWord } from '../../src/ui/builder.ts';
+import { solidWord, guardWord } from '../../src/ui/builder.ts';
 import { transformSocket } from '../../src/track/socket.ts';
 import { buildKitchenSet } from '../../src/sets/kitchen/index.ts';
 import { BOWL, BOWL_SOCKET_FRAMES, HAZARDS, TAP } from '../../src/sets/kitchen/data.ts';
@@ -294,6 +294,15 @@ describe('the builder placement guard', () => {
     // and the word the player reads is the object name, spaced and lowercased
     expect(solidWord('cereal-bowl')).toBe('cereal bowl');
     expect(solidWord('mug/mug-body')).toBe('mug');
+    // Stage-6 close: the guard word a REFUSAL speaks never leaves a hole in
+    // the sentence. A guard whose FIRST path segment is anonymous (an
+    // unnamed group under `dress` paths `/mug-body`) would print "blocked —
+    // the  is in the way"; `guardWord` falls back to the furniture word,
+    // which `ghostCopy` renders as exactly the shipped GHOST_LABEL.blocked
+    // line (the blocked-rung copy law).
+    expect(guardWord('')).toBe('furniture');
+    expect(guardWord('/mug-body')).toBe('furniture');
+    expect(guardWord('cereal-bowl')).toBe('cereal bowl');
   });
 
   it('no built chain sits inside a solid — shipped builds stay placeable', async () => {
