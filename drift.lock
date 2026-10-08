@@ -192,6 +192,11 @@ sig = "d5b3f3ece12aa46f"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
+target = "tests/e2e/stage5-ready.spec.ts"
+sig = "83df9f2b46efb33d"
+
+[[bindings]]
+doc = "docs/vault/Home.md"
 target = "tools/histogram.mjs"
 sig = "cb7dd5d5414784c4"
 
@@ -668,7 +673,7 @@ sig = "30af55b32a0f0f22"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/boot.ts"
-sig = "ca835e84cb0a7a41"
+sig = "0e723e11bf22aaae"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -727,6 +732,16 @@ sig = "fa1d6873574ee080"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
+target = "src/sets/porch/data.ts"
+sig = "c6f64cb86daf87db"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets.md"
+target = "src/sets/porch/index.ts"
+sig = "df7b038e07464d7a"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets.md"
 target = "src/ui/callouts.ts"
 sig = "befa699b906bc793"
 
@@ -739,6 +754,11 @@ sig = "2128acc41f4d052e"
 doc = "docs/vault/Modules/sets.md"
 target = "tests/e2e/bedroom-set.spec.ts"
 sig = "69776ca83ac7634e"
+
+[[bindings]]
+doc = "docs/vault/Modules/sets.md"
+target = "tests/e2e/porch-set.spec.ts"
+sig = "279dc86bcc2aa401"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
