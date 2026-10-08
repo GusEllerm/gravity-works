@@ -217,7 +217,7 @@ export interface StepAndRecordOptions {
  * main thread behind a button that still read "Play" (Playtest CC: strangers
  * double-click and give up). The recorder is the SAME stepping code cut into
  * a state machine: `pump(n)` runs AT MOST `n` further fixed steps (fewer if
- * the run is already over), so a caller can spread the wind across rAF
+ * the run is already over), so a caller can spread the wind across timer
  * slices, watch `steps` grow against a known denominator for an honest
  * "winding the tape… 40%", and paint between slices. `finish()` does what the
  * tail of the old loop did and is the ONLY place the trace is assembled.
@@ -388,7 +388,7 @@ export class TapeRecorder {
  * plus the follow camera advanced at `FIXED_DT`. This IS the fast-forward:
  * the whole run's truth is stored before playback starts, and playback never
  * steps physics again. The share page does NOT call this — it pumps a
- * `TapeRecorder` across rAF slices; this one-shot wrapper (everything in one
+ * `TapeRecorder` across timer slices; this one-shot wrapper (everything in one
  * slice) stays the reference the specs pin chunking against.
  */
 export function stepAndRecord(

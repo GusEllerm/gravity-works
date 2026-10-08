@@ -13,7 +13,7 @@ sig = "e17a284b1d0036b1"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/boot.ts"
-sig = "fb4e30eb5519f018"
+sig = "0e723e11bf22aaae"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -153,7 +153,7 @@ sig = "2648b709ac3796c8"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/boot.ts"
-sig = "fb4e30eb5519f018"
+sig = "0e723e11bf22aaae"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -508,12 +508,12 @@ sig = "0f065f90d47289b6"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "src/boot.ts"
-sig = "fb4e30eb5519f018"
+sig = "0e723e11bf22aaae"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "src/replay/cinematic.ts"
-sig = "5779f16858699ea1"
+sig = "7bb6815e1252b824"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -548,7 +548,7 @@ sig = "3d3537c9c8b3f35a"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "tests/e2e/share-replay.spec.ts"
-sig = "f99e4359c2c6a364"
+sig = "a8309bf8bad17539"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -558,7 +558,7 @@ sig = "ef43fcd05c80b300"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "tests/e2e/stage5-ready.spec.ts"
-sig = "9df1a82b14291f4e"
+sig = "83df9f2b46efb33d"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -758,7 +758,7 @@ sig = "e17a284b1d0036b1"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/boot.ts"
-sig = "fb4e30eb5519f018"
+sig = "0e723e11bf22aaae"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -773,7 +773,7 @@ sig = "a38e01706f33daf6"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/replay/cinematic.ts"
-sig = "5779f16858699ea1"
+sig = "7bb6815e1252b824"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -883,7 +883,7 @@ sig = "0363c75d8183d368"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "src/boot.ts"
-sig = "fb4e30eb5519f018"
+sig = "0e723e11bf22aaae"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"

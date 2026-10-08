@@ -19,6 +19,11 @@
  *    one-shot Node `World` has after the same number of steps, and the
  *    ready trace equals the old one-shot `replayRun` result exactly
  *    (determinism gate extended from terminal-only to per-slice).
+ * 4. THE WIND ANSWERS TO NO FRAME CLOCK — with the page BELIEVING it is
+ *    backgrounded (visibilityState hidden) and rAF callbacks never firing
+ *    (Chrome's hidden-tab behaviour: only timers run), the tape still
+ *    winds to `ready` with the identical slice ledger. The chunk pump
+ *    rides `setTimeout(0)`; rAF carries only the progress-label paint.
  */
 import { test, expect, type Page } from '@playwright/test'
 import zlib from 'node:zlib'
@@ -81,9 +86,28 @@ const phases = (page: Page) =>
 const seam = (page: Page) =>
   page.evaluate(() => (window as never as { __gwReplayState: () => { t: number } }).__gwReplayState().t)
 
+/** CI-TRUTH frame-starvation harness (feel pass, the CI red): with
+ *  `E2E_STARVE_RAF_MS=N` every rAF CALLBACK arrives no earlier than N ms
+ *  after it was requested — what CI's SwiftShader compositor does to this
+ *  page. The wind rides `setTimeout(0)`, so slice clocks and slice hashes
+ *  must not move a digit under the harness. */
+const RAF_STARVE_MS = Number(process.env.E2E_STARVE_RAF_MS ?? 0)
+// frame-polled probes and the LEDGER observers (setInterval-based, so they
+// keep working under the harness) get the wall clock back too
+if (RAF_STARVE_MS > 0) test.setTimeout(240_000)
+async function starveFrames(page: Page): Promise<void> {
+  if (!(RAF_STARVE_MS > 0)) return
+  await page.addInitScript((ms: number) => {
+    const real = window.requestAnimationFrame.bind(window)
+    window.requestAnimationFrame = (cb: FrameRequestCallback): number =>
+      real(() => setTimeout(() => cb(performance.now()), ms))
+  }, RAF_STARVE_MS)
+}
+
 test.describe('stage 5 replay readiness (feel pass)', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 })
+    await starveFrames(page)
     await page.addInitScript(FACE_OBSERVER)
   })
 
@@ -215,5 +239,37 @@ test.describe('stage 5 replay readiness (feel pass)', () => {
       () => performance.now() - (window as never as { __gwReplayWind: () => { t0: number } }).__gwReplayWind().t0,
     )
     expect(readyMs).toBeLessThan(4_000)
+  })
+
+  test('4: a backgrounded tab still winds — hidden visibilityState, rAF NEVER fires, chunks ride timers', async ({ page }) => {
+    test.slow()
+    const { url, node } = await kitchen01ShareUrl()
+    // The hidden-tab truth (the product bug behind the CI red): Chrome
+    // stops firing rAF callbacks on a hidden page ENTIRELY — only timers
+    // run. The page is made to BELIEVE it is backgrounded (visibilityState
+    // / hidden overrides) and every rAF request is swallowed, so NOTHING
+    // but the setTimeout(0) pump chain can possibly wind the tape.
+    await page.addInitScript(() => {
+      Object.defineProperty(document, 'visibilityState', { get: () => 'hidden', configurable: true })
+      Object.defineProperty(document, 'hidden', { get: () => true, configurable: true })
+      window.requestAnimationFrame = (): number => 0
+    })
+    await page.goto(`/${url}`)
+    // TIMER-polled (polling: 1000) — waitForFunction's DEFAULT poll rides
+    // rAF, which this harness swallows: the PROBE must not need frames
+    // either, exactly like the wind itself.
+    await page.waitForFunction(
+      () => (window as never as { __gwReplayWind: () => WindInfo }).__gwReplayWind().phase === 'ready',
+      undefined,
+      { timeout: 90_000, polling: 1000 },
+    )
+    const w = await wind(page)
+    // it winds CHUNKED, not as one hidden catch-up block, and the tape is
+    // the tape — the slice ledger and the terminal hash equal the one-shot
+    // Node sim's, exactly as on a foreground frame-paced tab
+    expect(await page.evaluate(() => document.visibilityState), 'the page must have believed it was hidden').toBe('hidden')
+    expect(w.chunks.length, 'the hidden wind must still chunk').toBeGreaterThan(1)
+    expect(w.chunks[w.chunks.length - 1]!.steps).toBe(node.steps)
+    expect(w.chunks[w.chunks.length - 1]!.hash).toBe(node.hash)
   })
 })

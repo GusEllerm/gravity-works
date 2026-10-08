@@ -14,7 +14,16 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${port}`,
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [{
+    name: 'chromium',
+    use: {
+      ...devices['Desktop Chrome'],
+      // E2E_SWIFTSHADER=1 reproduces CI's renderer truth on a GPU box (Linux
+      // CI has no GPU and renders through SwiftShader); pair with
+      // E2E_STARVE_RAF_MS (the specs' rAF-delay harness) for CI frame pacing
+      launchOptions: { args: process.env.E2E_SWIFTSHADER === '1' ? ['--use-angle=swiftshader'] : [] },
+    },
+  }],
   webServer: {
     command: `npm run build && npx vite preview --port ${port} --strictPort`,
     url: `http://localhost:${port}`,

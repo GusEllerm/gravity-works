@@ -467,7 +467,7 @@ function paragraph(id: string, parent: HTMLElement, role = 'status'): HTMLParagr
 //
 // Stage 5: a share link OPENS INTO the replay. The verification half is
 // unchanged and still honest — the tape IS the verification: the chunked
-// wind (`TapeRecorder`, below) steps the deterministic sim in rAF-sized
+// wind (`TapeRecorder`, below) steps the deterministic sim in timer-sized
 // slices and its terminal hash is the verdict — `parseShareUrl` → wind →
 // compare → `verified`/`mismatch` in `#gw-replay-status`, now in the
 // section BELOW the fold; above it the page is a cinematic player — the
@@ -619,7 +619,7 @@ function wireShareCard(
 // ---- cinematic replay player (stage 5) ---------------------------------------
 
 /** The chunk law of the wind (feel pass, Playtest CC): pump at most 32
- *  fixed sim steps per pump and no more than 8 ms of wall clock per rAF
+ *  fixed sim steps per pump and no more than 8 ms of wall clock per pump
  *  slice — half a 60 Hz frame, so the page keeps painting and answering
  *  clicks while the tape winds. 32 steps ≈ 0.27 s of film per slice, which
  *  on a typical kitchen run (≈270 steps) finishes well inside 1.5 s of
@@ -630,7 +630,7 @@ const WIND_CHUNK_BUDGET_MS = 8;
 /**
  * The replay half of the shared-run page: mount the level's set and build in
  * a visual `World`, wind the run step-for-step (`TapeRecorder` pumped
- * across rAF slices — the tape BUILD is now a progress-reported, resumable
+ * across timer slices — the tape BUILD is now a progress-reported, resumable
  * wind, not a silent synchronous block), then hand the trace to the shot-
  * sequence director and a scrubber. Playback reads ONLY recorded sim states
  * (`stepAt` floors to a step, never blends two); the camera poses are
@@ -756,8 +756,7 @@ async function startReplayPlayer(
     post.render(scene);
   }
   wind.marks.post = Math.round(performance.now() - wind.t0);
-  wind.marks.post = Math.round(performance.now() - wind.t0);
-  // ---- THE CHUNKED WIND — the deterministic sim stepped in rAF-sized
+  // ---- THE CHUNKED WIND — the deterministic sim stepped in timer-sized
   // slices (WIND_CHUNK_STEPS per pump, WIND_CHUNK_BUDGET_MS per slice) so
   // the page PAINTS and COUNTS while the tape winds: the label reports
   // "winding the tape… 40%" (progress against the par-length estimate,
@@ -768,40 +767,41 @@ async function startReplayPlayer(
   const recorder = new TapeRecorder(world, payload.build, { solids });
   const windT0 = performance.now();
   await new Promise<void>((resolve) => {
-    // The slice clock is rAF-ARMED BUT NOT rAF-GATED: on a slow compositor
-    // (CI's software GL paints a frame every ~100 ms) waiting on the frame
-    // callback alone would stretch a 50 ms wind across a second, and the
-    // ready bound would be a hostage to paint speed. Whichever clock
-    // arrives first runs the next slice — never more than one in flight —
-    // so the wind is paced by its OWN budget and the page still paints
-    // every frame in between.
-    let next = (): void => undefined;
-    const arm = (): void => {
-      let fired = false;
-      const go = (): void => {
-        if (fired) return;
-        fired = true;
-        next();
-      };
-      requestAnimationFrame(go);
-      setTimeout(go, 16);
+    // THE PUMP CLOCK IS setTimeout(0) — rAF ONLY PAINTS (stage-5 CI-red +
+    // product-bug fix): the frame callback can be STARVED, not just slow.
+    // CI's SwiftShader compositor paces rAF coarsely, and Chrome stops
+    // firing rAF on a HIDDEN tab ENTIRELY — anything that waits on the
+    // frame callback for CHUNKS (the old 16 ms-timer-races-rAF arm) leaves
+    // the tape unwound there: CI's share-replay evaluate paid the wind and
+    // timed out at 30 s, and a visitor who backgrounded the tab today never
+    // got the tape. The slices now ride their OWN timer chain (a 0 ms
+    // timeout per slice, never more than one in flight), so chunks ALWAYS
+    // progress; rAF carries only the progress-label repaint — at most one
+    // paint in flight, skipped while no frames exist — so the bar still
+    // counts on any machine that PAINTS, and the wind answers to no clock
+    // but its own budget.
+    let pendingPaint = 0;
+    const paint = (): void => {
+      pendingPaint = 0;
+      const pct = Math.min(99, Math.round((recorder.totalSteps / wind.estSteps) * 100));
+      if (!wind.pendingPlay) windBtn.textContent = `⏳ winding the tape… ${pct}%`;
+      windNote.textContent = `winding the tape… ${pct}%`;
     };
-    next = (): void => {
+    const pumpSlice = (): void => {
       const t0 = performance.now();
       do {
         recorder.pump(WIND_CHUNK_STEPS);
       } while (!recorder.done && performance.now() - t0 < WIND_CHUNK_BUDGET_MS);
       wind.steps = recorder.totalSteps;
       if (recorder.done) {
+        if (pendingPaint) cancelAnimationFrame(pendingPaint);
         resolve();
         return;
       }
-      const pct = Math.min(99, Math.round((recorder.totalSteps / wind.estSteps) * 100));
-      if (!wind.pendingPlay) windBtn.textContent = `⏳ winding the tape… ${pct}%`;
-      windNote.textContent = `winding the tape… ${pct}%`;
-      arm();
+      if (!pendingPaint) pendingPaint = requestAnimationFrame(paint);
+      setTimeout(pumpSlice, 0);
     };
-    arm();
+    pumpSlice();
   });
   wind.chunks = recorder.sliceHashes.map((c) => ({ steps: c.steps, hash: c.hash }));
   wind.windMs = performance.now() - windT0;
@@ -1062,7 +1062,14 @@ async function startReplayPlayer(
       if (time >= duration) {
         time = duration;
         playing = false;
-        paceBreak(); // a clamped final frame does not honour the law
+        // NO paceBreak here: the clamped final frame is never PUSHED, and
+        // every continuation that WOULD break interval continuity (Play,
+        // seek, speed) clears the ledger itself. The ledger therefore
+        // survives as the pure law-honouring record of a session that ran
+        // the film out — under CI frame pacing a 4× tail can end the
+        // window in 2–3 painted frames and a wipe-before-the-poll could
+        // destroy the only evidence the rate law exists (the CI-red feel
+        // pass).
         syncPlay();
         playBtn.dataset['phase'] = 'ended';
         phasePush('ended');

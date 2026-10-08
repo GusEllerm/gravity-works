@@ -39,6 +39,26 @@ const zlibCodec: ShareCodec = {
   inflate: async (b) => new Uint8Array(zlib.inflateRawSync(Buffer.from(b))),
 }
 
+/** CI-TRUTH frame-starvation harness (feel pass, the CI red): with
+ *  `E2E_STARVE_RAF_MS=N` every rAF CALLBACK arrives no earlier than N ms
+ *  after it was requested — what CI's SwiftShader compositor does to this
+ *  page (frame gaps of hundreds of ms while the sim clock keeps running).
+ *  The tape wind must not care (it rides setTimeout(0); rAF only paints),
+ *  and the pace law stays frame-gap-honest with the longer gaps. */
+const RAF_STARVE_MS = Number(process.env.E2E_STARVE_RAF_MS ?? 0)
+// The starve harness slows every FRAME (and this spec's own frame-polled
+// probes), never the wind — hand the wall clock back to the harness runs
+// so the proof is about the laws, not the default 30 s test budget.
+if (RAF_STARVE_MS > 0) test.setTimeout(240_000)
+async function starveFrames(page: Page): Promise<void> {
+  if (!(RAF_STARVE_MS > 0)) return
+  await page.addInitScript((ms: number) => {
+    const real = window.requestAnimationFrame.bind(window)
+    window.requestAnimationFrame = (cb: FrameRequestCallback): number =>
+      real(() => setTimeout(() => cb(performance.now()), ms))
+  }, RAF_STARVE_MS)
+}
+
 type TraceSeam = {
   dt: number
   steps: number
@@ -56,8 +76,26 @@ type TraceSeam = {
 type StateSeam = { t: number; step: number; pos: number[]; quat: number[] }
 
 async function openShare(page: Page, levelId: string, seed: number, hash: string, build: unknown): Promise<void> {
+  await starveFrames(page)
   const url = await encodeShareUrl({ levelId, seed, hash, build } as never, zlibCodec)
   await page.goto(`/${url}`)
+  // THE READY POLL BEFORE THE FIRST EVALUATE (CI-red feel pass): the wind
+  // seam exists from the moment the waiting bar goes up, so the spec waits
+  // on the wind's OWN phase (90 s CI-tolerant window) before it evaluates
+  // anything — the trace/state seams only READ the recorded tape (they do
+  // no synchronous catch-up in the evaluate itself), and no probe may land
+  // mid-wind where a starved compositor would hold the main thread busy.
+  await page.waitForFunction(
+    () => {
+      const w = (window as never as { __gwReplayWind?: () => { phase: string } }).__gwReplayWind
+      if (typeof w === 'function' && w().phase === 'ready') return true
+      // fallback mount (the player could not build — WebGL failure): there
+      // is no wind to poll, the verdict seam itself is the readiness
+      return typeof (window as never as { __gwReplayTrace?: unknown }).__gwReplayTrace === 'function'
+    },
+    undefined,
+    { timeout: 90_000 },
+  )
   await expect(page.locator('#gw-replay-status')).toHaveText('verified', { timeout: 90_000 })
   await page.waitForFunction(() => typeof (window as never as { __gwReplayTrace?: unknown }).__gwReplayTrace === 'function', undefined, { timeout: 90_000 })
 }
@@ -79,6 +117,8 @@ async function paceHeld(page: Page, rate: number): Promise<boolean> {
   return page.evaluate(async (r: number) => {
     const seam = () =>
       (window as unknown as { __gwReplayPace?: () => [number, number, number][] }).__gwReplayPace?.() ?? []
+    const ended = () =>
+      (window as unknown as { __gwReplayPhases?: () => string[] }).__gwReplayPhases?.()?.at(-1) === 'ended'
     const deadline = performance.now() + 30_000
     for (;;) {
       const p = seam()
@@ -90,7 +130,13 @@ async function paceHeld(page: Page, rate: number): Promise<boolean> {
         const got = p[i]![1]! - p[i - 1]![1]!
         if (Math.abs(got - want) > Math.max(1e-9, want * 0.01)) return false
       }
+      // 5 intervals is the full proof; a session that PLAYED THE FILM OUT
+      // (phase ended with its ledger intact — clamps never wipe it) is
+      // proved by every interval it ever painted, however few: under CI
+      // frame pacing a 4× tail can end the watchable window in 2–3 frames,
+      // and demanding 6 would demand frames the film does not contain.
       if (checked >= 5) return true
+      if (checked >= 1 && ended()) return true
       if (performance.now() > deadline) return false
       await new Promise((res) => requestAnimationFrame(res))
     }
