@@ -43,6 +43,12 @@ import { World } from '../world/world.ts';
 
 /** Seconds of held finish shot after the run ends. */
 export const REPLAY_TAIL = 0.9;
+/** Seconds the FINISH shot must be holding on the cup BEFORE the terminal
+ *  beat — the dunk is the payoff and it must land INSIDE the shot, not
+ *  during the cut into it (playtest BB: "if the cuts actually ENDED on the
+ *  cup-dunk I'd forward it"). planShots caps `cut2` at `time - this` whenever
+ *  the shot ordering allows. */
+export const REPLAY_FINISH_LEAD = 0.4;
 /** Seconds of eased blend across a cut (split either side of the beat). */
 export const REPLAY_BLEND = 0.4;
 /** Replay fov — §7.3: tighter than the 35° of play. */
@@ -180,7 +186,11 @@ export function planShots(time: number, events: readonly ReplayEvent[]): ShotPla
   const cut2 = THREE.MathUtils.clamp(
     Math.max(last + 0.25, cut1 + 0.3, end * 0.65),
     cut1 + Math.max(0.15, end * 0.1),
-    Math.max(cut1 + 0.15, end - Math.min(0.2, end * 0.1)),
+    // the finish shot must own the last REPLAY_FINISH_LEAD seconds — the
+    // cup-dunk happens INSIDE a held shot, never inside a blend
+    // (playtest BB: the finale must land on the cup; on a very short run
+    // the ordering floor wins over the lead)
+    Math.max(cut1 + 0.15, end - Math.max(0.2, Math.min(REPLAY_FINISH_LEAD, end * 0.18))),
   );
   return {
     shots: [
@@ -418,6 +428,26 @@ export class ReplayDirector {
           this.shotPose(b, t, scratchPosB, scratchQuatB);
           this.position.lerp(scratchPosB, w);
           this.quaternion.slerp(scratchQuatB, w);
+          // CARRY THE SUBJECT across the cut (playtest BB: "one ~0.5 s
+          // window shows an EMPTY GROUND frame" — the blank lived entirely
+          // inside the blend: both shots frame the car, but a raw
+          // eye-position lerp + orientation slerp points the halfway pose
+          // BETWEEN the two framings and misses the car for a few frames).
+          // Through the blend the orientation eases through "look at the
+          // car from the blended eye", the nudge peaking at the midpoint
+          // and vanishing (4w(1−w)) at both ends, so each shot's composed
+          // pose is untouched at its boundaries — a softened cut that
+          // keeps the subject on screen, never a tween across a blank.
+          if (this.trace.steps > 0) {
+            const step = Math.min(
+              this.trace.steps - 1,
+              Math.max(0, Math.floor(t / this.trace.dt + 1e-6)),
+            );
+            this.posAtStep(step, scratchLook);
+            scratchM.lookAt(this.position, scratchLook, UP);
+            scratchQ.setFromRotationMatrix(scratchM);
+            this.quaternion.slerp(scratchQ, 4 * w * (1 - w));
+          }
           return;
         }
       }

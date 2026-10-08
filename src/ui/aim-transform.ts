@@ -25,6 +25,30 @@
 import * as THREE from 'three';
 
 const scratch = new THREE.Vector3();
+const scratchNdc = new THREE.Vector2();
+let scratchRay: THREE.Raycaster | null = null;
+
+/** The camera ray through a client point — the exact INVERSE of
+ *  `worldToClientPx` (same fresh rect, same live camera, same CSS px).
+ *  The world-space side of the aim rule: the perpendicular distance from
+ *  this ray to a socket origin is what that socket sits "this many metres"
+ *  from the cursor, however the perspective flattens it on screen. */
+export function clientPxToWorldRay(
+  canvas: HTMLElement,
+  camera: THREE.Camera,
+  clientX: number,
+  clientY: number,
+  out = new THREE.Ray(),
+): THREE.Ray {
+  const rect = canvas.getBoundingClientRect(); // LIVE, never cached
+  scratchNdc.set(
+    ((clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1,
+    -(((clientY - rect.top) / Math.max(rect.height, 1)) * 2 - 1),
+  );
+  scratchRay ??= new THREE.Raycaster();
+  scratchRay.setFromCamera(scratchNdc, camera);
+  return out.copy(scratchRay.ray);
+}
 
 /** Where a world point appears on screen, in CSS `clientX/clientY` space,
  *  under the CURRENT canvas rect and the CURRENT camera matrices — the

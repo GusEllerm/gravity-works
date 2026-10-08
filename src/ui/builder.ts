@@ -95,11 +95,12 @@
  */
 import * as THREE from 'three';
 import { canonicalBuild, fitSocket, snapSocket } from '../track/snap.ts';
+import { rigFingerprint } from '../track/build.ts';
 import { PIECES, PIECE_KINDS, pieceGeometries, pieceLabel, type PieceKind, type PieceParams } from '../track/pieces.ts';
 import { socketMatrix, transformSocket, type Socket } from '../track/socket.ts';
 import type { Build, PlacedPiece } from '../track/build.ts';
 import type { Level } from '../world/level.ts';
-import { worldToClientPx } from './aim-transform.ts';
+import { clientPxToWorldRay, worldToClientPx } from './aim-transform.ts';
 
 /** Two socket origins this close are joined (metres; well above float noise). */
 export const JOIN_TOL = 0.004;
@@ -112,9 +113,44 @@ export const HOVER_PX = 120;
  *  alternates are walkable with [ ] / Tab (the choice is EXPOSED, never a
  *  silent coin-flip). */
 export const AIM_TIE_PX = 28;
+/** World-space reach of an aim (metres, perpendicular distance from the
+ *  cursor's camera ray to the socket origin). THE SAME `HOVER_PX` pick
+ *  radius, stated where perspective cannot fudge it: 120 CSS px at the
+ *  nearest a campaign-framed socket ever sits to the eye (≈ 3.3 m at the
+ *  ladder's 1280×720 framing, f ≈ 856 px) is ≈ 0.46 m — so INSIDE the
+ *  framed track the two rules agree and no legible hover (a cursor at or
+ *  near the ring it aims — the ring is ~13 px) is ever refused, while a
+ *  click into open space — where the ray runs deep past the canvas point
+ *  and 120 px means half a metre, a metre on the feel rig — aims NOTHING
+ *  (playtests R/S → V/W → BB, three rounds: "click at 700,600 placed a
+ *  lip 150 px away and it counted"). Beyond the reach the ring shows
+ *  nothing and a click says so (`nothing fits out here`) instead of
+ *  placing at whatever socket the ring happened to rest on. */
+export const AIM_WORLD_RANGE_M = 0.5;
 /** The flip animation length — short enough to feel instant, long enough
  *  to be SEEN (playtest G: "clicked R; ghost never visibly changed"). */
 export const ROTATE_MS = 150;
+
+/** The mount transform of a held piece on a target socket: the contract's
+ *  forward seating `fitSocket`, or its half turn about the target's up when
+ *  the flip flag is on (the same transform `placement` builds in the live
+ *  builder — shared so the pure outcome probe and the ghost never disagree
+ *  about what a socket WOULD mean). */
+export function flipPlacement(
+  target: Socket,
+  held: PieceKind,
+  params: PieceParams,
+  flipped: boolean,
+): THREE.Matrix4 {
+  const seat = fitSocket(target, PIECES[held].sockets(params)[0]);
+  if (!flipped) return seat;
+  const axis = target.up.clone().normalize();
+  const flip = new THREE.Matrix4()
+    .makeTranslation(target.pos.x, target.pos.y, target.pos.z)
+    .multiply(new THREE.Matrix4().makeRotationAxis(axis, Math.PI))
+    .multiply(new THREE.Matrix4().makeTranslation(-target.pos.x, -target.pos.y, -target.pos.z));
+  return flip.multiply(seat);
+}
 
 /** The once-per-session WHY tail appended to the `flipped fit` status line
  *  (playtest Q item 5: "flipped fit vs fits here" unreadable). It states
@@ -138,6 +174,59 @@ export const REVERSING_WHY =
   'reversing — track runs backwards this way (press R unless you want a coaster)';
 
 export type GhostState = 'hidden' | 'snapped' | 'reversed' | 'invalid' | 'blocked';
+
+/**
+ * The tie list reduced to DISTINCT BUILD OUTCOMES (playtest BB bug 3:
+ * "`]` other spot sometimes silently does nothing — two runs byte-identical
+ * at 1.94 s"). A tie is a choice the SCREEN cannot decide; a candidate
+ * socket whose dry-run build is CANONICALLY EQUIVALENT to a nearer
+ * candidate's is not a choice, and offering `]` for it is the dead key BB
+ * pressed. Equivalence is the cheap canonical hash the build code already
+ * carries — `rigFingerprint` (Track Kit invariant 3: the fingerprint of the
+ * reified rig, 1e-6-quantised geometry, order-free) — so an equivalent
+ * alternate can never disagree about the answer. First-wins, so the
+ * NEAREST-depth representative of an equivalence class survives (the same
+ * depth law that picks the outright target).
+ * Pure: everything it needs is passed in; the builder memoises around it.
+ */
+export function distinctOutcomes(
+  cands: readonly number[],
+  socketOf: (index: number) => Socket | undefined,
+  outcomeHash: (socket: Socket) => string,
+): number[] {
+  if (cands.length < 2) return [...cands];
+  const seen = new Set<string>();
+  const out: number[] = [];
+  for (const i of cands) {
+    const socket = socketOf(i);
+    if (!socket) continue;
+    const fp = outcomeHash(socket);
+    if (seen.has(fp)) continue; // a canonical clone of a nearer candidate — not a distinct spot
+    seen.add(fp);
+    out.push(i);
+  }
+  return out;
+}
+
+/** The default `outcomeHash`: the rig fingerprint of the build the socket
+ *  would produce (dry-run: the current pieces plus the held piece seated
+ *  here). Exported for the unit gate; the live builder memoises the same
+ *  function through `aimCandidates`. */
+export function dryRunHash(
+  levelId: string,
+  seed: number,
+  pieces: readonly PlacedPiece[],
+  held: PieceKind,
+  params: PieceParams,
+  flipped: boolean,
+): (socket: Socket) => string {
+  return (socket) =>
+    rigFingerprint({
+      levelId,
+      seed,
+      pieces: [...pieces, { def: held, params: { ...params }, transform: flipPlacement(socket, held, params, flipped), seq: pieces.length }],
+    });
+}
 
 /** The VERB TABLE's screen copy per internal state ('' = say nothing). */
 export const GHOST_LABEL: Record<GhostState, string> = {
@@ -219,9 +308,17 @@ export interface Builder {
    *  Tab): when screen space cannot separate two sockets, the player —
    *  not the projector — picks which one the ghost means. */
   cycleAim(delta: number): void;
-  /** The open target sockets in list order — the e2e seam the aim-depth
-   *  proof reads to find screen-space near-ties. */
+  /** The open target sockets in list order (world positions) — the e2e
+   *  seam the aim-depth proof reads to find screen-space near-ties. */
   openSockets(): Socket[];
+  /** The tie candidates of the LAST aim as canonical DRY-RUN hashes (the
+   *  rig fingerprint of the build each socket would produce with the held
+   *  piece; empty-handed ties key on the socket origin). The e2e seam for
+   *  "the tie hint counts DISTINCT BUILD OUTCOMES, not sockets". */
+  tieOutcomes(): string[];
+  /** The tie candidate SOCKETS (full frames) of the last aim — the e2e
+   *  seam that recomputes the dry-run hashes test-side. */
+  tieSockets(): Socket[];
   /** A clean click (no drag travel — the gesture gate upstream decides):
    *  aim, then place the held piece at the aimed socket. */
   clickPlaceAt(clientX: number, clientY: number): void;
@@ -584,15 +681,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   }
 
   function placement(target: Socket, held: PieceKind): THREE.Matrix4 {
-    const [heldIn] = PIECES[held].sockets(heldParams(held));
-    const seat = fitSocket(target, heldIn);
-    if (!flipped) return seat;
-    const axis = target.up.clone().normalize();
-    const flip = new THREE.Matrix4()
-      .makeTranslation(target.pos.x, target.pos.y, target.pos.z)
-      .multiply(new THREE.Matrix4().makeRotationAxis(axis, Math.PI))
-      .multiply(new THREE.Matrix4().makeTranslation(-target.pos.x, -target.pos.y, -target.pos.z));
-    return flip.multiply(seat);
+    return flipPlacement(target, held, heldParams(held), flipped);
   }
 
   /** True when a placed piece's world AABB overlaps one of the set's solids. */
@@ -741,6 +830,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   }
 
   function emit(): void {
+    outcomeMemo.clear(); // the tie-outcome fingerprints saw the OLD build
     options.onChange?.({
       levelId: level.id,
       pieces: pieces.map((p, i) => ({ ...p, seq: i })),
@@ -924,6 +1014,14 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
    *  (the ties belong to a screen point, not to the build). */
   let aimTies: number[] = [];
   let aimTieCursor = 0;
+  /** Scratch for `socketCandidates`' cursor ray (a fresh Ray per call would
+   *  do too — this is once per pointer event). */
+  const scratchRay = new THREE.Ray();
+  /** Memo for the dry-run rig fingerprints (`aimCandidates`) — keyed by
+   *  kind + flip + socket origin; the fingerprint depends on the CURRENT
+   *  piece list too, so `emit` (the single mutation choke point: every
+   *  place/remove funnels through it) empties the memo. */
+  const outcomeMemo = new Map<string, string>();
   /** The last pointer position aim/place were asked about, in CLIENT px —
    *  the position `revalidateAim` re-derives the target from whenever the
    *  canvas RECT moves under a still cursor (playtests V+W round5: the
@@ -962,20 +1060,20 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     if (idx >= 0) {
       const p = worldToClientPx(canvasEl, camera, list[idx]!.socket.pos);
       if (p && Math.hypot(p.x - lastAim.x, p.y - lastAim.y) <= HOVER_PX) {
-        const fresh = socketCandidates(lastAim.x, lastAim.y);
+        const fresh = aimCandidates(lastAim.x, lastAim.y);
         if (fresh.includes(idx)) return; // still the right pick
       }
     }
     aimAt(lastAim.x, lastAim.y);
   }
 
-  function aimAt(clientX: number, clientY: number): void {
+  function aimAt(clientX: number, clientY: number): boolean {
     lastAim = { x: clientX, y: clientY };
     aimRect = { l: NaN, t: NaN, w: NaN, h: NaN }; // re-sampled next frame
-    const cands = socketCandidates(clientX, clientY);
+    const cands = aimCandidates(clientX, clientY);
     if (cands.length === 0) {
       aimTies = [];
-      return; // nowhere to aim here — the ring keeps the last real target
+      return false; // nowhere to aim here — the ring keeps the last real target
     }
     aimTies = cands;
     aimTieCursor = 0;
@@ -983,6 +1081,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     targetIndex = pick;
     // ALWAYS refresh: a tie changes the LABEL even when it keeps the index
     updateGhost();
+    return true;
   }
 
   function cycleAim(delta: number): void {
@@ -1014,7 +1113,20 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     // rather than duplicating it). Either way the intent then SPEAKS:
     // `place` explains every refusal, and an empty-handed click says the
     // piece is not in hand (never a silent no-op).
-    if (!ringWithinReach(clientX, clientY)) aimAt(clientX, clientY);
+    if (!ringWithinReach(clientX, clientY)) {
+      // THE CLICK AIMS OR IT SPEAKS (playtest BB bug 4, the round-3
+      // recurrence: "click at 700,600 placed a lip 150 px away and it
+      // counted"). The old sequence re-aimed and then placed UNCONDITIONALLY
+      // — and when the aim found nothing the UNMOVED ring was still a
+      // target, so the click silently placed the stale aim metres from the
+      // cursor. A click that is neither ON the shown ring nor within aim
+      // reach of any socket is a click on open space: it places NOTHING,
+      // moves nothing, and says so.
+      if (!aimAt(clientX, clientY)) {
+        ghostState.textContent = 'nothing fits out here — click nearer the ring or an end of the line';
+        return;
+      }
+    }
     if (kind) place();
     else ghostState.textContent = 'nothing in hand — pick a piece from the tray, then click to place';
   }
@@ -1033,21 +1145,28 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   }
 
   /** The open sockets a pointer position could mean, ordered NEAR-DEPTH
-   *  first: everything within `HOVER_PX` on screen, reduced to the
+   *  first: everything within `HOVER_PX` on screen AND within the
+   *  world-space aim reach (`AIM_WORLD_RANGE_M` from the cursor ray — the
+   *  same pick radius perspective can never inflate), reduced to the
    *  near-ties of the screen-nearest one (within `AIM_TIE_PX` of its
    *  screen distance), then sorted by CAMERA distance ascending — the
    *  nearer depth wins a screen-space tie (playtest S K3: the landing
    *  "always snapped onto the chain BEHIND the cup" because the far
    *  socket happened to project a few px closer). Empty when every open
-   *  socket is farther than `HOVER_PX`. */
+   *  socket is farther than `HOVER_PX` or out of world reach. */
   function socketCandidates(clientX: number, clientY: number): number[] {
     if (!camera || !canvasEl) return [];
+    const ray = clientPxToWorldRay(canvasEl, camera, clientX, clientY, scratchRay);
     const near: { i: number; dPx: number; dCam: number }[] = [];
     targets().forEach((t, i) => {
       const p = worldToClientPx(canvasEl!, camera!, t.socket.pos);
       if (!p) return; // behind the camera
       const d = Math.hypot(p.x - clientX, p.y - clientY);
-      if (d <= HOVER_PX) near.push({ i, dPx: d, dCam: camera!.position.distanceTo(t.socket.pos) });
+      // THE WORLD REACH (AIM_WORLD_RANGE_M's comment): the screen test
+      // alone lets perspective fake a pick — 120 px on a ray that runs
+      // deep past the point is half a metre of empty room.
+      if (d <= HOVER_PX && ray.distanceToPoint(t.socket.pos) <= AIM_WORLD_RANGE_M)
+        near.push({ i, dPx: d, dCam: camera!.position.distanceTo(t.socket.pos) });
     });
     if (near.length === 0) return [];
     const best = Math.min(...near.map((c) => c.dPx));
@@ -1055,6 +1174,36 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       .filter((c) => c.dPx <= best + AIM_TIE_PX)
       .sort((a, b) => a.dCam - b.dCam || a.i - b.i)
       .map((c) => c.i);
+  }
+
+  /** The AIM list the ring and the tie hint are built from: the screen/
+   *  world candidates of this point, REDUCED TO DISTINCT BUILD OUTCOMES
+   *  (`distinctOutcomes` — the tie hint counts outcomes, not sockets).
+   *  Fingerprints are memoised per kind + flip + socket origin; `emit`
+   *  empties the memo, so the memo never outlives a mutation. With
+   *  nothing held the sockets aim themselves (there is no placement to
+   *  be equivalent at) and every tie stays walkable. */
+  function aimCandidates(clientX: number, clientY: number): number[] {
+    const cands = socketCandidates(clientX, clientY);
+    if (!kind || cands.length < 2) return cands;
+    const list = targets();
+    const held = kind;
+    const params = heldParams(held);
+    const wasFlipped = flipped;
+    const hash = dryRunHash(level.id, level.seed, pieces, held, params, wasFlipped);
+    return distinctOutcomes(
+      cands,
+      (i) => list[i]?.socket,
+      (socket) => {
+        const key = `${held}|${wasFlipped ? 1 : 0}|${socket.pos.x.toFixed(6)},${socket.pos.y.toFixed(6)},${socket.pos.z.toFixed(6)}`;
+        let fp = outcomeMemo.get(key);
+        if (fp === undefined) {
+          fp = hash(socket);
+          outcomeMemo.set(key, fp);
+        }
+        return fp;
+      },
+    );
   }
 
   // ---- wiring ------------------------------------------------------------
@@ -1167,6 +1316,17 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     /** The open target sockets in list order (world positions) — the e2e
      *  seam the aim-depth proof reads to find screen-space near-ties. */
     openSockets: () => targets().map((t) => t.socket),
+    tieOutcomes: () => {
+      const list = targets();
+      if (!kind)
+        return aimTies.map((i) => (list[i] ? `@${list[i]!.socket.pos.toArray().map((v) => v.toFixed(6)).join(',')}` : ''));
+      const hash = dryRunHash(level.id, level.seed, pieces, kind, heldParams(kind), flipped);
+      return aimTies.map((i) => (list[i] ? hash(list[i]!.socket) : ''));
+    },
+    tieSockets: () => {
+      const list = targets();
+      return aimTies.map((i) => list[i]!.socket).filter(Boolean);
+    },
     playerCount: () => trayPlaced(),
     kind: () => kind,
     ghost: () => state,

@@ -44,7 +44,7 @@ import { PORCH03 } from './world/levels/porch03.level.ts';
 import { PORCH04 } from './world/levels/porch04.level.ts';
 import { PORCH05 } from './world/levels/porch05.level.ts';
 import { World, type RunStatus } from './world/world.ts';
-import { fixtureQuota, type Build } from './track/build.ts';
+import { fixtureQuota, serialize, type Build } from './track/build.ts';
 export { fixtureQuota };
 import { PIECES, pieceLabel } from './track/pieces.ts';
 import { fitSocket, SNAP_ANGLE_TOL, SNAP_TRANSLATION_TOL } from './track/snap.ts';
@@ -664,6 +664,9 @@ async function startReplayPlayer(
   let rate = 1;
   let dragging = false;
   let resumeAfterDrag = false;
+  /** Below this much remaining watchable motion a Play click rewinds to 0
+   *  (see the play-button comment — the dead-first-click fix). */
+  const PLAY_RESUME_MIN = Math.min(0.5, duration * 0.5);
 
   const renderAt = (t: number): void => {
     const k = stepAt(t);
@@ -698,7 +701,19 @@ async function startReplayPlayer(
     playBtn.setAttribute('aria-pressed', String(playing));
   };
   playBtn.addEventListener('click', () => {
-    if (!playing && time >= duration) time = 0;
+    // PLAY always STARTS MOTION when it is the resume click (playtest BB:
+    // "first Play click did nothing... second click worked"). The restart
+    // test used to be `time >= duration`, but the film LOOKS over long
+    // before it IS over: the finish lock-off holds on a settled cup for
+    // REPLAY_TAIL, and the last steps before the end crawl. A click that
+    // lands in that window (paused mid-tail from a scrub, or just after a
+    // pause taken during the hold) advanced one or two steps, hit the
+    // clamp, and re-paused — motion the eye cannot catch reads as a dead
+    // click, and only the NEXT click (now truly at the end) restarted.
+    // If the playable window left is shorter than a second of watchable
+    // motion, Play means REWIND AND PLAY — the tail's last sliver is the
+    // settle the viewer has already seen.
+    if (!playing && duration - time < PLAY_RESUME_MIN) time = 0;
     playing = !playing;
     syncPlay();
   });
@@ -833,6 +848,12 @@ async function startReplayPlayer(
     };
   };
   const cup = cupView(payload.build);
+  w.__gwReplayCarNdc = (): number[] | null => {
+    const k = stepAt(time);
+    camera.updateMatrixWorld();
+    const v = new THREE.Vector3(trace.pos[k * 3]!, trace.pos[k * 3 + 1]!, trace.pos[k * 3 + 2]!).project(camera);
+    return [v.x, v.y];
+  };
   w.__gwReplayGoalNdc = (): number[] | null => {
     if (!cup) return null;
     camera.updateMatrixWorld();
@@ -1191,6 +1212,17 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // space near-tie and asserts which one the ring took (debug surface)
   (window as unknown as Record<string, unknown>).__gwOpenSockets = (): number[][] =>
     builder.openSockets().map((s) => [s.pos.x, s.pos.y, s.pos.z]);
+  // the e2e seam for the DISTINCT-OUTCOME tie law (playtest BB bug 3): the
+  // dry-run canonical hash of each tie candidate of the last aim, and the
+  // builder's current build for the test-side dry run (debug surface)
+  (window as unknown as Record<string, unknown>).__gwTieOutcomes = (): string[] => builder.tieOutcomes();
+  (window as unknown as Record<string, unknown>).__gwTieSockets = () =>
+    builder.tieSockets().map((s) => ({
+      pos: [s.pos.x, s.pos.y, s.pos.z],
+      tangent: [s.tangent.x, s.tangent.y, s.tangent.z],
+      up: [s.up.x, s.up.y, s.up.z],
+    }));
+  (window as unknown as Record<string, unknown>).__gwBuildJson = (): string => serialize(builder.build());
   // the e2e seam for the FAILURE end-hold: the car's settled world
   // position — the death site the wide hold must keep in frame (debug
   // surface, not UI)
