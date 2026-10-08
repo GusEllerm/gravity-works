@@ -102,6 +102,10 @@ test('the Tab walk visits every control exactly once and traps on none', async (
 })
 
 test('keyboard end-to-end: kitchen01 built, launched, finished and retried with Tab/Enter/L only', async ({ page }) => {
+  // This flow is honest about being long: many focus round-trips plus a
+  // simulated run under CI's SwiftShader pacing. Without `slow()` the bare
+  // 30 s test budget was the wall it hit on CI (green locally at ~4 s).
+  test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
   await page.goto('/?level=kitchen01')

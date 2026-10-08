@@ -213,10 +213,15 @@ test.describe('scrolled page', () => {
     test.slow()
     await page.goto('/?level=feeltrack')
     await ready(page)
+    const yBefore = (await live(page)).box.y
     await page.evaluate(() => window.scrollTo(0, 130))
     await page.waitForTimeout(200)
     const box = (await live(page)).box
-    expect(box.y).toBeLessThan(200) // really scrolled
+    // RELATIVE proof: the canvas must have moved UP by (nearly) the scroll.
+    // An absolute ceiling (`< 200`) baked in this machine's toolbar height —
+    // a two-row toolbar on CI sat the canvas 20 px lower and a PERFECT
+    // scroll landed at y=206, flaking green machines against red CI.
+    expect(box.y).toBeLessThan(yBefore - 100) // really scrolled
     await page.hover('#gw-tray button[data-kind="straight"]')
     const s = await live(page)
     const c = s.sockets.map((sock, i) => ({ i, p: project(s.pose, s.box, sock) })).find(
