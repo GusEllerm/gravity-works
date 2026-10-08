@@ -255,3 +255,11 @@ asserted step-for-step with zero difference. Cost: ~15·120 steps of upfront sim
 second) and ~200 KB of doubles for a capped run. Alternatives rejected: keyframe + interpolation
 (forbidden — invented states), live re-stepping (a); recorded video of a first playthrough
 (a second source of truth).
+
+## 2026-10-08 — Merge a worktree by its HEAD, never by a remote ref [agent decision]
+The first stage5-k3 merge took `origin/stage5-k3` while the agent's real commit `b78fe83` sat in
+its worktree HEAD — a silently FAILED push (GitHub 500 window) left remote ≠ branch. Symptom: the
+merge brought half-done checkpoint code under old tests and two unit tests went red that were green
+where the agent ran them. Rule: for any worktree branch, `git -C <worktree> rev-parse HEAD` and
+`git status --porcelain` FIRST; merge THAT sha (objects are shared across worktrees), and re-push
+the branch from the worktree before concluding. Wire-fault salvage must verify the PUSH, not the commit.

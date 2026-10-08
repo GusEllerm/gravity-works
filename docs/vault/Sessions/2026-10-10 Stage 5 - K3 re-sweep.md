@@ -130,3 +130,5 @@ test with builder-exact flips), set-wiring (rule re-derivation + hash
 `a1a50d05`), camera (0.916 < 0.95 worst |ndc|, in-frame every step) —
 green, and the FULL unit suite: 684/684. Ladder/Levels/world rows
 rewritten to the measured numbers; Home's owed-K3 ledger line CLOSED.
+
+Post-merge fix (Director): playtest-pq par pins updated to the re-swept kitchen03 row (5 pieces, 1.45 s from pars.json — the merge left the old 2.65 literals; CI caught it, local repro confirmed, both files x2 repeat green).

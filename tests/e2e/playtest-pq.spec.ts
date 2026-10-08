@@ -228,7 +228,7 @@ test('every open rung and the first boot state THAT level’s par numbers', asyn
   const rungs: [string, string, string][] = [
     ['kitchen01', '3', '2.25'],
     ['kitchen02', '3', '1.05'],
-    ['kitchen03', '5', '2.65'],
+    ['kitchen03', '5', '1.45'],
     ['kitchen04', '4', '2.55'],
     ['kitchen05', '6', '2.40'],
     ['bedroom01', '3', '2.35'],
@@ -251,7 +251,7 @@ test('every open rung and the first boot state THAT level’s par numbers', asyn
   await ready(boot)
   await expect(boot.locator('#gw-callout')).toContainText('Stars: finish the run')
   await expect(boot.locator('#gw-callout')).toContainText('5 pieces (par)')
-  await expect(boot.locator('#gw-callout')).toContainText('2.65 s (par = the target time for this run)')
+  await expect(boot.locator('#gw-callout')).toContainText('1.45 s (par = the target time for this run)')
   await ctx2.close()
 
   expect(errors).toEqual([])
