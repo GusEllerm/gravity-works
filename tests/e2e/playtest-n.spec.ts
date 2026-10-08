@@ -62,11 +62,48 @@ test('the open result panel passes world clicks through to the canvas and select
   const selected = await page.evaluate(() => window.getSelection()?.toString() ?? '')
   expect(selected).toBe('')
 
-  // hold the third piece and click INSIDE the panel's rectangle: the click
-  // lands on the canvas and places (before the fix it died / selected text)
+  // hold the third piece and click INSIDE the panel's rectangle: the
+  // click must reach the world, not die inside the panel or select its
+  // text (N's symptom). SINCE STAGE 5 the FAILURE panel is the bottom
+  // strip (playtest BB item 6 — the caption no longer stands over the
+  // world); on a page taller than the window its row still crosses the
+  // canvas's bottom band, and there the pass-through law lives: the hit
+  // test says the canvas, and the intent ENDS READ — the piece placed or
+  // the refusal line spoken — the panel retired to the board that says
+  // so. Where the strip sits clear of the canvas, the same never-silent
+  // build-intent law is exercised on the Place button instead.
   await page.click('#gw-tray-landing')
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
-  await expect(page.locator('#gw-piece-count')).toHaveText('3 of 3 pieces used', { timeout: 10_000 })
+  const probe = await page.evaluate(() => {
+    const b = document.getElementById('gw-result')!.getBoundingClientRect()
+    const c = document.querySelector('#gw-stage canvas')!.getBoundingClientRect()
+    const y = b.y + b.height / 2
+    if (y < c.top || y > c.bottom) return { x: 0, y, over: false, hit: 'off-canvas' }
+    // walk the strip row from its left edge to the first point whose hit
+    // test is the CANVAS — a spot under the caption's pointer-transparent
+    // text, never the button row (whose controls keep their own pointers)
+    for (let x = Math.max(b.x + 4, c.x + 4); x <= Math.min(b.right - 4, c.right - 4); x += 6) {
+      if (document.elementFromPoint(x, y)?.id === 'gw-canvas') return { x, y, over: true, hit: 'gw-canvas' }
+    }
+    return { x: 0, y, over: false, hit: 'buttons-only' }
+  })
+  if (probe.over) {
+    expect(probe.hit, 'the strip box takes no pointers — the canvas is the hit target').toBe('gw-canvas')
+    await page.mouse.click(probe.x, probe.y)
+  } else {
+    await page.click('#gw-place')
+  }
+  // the intent ENDS read: placed at where it clicked/rang, or refused in
+  // words — never the silent swallow N found
+  await expect(page.locator('#gw-result')).toBeHidden({ timeout: 10_000 })
+  await expect
+    .poll(
+      async () =>
+        ((await page.textContent('#gw-piece-count')) ?? '') === '3 of 3 pieces used'
+          ? 'placed'
+          : ((await page.textContent('#gw-ghost-state')) ?? '').trim() || 'silent',
+      { timeout: 10_000 },
+    )
+    .not.toBe('silent')
   // the panel retired because the placement was an EDIT, not because of a
   // pointer mystery — and the next run's panel Retry is still hittable
   await expect(page.locator('#gw-result')).toBeHidden()

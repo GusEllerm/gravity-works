@@ -168,6 +168,13 @@ export interface BuilderOptions {
    *  whose piece box overlaps one of them is REJECTED — the ghost goes red
    *  and `place` refuses. AABB-vs-AABB per ghost update, nothing per frame. */
   solids?: readonly THREE.Box3[];
+  /** Called at the TOP of every `place()` INTENT (button click, Enter, and
+   *  the canvas click that holds a piece) BEFORE the attempt decides — the
+   *  shell uses it to collapse a still-open result panel into the build
+   *  view, so a Place click with the modal up auto-dismisses into the view
+   *  the placement is visible in, then places (playtest BB item 2: the
+   *  click behind an open result modal was a silent no-op). */
+  onPlaceIntent?: () => void;
 }
 
 export interface BuilderElements {
@@ -794,6 +801,25 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
 
   function place(): boolean {
     const list = targets();
+    if (kind === null) {
+      // THE PLACE BUTTON WITH NOTHING IN HAND SAYS SO (playtest BB item 2:
+      // the empty-handed button click was the silent branch; the canvas
+      // path already spoke its line — the button gets its own). Two laws
+      // it must not break: a one-shot note still standing ("last Drop
+      // placed") keeps the line (the refusal must not clobber a fresher
+      // truth — playtest P+Q), and an empty intent is NOT a build intent:
+      // the shell's modal collapse below belongs to attempts that can
+      // actually change the build (Q's law — Enter with the panel up
+      // dismisses nothing).
+      ghostState.textContent = stuckNote ?? 'nothing in hand — pick a piece from the tray first';
+      return false;
+    }
+    // THE BUILD INTENT SPEAKS TO THE SHELL FIRST (playtest BB item 2): a
+    // place attempt WITH a piece in hand retires a standing result panel
+    // into the build view BEFORE the attempt, so the placement (or the
+    // refusal line) is what the player sees — never a click swallowed by
+    // a modal.
+    options.onPlaceIntent?.();
     stuckNote = null;
     aimTies = []; // a mutation retires the last aim point's ties
     if (list.length === 0) {
@@ -802,7 +828,6 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       ghostState.textContent = 'no open socket to place at — the line has no free end';
       return false;
     }
-    if (!kind) return false;
     if (trayPlaced() >= level.budget) {
       // nothing left ANYWHERE — a hold here is a stranded hold; release it
       if (!selectable(kind)) setKind(null);

@@ -47,8 +47,9 @@ import { World, type RunStatus } from './world/world.ts';
 import { fixtureQuota, type Build } from './track/build.ts';
 export { fixtureQuota };
 import { PIECES, pieceLabel } from './track/pieces.ts';
-import { fitSocket } from './track/snap.ts';
-import { transformSocket } from './track/socket.ts';
+import { fitSocket, SNAP_ANGLE_TOL, SNAP_TRANSLATION_TOL } from './track/snap.ts';
+import { socketGap, tangentAngle, transformSocket } from './track/socket.ts';
+import type { Socket } from './track/socket.ts';
 import type { Level } from './world/level.ts';
 import { createBuilder, type Builder } from './ui/builder.ts';
 import { encodeShareUrl, parseShareUrl, type SharePayload } from './share/share.ts';
@@ -64,7 +65,7 @@ import { createHelpDrawer } from './ui/help.ts';
 import { firstLesson, firstSight } from './ui/callouts.ts';
 import { downloadBlob, generateShareCard } from './share/card.ts';
 import { SETS, isRegisteredSet, type SetRegistration } from './sets/index.ts';
-import { CAMPAIGN_LADDER, nextInCampaign } from './world/campaign.ts';
+import { CAMPAIGN_LADDER, levelUnlock, nextInCampaign } from './world/campaign.ts';
 import { createLevelSelect } from './ui/levelselect.ts';
 import type { SetInstance } from './sets/index.ts';
 import { placeSet } from './world/setPlacement.ts';
@@ -361,6 +362,32 @@ export function actionableKindsFor(
  *  `actionableKindsFor` by construction. UI-side only, like that gate. */
 export function placedKindsFor(build: Build): Set<PieceKind> {
   return new Set(build.pieces.map((p) => p.def));
+}
+
+/** The kinds PLACED in a REVERSED mount — the HOW side of the nose-first
+ *  advice (stage 5, playtest BB item 3: "flatten the landing names a
+ *  change but never says HOW — Rotate only flips"). A placement is
+ *  rotated exactly when its in-socket sits AT a chain anchor (the start
+ *  socket or another piece's exit, within `SNAP_TRANSLATION_TOL`) with
+ *  its travel direction NOT parallel to the anchor's (past
+ *  `SNAP_ANGLE_TOL`) — the builder's own amber `flipped fit` test, read
+ *  back off the build data: the flip is the half turn about the anchor's
+ *  up, which leaves the socket POSITION joined and flips the tangent
+ *  (see `placement` in `src/ui/builder.ts`). UI-side copy, like the
+ *  other kind-sets — the physics and the run hash never see it. */
+export function flippedKindsFor(level: Level, build: Build): Set<PieceKind> {
+  const out = new Set<PieceKind>();
+  const anchors: Socket[] = [level.startSocket];
+  for (const p of build.pieces) {
+    anchors.push(transformSocket(PIECES[p.def].sockets(p.params)[1], p.transform));
+  }
+  for (const p of build.pieces) {
+    const entry = transformSocket(PIECES[p.def].sockets(p.params)[0], p.transform);
+    if (anchors.some((a) => socketGap(entry, a) < SNAP_TRANSLATION_TOL && tangentAngle(entry, a) > SNAP_ANGLE_TOL)) {
+      out.add(p.def);
+    }
+  }
+  return out;
 }
 
 /**
@@ -869,6 +896,24 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   stage.id = 'gw-stage';
   stage.style.position = 'relative'; // the end-of-run panel sits over the world
   root.appendChild(stage);
+  // THE DEV-PREVIEW BADGE (stage 5, playtest BB item 5: "?level= loads a
+  // locked level directly; the map shows it locked"). The debug-param
+  // doctrine stands — `?level=` still ADDRESSES any registered rung, on or
+  // off the campaign (Decision Log 2026-10-07) — but a CAMPAIGN rung the
+  // save has not unlocked says so honestly instead of pretending to be a
+  // normal visit: the badge names what the player is standing in, and the
+  // terminal edge below withholds the mint (`recordStars` never fires on a
+  // dev preview, so the line cannot open the next rung — the badge is true
+  // because the write is gated, not merely worded). Off-ladder rigs (the
+  // sandbox, the feel track) report unlocked and wear no badge; the shared
+  // replay page never builds this DOM at all (`bootSharedRun`).
+  const devPreview = !levelUnlock(loadSave().progress, level.id).unlocked;
+  if (devPreview) {
+    const badge = document.createElement('p');
+    badge.id = 'gw-dev-preview';
+    badge.textContent = 'dev preview — progress from here won’t unlock anything';
+    stage.appendChild(badge); // corner-pinned: zero layout flow over the canvas
+  }
   const statusLine = paragraph('gw-status', root);
   const calloutLine = paragraph('gw-callout', root, 'text');
   // The run hash is engineer trivia on a PLAYER panel (playtest E+F: “run
@@ -1165,6 +1210,18 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     const v = framingFocus.clone().project(camera);
     return [v.x, v.y];
   };
+  // the e2e seam for the FAILURE-CAPTION law (playtest BB item 6: the
+  // failure panel rendered mid-canvas and hid the ball's fate during the
+  // flight camera): the BALL's screen position under the LIVE camera —
+  // the same NDC space the strip's rect is checked against through the
+  // canvas rect (debug surface, not UI).
+  (window as unknown as Record<string, unknown>).__gwCarNdc = (): number[] | null => {
+    const w = world;
+    if (!w) return null;
+    const p = w.carPose(0).pos;
+    const v = new THREE.Vector3(p.x, p.y, p.z).project(camera);
+    return [v.x, v.y];
+  };
 
   createHelpDrawer(stage, { reducedMotion: loadSave().settings.reducedMotion ?? undefined });
   // quiet, focusable, TOP-RIGHT of the world (playtest A+F: “Help = collapsed
@@ -1184,6 +1241,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     tray,
     trayParams: tray ? levelTrayParams(level, tray) : undefined,
     solids: setSolids,
+    // A PLACE INTENT with the result modal up collapses the panel into the
+    // build view BEFORE the attempt (playtest BB item 2: the click behind
+    // an open panel was a silent no-op). The success path then places in
+    // view (`onChange` rebuilds and reframes as ever); every refusal lands
+    // its explanation on a live build view, never behind a panel.
+    onPlaceIntent: () => dismissOverlay(),
     onChange: (build) => {
       autosave.edit(build);
       // first-time callout (§9.3): the first piece of a kind ever PLACED
@@ -1340,17 +1403,27 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // press from the camera's double-Escape pair entirely, so the SECOND
   // Escape is a lone first half of the chord: it arms nothing the player
   // did not ask for, and a vista that is already home stays home.
+  /** The overlay dismissal both doors share: Escape (below) and a PLACE
+   *  INTENT while the panel is up (playtest BB item 2). The panel away,
+   *  the framing walked home — the BUILD VIEW is what the placement (or
+   *  the refusal line) plays out in. The car is left where it fell;
+   *  Retry stays the button that moves it. */
+  function dismissOverlay(): void {
+    if (resultPanel.element.hidden) return;
+    resultPanel.hide();
+    runCamActive = false;
+    endHold = null; // the damping tick must not re-solve the death hold
+    buildView.reset();
+    if (world?.scene) frameCamera(camera, world.scene, framingFocus, null, buildView);
+  }
+
   window.addEventListener(
     'keydown',
     (ev) => {
       if (ev.key !== 'Escape' || resultPanel.element.hidden) return;
       ev.preventDefault();
       ev.stopPropagation(); // capture: the camera's Escape chord never sees this press
-      resultPanel.hide();
-      runCamActive = false;
-      endHold = null; // the damping tick must not re-solve the death hold
-      buildView.reset();
-      if (world?.scene) frameCamera(camera, world.scene, framingFocus, null, buildView);
+      dismissOverlay();
     },
     { capture: true },
   );
@@ -1539,6 +1612,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         placedKindsFor(currentBuild),
         goalNounFor(level),
         stockedKindsFor(currentBuild, tray),
+        flippedKindsFor(level, currentBuild),
       );
       resultPanel.show(model);
       // the run's OUTCOME is an audio event exactly once per run: the
@@ -1553,12 +1627,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // §9.2 progress persists: a finished run's stars are the save's best
       // for this level (a failure records nothing); this is what opens the
       // next rung on the level select, exactly what `gateNext` just offered
-      recordStars(level.id, model.stars);
-      // the gate agrees with the level select (close-review F5): the next
-      // rung is offered iff the SAVE says it is unlocked — this run's star
-      // or the already-banked best, deterministic from the save, no sim
-      // impact (§9.2's ladder still advances on STARS, not on trying).
-      gateNext(Math.max(model.stars, bestStarsBefore));
+      // — EXCEPT on a dev preview (BB item 5): a locked rung addressed by
+      // `?level=` mints no unlock, so the badge's promise is a property of
+      // the code path, not of copy. The gate reports 0 there, keeping the
+      // panel's Next honest with the "unlocks nothing" claim.
+      if (!devPreview) recordStars(level.id, model.stars);
+      gateNext(devPreview ? 0 : Math.max(model.stars, bestStarsBefore));
       const h = w.hashHex();
       if (lastRun && lastRun.hash === h && lastRun.pieces !== result.piecesUsed) {
         hashNote.textContent = 'same run — your extra piece never touched the road';

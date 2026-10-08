@@ -290,6 +290,18 @@ export function createRunRecorder(): RunRecorder {
  * the almost-right line lists exactly the missing deck. Unknown stock
  * (`null` — shared/replay pages, no builder context) keeps the bare head
  * exactly as shipped.
+ *
+ * HOW PHRASING (stage 5, playtest BB item 3: the nose-first tail "names a
+ * change but never says HOW — Rotate only flips"). When the advice target
+ * is a landing that was PLACED-AND-ROTATED, the nose-first line says the
+ * RECIPE instead of the verdict — `re-place it flat (no R)`. That state
+ * arrives as `flippedKinds` (from `flippedKindsFor(level, build)` in
+ * `src/boot.ts`, the builder's amber reversed-fit test read back off the
+ * build data): a landing in that set was mounted bent, so telling the
+ * player to "flatten" it repeats the instruction that just failed. A
+ * placed-and-straight landing keeps the plain `flatten the landing`; a
+ * tray-only kind keeps its ADD wording; an unknown set (no builder
+ * context) keeps the shipped wording like every other gate here.
  */
 export function physicsNote(
   result: RunResult,
@@ -298,6 +310,7 @@ export function physicsNote(
   placedKinds: ReadonlySet<PieceKind> | null = null,
   goalNoun: string | null = null,
   stockedKinds: ReadonlySet<PieceKind> | null = null,
+  flippedKinds: ReadonlySet<PieceKind> | null = null,
 ): string {
   if (result.status === 'finished') return '';
   if (result.hazardsTouched > 0) return 'a hazard took the run — line up to miss it';
@@ -308,6 +321,14 @@ export function physicsNote(
    *  phrasing ("flatten it", "lower it") describe something that exists to
    *  critique; a tray-only kind gets ADD phrasing instead (playtest W). */
   const isPlaced = (k: PieceKind): boolean => placedKinds === null || placedKinds.has(k);
+  /** Was this kind PLACED-AND-ROTATED (the builder's amber reversed fit)?
+   *  Only then does the landing advice carry the HOW (playtest BB item 3:
+   *  "flatten the landing names a change but never says HOW — Rotate only
+   *  flips"): the rotated landing is flattened by RE-PLACING it without R,
+   *  and saying so beats telling a player to flatten something the last R
+   *  press just bent. Unknown (`null` — shared pages) keeps the plain
+   *  shipped verb, the same permissive rule `isPlaced` follows. */
+  const isRotated = (k: PieceKind): boolean => flippedKinds !== null && flippedKinds.has(k);
 
   const climb = ev.apexY - ev.startY;
   const apexFloor = Math.sqrt(NOTE_G * (climb / 2));
@@ -322,7 +343,13 @@ export function physicsNote(
       // W: "flatten the landing" on a build with no landing placed read
       // as a lie even though the gate had made it logically true)
       const advice = [
-        canAct('landing') ? (isPlaced('landing') ? 'flatten the landing' : 'add a flat landing') : null,
+        canAct('landing')
+          ? isPlaced('landing')
+            ? isRotated('landing')
+              ? 're-place it flat (no R)'
+              : 'flatten the landing'
+            : 'add a flat landing'
+          : null,
         canAct('gapLip') ? (isPlaced('gapLip') ? 'lower the lip' : 'add a lip') : null,
       ].filter((s): s is string => s !== null);
       return advice.length > 0 ? `fell off nose-first — ${advice.join(' or ')}` : 'fell off nose-first';
@@ -411,7 +438,9 @@ export interface ResultModel {
 /** Stars + note for one finished-or-not run: the panel's whole content.
  *  `actionableKinds` (kinds placed in the build that ran, plus kinds with
  *  stock left in the level's tray) gates the note's advice tails,
- *  `placedKinds` (the kinds actually in the build) phrases them, `goalNoun` is the
+ *  `placedKinds` (the kinds actually in the build) phrases them,
+ *  `flippedKinds` (the kinds placed in a reversed mount) makes the
+ *  nose-first landing tail HOW-capable, `goalNoun` is the
  *  level's goal-fixture noun (`goalNounFor` in `src/boot.ts`), and `stockedKinds`
  *  (kinds with tray stock LEFT) carries the drive-off ADD tail — see `physicsNote`;
  *  none of them reaches the physics. */
@@ -424,12 +453,13 @@ export function resultModel(
   placedKinds: ReadonlySet<PieceKind> | null = null,
   goalNoun: string | null = null,
   stockedKinds: ReadonlySet<PieceKind> | null = null,
+  flippedKinds: ReadonlySet<PieceKind> | null = null,
 ): ResultModel {
   return {
     stars: starsFor(result, par),
     time: result.time,
     piecesUsed: result.piecesUsed,
-    note: physicsNote(result, ev, actionableKinds, placedKinds, goalNoun, stockedKinds),
+    note: physicsNote(result, ev, actionableKinds, placedKinds, goalNoun, stockedKinds, flippedKinds),
     status: result.status,
     par,
     bestStarsBefore,
@@ -655,6 +685,17 @@ export function createResultPanel(host: HTMLElement): ResultPanel {
       rules.textContent = lines.rules;
       note.textContent = model.note;
       note.hidden = model.note === '';
+      // THE FAILURE STRIP (playtest BB item 6: the failure panel rendered
+      // mid-canvas and hid the ball's fate during the flight camera). A
+      // FAILED run's verdict drops to the BOTTOM of the stage, so the wide
+      // death hold keeps the ball's last second on screen above it — the
+      // caption never stands between the player and the fate it reports
+      // (`tests/e2e/playtest-bb.spec.ts` asserts the strip's rect and the
+      // ball's projected screen point never overlap across the death
+      // second). A finished run keeps the centred panel: its shot ends on
+      // the cup dunk, where the panel rides the moment, not over it.
+      const strip = model.status !== 'finished';
+      root.classList.toggle('gw-result-strip', strip);
       // a fresh panel never keeps the last run's link (the hash would be stale)
       this.resetShare();
       // visibility on BOTH channels (the help drawer's lesson: `hidden`
@@ -674,13 +715,16 @@ export function createResultPanel(host: HTMLElement): ResultPanel {
       const anchor = window.scrollY;
       root.style.position = '';
       root.style.top = '';
+      root.style.bottom = '';
       root.hidden = false;
       root.style.display = '';
       const rect = root.getBoundingClientRect();
-      if (rect.top < 0 || rect.bottom > window.innerHeight) {
+      if (!strip && (rect.top < 0 || rect.bottom > window.innerHeight)) {
         // anchored to the viewport, BELOW the sticky toolbar (playtest R's
         // law: the toolbar is always the thing under the cursor — the
-        // panel must never trade that away to be seen)
+        // panel must never trade that away to be seen). The FAILURE strip
+        // needs no anchor branch: its CSS pins it to the viewport's bottom
+        // edge, on screen whether or not the stage is.
         root.style.position = 'fixed';
         const host = document.getElementById('gw-builder-host');
         const below = host ? Math.round(host.getBoundingClientRect().bottom) : 0;
@@ -694,6 +738,8 @@ export function createResultPanel(host: HTMLElement): ResultPanel {
       root.style.display = 'none';
       root.style.position = '';
       root.style.top = '';
+      root.style.bottom = '';
+      root.classList.remove('gw-result-strip');
       if (window.scrollY !== anchor) window.scrollTo(0, anchor);
     },
   };

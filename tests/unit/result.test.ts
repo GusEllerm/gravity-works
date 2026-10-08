@@ -4,9 +4,14 @@
  * scroll-into-view visibility are e2e-guarded (`tests/e2e/loop.spec.ts`).
  */
 import { describe, expect, test } from 'vitest';
+import * as THREE from 'three';
 import { emptyEvidence, physicsNote, NOSE_FIRST_PITCH } from '../../src/ui/result.ts';
 import { outcomeLines, resultModel } from '../../src/ui/result.ts';
-import type { PieceKind } from '../../src/track/pieces.ts';
+import { fitSocket } from '../../src/track/snap.ts';
+import { transformSocket } from '../../src/track/socket.ts';
+import type { Socket } from '../../src/track/socket.ts';
+import { PIECES, type PieceKind } from '../../src/track/pieces.ts';
+import type { Build, PlacedPiece } from '../../src/track/build.ts';
 
 const ev = emptyEvidence(0);
 const par = { pieces: 3, time: 2.21 };
@@ -381,5 +386,110 @@ describe('drive-off tail names the tray stock, per build (playtest AA, B2 pass 2
     expect(stocked.has('straight')).toBe(true); // the spare deck is the fix
     expect(stocked.has('landing')).toBe(false); // the pillow is used up
     expect(stocked.has('drop')).toBe(true); // the step never placed
+  });
+});
+
+/**
+ * HOW PHRASING (stage 5, playtest BB item 3: "flatten the landing" names a
+ * change but never says HOW — Rotate only flips"). The nose-first landing
+ * tail carries the RECIPE (`re-place it flat (no R)`) exactly when the
+ * landing in the build was PLACED-AND-ROTATED — the builder's amber
+ * reversed fit read back off the build data by `flippedKindsFor(level,
+ * build)` in `src/boot.ts`: the in-socket sits JOINED at a chain anchor
+ * (`SNAP_TRANSLATION_TOL`) with its travel direction not parallel
+ * (`SNAP_ANGLE_TOL`), which is precisely what the half turn about the
+ * anchor's up leaves behind. Placed-and-straight keeps the plain verb;
+ * unknown (shared/replay pages) keeps it too.
+ */
+describe('the nose-first tail says HOW when the landing was rotated (playtest BB item 3)', () => {
+  const noseFirst = () => ({
+    ...emptyEvidence(0),
+    lastTouchdownPitch: NOSE_FIRST_PITCH - 0.05,
+  });
+  const fell = { status: 'fell', time: 1.9, piecesUsed: 3, hazardsTouched: 0 } as const;
+
+  /** The builder's own `placement`: seat the kind's in-socket on target,
+   *  optionally flipped — the half turn about the target's up through its
+   *  position (exactly `builder.ts`'s flip matrix). */
+  function mount(target: Socket, def: PieceKind, flip = false): THREE.Matrix4 {
+    const [inSocket] = PIECES[def].sockets(PIECES[def].params);
+    const seat = fitSocket(target, inSocket);
+    if (!flip) return seat;
+    const up = target.up.clone().normalize();
+    return new THREE.Matrix4()
+      .makeTranslation(target.pos.x, target.pos.y, target.pos.z)
+      .multiply(new THREE.Matrix4().makeRotationAxis(up, Math.PI))
+      .multiply(new THREE.Matrix4().makeTranslation(-target.pos.x, -target.pos.y, -target.pos.z))
+      .multiply(seat);
+  }
+
+  /** A kitchen02-shaped line: ramp fixture → straight → landing (optionally
+   *  rotated), the chain `flippedKindsFor` must read. */
+  async function line(landingFlipped: boolean): Promise<{ level: import('../../src/world/level.ts').Level; build: Build }> {
+    const { KITCHEN02 } = await import('../../src/world/levels/kitchen02.level.ts');
+    const { initialBuild } = await import('../../src/boot.ts');
+    const base = initialBuild(KITCHEN02);
+    const ramp = base.pieces.find((p) => p.def === 'ramp') ?? base.pieces[0]!;
+    const rampExit = transformSocket(PIECES[ramp.def].sockets(ramp.params)[1], ramp.transform);
+    const straight: PlacedPiece = { def: 'straight', params: PIECES.straight.params, transform: mount(rampExit, 'straight'), seq: base.pieces.length };
+    const straightExit = transformSocket(PIECES.straight.sockets(straight.params)[1], straight.transform);
+    const landing: PlacedPiece = { def: 'landing', params: PIECES.landing.params, transform: mount(straightExit, 'landing', landingFlipped), seq: base.pieces.length + 1 };
+    return { level: KITCHEN02, build: { ...base, pieces: [...base.pieces, straight, landing] } };
+  }
+
+  test('flippedKindsFor flags the rotated landing and NOT the straight chain', async () => {
+    const { flippedKindsFor } = await import('../../src/boot.ts');
+    const { level, build } = await line(true);
+    const flipped = flippedKindsFor(level, build);
+    expect(flipped.has('landing')).toBe(true);
+    expect(flipped.has('straight')).toBe(false);
+    expect(flipped.has('ramp')).toBe(false);
+  });
+
+  test('a forward-mounted landing is never flagged (no phantom HOW)', async () => {
+    const { flippedKindsFor } = await import('../../src/boot.ts');
+    const { level, build } = await line(false);
+    expect(flippedKindsFor(level, build).has('landing')).toBe(false);
+  });
+
+  test('placed-and-rotated: the tail names the HOW', () => {
+    const placed = new Set<PieceKind>(['ramp', 'straight', 'landing']);
+    const flipped = new Set<PieceKind>(['landing']);
+    expect(physicsNote(fell, noseFirst(), placed, placed, null, null, flipped)).toBe(
+      'fell off nose-first — re-place it flat (no R)',
+    );
+    // the lip half is untouched by the HOW gate: placed lip keeps "lower"
+    const both = new Set<PieceKind>(['ramp', 'landing', 'gapLip']);
+    expect(physicsNote(fell, noseFirst(), both, both, null, null, flipped)).toBe(
+      'fell off nose-first — re-place it flat (no R) or lower the lip',
+    );
+  });
+
+  test('placed-and-straight keeps the plain shipped verb; unknown stays permissive', () => {
+    const placed = new Set<PieceKind>(['ramp', 'landing']);
+    expect(physicsNote(fell, noseFirst(), placed, placed, null, null, new Set())).toBe(
+      'fell off nose-first — flatten the landing',
+    );
+    // null (no builder context — shared/replay pages) keeps the shipped wording
+    expect(physicsNote(fell, noseFirst(), placed, placed, null, null, null)).toBe(
+      'fell off nose-first — flatten the landing',
+    );
+  });
+
+  test('PLACED still outranks FLIPPED: a tray-only landing stays ADD-shaped', () => {
+    // flippedKinds can only contain placed kinds by construction, but the
+    // verb ladder must still never critique an unplaced piece if a caller
+    // hands it a stray set
+    expect(
+      physicsNote(
+        fell,
+        noseFirst(),
+        new Set<PieceKind>(['ramp', 'landing']),
+        new Set<PieceKind>(['ramp']),
+        null,
+        null,
+        new Set<PieceKind>(['landing']),
+      ),
+    ).toBe('fell off nose-first — add a flat landing');
   });
 });

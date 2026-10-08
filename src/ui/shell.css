@@ -96,6 +96,33 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
 }
 #gw-result-buttons { pointer-events: auto; }
 #gw-result-buttons button { pointer-events: auto; }
+/* THE FAILURE STRIP (playtest BB item 6: the failure panel rendered
+ * mid-canvas and hid the ball's fate during the flight camera). A failed
+ * run's verdict rides a STRIP at the bottom of the VIEWPORT — the wide
+ * death hold keeps the ball's last second on screen above it
+ * (`result.ts` toggles `gw-result-strip` on a non-finished status;
+ * `tests/e2e/playtest-bb.spec.ts` asserts the strip's rect and the ball's
+ * projected screen point never overlap across the death second, via the
+ * `__gwCarNdc` seam). A finished run keeps the centred panel. */
+#gw-result.gw-result-strip {
+  /* a full-width bar pinned to the viewport's bottom edge, not a centred
+   * card: the caption lines ride one quiet row under the world */
+  position: fixed;
+  top: auto;
+  bottom: 10px;
+  left: 12px;
+  right: 12px;
+  transform: none;
+  max-width: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px 14px;
+}
+#gw-result.gw-result-strip > p { margin: 0; }
+#gw-result.gw-result-strip #gw-result-buttons { margin-top: 0; }
+#gw-result.gw-result-strip #gw-result-share-row { margin-top: 4px; flex-basis: 100%; }
 #gw-result-stars, #gw-result-time, #gw-result-pieces { margin: 0; }
 #gw-result-stars { font-size: 20px; letter-spacing: 2px; }
 #gw-result-rules { margin: 2px 0 0; font-size: 11px; opacity: 0.85; }
@@ -159,6 +186,26 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
   #gw-result-buttons button { font-size: 11px; padding: 3px 8px; }
   #gw-result-share-row { margin-top: 4px; }
   #gw-result-share-url { font-size: 10px; }
+}
+/* THE DEV-PREVIEW BADGE (playtest BB item 5: "?level= loads a locked
+ * level; the map shows it locked"). A locked CAMPAIGN rung addressed via
+ * `?level=` wears this honest corner tag — the debug-param doctrine
+ * stands (addressing is not progression), but the page says what it is.
+ * Corner-pinned like the sound controls: zero layout flow, never shifts
+ * the canvas rect the aim transform lives under. */
+#gw-dev-preview {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  z-index: 4;
+  margin: 0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(185, 145, 90, 0.7);
+  background: rgba(255, 248, 236, 0.85);
+  color: #6a5636;
+  font: 11px/1.4 system-ui, sans-serif;
+  font-style: italic;
 }
 /* THE GRAPHICS HICCUP (playtest W round5: a tab that went BLACK and silent
  * mid-drag). If the WebGL context is ever lost, the page SAYS so and says
