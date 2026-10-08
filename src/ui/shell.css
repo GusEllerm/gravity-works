@@ -15,7 +15,45 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
 #gw-status, #gw-callout { font-size: 13px; margin: 8px 0; }
 /* the determinism fingerprint: engineer trivia behind a quiet disclosure
  * (playtest E+F: the hash on the player's status line was unreadable noise) */
-#gw-hash-details { font-size: 11px; color: #8a7040; margin: 2px 0; }
+#gw-hash-details { font-size: 11px; color: #6a5636; margin: 2px 0; }
+/* STAGE 6 A11Y — FOCUS. There is no mouse-only affordance on this page,
+ * and no control may light up invisibly: every focusable thing wears a
+ * TWO-TONE ring (a #fff8ec halo hugging the control + a 3 px #143a6e
+ * outline, 8.7:1 against the paper — WCAG 2.4.13 wants ≥3:1 for the
+ * indicator itself; the halo separates the ring from any fill it sits
+ * on). Over the DARK surfaces (the result panel/strip) the ring switches
+ * to #ffe1a8 (7.4:1 against the panel). `:focus-visible` only — mouse
+ * clicks stay quiet, keyboard/Tab focus always shows. */
+:focus-visible {
+  outline: 3px solid #143a6e;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px #fff8ec;
+}
+#gw-result :focus-visible {
+  outline-color: #ffe1a8;
+  box-shadow: none;
+}
+/* the canvas never receives focus by design (the builder group is the
+ * world's tab stop); touch: vertical drag scrolls the PAGE, horizontal
+ * drag and two-finger drag reach the app (pan/orbit), and SPREAD stays
+ * the browser's pinch-zoom (a magnifier is an a11y feature) */
+#gw-stage canvas { touch-action: pan-y pinch-zoom; }
+/* coarse pointers (phones/tablets): WCAG 2.5.5 comfort — every control
+ * the toolbar offers reaches the ~44 px tap box */
+@media (pointer: coarse) {
+  #gw-tray button, #gw-controls button, #gw-help-toggle,
+  #gw-result-buttons button, #gw-replay-play, .gw-replay-speed,
+  #gw-replay-build, #gw-sound-toggle {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+}
+/* nothing in the shell animates through CSS today (the tweens live in
+ * canvas code and every one has its still — see src/ui/motion.ts); this
+ * block is the belt so a future transition cannot sneak past the law */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
 #gw-hash-details summary { cursor: pointer; }
 #gw-hash-details p { margin: 2px 0 0; }
 #gw-builder { margin-top: 10px; }
@@ -32,7 +70,7 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
 #gw-tray { display: flex; flex-wrap: wrap; gap: 6px; }
 #gw-tray button, #gw-controls button, #gw-help-toggle {
   font: inherit; font-size: 13px; padding: 4px 10px; border-radius: 4px;
-  border: 1px solid #b9a37c; background: #fff8ec; color: inherit; cursor: pointer;
+  border: 1px solid #8a7040; background: #fff8ec; color: inherit; cursor: pointer;
 }
 #gw-tray button[aria-pressed='true'] { background: #f0d9a8; border-color: #8a7040; }
 #gw-controls { display: flex; gap: 6px; margin-top: 6px; }
@@ -271,7 +309,7 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
   touch-action: none;
 }
 #gw-replay-head { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1px; background: #8a7040; border-radius: 2px; pointer-events: none; }
-.gw-replay-tick { position: absolute; top: 3px; bottom: 3px; width: 3px; margin-left: -1px; background: #c46a2b; border-radius: 2px; }
+.gw-replay-tick { position: absolute; top: 3px; bottom: 3px; width: 3px; margin-left: -1px; background: #a34e15; border-radius: 2px; }
 #gw-replay-build { font-size: 13px; color: #2c2013; border: 1px solid #8a7040; border-radius: 6px; padding: 4px 10px; text-decoration: none; background: #fff8ec; }
 #gw-replay-verify { font-size: 12px; color: #6a5636; margin-top: 40px; }
 #gw-replay-verify p { margin: 4px 0; }

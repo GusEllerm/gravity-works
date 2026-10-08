@@ -35,6 +35,31 @@
  *   Escape Escape                               BRING THE VIEW HOME (recenter)
  *   wheel                                         nothing (no zoom, by design)
  *
+ *   TOUCH (stage 6 a11y pass; the mouse verbs re-expressed for fingers):
+ *   touch-down                                AIM the ring FIRST (a finger
+ *                                             has no hover — the tap shows
+ *                                             its ghost before the release)
+ *   tap (lift within CANVAS_DRAG_PX)          PLACE at the aimed socket
+ *   one-finger drag (horizontal)              PAN; a mostly-VERTICAL drag
+ *                                             stays the page's scroll —
+ *                                             `touch-action: pan-y` in
+ *                                             shell.css keeps the page
+ *                                             scrollable on a phone
+ *   TWO-finger drag                           ORBIT (the touch stand-in
+ *                                             for right-drag; a finger
+ *                                             has no second button), and
+ *                                             it never places
+ *   SPREAD / PINCH                             the BROWSER's zoom, never
+ *                                             ours (`pinch-zoom`): page
+ *                                             magnification is an
+ *                                             accessibility feature, and
+ *                                             a cancelled gesture places
+ *                                             nothing (pointercancel)
+ *   long-press                                 nothing — the context menu
+ *                                             is suppressed and no verb
+ *                                             rides the clock (documented
+ *                                             in the stage 6 audit note)
+ *
  * `CANVAS_DRAG_PX` (20 CSS px, raised from 6 by playtest R round 3) is the
  * single threshold the whole app uses to tell a click from a drag. Six px
  * was so tight that an ordinary click with a few px of finger travel
@@ -413,6 +438,15 @@ export function attachBuildView(
     dragged: boolean;
   }
   let press: Press | null = null;
+  // TOUCH contacts currently on the canvas (stage 6 a11y): one finger is
+  // the press above; TWO fingers is the orbit (a finger has no right button
+  // — the second contact is the touch stand-in for right-drag). SPREAD is
+  // deliberately NOT ours: the browser owns pinch-zoom (`touch-action:
+  // pinch-zoom` in shell.css) and takes the pointers with `pointercancel`
+  // the moment its recognizer engages, which ends the orbit cleanly and
+  // magnifies the page — an accessibility feature, not a bug.
+  const touchPts = new Map<number, { x: number; y: number }>();
+  let twoFinger: { x: number; y: number } | null = null;
   /** Where the last mouse press BEGAN (window capture — the canvas
    *  listener cannot see a press that started on a control), and whether
    *  it began on one. Close-review F3: the untracked-release fresh-intent
@@ -491,6 +525,20 @@ export function attachBuildView(
 
   canvas.addEventListener('pointerdown', (ev) => {
     if (ev.pointerType === 'mouse' && ev.button !== 0 && ev.button !== 2) return;
+    if (ev.pointerType !== 'mouse') {
+      // a touch/pen contact joins the ledger BEFORE press bookkeeping: the
+      // SECOND contact turns the gesture into an orbit and may never be
+      // mistaken for a new press (it must not overwrite the tracked one)
+      touchPts.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (touchPts.size === 2) {
+        // latch the single-finger press as framing — its release can never
+        // place (a two-finger gesture is LOOKING, the contract's law)
+        if (press) press.dragged = true;
+        const pts = [...touchPts.values()];
+        twoFinger = { x: (pts[0]!.x + pts[1]!.x) / 2, y: (pts[0]!.y + pts[1]!.y) / 2 };
+        return;
+      }
+    }
     if (press && press.id === ev.pointerId) {
       // THE STALE-ORBIT RECONCILE AT PRESS (playtests T+U round 4: after
       // an orbit, exactly the NEXT left click died SILENTLY — "fits here"
@@ -534,9 +582,28 @@ export function attachBuildView(
     } catch {
       // best-effort: the window-level release net covers a lost capture
     }
+    // TOUCH HAS NO HOVER (stage 6 a11y): a tap must show the ring/ghost AT
+    // the touch point before the release decides it, so aim is driven from
+    // press as well as move — a finger lands, the ghost answers, the lift
+    // places. (For a mouse this is the hover it already had, once more.)
+    handlers.onHover(ev.clientX, ev.clientY);
   });
 
   canvas.addEventListener('pointermove', (ev) => {
+    if (ev.pointerType !== 'mouse' && twoFinger && touchPts.has(ev.pointerId)) {
+      // TWO-FINGER DRAG = ORBIT: the centroid travels, the view yaw/pitch
+      // travels with it; scale change belongs to the browser (pinch-zoom
+      // cancels these pointers before this path could misread a spread as
+      // an orbit). Never aim, never place — this is the LOOK verb.
+      touchPts.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      const pts = [...touchPts.values()];
+      const cx = (pts[0]!.x + pts[1]!.x) / 2;
+      const cy = (pts[0]!.y + pts[1]!.y) / 2;
+      view.orbit(cx - twoFinger.x, cy - twoFinger.y);
+      twoFinger.x = cx;
+      twoFinger.y = cy;
+      return;
+    }
     if (press && ev.pointerId === press.id) {
       if (!buttonHeld(ev, press.button)) {
         // THE LOST RELEASE (up off the window, capture stolen, menu up):
@@ -570,6 +637,10 @@ export function attachBuildView(
   // lost) the element under the pointer gets them — and they STILL bubble
   // here. One listener, every release seen.
   const release = (ev: PointerEvent): void => {
+    if (ev.pointerType !== 'mouse') {
+      touchPts.delete(ev.pointerId);
+      if (touchPts.size < 2) twoFinger = null;
+    }
     // the press origin belongs to THIS press-release pair, whoever it
     // started on; a later press re-records it (capture order above).
     const origin = lastPressOrigin;
@@ -594,6 +665,7 @@ export function attachBuildView(
       // nothing places either).
       if (
         ev.type === 'pointerup' &&
+        ev.pointerType === 'mouse' &&
         ev.button === 0 &&
         !(origin && origin.onControl && (ev.target === canvas || overCanvasAt(ev))) &&
         overCanvasAt(ev)
@@ -615,6 +687,13 @@ export function attachBuildView(
   };
   window.addEventListener('pointerup', release);
   window.addEventListener('pointercancel', (ev) => {
+    if (ev.pointerType !== 'mouse') {
+      // the browser took the gesture (pinch-zoom engaged, or the page
+      // scrolled): the touch orbit ends with NO verb — the same lost-
+      // release law the mouse reconcile already enforces
+      touchPts.delete(ev.pointerId);
+      if (touchPts.size < 2) twoFinger = null;
+    }
     if (press && ev.pointerId === press.id) endPress(ev.pointerId);
   });
 

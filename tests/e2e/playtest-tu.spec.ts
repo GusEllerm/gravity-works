@@ -118,7 +118,7 @@ test('the switch hint is plain words with the key named, and silent with no ambi
   // the teaching line names the home reset as a SENTENCE, not "Esc Esc"
   await page.click('#gw-tray-drop')
   await expect(page.locator('#gw-tray-hint')).toHaveText(
-    'Aim: hover the world or press ] for the other spot · Place: click the world or Enter · Flip: R · Look: right-drag · Home: press Esc twice',
+    'Aim: hover the world or press ] for the other spot · Place: click the world or Enter · Flip: R · Launch: L · Look: right-drag · Home: press Esc twice',
   )
   // and no player line still shows the bracket-glyph wording
   const spoken = await page.evaluate(() =>

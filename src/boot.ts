@@ -67,6 +67,7 @@ import { downloadBlob, generateShareCard } from './share/card.ts';
 import { SETS, isRegisteredSet, type SetRegistration } from './sets/index.ts';
 import { CAMPAIGN_LADDER, levelUnlock, nextInCampaign } from './world/campaign.ts';
 import { createLevelSelect } from './ui/levelselect.ts';
+import { reducedMotionActive } from './ui/motion.ts';
 import type { SetInstance } from './sets/index.ts';
 import { placeSet } from './world/setPlacement.ts';
 import { KitRig, finishCapture } from './feel/kittrack.ts';
@@ -703,6 +704,13 @@ async function startReplayPlayer(
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   renderer.setSize(960, 540, false);
   renderer.domElement.id = 'gw-canvas';
+  // STAGE 6 A11Y: the canvas is the world a screen-reader visitor cannot
+  // see — it gets a NAME (never a bare canvas node in the a11y tree) and
+  // the live status lines beside it stay the running commentary. The keys
+  // live on the page, so the canvas is deliberately not a tab stop (the
+  // world's own tab stop is the builder group).
+  renderer.domElement.setAttribute('role', 'img');
+  renderer.domElement.setAttribute('aria-label', 'Replay view — a recorded run of the track');
   stage.appendChild(renderer.domElement);
   const camera = new THREE.PerspectiveCamera(REPLAY_FOV, 960 / 540, 0.01, 24);
   const setReg = levelSet(level) ? SETS[levelSet(level)!] : null;
@@ -843,7 +851,7 @@ async function startReplayPlayer(
   const trace = recorder.finish();
   // the tape IS the verdict: settle the honest half the moment the wind ends
   const verified = settle(trace.hash, trace.time, trace.status);
-  const reducedMotion = loadSave().settings.reducedMotion ?? false;
+  const reducedMotion = reducedMotionActive(loadSave().settings.reducedMotion);
   const director = new ReplayDirector({
     trace,
     box,
@@ -1273,6 +1281,14 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   renderer.setSize(960, 540, false);
   renderer.domElement.id = 'gw-canvas';
+  // STAGE 6 A11Y: named in the a11y tree and described by the live status
+  // line (`#gw-status`, role=status) — the canvas cannot speak, the status
+  // lines beside it do. Deliberately NOT a tab stop: the world's keys are
+  // page-level, and the builder group is the world's single tab stop (a
+  // focused canvas would put Tab in tension with the aim keys).
+  renderer.domElement.setAttribute('role', 'img');
+  renderer.domElement.setAttribute('aria-label', 'Game view — the set, the track, and the toy car');
+  renderer.domElement.setAttribute('aria-describedby', 'gw-status');
   stage.appendChild(renderer.domElement);
   // THE GRAPHICS HICCUP (playtest W round5: a tab that went BLACK and
   // silent mid-drag — no message, no console, nothing to click). If the
@@ -1536,6 +1552,26 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   }));
   builder.attachCanvas(renderer.domElement, camera);
   builder.elements.launch.addEventListener('click', startRun);
+  // THE L KEY LAUNCHES (stage 6 a11y: the whole level must be playable by
+  // keyboard alone — tab to controls, Enter to place, L to launch, so the
+  // launch never requires the pointer OR parking focus on a button). The
+  // same `startRun` the Launch button drives — one verb, two doors; world
+  // focus only (body / canvas / the builder group), so a focused control
+  // or a text field keeps its own keystrokes, and the hint line teaches
+  // the key.
+  window.addEventListener('keydown', (ev) => {
+    if ((ev.key === 'l' || ev.key === 'L') && !ev.metaKey && !ev.ctrlKey && !ev.altKey) {
+      const t = ev.target as HTMLElement | null;
+      const onWorld =
+        t === null ||
+        t === document.body ||
+        t.tagName === 'CANVAS' ||
+        t.id === 'gw-builder';
+      if (!onWorld) return;
+      ev.preventDefault();
+      startRun();
+    }
+  });
   // the UI blips live on the BUTTONS (canvas placement already sounds the
   // snap through onChange — one voice per event, never two per action)
   builder.elements.place.addEventListener('click', () => sound.voice('blipPlace'));

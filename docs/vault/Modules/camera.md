@@ -309,7 +309,21 @@ answer is `src/camera/build-camera.ts`, the RESTRICTED build orbit:
   PLACES at the aimed socket; a press that TRAVELS is a framing gesture —
   left pans, RIGHT-drag (or SPACE+drag) orbits — and places NOTHING; the
   wheel is unwired (there is no build zoom) and the canvas menu is
-  suppressed (right-drag is the orbit, not a menu). The builder registers
+  suppressed (right-drag is the orbit, not a menu). **TOUCH, the stage-6
+  translation of the same table** (`tests/e2e/a11y-touch.spec.ts`, has_touch
+  at 390x844 and 820x1180): a finger has no hover, so the owner aims AT
+  TOUCH-DOWN (the ghost answers the landing finger before the lift decides)
+  and a clean tap PLACES; a travelling one-finger drag PANS; a TWO-FINGER
+  PARALLEL DRAG ORBITS (the stand-in for right-drag — the centroid travels,
+  it never places); SPREAD is the BROWSER's pinch ZOOM, never ours
+  (`touch-action: pan-y pinch-zoom` on the canvas — page magnification is
+  an accessibility feature, and the zoom's `pointercancel` ends the orbit
+  with no verb, the same lost-release law); long-press rides no verb —
+  the menu is suppressed and a held clean tap is a tap (audit-documented,
+  not invented). A press held by a SECOND touch contact latches as framing
+  immediately, and the untracked-release fresh-intent rule below is
+  MOUSE-conditional (stage 6: a lifted second finger is never fresh place
+  intent). The builder registers
   no pointer listeners of its own any more (`aimAt`/`clickPlaceAt` are its
   verbs), which makes Q's press-move-release place structurally
   impossible. **STATE ROBUSTNESS** (playtests R+S round 3: orbit "worked
@@ -324,7 +338,9 @@ answer is `src/camera/build-camera.ts`, the RESTRICTED build orbit:
   canvas misses still ends the press); a release whose press DOWN was
   never tracked at all — it fell outside the window or tooling dropped
   it (playtests V+W round 5: an eaten click while Enter worked) — is
-  fresh PLACE intent when the release point is over the canvas —
+  fresh PLACE intent when the release point is over the canvas (mouse
+  only since stage 6 — a touch release the page never tracked places
+  nothing; see the touch table above) —
   "over" decided by COORDINATES inside the canvas RECT, not by event
   identity (playtest X round6: a click past a short window's fold lands
   inside the rect but Chrome delivers it to `<html>` — the old

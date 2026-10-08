@@ -37,7 +37,8 @@
  *   shows the socket a click would use BEFORE the click. Under orbit,
  *   sockets OVERLAP in screen space — among near-ties (within `AIM_TIE_PX`
  *   of the nearest screen distance) the socket NEARER the eye wins, and
- *   the alternates are walkable with `[` `]` / Tab; the target label names
+ *   the alternates are walkable with `[` `]` (Tab is the browser's focus
+ *   walk, never the tie-walk — stage 6 a11y); the target label names
  *   the tie count and which one the ring marks (playtest S K3: the landing
  *   "always snapped onto the chain BEHIND the cup").
  * - CLICKING the canvas (a track end, the ghost, anywhere) places the held
@@ -101,6 +102,7 @@ import { socketMatrix, transformSocket, type Socket } from '../track/socket.ts';
 import type { Build, PlacedPiece } from '../track/build.ts';
 import type { Level } from '../world/level.ts';
 import { worldToClientPx } from './aim-transform.ts';
+import { prefersReducedMotion } from './motion.ts';
 
 /** Two socket origins this close are joined (metres; well above float noise). */
 export const JOIN_TOL = 0.004;
@@ -123,8 +125,9 @@ export const HOVER_PX = 120;
  *  Within it they are NEAR-TIES: screen space cannot tell them apart, so
  *  depth decides (the nearer to the eye wins — playtest S K3: orbiting
  *  made the landing "always snap onto the chain BEHIND the cup"), and the
- *  alternates are walkable with [ ] / Tab (the choice is EXPOSED, never a
- *  silent coin-flip). */
+ *  alternates are walkable with [ ] (the choice is EXPOSED, never a silent
+ *  coin-flip; stage 6 a11y: Tab is NEVER repurposed here — it stays the
+ *  browser's focus walk, or the page becomes a trap). */
 export const AIM_TIE_PX = 28;
 /** The flip animation length — short enough to feel instant, long enough
  *  to be SEEN (playtest G: "clicked R; ghost never visibly changed"). */
@@ -303,8 +306,9 @@ export interface Builder {
    *  new pointer event (toolbar rows appearing/wrapping above the canvas,
    *  window resize). The ghost-offset defence (playtests V+W round5). */
   revalidateAim(): void;
-  /** Walk the ring among the near-ties of the last aim point ([ / ] /
-   *  Tab): when screen space cannot separate two sockets, the player —
+  /** Walk the ring among the near-ties of the last aim point ([ / ] —
+   *  never Tab, which stays the browser's focus walk): when screen space
+   *  cannot separate two sockets, the player —
    *  not the projector — picks which one the ghost means. */
   cycleAim(delta: number): void;
   /** The open target sockets in list order (world positions) — the e2e
@@ -489,7 +493,7 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   // in `updateGhost` are the page's only two other-spot hints — both now
   // say `]`. The old "hover the world or ←→" taught a different key for
   // the same verb, which is exactly the inconsistency AA heard.
-  hint.textContent = 'Aim: hover the world or press ] for the other spot · Place: click the world or Enter · Flip: R · Look: right-drag · Home: press Esc twice';
+  hint.textContent = 'Aim: hover the world or press ] for the other spot · Place: click the world or Enter · Flip: R · Launch: L · Look: right-drag · Home: press Esc twice';
   hint.hidden = true;
   root.appendChild(hint);
   // the VISIBLE reason behind every greyed/spent tray button — one counter,
@@ -586,9 +590,13 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   const toS = new THREE.Vector3();
 
   function animateGhostTo(to: THREE.Matrix4, animate: boolean): void {
-    // no animation possible (ghost not on screen yet) or not asked for:
-    // snap, and cancel any in-flight flip so nothing overwrites the matrix
-    if (!animate || !ghostGroup.visible) {
+    // no animation possible (ghost not on screen yet) or not asked for —
+    // or the player asked for REDUCED MOTION (stage 6 a11y, Feel.md's law:
+    // every animation has a no-motion equivalent; the flip's still frame is
+    // its END pose, so R stays visible as a change of pose, never as a
+    // tween) — snap, and cancel any in-flight flip so nothing overwrites
+    // the matrix
+    if (!animate || !ghostGroup.visible || prefersReducedMotion()) {
       anim = null;
       ghostGroup.matrix.copy(to);
       return;
@@ -1261,12 +1269,11 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       '[': () => cycleAim(-1),
       BracketRight: () => cycleAim(1),
       BracketLeft: () => cycleAim(-1),
-      Tab: () => {
-        // Tab cycles the near-ties ONLY while the WORLD holds focus; over
-        // a control it stays the browser's focus walk (never stolen)
-        if (onWorld) cycleAim(1);
-        else return;
-      },
+      // TAB IS NEVER HIJACKED (stage 6 a11y fix): the tie-walk rode on Tab
+      // under world focus, which meant the FIRST Tab of a session could
+      // never reach a button — a keyboard user arriving by Tab found the
+      // focus walk dead. Tab is the browser's focus walk everywhere, on
+      // every element; `[ ]` (and the arrows for sockets) walk the ties.
       r: rotate,
       R: rotate,
       Enter: () => {
@@ -1287,10 +1294,8 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     // a focused <button> keeps its native Enter activation — preventing the
     // default there would CANCEL the click, not just the page action
     if (onButton && ev.key === 'Enter') return;
-    // Tab over a control is the browser's focus walk — the world's tie
-    // cycle above already returned for that case; be sure the default is
-    // not prevented either way
-    if (ev.key === 'Tab' && !onWorld) return;
+    // Tab is NOT in the table: over any element it stays the browser's
+    // focus walk (stage 6 a11y — see the table above).
     ev.preventDefault();
     fn();
   });

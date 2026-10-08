@@ -12,7 +12,7 @@
  * 2. The choice is EXPOSED: the label names the tie and the key that walks
  *    it ("two spots fit here — press ] for the other one", playtest U
  *    round4's reword), and
- *    `]` / Tab cycle the ring through the candidates, so the far socket is
+ *    `]` cycles the ring through the candidates, so the far socket is
  *    reachable too — the ambiguity is handed to the player, not hidden.
  *
  * Geometry is measured live through the `__gwOpenSockets` /
@@ -52,7 +52,7 @@ function project(pose: Pose, box: Box, p: number[]): { x: number; y: number; z: 
   return { x: box.x + nx * box.width, y: box.y + ny * box.height, z, dCam: Math.hypot(v[0]!, v[1]!, v[2]!) }
 }
 
-test('K3 at a 30° orbit: the ambiguous midpoint aims the NEARER socket, and [ ] / Tab cycle the tie', async ({ page }) => {
+test('K3 at a 30° orbit: the ambiguous midpoint aims the NEARER socket, and [ ] cycle the tie', async ({ page }) => {
   test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
@@ -147,8 +147,10 @@ test('K3 at a 30° orbit: the ambiguous midpoint aims the NEARER socket, and [ ]
   }
 
   // EXPOSED: ']' moves the ring OFF the auto-picked socket and onto ANOTHER
-  // candidate of this tie (never some random third socket) — and Tab walks
-  // the same list, which must wrap back to the auto-pick.
+  // candidate of this tie (never some random third socket) — and `]` walks
+  // the same list, which must wrap back to the auto-pick (stage 6 a11y:
+  // Tab is no longer a tie-walk anywhere — it is the browser's focus walk,
+  // or the page becomes a keyboard trap).
   await page.keyboard.press(']')
   await expect
     .poll(async () => {
@@ -164,16 +166,16 @@ test('K3 at a 30° orbit: the ambiguous midpoint aims the NEARER socket, and [ ]
   // ring on farSock, wherever it sits in the depth order
   let sawFar = (await distTo(farSock)) < 0.02
   for (let i = 0; i < m - 1 && !sawFar; i++) {
-    await page.keyboard.press('Tab')
+    await page.keyboard.press(']')
     sawFar = (await distTo(farSock)) < 0.02
   }
-  expect(sawFar, `] / Tab never walked the ring onto the far socket through the ${m}-candidate tie`).toBe(true)
+  expect(sawFar, `] never walked the ring onto the far socket through the ${m}-candidate tie`).toBe(true)
   // and the walk WRAPS back to the auto-picked near one
   let sawNear = sawFar && (await distTo(nearSock)) < 0.02
   for (let i = 0; i < m && !sawNear; i++) {
-    await page.keyboard.press('Tab')
+    await page.keyboard.press(']')
     sawNear = (await distTo(nearSock)) < 0.02
   }
-  expect(sawNear, '] / Tab never wrapped back to the auto-picked socket').toBe(true)
+  expect(sawNear, '] never wrapped back to the auto-picked socket').toBe(true)
   expect(errors).toEqual([])
 })
