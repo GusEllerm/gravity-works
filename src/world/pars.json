@@ -1,5 +1,10 @@
 [
   {
+    "levelId": "bathroom-sandbox",
+    "parPieces": 5,
+    "parTime": 2.75
+  },
+  {
     "levelId": "bathroom01",
     "parPieces": 3,
     "parTime": 2.25
@@ -23,6 +28,11 @@
     "levelId": "bathroom05",
     "parPieces": 4,
     "parTime": 3.05
+  },
+  {
+    "levelId": "bedroom-sandbox",
+    "parPieces": 5,
+    "parTime": 2.75
   },
   {
     "levelId": "bedroom01",
@@ -55,6 +65,11 @@
     "parTime": 3.05
   },
   {
+    "levelId": "garage-sandbox",
+    "parPieces": 5,
+    "parTime": 2.75
+  },
+  {
     "levelId": "garage01",
     "parPieces": 3,
     "parTime": 2.25
@@ -77,7 +92,12 @@
   {
     "levelId": "garage05",
     "parPieces": 4,
-    "parTime": 3.05
+    "parTime": 1.35
+  },
+  {
+    "levelId": "garden-sandbox",
+    "parPieces": 5,
+    "parTime": 2.75
   },
   {
     "levelId": "garden01",
@@ -102,7 +122,7 @@
   {
     "levelId": "garden05",
     "parPieces": 4,
-    "parTime": 3.05
+    "parTime": 1.35
   },
   {
     "levelId": "kitchen-sandbox",
@@ -133,6 +153,11 @@
     "levelId": "kitchen05",
     "parPieces": 6,
     "parTime": 2.4
+  },
+  {
+    "levelId": "porch-sandbox",
+    "parPieces": 4,
+    "parTime": 1.2
   },
   {
     "levelId": "porch01",

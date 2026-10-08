@@ -1,3 +1,4 @@
+import { campaignIndex, nextInCampaign } from '../../src/world/campaign.ts';
 /**
  * Bedroom ladder playability proof (stage 4, Level Designer's gate) — the
  * kitchen ladder test's twin, plus the stage-4 extension of the
@@ -26,7 +27,7 @@ import { BEDROOM01 } from '../../src/world/levels/bedroom01.level.ts';
 import { BEDROOM02, bedroom02StepBuild } from '../../src/world/levels/bedroom02.level.ts';
 import { BEDROOM03, bedroom03SoftBuild } from '../../src/world/levels/bedroom03.level.ts';
 import { BEDROOM04 } from '../../src/world/levels/bedroom04.level.ts';
-import { BEDROOM05, bedroom05BoosterBuild } from '../../src/world/levels/bedroom05.level.ts';
+import { BEDROOM05, BEDROOM_SANDBOX, bedroom05BoosterBuild } from '../../src/world/levels/bedroom05.level.ts';
 import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts';
 import { trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
 import { KITCHEN02, kitchen02ArcBuild } from '../../src/world/levels/kitchen02.level.ts';
@@ -55,7 +56,7 @@ import { PORCH04 } from '../../src/world/levels/porch04.level.ts';
 import { PORCH05, porch05CatchFirstBuild } from '../../src/world/levels/porch05.level.ts';
 import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
 import { PARS } from '../../src/world/stars.ts';
-import { PIECES, type PieceKind } from '../../src/track/pieces.ts';
+import { PIECE_KINDS, PIECES, type PieceKind } from '../../src/track/pieces.ts';
 import { fitSocket } from '../../src/track/snap.ts';
 import { transformSocket } from '../../src/track/socket.ts';
 import { serialize, type Build } from '../../src/track/build.ts';
@@ -554,4 +555,45 @@ describe('bedroom set wiring — the placement table is derived, not folklore', 
       }
     }
   }, 60_000);
+});
+
+describe('Bedroom sandbox — the no-budget room (mirrors kitchen-sandbox, stage 6)', () => {
+  test('the sandbox has no budget and everything unlocked', () => {
+    expect(BEDROOM_SANDBOX.sandbox).toBe(true);
+    expect(BEDROOM_SANDBOX.budget).toBeGreaterThanOrEqual(999);
+    for (const kind of PIECE_KINDS) expect(BEDROOM_SANDBOX.tray[kind], kind).toBe(99);
+  });
+
+  test('the sandbox is NOT a campaign rung: off the ladder, nobody\'s next, `?level=`-addressable like the kitchen one', () => {
+    expect(campaignIndex('bedroom-sandbox')).toBe(-1);
+    expect(nextInCampaign('bedroom-sandbox')).toBeNull();
+  });
+
+  test('the sandbox lap finishes (headless)', async () => {
+    const result = await replayRun(BEDROOM_SANDBOX, BEDROOM_SANDBOX.parBuild());
+    expect(result.status).toBe('finished');
+  }, 30_000);
+
+  test("the tray's own seating reproduces the sandbox lap byte-for-byte", () => {
+    expect(serialize(trayParityBuild(BEDROOM_SANDBOX))).toBe(serialize(BEDROOM_SANDBOX.parBuild()));
+  });
+
+  test("pars.json's par piece count is the sandbox's tray basis", () => {
+    expect(PARS[BEDROOM_SANDBOX.id]?.pieces).toBe(BEDROOM_SANDBOX.par.pieces);
+  });
+
+  test('the sandbox set mount follows the rung rule (centred on the lap, deck-cleared)', () => {
+    const p = bedroomSetPlacement('bedroom-sandbox')!;
+    expect(p.yaw).toBe(0);
+    expect(p.position[2]).toBe(-0.15);
+    const rig = new KitRig(BEDROOM_SANDBOX.parBuild(), 1);
+    let mn = Infinity;
+    let mx = -Infinity;
+    for (let s = 0; s <= rig.length; s += 0.005) {
+      mn = Math.min(mn, rig.frameAt(s).pos.x);
+      mx = Math.max(mx, rig.frameAt(s).pos.x);
+    }
+    expect(Math.abs(p.position[0] - (mn + mx) / 2)).toBeLessThan(0.002);
+    expect(p.position[1]).toBeCloseTo(finishDeckY(BEDROOM_SANDBOX.parBuild()) - 0.005, 5);
+  });
 });

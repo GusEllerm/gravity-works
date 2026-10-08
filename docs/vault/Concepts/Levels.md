@@ -48,8 +48,12 @@ richer — `KitchenLevel` (`src/world/levels/kitchen01.level.ts`) adds:
   intended line. This is the pars-regeneration seam: a script replays it
   headless and writes `par.time`. Every parBuild in the ladder must finish —
   that is `tests/unit/kitchen-levels.test.ts`, not prose.
-- `sandbox?: boolean` — the no-budget variant (kitchen ships one,
-  `kitchen-sandbox`, registered by `src/world/levels/kitchen05.level.ts`).
+- `sandbox?: boolean` — the no-budget variant. Since the stage-6 sandbox
+  pass every room ships one: `kitchen-sandbox`, `bedroom-sandbox`,
+  `bathroom-sandbox`, `garden-sandbox`, `garage-sandbox`,
+  `porch-sandbox`, each registered by its room's `05` level file (the
+  kitchen's lives in `src/world/levels/kitchen05.level.ts`). See §Sandbox
+  (per set).
 - `hazards` and `propSockets` — see the two convention sections below.
 
 The bedroom rungs (stage 4) mirror the WHOLE seam as `BedroomLevel`
@@ -903,8 +907,10 @@ disguise), drags +0.39 s after the catcher; the booster is kitchen05's
 law turned into a CHOICE — spent EARLY it buys the second crossing whole
 (4 placed, 2.44 — the exported `X05BoosterBuild` hidden line, porch03's
 bounce precedent), spent LAST it is trim at the par's own hash. The deck
-is a long line on a short leash: par pieces 4 at 3.017 (parTime 3.05),
-the par multiset ORDER beatable at 2.783 (kitchen04's law), deck-first
+is a long line on a short leash: par pieces 4 at 3.017 (parTime 3.05 on
+the BEDROOM and BATHROOM clocks — the garden/garage pair was brevity-trimmed
+to the fail-timing chute in the same stage-6 pass, §The encore brevity trim
+below), the par multiset ORDER beatable at 2.783 (kitchen04's law), deck-first
 FALLS, and the whole tray finishes tail-first (the 2★ consolation —
 Playtest-G's wall PRICED, not walled) and falls booster-first.
 
@@ -940,15 +946,60 @@ by the room tests, and the ladder proof runs as a fifth test pattern in
 `tests/e2e/campaign.spec.ts` (a FRESH browser per encore, the previous
 rung's one star as the only key, finish + ★★★ + Next naming the finale).
 
+## The encore brevity trim (garden05, garage05 — stage 6)
+
+Playtest DD: "the 05 rungs stretch that same verb… I'd trim garden05/garage05
+toward porch-level brevity" (and the Final Report's "next" list adopted it).
+The trim moved ONLY those two rungs' release from the encore rail's
+−12°/0.26 shelf to the ladder's fail-timing CHUTE (−29°/0.24 m, blend 0.12)
+with a sink-softer 21°/0.18 m run-out catch, deleting the ramp crawl: the
+rail, the pinned `ENCORE_DIP` and the tray are untouched, pieces stay 4,
+and the clock went 3.05 → 1.35 par (measured 1.342). The PAR REPLAY HASH
+MOVED for exactly those two rungs — `1b37dfed` → `1f99683a` — the four-rung
+family rail split in two: `bedroom05`/`bathroom05` stay byte-identical on
+the old rail (`1b37dfed`, 3.05); no other rung's hash moved (replay:all
+30/30, kitchen's `PINNED` atlas intact); the rungs' `setPlacement` rows are
+re-derived (rail midpoint 0.95817) and the encore family shares a rail no
+more — four level files, two authored rails. Laws at the new release,
+measured not papered: the promise law survives UNBROKEN (all 11 sampled
+omissions still FALL, earlier, ~1.1–1.5 s); the decoy's tail law survives
+byte-exact (par's own hash); booster EARLY stays the hidden line (1.108,
+faster than the ride) and LAST stays trim at the par's hash; THREE laws
+flipped with the crawl and are re-stated in the tests with their numbers —
+deck-first now FINISHES 0.025 s behind the par (porch05's own "finishes
+but LATE" exception idiom; at −12° it fell at 2.808), the two-plank mid
+bridge finishes SLOW (never fast), and the five-piece booster-spent-AND-
+line-ridden overshoots the catch and FALLS (the buy is a SUBSTITUTION for
+the far crossing, never an addition). Proof: `tests/unit/garden-levels.test.ts`,
+`tests/unit/garage-levels.test.ts`, `tests/e2e/stage6-encore-brevity.spec.ts`
+(fresh session, no instructions, four blind Places, one launch, finished),
+and the Decision Log 2026-10-08 (sandbox + encores) entry.
+
 ## Sandbox (per set)
 
-The kitchen sandbox: `sandbox: true`, budget 999 ("no budget"), every piece
-unlocked at 99 copies; the reference build is one clean lap of every drivable
-kitchen verb and finishes in 2.667 s (par 2.70, `parPieces` 5 on the tray
-basis). Its two counter straights are one 0.175 m geometry (`SB_STRAIGHT`) —
-the same 0.35 m of deck the lap always had, as two pieces the tray can
-actually seat. Other sets' sandboxes follow the same
-shape in their own files at their own stage.
+The six sandboxes — the finished promise (Final Report "next" #3; the
+kitchen's was the pattern). Every one is the SAME shape: `sandbox: true`,
+budget 999 ("no budget" with the number the contract demands), the FULL
+stocked tray — every kind at 99 copies — fixtures `ramp`+`finishCup`,
+`maxTime` 20, and a reference lap that finishes like every parBuild here.
+Discoverability is the kitchen row's verbatim: NOT a campaign rung (absent
+from `CAMPAIGN`, `campaignIndex` −1, nobody's `nextInCampaign`, absent from
+the level select), `?level=`-addressable, and the off-ladder unlock read
+means no dev-preview badge and a normal mint if a visitor finishes one.
+The rooms differ only in the LAP's geometry, which is each ladder's own
+seating: the kitchen's counter lap (one 0.175 m straight geometry —
+`SB_STRAIGHT`) measures 2.667 s (par 2.70, 5 tray pieces); the four gap
+rooms (`bedroom-sandbox`, `bathroom-sandbox`, `garden-sandbox`,
+`garage-sandbox`) lap the shared `KITCHEN_GAP` verbs off the 0.28 shelf on
+their ladders' 0.2 m straights — 2.733 s, par 2.75, 5 tray pieces; and
+`porch-sandbox` laps its own verbs (chute → threshold pop → sink carry →
+pinned step → one 0.11 m plank) in 1.158 s, par 1.20, 4 tray pieces. The
+set hangs dressed at each id's derived `setPlacement` row (the rung rule:
+rail midpoint, deck 5 mm under the lap's finish plane, the room's axis
+offset). Proof: one `describe('<set> sandbox')` block per ladder test (lap
+finishes, tray parity byte-for-byte, tray = everything ×99, off-ladder
+claims, mount derivation) and the screenshot smoke + campaign-invisibility
+page checks in `tests/e2e/stage6-sandboxes.spec.ts`.
 
 ## Conventions the Environment Artist builds to
 

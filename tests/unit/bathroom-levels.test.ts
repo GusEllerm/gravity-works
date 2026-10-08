@@ -1,3 +1,4 @@
+import { campaignIndex, nextInCampaign } from '../../src/world/campaign.ts';
 /**
  * Bathroom ladder playability proof (stage 4, Level Designer's gate) — the
  * bedroom ladder test's twin, with the hazard gates kitchen04 established:
@@ -26,16 +27,16 @@ import { BATHROOM01, bathroom01ProbeBuild } from '../../src/world/levels/bathroo
 import { BATHROOM02, bathroom02DrainBuild } from '../../src/world/levels/bathroom02.level.ts';
 import { BATHROOM03, bathroom03SplashBuild } from '../../src/world/levels/bathroom03.level.ts';
 import { BATHROOM04, bathroom04ProbeBuild } from '../../src/world/levels/bathroom04.level.ts';
-import { BATHROOM05, bathroom05BoosterBuild, bathroom05ProbeBuild } from '../../src/world/levels/bathroom05.level.ts';
+import { BATHROOM05, BATHROOM_SANDBOX, bathroom05BoosterBuild, bathroom05ProbeBuild } from '../../src/world/levels/bathroom05.level.ts';
 import { trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
-import { levelTrayParams } from '../../src/boot.ts';
+import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
 import { PARS } from '../../src/world/stars.ts';
-import { PIECES, type PieceKind } from '../../src/track/pieces.ts';
+import { PIECE_KINDS, PIECES, type PieceKind } from '../../src/track/pieces.ts';
 import { fitSocket } from '../../src/track/snap.ts';
 import { transformSocket } from '../../src/track/socket.ts';
-import { type Build } from '../../src/track/build.ts';
+import { serialize, type Build } from '../../src/track/build.ts';
 import { KitRig } from '../../src/feel/kittrack.ts';
-import { bathroomSetPlacement } from '../../src/world/setPlacement.ts';
+import { bathroomSetPlacement, BATH_AXIS_OFFSET } from '../../src/world/setPlacement.ts';
 import { insideFloor, SOAPDISH, TOOTHBRUSH, TOWELS, TUB, DRAIN } from '../../src/sets/bathroom/data.ts';
 import { replayRun } from '../../src/replay/replay.ts';
 
@@ -441,5 +442,46 @@ describe('bathroom set wiring — the placement table is derived, not folklore',
   test('the drain and the tub live inside the floor bounds (set-wiring convention)', () => {
     expect(insideFloor(DRAIN.position[0], DRAIN.position[2])).toBe(true);
     expect(insideFloor(TUB.position[0], TUB.position[2])).toBe(true);
+  });
+});
+
+describe('Bathroom sandbox — the no-budget room (mirrors kitchen-sandbox, stage 6)', () => {
+  test('the sandbox has no budget and everything unlocked', () => {
+    expect(BATHROOM_SANDBOX.sandbox).toBe(true);
+    expect(BATHROOM_SANDBOX.budget).toBeGreaterThanOrEqual(999);
+    for (const kind of PIECE_KINDS) expect(BATHROOM_SANDBOX.tray[kind], kind).toBe(99);
+  });
+
+  test('the sandbox is NOT a campaign rung: off the ladder, nobody\'s next, `?level=`-addressable like the kitchen one', () => {
+    expect(campaignIndex('bathroom-sandbox')).toBe(-1);
+    expect(nextInCampaign('bathroom-sandbox')).toBeNull();
+  });
+
+  test('the sandbox lap finishes (headless)', async () => {
+    const result = await replayRun(BATHROOM_SANDBOX, BATHROOM_SANDBOX.parBuild());
+    expect(result.status).toBe('finished');
+  }, 30_000);
+
+  test("the tray's own seating reproduces the sandbox lap byte-for-byte", () => {
+    expect(serialize(trayParityBuild(BATHROOM_SANDBOX))).toBe(serialize(BATHROOM_SANDBOX.parBuild()));
+  });
+
+  test("pars.json's par piece count is the sandbox's tray basis", () => {
+    expect(PARS[BATHROOM_SANDBOX.id]?.pieces).toBe(BATHROOM_SANDBOX.par.pieces);
+  });
+
+  test('the sandbox set mount follows the rung rule (centred on the lap, deck-cleared)', () => {
+    const p = bathroomSetPlacement('bathroom-sandbox')!;
+    expect(p.yaw).toBe(0);
+    expect(p.position[2]).toBe(-BATH_AXIS_OFFSET);
+    const rig = new KitRig(BATHROOM_SANDBOX.parBuild(), 1);
+    let mn = Infinity;
+    let mx = -Infinity;
+    for (let s = 0; s <= rig.length; s += 0.005) {
+      mn = Math.min(mn, rig.frameAt(s).pos.x);
+      mx = Math.max(mx, rig.frameAt(s).pos.x);
+    }
+    expect(Math.abs(p.position[0] - (mn + mx) / 2)).toBeLessThan(0.002);
+    expect(p.position[1]).toBeCloseTo(finishDeckY(BATHROOM_SANDBOX.parBuild()) - 0.005, 5);
   });
 });
