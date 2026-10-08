@@ -667,6 +667,19 @@ async function startReplayPlayer(
   /** Below this much remaining watchable motion a Play click rewinds to 0
    *  (see the play-button comment — the dead-first-click fix). */
   const PLAY_RESUME_MIN = Math.min(0.5, duration * 0.5);
+  /** The PACE LEDGER (e2e debug surface): [wallMs, playheadS, rate] for every
+   *  frame that ADVANCED the playhead. The share-replay rate law is asserted
+   *  from it PER RENDERED FRAME — advance === min(frame gap, 0.25 s) × rate —
+   *  because CI truth (SwiftShader) can make one frame outlast any fixed
+   *  wall-clock sampling wait: a 300 ms `waitForTimeout` on the 15.8 s
+   *  feeltrack link could hold zero frames (the playhead "never moved") or
+   *  one clamped giant. Any event that breaks frame-gap continuity (Play/
+   *  pause, seek, resume-after-drag, speed change) or clamps at the end
+   *  clears the ledger, so no asserted interval ever spans a discontinuity. */
+  const pace: [number, number, number][] = [];
+  const paceBreak = (): void => {
+    pace.length = 0;
+  };
 
   const renderAt = (t: number): void => {
     const k = stepAt(t);
@@ -715,6 +728,7 @@ async function startReplayPlayer(
     // settle the viewer has already seen.
     if (!playing && duration - time < PLAY_RESUME_MIN) time = 0;
     playing = !playing;
+    paceBreak();
     syncPlay();
   });
   const timeEl = document.createElement('span');
@@ -746,6 +760,7 @@ async function startReplayPlayer(
   };
   const seek = (t: number): void => {
     time = THREE.MathUtils.clamp(t, 0, duration);
+    paceBreak();
     syncBar();
     renderAt(time);
   };
@@ -773,6 +788,7 @@ async function startReplayPlayer(
     if (!dragging) return;
     dragging = false;
     playing = resumeAfterDrag && time < duration;
+    paceBreak();
     syncPlay();
     try {
       timeline.releasePointerCapture(ev.pointerId);
@@ -800,6 +816,7 @@ async function startReplayPlayer(
     b.textContent = `${s}×`;
     b.addEventListener('click', () => {
       rate = s;
+      paceBreak(); // the ledger's next interval carries the NEW multiplier
       for (const o of speedBtns) o.setAttribute('aria-pressed', String(o === b));
     });
     speedBtns.push(b);
@@ -847,6 +864,8 @@ async function startReplayPlayer(
       quat: [trace.quat[k * 4]!, trace.quat[k * 4 + 1]!, trace.quat[k * 4 + 2]!, trace.quat[k * 4 + 3]!],
     };
   };
+  // the pacing ledger of the CURRENT contiguous play session (see `pace`)
+  w.__gwReplayPace = (): [number, number, number][] => pace.map((p) => [p[0]!, p[1]!, p[2]!]);
   const cup = cupView(payload.build);
   w.__gwReplayCarNdc = (): number[] | null => {
     const k = stepAt(time);
@@ -871,7 +890,11 @@ async function startReplayPlayer(
       if (time >= duration) {
         time = duration;
         playing = false;
+        paceBreak(); // a clamped final frame does not honour the law
         syncPlay();
+      } else {
+        pace.push([now, time, rate]);
+        if (pace.length > 240) pace.shift();
       }
       syncBar();
       renderAt(time);
