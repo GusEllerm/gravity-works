@@ -26,6 +26,7 @@ import { GARAGE01, garage01ProbeBuild } from '../../src/world/levels/garage01.le
 import { GARAGE02, garage02FloorBuild } from '../../src/world/levels/garage02.level.ts';
 import { GARAGE03, garage03OilLaneBuild } from '../../src/world/levels/garage03.level.ts';
 import { GARAGE04, garage04ProbeBuild } from '../../src/world/levels/garage04.level.ts';
+import { GARAGE05, garage05BoosterBuild, garage05ProbeBuild } from '../../src/world/levels/garage05.level.ts';
 import { trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
 import { levelTrayParams } from '../../src/boot.ts';
 import { PARS } from '../../src/world/stars.ts';
@@ -43,7 +44,7 @@ import { replayRun } from '../../src/replay/replay.ts';
 /** The structural rung the ladders all satisfy (the bathroom twin). */
 type Rung = Omit<KitchenLevel, 'set'>;
 
-const LADDER: readonly Rung[] = [GARAGE01, GARAGE02, GARAGE03, GARAGE04];
+const LADDER: readonly Rung[] = [GARAGE01, GARAGE02, GARAGE03, GARAGE05, GARAGE04];
 
 /** The same level with its zones deleted — the dry side of every wet/dry
  *  hash assertion (`x * 1 === x` discipline, Modules/hazards). */
@@ -125,7 +126,7 @@ describe('garage ladder — level contracts', () => {
   });
 
   test('every live zone names its prop (source: oilStain)', () => {
-    for (const level of [GARAGE01, GARAGE03, GARAGE04]) {
+    for (const level of [GARAGE01, GARAGE03, GARAGE04, GARAGE05]) {
       expect(level.hazards![0]!.source).toBe('oilStain');
     }
   });
@@ -318,12 +319,93 @@ describe('garage04 — stain + height, one tray, a live film under the flight (c
   }, 90_000);
 });
 
+describe('garage05 — the ENCORE: the double crossing at speed, the film flown over cut two, the shop sells the booster both ways', () => {
+  // The garage's own idiom: a ride line with TWO cuts, the oil in the
+  // second cut's mouth FLOWN over (bit-identical par; the unbuyable
+  // bridge probe rolls it and runs wet-faster — garage02's law), and the
+  // dyno piece priced BOTH ways on the tray: the EARLY spend buys the
+  // second crossing whole (4 pieces, the hidden line), the LATE spend is
+  // trim at the par's own hash — kitchen05's rule quoted in the room that
+  // taught the verb. Every number measured.
+  const spec = (kinds: string[]): PieceKind[] =>
+    kinds.map((k) => ({ dr: 'drop', st: 'straight', la: 'landing', bo: 'booster' }[k]! as PieceKind));
+
+  test('EVERY omission falls — the encore’s promise law, 11 builds sampled', async () => {
+    for (const kinds of [
+      ['dr'], ['st'], ['la'],
+      ['dr', 'st'], ['st', 'dr'], ['dr', 'la'], ['st', 'la'],
+      ['dr', 'st', 'dr'], ['dr', 'st', 'la'], ['st', 'dr', 'la'], ['dr', 'la', 'st'],
+    ]) {
+      const run = await replayRun(GARAGE05, placed(GARAGE05, spec(kinds)));
+      expect(run.status, kinds.join('>')).not.toBe('finished');
+    }
+  }, 180_000);
+
+  test('the ORDER is the line: deck-first never catches cut two; the par order is beatable within the tray', async () => {
+    const deckFirst = await replayRun(GARAGE05, placed(GARAGE05, spec(['st', 'dr', 'dr', 'la'])));
+    expect(deckFirst.status).not.toBe('finished'); // measured 2.808
+    const beat = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'la', 'dr', 'st'])));
+    const par = await replayRun(GARAGE05, GARAGE05.parBuild());
+    expect(beat.status).toBe('finished');
+    expect(beat.time).toBeLessThan(par.time); // measured 2.783 vs 3.017
+  }, 90_000);
+
+  test('the spare plate is a decoy: TAIL-placed it finishes at the par’s OWN hash, mid-line it kills the run, after the catcher it drags', async () => {
+    const par = await replayRun(GARAGE05, GARAGE05.parBuild());
+    const tail = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'st', 'dr', 'la', 'st'])));
+    expect(tail.status).toBe('finished');
+    expect(tail.hash).toBe(par.hash);
+    const mid = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'st', 'st', 'dr', 'la'])));
+    expect(mid.status).not.toBe('finished');
+    const runout = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'st', 'dr', 'st', 'la'])));
+    expect(runout.status).toBe('finished');
+    expect(runout.time).toBeGreaterThan(par.time + 0.3); // measured 3.408
+  }, 120_000);
+
+  test('the shop sells the booster BOTH ways: EARLY buys the second cut whole (exported hidden line, garage03’s speed idiom); LAST is trim at the par’s hash', async () => {
+    const par = await replayRun(GARAGE05, GARAGE05.parBuild());
+    expect((await replayRun(GARAGE05, garage05BoosterBuild())).status).toBe('finished');
+    const early = await replayRun(GARAGE05, placed(GARAGE05, spec(['bo', 'dr', 'st', 'la'])));
+    expect(early.status).toBe('finished');
+    expect(early.time).toBeLessThan(par.time); // measured 2.433 — the dyno special: faster than the ride, porch03's bounce law
+    const last = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'st', 'dr', 'la', 'bo'])));
+    expect(last.status).toBe('finished');
+    expect(last.hash).toBe(par.hash); // the par's own clock and hash — one piece wasted at the counter
+    const full = await replayRun(GARAGE05, placed(GARAGE05, spec(['bo', 'dr', 'st', 'dr', 'la'])));
+    expect(full.status).toBe('finished');
+    expect(full.time).toBeLessThan(par.time); // 2.417 — spend EARLY
+  }, 150_000);
+
+  test('the whole tray is a CHOICE tray: the tail order finishes poor, the booster-first six-piece order falls', async () => {
+    const tail = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'st', 'dr', 'la', 'st', 'bo'])));
+    expect(tail.status).toBe('finished'); // 6 placed, the par's clock: the 2★ consolation
+    const front = await replayRun(GARAGE05, placed(GARAGE05, spec(['bo', 'dr', 'st', 'st', 'dr', 'la'])));
+    expect(front.status).not.toBe('finished');
+  }, 90_000);
+
+  test('the film is FLOWN: the par rides both cuts and replays bit-identical wet vs dry', async () => {
+    const wet = await replayRun(GARAGE05, GARAGE05.parBuild());
+    const dryRun = await replayRun(dry(GARAGE05), GARAGE05.parBuild());
+    expect(wet.hash).toBe(dryRun.hash);
+  }, 60_000);
+
+  test('the BRIDGE PROBE rolls through the film: diverges wet, finishes, wet FASTER (garage02’s law over the cut)', async () => {
+    const wet = await replayRun(GARAGE05, garage05ProbeBuild());
+    const dryRun = await replayRun(dry(GARAGE05), garage05ProbeBuild());
+    expect(wet.status).toBe('finished');
+    expect(dryRun.status).toBe('finished');
+    expect(wet.hash).not.toBe(dryRun.hash);
+    expect(wet.time).toBeLessThan(dryRun.time); // measured 3.125 vs 3.342
+  }, 90_000);
+});
+
 describe('garage set wiring — the placement table is derived, not folklore', () => {
   const LINES_BY_LEVEL: Record<string, Build[]> = {
     garage01: [GARAGE01.parBuild()],
     garage02: [GARAGE02.parBuild(), garage02FloorBuild()],
     garage03: [GARAGE03.parBuild(), garage03OilLaneBuild()],
     garage04: [GARAGE04.parBuild()],
+    garage05: [GARAGE05.parBuild(), garage05BoosterBuild()],
   };
 
   for (const level of LADDER) {

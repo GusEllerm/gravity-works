@@ -37,18 +37,22 @@ import { BEDROOM01_ID } from './levels/bedroom01.level.ts';
 import { BEDROOM02_ID } from './levels/bedroom02.level.ts';
 import { BEDROOM03_ID } from './levels/bedroom03.level.ts';
 import { BEDROOM04_ID } from './levels/bedroom04.level.ts';
+import { BEDROOM05_ID } from './levels/bedroom05.level.ts';
 import { BATHROOM01_ID } from './levels/bathroom01.level.ts';
 import { BATHROOM02_ID } from './levels/bathroom02.level.ts';
 import { BATHROOM03_ID } from './levels/bathroom03.level.ts';
 import { BATHROOM04_ID } from './levels/bathroom04.level.ts';
+import { BATHROOM05_ID } from './levels/bathroom05.level.ts';
 import { GARDEN01_ID } from './levels/garden01.level.ts';
 import { GARDEN02_ID } from './levels/garden02.level.ts';
 import { GARDEN03_ID } from './levels/garden03.level.ts';
 import { GARDEN04_ID } from './levels/garden04.level.ts';
+import { GARDEN05_ID } from './levels/garden05.level.ts';
 import { GARAGE01_ID } from './levels/garage01.level.ts';
 import { GARAGE02_ID } from './levels/garage02.level.ts';
 import { GARAGE03_ID } from './levels/garage03.level.ts';
 import { GARAGE04_ID } from './levels/garage04.level.ts';
+import { GARAGE05_ID } from './levels/garage05.level.ts';
 import { PORCH01_ID } from './levels/porch01.level.ts';
 import { PORCH02_ID } from './levels/porch02.level.ts';
 import { PORCH03_ID } from './levels/porch03.level.ts';
@@ -74,22 +78,30 @@ export const CAMPAIGN: readonly CampaignRoom[] = [
   {
     id: 'bedroom',
     label: 'Bedroom',
-    levelIds: [BEDROOM01_ID, BEDROOM02_ID, BEDROOM03_ID, BEDROOM04_ID],
+    // The ENCORE (05) slots between the lesson rung and the room's finale
+    // in the FLAT order — difficulty stays monotone (the encore rides two
+    // crossings but is gentler than the capstone's whole-tray squeeze) —
+    // while the ids stay APPEND-ONLY (a new id, never a renumber, per the
+    // campaign decision note) and each room's 04 stays its last rung and
+    // boundary rung. Kitchen and porch have no encore: kitchen05 is the
+    // booster's debut rung (its law is on the wall), and porch05 is the
+    // campaign's finale — the house's last word.
+    levelIds: [BEDROOM01_ID, BEDROOM02_ID, BEDROOM03_ID, BEDROOM05_ID, BEDROOM04_ID],
   },
   {
     id: 'bathroom',
     label: 'Bathroom',
-    levelIds: [BATHROOM01_ID, BATHROOM02_ID, BATHROOM03_ID, BATHROOM04_ID],
+    levelIds: [BATHROOM01_ID, BATHROOM02_ID, BATHROOM03_ID, BATHROOM05_ID, BATHROOM04_ID],
   },
   {
     id: 'garden',
     label: 'Garden',
-    levelIds: [GARDEN01_ID, GARDEN02_ID, GARDEN03_ID, GARDEN04_ID],
+    levelIds: [GARDEN01_ID, GARDEN02_ID, GARDEN03_ID, GARDEN05_ID, GARDEN04_ID],
   },
   {
     id: 'garage',
     label: 'Garage',
-    levelIds: [GARAGE01_ID, GARAGE02_ID, GARAGE03_ID, GARAGE04_ID],
+    levelIds: [GARAGE01_ID, GARAGE02_ID, GARAGE03_ID, GARAGE05_ID, GARAGE04_ID],
   },
   {
     id: 'porch',

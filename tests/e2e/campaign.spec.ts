@@ -218,7 +218,7 @@ test('the campaign OPENS: garage04\u2019s Next lands on porch01 with the porch m
   // addressed by URL mints nothing and offers no Next, and this claim is
   // the ladder walk, not the unlock (campaign unlock semantics are the
   // domain of the unit suite and the tests above).
-  await page.addInitScript(seedStars({ garage03: 3 }))
+  await page.addInitScript(seedStars({ garage05: 3 })) // garage04's PREVIOUS rung is now the encore (stage 6: 05 slots before the finale)
   await page.goto('/?level=garage04&launch=1&build=par')
   await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
   await expect(page.locator('#gw-status')).toContainText('finished')
@@ -245,4 +245,55 @@ test('set switch renders error-free: the bedroom level paints with zero console 
   await expect.poll(() => probe(page), { timeout: 15_000 }).toBeGreaterThan(0.01)
   expect(errors.filter((e) => e.includes('Shader') || e.includes('Program'))).toEqual([])
   expect(errors).toEqual([])
+})
+
+/**
+ * STAGE 6 — the ENCORE rungs, ladder-proved (the campaign.spec OPENS
+ * pattern, playtest-DD lineage): a rung is proven playable by a FRESH
+ * browser meeting it with no instructions — the previous rung's earned
+ * star is the only key, `?build=par&launch=1` is addressing not teaching
+ * (playtest BB item 5: a locked board mints nothing, so the star that
+ * opens the door must be real), and the claim is what the PANEL says:
+ * finished, at least one ★ minted, and a Next that names the room's
+ * finale. Each context is a genuinely fresh browser: no visit history,
+ * no builds, no reached marks.
+ */
+test('the ENCORE rungs are playable from a clean browser: bedroom05, bathroom05, garden05, garage05 mint and walk to the finale', async ({ browser }) => {
+  test.slow()
+  for (const [id, prev] of [
+    ['bedroom05', 'bedroom03'],
+    ['bathroom05', 'bathroom03'],
+    ['garden05', 'garden03'],
+    ['garage05', 'garage03'],
+  ] as const) {
+    const context = await browser.newContext() // a fresh browser per rung — the OPENS pattern
+    const page = await context.newPage()
+    const errors = noErrors(page)
+    await page.addInitScript(seedStars({ [prev]: 1 })) // the previous rung's ONE star — the whole key
+    await page.goto(`/?level=${id}&build=par&launch=1`)
+    await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
+    await expect(page.locator('#gw-status')).toContainText('finished')
+    // the encore's par line on an unlocked board is a 3★ run (4 tray
+    // pieces at the tray's geometry, the clock under the generated
+    // parTime) — the honest star economics, pinned at three.
+    expect(((await page.textContent('#gw-result-stars')) ?? '').split('\u2605').length - 1).toBe(3)
+    // and Next names the room's FINALE: the encore slots before the capstone.
+    await expect(page.locator('#gw-result-next')).toBeVisible()
+    expect(errors).toEqual([])
+    await context.close()
+  }
+})
+
+test('the ENCORE mint opens the room finale: a clean bedroom05 finish unlocks bedroom04 on the level select, and the rung after the finale stays locked', async ({ browser }) => {
+  test.slow()
+  const context = await browser.newContext()
+  const page = await context.newPage()
+  await page.addInitScript(seedStars({ bedroom03: 1 }))
+  await page.goto('/?level=bedroom05&build=par&launch=1')
+  await expect(page.locator('#gw-status')).toContainText('finished', { timeout: 60_000 })
+  await page.goto('/?levels=1')
+  await expect(page.locator('#gw-level-bedroom04')).toBeVisible()
+  expect(await page.getAttribute('#gw-level-bedroom04', 'aria-disabled')).toBeNull()
+  await expect(page.locator('#gw-level-bathroom01')).toHaveAttribute('aria-disabled', 'true')
+  await context.close()
 })

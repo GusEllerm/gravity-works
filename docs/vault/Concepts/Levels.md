@@ -843,6 +843,65 @@ whole-tray SUM that makes 24/24 possible was proven at the kitchen L04
 sweep's 0.3 m run-out geometry, and one-geometry-per-kind holds — the
 tray seats its one straight at 0.30.
 
+## The stage-6 encore rungs (design card)
+
+The campaign-30 pass adds ONE rung to each four-rung room — `bedroom05`
+"Cable Snake", `bathroom05` "Twin Drains", `garden05` "Two Shadows",
+`garage05` "Dyno Run" — the campaign 26 → 30. The NEW IDEA every one of
+them teaches is the house's founding sentence DOUBLED: **the DOUBLE
+CROSSING** — the lane is crossed TWICE on one line, `drop → straight →
+drop → landing`, and the rung's pinned `ENCORE_DIP` (the ladder's 0.12 m
+step on the porch THRESHOLD's 0.11 m lead — span 0.3566 m, LONGER than
+the ~0.31 m a roll-off can fly at this release; a stated rung-local
+deviation like `PORCH_STEP`, authored after measuring that on the stock
+0.05 leads a three-piece half-line FINISHES UNDER the par clock at
+2.592) makes the second crossing load-bearing: **all eleven sampled
+one-, two- and three-piece omissions FALL** — the promise law of
+`kitchen01`, asserted more strongly here than anywhere in the house.
+Tray = the par's four + ONE DECOY `straight` + ONE TEMPTATION `booster`
+(6 = budget, `tray ⊇ par` + 2 VERBATIM): the spare straight finishes
+TAIL-placed at the par's own hash, dies MID-LINE (the deck-first law in
+disguise), drags +0.39 s after the catcher; the booster is kitchen05's
+law turned into a CHOICE — spent EARLY it buys the second crossing whole
+(4 placed, 2.44 — the exported `X05BoosterBuild` hidden line, porch03's
+bounce precedent), spent LAST it is trim at the par's own hash. The deck
+is a long line on a short leash: par pieces 4 at 3.017 (parTime 3.05),
+the par multiset ORDER beatable at 2.783 (kitchen04's law), deck-first
+FALLS, and the whole tray finishes tail-first (the 2★ consolation —
+Playtest-G's wall PRICED, not walled) and falls booster-first.
+
+**The campaign-order call (the design call the table had to make):** ids
+stayed APPEND-ONLY (`05` is a new id; nothing renumbered — the 2026-10-09
+campaign decision) and the FLAT ladder slots each encore BETWEEN the
+room's 03 and its finale, so every room reads `01, 02, 03, 05, 04`. The
+difficulty claim is honest at the pins: harder than 03 (03 forgives a
+soft line that finishes; the encore forgives NOTHING — every omission
+falls, and the tray carries two pieces that can kill you), below the
+finale (the capstone's mastery — every verb, live zones, 24 whole-tray
+orders — stays the room's hardest claim; the encore asks for one longer
+line, not the whole vocabulary). Kitchen and porch have no encore:
+`kitchen05` is the booster's debut rung and the kitchen's finale, and
+`porch05` is the campaign's last word.
+
+The room's voice is what differs rung to rung, geometry-economy verbatim
+(the four rungs share one authored rail, one hash `1b37dfed`, one
+placement x 1.3602 and one finish-deck plane 12.6 cm under the finale
+rows): the BEDROOM rides the law clean (no live zone — the room's law);
+the BATHROOM's film lies IN sink two's mouth at the waterline a bridged
+deck would roll and the ridden dip FLIES it (bit-identical par; the
+unbuyable 0.3-span bridge probe rolls the film and runs wet-FASTER,
+3.125 vs 3.342 — bathroom01's law moved onto the ride, toll theoretical
+exactly as there); the GARDEN's sprinkler keeps its head (`source:
+sprinkler`) in crossing two's mouth — the eye reads the ORDER, the
+lesson the shadows could not teach; the GARAGE sells the speed at its
+own counter (`source: oilStain`, the EARLY spend = the dyno special —
+the room that taught the booster quotes its own shop). The four rungs
+join the cross-ladder tray-parity roster with their booster lines
+(`tests/unit/bedroom-levels.test.ts`), their placement rows are derived
+by the room tests, and the ladder proof runs as a fifth test pattern in
+`tests/e2e/campaign.spec.ts` (a FRESH browser per encore, the previous
+rung's one star as the only key, finish + ★★★ + Next naming the finale).
+
 ## Sandbox (per set)
 
 The kitchen sandbox: `sandbox: true`, budget 999 ("no budget"), every piece

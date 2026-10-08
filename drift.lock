@@ -8,12 +8,12 @@ sig = "e4e17cd7588ac713"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "scripts/gen-pars.mjs"
-sig = "e17a284b1d0036b1"
+sig = "2bcbeeffa80b98e6"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/boot.ts"
-sig = "112479ef6981c3f3"
+sig = "d2bcfa00859bd736"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -93,12 +93,17 @@ sig = "e123971bb17db1e4"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/world/pars.json"
-sig = "dc079a53ddc8a871"
+sig = "c3c4d4d4fe286a98"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/world/setPlacement.ts"
-sig = "2128acc41f4d052e"
+sig = "0713beb1bbf3a324"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Levels.md"
+target = "tests/e2e/campaign.spec.ts"
+sig = "2c7c174176085d50"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -108,12 +113,12 @@ sig = "87c92c266d308daf"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "tests/unit/bathroom-levels.test.ts"
-sig = "b99bbc25b7209004"
+sig = "0c44f8fc0d64f3e9"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "tests/unit/bedroom-levels.test.ts"
-sig = "56fe839903b4aacd"
+sig = "f2b2801ba3bb37e4"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -123,12 +128,12 @@ sig = "f8c688f0055fa0f4"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "tests/unit/garage-levels.test.ts"
-sig = "800fee48870c9ed6"
+sig = "d911c5605be66b90"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "tests/unit/garden-levels.test.ts"
-sig = "c7d9abdf2d44719f"
+sig = "811390fb48a45520"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -153,7 +158,7 @@ sig = "2648b709ac3796c8"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/boot.ts"
-sig = "112479ef6981c3f3"
+sig = "d2bcfa00859bd736"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -173,12 +178,12 @@ sig = "61ab15f3184ad775"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/world/campaign.ts"
-sig = "0b0a00d07a6922ed"
+sig = "7122eb3cbe17e954"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/world/setPlacement.ts"
-sig = "2128acc41f4d052e"
+sig = "0713beb1bbf3a324"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -203,12 +208,12 @@ sig = "cb7dd5d5414784c4"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/boot.ts"
-sig = "112479ef6981c3f3"
+sig = "5ad3634cb43166c0"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/camera/build-camera.ts"
-sig = "c1b38862ef07550d"
+sig = "c823e3a2eb090497"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -232,11 +237,6 @@ sig = "94a2ee27e5931879"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
-target = "tests/e2e/a11y-touch.spec.ts"
-sig = "b129df01ba6450b4"
-
-[[bindings]]
-doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/build-view.spec.ts"
 sig = "4bf12de87802a90c"
 
@@ -253,12 +253,12 @@ sig = "698ffa9252f05d38"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/loop.spec.ts"
-sig = "d1c73cfbb03c0f29"
+sig = "b49c30189a4db31f"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/playtest-tu.spec.ts"
-sig = "480a91662af56eb2"
+sig = "f47688fdf43cf00a"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -518,7 +518,7 @@ sig = "0f065f90d47289b6"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "src/boot.ts"
-sig = "112479ef6981c3f3"
+sig = "d2bcfa00859bd736"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -538,7 +538,7 @@ sig = "e5ff9f48c99e7ce4"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "src/world/pars.json"
-sig = "dc079a53ddc8a871"
+sig = "c3c4d4d4fe286a98"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -588,12 +588,17 @@ sig = "5032349490e77279"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "src/boot.ts"
-sig = "717430633db12def"
+sig = "d2bcfa00859bd736"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "src/save/save.ts"
-sig = "1046513a90e82c8b"
+sig = "ad4cb28f20aaebfb"
+
+[[bindings]]
+doc = "docs/vault/Modules/save.md"
+target = "src/sound/sound.ts"
+sig = "7e5a4900de002808"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
@@ -603,12 +608,12 @@ sig = "befa699b906bc793"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "src/world/campaign.ts"
-sig = "3422122b9708ccd8"
+sig = "7122eb3cbe17e954"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "tests/e2e/playtest-tu.spec.ts"
-sig = "c907ce2240f2ba76"
+sig = "e70356c18dcd77fc"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
@@ -621,24 +626,29 @@ target = "tests/unit/save.test.ts"
 sig = "df368cf2410c6b13"
 
 [[bindings]]
+doc = "docs/vault/Modules/save.md"
+target = "tests/unit/sound.test.ts"
+sig = "dcb6827ef77a8446"
+
+[[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "scripts/gen-pars.mjs"
-sig = "6c241c0777449045"
+sig = "2bcbeeffa80b98e6"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/boot.ts"
-sig = "a5f9887ad551f925"
+sig = "d2bcfa00859bd736"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/dev/scenes/kitchen-set.ts"
-sig = "ca72175798caed55"
+sig = "5233e3e617cc31ec"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/sets/index.ts"
-sig = "3eddf140e4a455b4"
+sig = "fa1d6873574ee080"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
@@ -653,12 +663,12 @@ sig = "8d54044f7dd6bb29"
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/world/pars.json"
-sig = "b5aadd2f48cccb7c"
+sig = "c3c4d4d4fe286a98"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "src/world/setPlacement.ts"
-sig = "85a7523b0e61f555"
+sig = "0713beb1bbf3a324"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
@@ -668,7 +678,7 @@ sig = "419088dfb08c761f"
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
 target = "tests/unit/set-wiring.test.ts"
-sig = "d09747df96cabfd0"
+sig = "0a90b34a57d67949"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -678,7 +688,7 @@ sig = "30af55b32a0f0f22"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/boot.ts"
-sig = "112479ef6981c3f3"
+sig = "d2bcfa00859bd736"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -753,7 +763,7 @@ sig = "befa699b906bc793"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/world/setPlacement.ts"
-sig = "2128acc41f4d052e"
+sig = "0713beb1bbf3a324"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -768,7 +778,7 @@ sig = "279dc86bcc2aa401"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "tests/unit/bathroom-levels.test.ts"
-sig = "b99bbc25b7209004"
+sig = "0c44f8fc0d64f3e9"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -776,14 +786,49 @@ target = "tests/unit/porch-levels.test.ts"
 sig = "d7f0ed8a1317d79c"
 
 [[bindings]]
+doc = "docs/vault/Modules/sound.md"
+target = "src/boot.ts"
+sig = "d2bcfa00859bd736"
+
+[[bindings]]
+doc = "docs/vault/Modules/sound.md"
+target = "src/save/save.ts"
+sig = "ad4cb28f20aaebfb"
+
+[[bindings]]
+doc = "docs/vault/Modules/sound.md"
+target = "src/sound/bus.ts"
+sig = "aba9ccc8061aa50c"
+
+[[bindings]]
+doc = "docs/vault/Modules/sound.md"
+target = "src/sound/sound.ts"
+sig = "7e5a4900de002808"
+
+[[bindings]]
+doc = "docs/vault/Modules/sound.md"
+target = "src/sound/voices.ts"
+sig = "c48e9f29af4e28e5"
+
+[[bindings]]
+doc = "docs/vault/Modules/sound.md"
+target = "tests/e2e/sound.spec.ts"
+sig = "8b6d99b6cea551bc"
+
+[[bindings]]
+doc = "docs/vault/Modules/sound.md"
+target = "tests/unit/sound.test.ts"
+sig = "dcb6827ef77a8446"
+
+[[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "scripts/gen-pars.mjs"
-sig = "e17a284b1d0036b1"
+sig = "2bcbeeffa80b98e6"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/boot.ts"
-sig = "112479ef6981c3f3"
+sig = "d2bcfa00859bd736"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -838,12 +883,12 @@ sig = "e796b269a5e69d25"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/world/campaign.ts"
-sig = "0b0a00d07a6922ed"
+sig = "7122eb3cbe17e954"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/world/pars.json"
-sig = "dc079a53ddc8a871"
+sig = "c3c4d4d4fe286a98"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -858,7 +903,7 @@ sig = "956a5f92a21353d6"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/campaign.spec.ts"
-sig = "0fcf34ad3e70b449"
+sig = "2c7c174176085d50"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -873,7 +918,7 @@ sig = "79d4ae0679f88eef"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/playtest-tu.spec.ts"
-sig = "480a91662af56eb2"
+sig = "e70356c18dcd77fc"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -893,7 +938,7 @@ sig = "3dc33ac21de385ff"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/unit/boot.test.ts"
-sig = "8b14578671ba8134"
+sig = "7c7b208833cb716e"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -908,7 +953,7 @@ sig = "0363c75d8183d368"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "src/boot.ts"
-sig = "112479ef6981c3f3"
+sig = "d2bcfa00859bd736"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -972,18 +1017,13 @@ sig = "4e0fc998b5b96411"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
-target = "scripts/a11y-contrast.mjs"
-sig = "2e09efc5e72a2c4b"
-
-[[bindings]]
-doc = "docs/vault/Modules/ui.md"
 target = "src/boot.ts"
-sig = "112479ef6981c3f3"
+sig = "5ad3634cb43166c0"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/camera/build-camera.ts"
-sig = "c1b38862ef07550d"
+sig = "c823e3a2eb090497"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1008,7 +1048,7 @@ sig = "85920b82ecda91cd"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/builder.ts"
-sig = "2b84c2806a370013"
+sig = "33548e21f0ef6042"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1027,38 +1067,23 @@ sig = "f4a36e3cd387a3d9"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
-target = "src/ui/motion.ts"
-sig = "e9d8f319019cbe3a"
-
-[[bindings]]
-doc = "docs/vault/Modules/ui.md"
 target = "src/ui/result.ts"
 sig = "175aab4ec05bce84"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/shell.css"
-sig = "e796b269a5e69d25"
+sig = "b5ea2990013d631f"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/world/campaign.ts"
-sig = "0b0a00d07a6922ed"
-
-[[bindings]]
-doc = "docs/vault/Modules/ui.md"
-target = "tests/e2e/a11y-touch.spec.ts"
-sig = "b129df01ba6450b4"
-
-[[bindings]]
-doc = "docs/vault/Modules/ui.md"
-target = "tests/e2e/a11y.spec.ts"
-sig = "326b75458f05f883"
+sig = "7122eb3cbe17e954"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/aim-depth.spec.ts"
-sig = "8d93b93c8e1daa23"
+sig = "c457b6f502f629c8"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1078,7 +1103,7 @@ sig = "08b28fa0582747ff"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/campaign.spec.ts"
-sig = "0fcf34ad3e70b449"
+sig = "2c7c174176085d50"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1093,7 +1118,7 @@ sig = "e339b79c89d210f5"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/loop.spec.ts"
-sig = "d1c73cfbb03c0f29"
+sig = "b49c30189a4db31f"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1123,7 +1148,7 @@ sig = "79d4ae0679f88eef"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/playtest-tu.spec.ts"
-sig = "480a91662af56eb2"
+sig = "f47688fdf43cf00a"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1168,7 +1193,7 @@ sig = "0fc4d437eb235619"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/campaign.test.ts"
-sig = "a20dc5d3793a3e09"
+sig = "e795cd440b8aea07"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1193,17 +1218,17 @@ sig = "60f975ea6fcc355d"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "docs/vault/Modules/replay.md"
-sig = "77fa38ae68482299"
+sig = "15d2ad12bcc76a48"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "scripts/gen-pars.mjs"
-sig = "e17a284b1d0036b1"
+sig = "2bcbeeffa80b98e6"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/boot.ts"
-sig = "ca835e84cb0a7a41"
+sig = "d2bcfa00859bd736"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1233,7 +1258,7 @@ sig = "b10082b8262b15be"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/campaign.ts"
-sig = "0b0a00d07a6922ed"
+sig = "7122eb3cbe17e954"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1253,12 +1278,12 @@ sig = "fb06ede3e0b45cba"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/pars.json"
-sig = "dc079a53ddc8a871"
+sig = "c3c4d4d4fe286a98"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/setPlacement.ts"
-sig = "2128acc41f4d052e"
+sig = "0713beb1bbf3a324"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1273,17 +1298,17 @@ sig = "d37aa2efaf2b9c57"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/bathroom-levels.test.ts"
-sig = "b99bbc25b7209004"
+sig = "0c44f8fc0d64f3e9"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/bedroom-levels.test.ts"
-sig = "56fe839903b4aacd"
+sig = "f2b2801ba3bb37e4"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/campaign.test.ts"
-sig = "a20dc5d3793a3e09"
+sig = "e795cd440b8aea07"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1293,12 +1318,12 @@ sig = "76aa13d75bc81d94"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/garage-levels.test.ts"
-sig = "800fee48870c9ed6"
+sig = "d911c5605be66b90"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/garden-levels.test.ts"
-sig = "c7d9abdf2d44719f"
+sig = "811390fb48a45520"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1343,12 +1368,12 @@ sig = "c6f64cb86daf87db"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "scripts/gen-pars.mjs"
-sig = "e17a284b1d0036b1"
+sig = "2bcbeeffa80b98e6"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/boot.ts"
-sig = "ca835e84cb0a7a41"
+sig = "d2bcfa00859bd736"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
@@ -1358,12 +1383,12 @@ sig = "6485563f5203b12f"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/ui/builder.ts"
-sig = "4756b0ffca1fc733"
+sig = "2b84c2806a370013"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "src/world/pars.json"
-sig = "dc079a53ddc8a871"
+sig = "c3c4d4d4fe286a98"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
@@ -1373,22 +1398,22 @@ sig = "87c92c266d308daf"
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "tests/unit/bathroom-levels.test.ts"
-sig = "b99bbc25b7209004"
+sig = "0c44f8fc0d64f3e9"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "tests/unit/bedroom-levels.test.ts"
-sig = "56fe839903b4aacd"
+sig = "f2b2801ba3bb37e4"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "tests/unit/garage-levels.test.ts"
-sig = "800fee48870c9ed6"
+sig = "d911c5605be66b90"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"
 target = "tests/unit/garden-levels.test.ts"
-sig = "c7d9abdf2d44719f"
+sig = "811390fb48a45520"
 
 [[bindings]]
 doc = "docs/vault/Reference/Level Ladder.md"

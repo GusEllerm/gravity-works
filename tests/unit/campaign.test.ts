@@ -30,7 +30,7 @@ const P = (over: Partial<SaveProgress> = {}): SaveProgress => ({
 });
 
 describe('campaign table', () => {
-  test('the ladder is the rooms concatenated: kitchen01..05, bedroom01..04, bathroom01..04, garden01..04, garage01..04, then porch01..05', () => {
+  test('the ladder is the rooms concatenated: kitchen01..05, bedroom01..05, bathroom01..05, garden01..05, garage01..05, then porch01..05', () => {
     expect(CAMPAIGN.map((r) => r.id)).toEqual(['kitchen', 'bedroom', 'bathroom', 'garden', 'garage', 'porch']);
     expect(CAMPAIGN_LADDER).toEqual([
       'kitchen01',
@@ -41,18 +41,22 @@ describe('campaign table', () => {
       'bedroom01',
       'bedroom02',
       'bedroom03',
+      'bedroom05',
       'bedroom04',
       'bathroom01',
       'bathroom02',
       'bathroom03',
+      'bathroom05',
       'bathroom04',
       'garden01',
       'garden02',
       'garden03',
+      'garden05',
       'garden04',
       'garage01',
       'garage02',
       'garage03',
+      'garage05',
       'garage04',
       'porch01',
       'porch02',
@@ -66,6 +70,8 @@ describe('campaign table', () => {
   test('the boundary is a normal step: next after kitchen05 is bedroom01, none after porch05', () => {
     expect(nextInCampaign('kitchen05')).toBe('bedroom01');
     expect(previousInCampaign('bedroom01')).toBe('kitchen05');
+    expect(nextInCampaign('bedroom03')).toBe('bedroom05'); // the ENCORE slots between the lesson and the finale
+    expect(nextInCampaign('bedroom05')).toBe('bedroom04');
     expect(nextInCampaign('bedroom04')).toBe('bathroom01'); // the bedroom era hands off to the bathroom
     expect(previousInCampaign('bathroom01')).toBe('bedroom04');
     expect(nextInCampaign('bathroom04')).toBe('garden01'); // the bathroom era hands off to the garden
