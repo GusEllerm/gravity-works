@@ -70,3 +70,5 @@ touch pass, a performance pass on every set (the hardware-GPU 60 fps item lands 
 pass on every callout, README with renders and a short clip, the vault sweep, and the final
 playtest + `Sessions/Final Report.md` — plus F6's versioned save migration and an ear-check on
 the sound bed densities. The `stage-5` tag is the Director's to cut.
+
+The campaign-opens CI red (twice) was a NEXT-navigation param leak: `launch`/`build` rig params rode into the next rung and auto-launched its par build; fixed at the source (deleted on Next navigation), campaign.spec x3 green locally.

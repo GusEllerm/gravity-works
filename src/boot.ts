@@ -1554,6 +1554,13 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     resultPanel.next.addEventListener('click', () => {
       const p = new URLSearchParams(window.location.search);
       p.set('level', nextId);
+      // ONE-USE rig params: `launch`/`build` describe THIS rung's boot (a test
+      // hook / dev preview), not the campaign walk. Carried forward they
+      // auto-launched the NEXT rung's par build on arrival — invisible on a
+      // quiet machine where `ready` won the race, a CI red where the sim got
+      // there first (campaign.spec "the campaign OPENS", twice).
+      p.delete('launch');
+      p.delete('build');
       window.location.search = p.toString(); // a search swap is a page boot
     });
   }
