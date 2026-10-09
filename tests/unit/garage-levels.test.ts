@@ -29,7 +29,8 @@ import { GARAGE03, garage03OilLaneBuild } from '../../src/world/levels/garage03.
 import { GARAGE04, garage04ProbeBuild } from '../../src/world/levels/garage04.level.ts';
 import { GARAGE05, GARAGE_SANDBOX, garage05BoosterBuild, garage05ProbeBuild } from '../../src/world/levels/garage05.level.ts';
 import { trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
-import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
+import { trayParityBuild } from '../../src/boot.ts';
+import { levelTrayParams } from '../../src/ui/advice.ts';
 import { PARS } from '../../src/world/stars.ts';
 import { PIECE_KINDS, PIECES, type PieceKind } from '../../src/track/pieces.ts';
 import { fitSocket } from '../../src/track/snap.ts';

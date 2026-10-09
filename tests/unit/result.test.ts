@@ -148,7 +148,8 @@ describe('build- and tray-aware notes (playtests M + Q)', () => {
     // report what the run hit, not a piece to buy — the rule is about
     // ADVICE tails.)
     const { KITCHEN02 } = await import('../../src/world/levels/kitchen02.level.ts');
-    const { initialBuild, actionableKindsFor, placedKindsFor } = await import('../../src/boot.ts');
+    const { initialBuild } = await import('../../src/boot.ts');
+    const { actionableKindsFor, placedKindsFor } = await import('../../src/ui/advice.ts');
     const tray = { straight: 2, gapLip: 1, drop: 1 };
     const kinds = actionableKindsFor(initialBuild(KITCHEN02), tray);
     const placed = placedKindsFor(initialBuild(KITCHEN02));
@@ -289,7 +290,7 @@ describe('goal-noun honesty in the fell line (playtest AA item 2)', () => {
   });
 
   test('goalNounFor names the capturing fixture of a rung\'s table', async () => {
-    const { goalNounFor } = await import('../../src/boot.ts');
+    const { goalNounFor } = await import('../../src/ui/advice.ts');
     const { KITCHEN01 } = await import('../../src/world/levels/kitchen01.level.ts');
     const { KITCHEN02 } = await import('../../src/world/levels/kitchen02.level.ts');
     // every shipped rung fixtures a finishCup — the registry's only
@@ -299,13 +300,13 @@ describe('goal-noun honesty in the fell line (playtest AA item 2)', () => {
   });
 
   test('goalNounFor reports null for a level with no fixture table', async () => {
-    const { goalNounFor } = await import('../../src/boot.ts');
+    const { goalNounFor } = await import('../../src/ui/advice.ts');
     const { FEELTRACK } = await import('../../src/world/levels/feeltrack.level.ts');
     expect(goalNounFor(FEELTRACK)).toBeNull();
   });
 
   test('every campaign rung resolves a noun its fixtures table actually carries', async () => {
-    const { goalNounFor } = await import('../../src/boot.ts');
+    const { goalNounFor } = await import('../../src/ui/advice.ts');
     const { getLevel } = await import('../../src/world/levels/feeltrack.level.ts');
     const { CAMPAIGN_LADDER } = await import('../../src/world/campaign.ts');
     for (const id of CAMPAIGN_LADDER) {
@@ -354,7 +355,8 @@ describe('drive-off tail names the tray stock, per build (playtest AA, B2 pass 2
   });
 
   test('gate sweep: the tail never names a kind without stock, always ADD-shaped', async () => {
-    const { initialBuild, stockedKindsFor, actionableKindsFor } = await import('../../src/boot.ts');
+    const { initialBuild } = await import('../../src/boot.ts');
+    const { stockedKindsFor, actionableKindsFor } = await import('../../src/ui/advice.ts');
     const { KITCHEN02 } = await import('../../src/world/levels/kitchen02.level.ts');
     const tray = { straight: 2, gapLip: 1, drop: 1 };
     const base = initialBuild(KITCHEN02);
@@ -377,7 +379,7 @@ describe('drive-off tail names the tray stock, per build (playtest AA, B2 pass 2
   });
 
   test('stockedKindsFor counts STOCK, not placement: a placed kind with spares stays', async () => {
-    const { stockedKindsFor } = await import('../../src/boot.ts');
+    const { stockedKindsFor } = await import('../../src/ui/advice.ts');
     const { BEDROOM02 } = await import('../../src/world/levels/bedroom02.level.ts');
     // B6's shape: pillow line minus the last deck — straight 2 of 3 placed
     const par = BEDROOM02.parBuild();
@@ -438,7 +440,7 @@ describe('the nose-first tail says HOW when the landing was rotated (playtest BB
   }
 
   test('flippedKindsFor flags the rotated landing and NOT the straight chain', async () => {
-    const { flippedKindsFor } = await import('../../src/boot.ts');
+    const { flippedKindsFor } = await import('../../src/ui/advice.ts');
     const { level, build } = await line(true);
     const flipped = flippedKindsFor(level, build);
     expect(flipped.has('landing')).toBe(true);
@@ -447,7 +449,7 @@ describe('the nose-first tail says HOW when the landing was rotated (playtest BB
   });
 
   test('a forward-mounted landing is never flagged (no phantom HOW)', async () => {
-    const { flippedKindsFor } = await import('../../src/boot.ts');
+    const { flippedKindsFor } = await import('../../src/ui/advice.ts');
     const { level, build } = await line(false);
     expect(flippedKindsFor(level, build).has('landing')).toBe(false);
   });

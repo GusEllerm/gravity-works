@@ -50,7 +50,7 @@ Playtest AA saw a hand-forged `#s=` link play with an honest verdict while the s
 rung's `parBuild()` twice in Node — both runs must FINISH, hash EQUAL (that pair is the
 determinism claim per rung, not just per rig), respect `pars.json` parTime, and place exactly
 `parPieces` PLAYER pieces (fixtures excluded via the one `fixtureQuota` rule, the same arithmetic
-`playerPieceCount` does in boot). All 26 rungs verified at landing; the table honestly shows
+`playerPieceCount` does in `src/ui/advice.ts`). All 26 rungs verified at landing; the table honestly shows
 IDENTICAL hashes across rooms sharing a deck (bathroom/garden/garage 01 run on kitchen01's
 physics — the port doctrine made decks reusable, hashes prove it) — the same fact that makes the
 F6 save-stamp deferral matter. The step runs in CI after typecheck.

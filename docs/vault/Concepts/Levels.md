@@ -465,7 +465,7 @@ null` — the campaign ends in the yard light.
 places **minus the level's `fixtures`**, because every consumer counts that
 way: `Builder.playerCount` (the tray counter, the budget gate, the star line
 and the panel's "N pieces — par M") never counts a built-in fixture, and
-`playerPieceCount` in `src/boot.ts` applies the same rule to a replay/share
+`playerPieceCount` in `src/ui/advice.ts` applies the same rule to a replay/share
 payload's build. The deployed page read **"3 pieces — par 5" on a
 three-piece tutorial**: the script had recorded the WHOLE reference build
 (fixtures included, 5 for L01) against a counter that tops out at 3, so the

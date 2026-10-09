@@ -29,7 +29,8 @@ import { GARDEN03, garden03SprinklerBuild } from '../../src/world/levels/garden0
 import { GARDEN04, garden04ProbeBuild } from '../../src/world/levels/garden04.level.ts';
 import { GARDEN05, GARDEN_SANDBOX, garden05BoosterBuild, garden05ProbeBuild } from '../../src/world/levels/garden05.level.ts';
 import { trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
-import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
+import { trayParityBuild } from '../../src/boot.ts';
+import { levelTrayParams } from '../../src/ui/advice.ts';
 import { PARS } from '../../src/world/stars.ts';
 import { PIECE_KINDS, PIECES, type PieceKind } from '../../src/track/pieces.ts';
 import { fitSocket } from '../../src/track/snap.ts';
