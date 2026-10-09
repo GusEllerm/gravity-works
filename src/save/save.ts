@@ -435,8 +435,17 @@ export function migrateBlob(raw: string | null): SaveData {
  * The on-disk records are re-read and merged key by key — a caller whose
  * view went stale between its load and this write (a second tab racing
  * placements, R9's exact scenario) lands its own changed keys WITHOUT
- * erasing records it never saw; per key, the newest stamp wins. Deleting a
- * record is NOT this function's vocabulary (that is `clearSave` /
+ * erasing records it never saw; per key, the newest stamp wins — and on a
+ * same-ms stamp TIE the winner is a STABLE function of the content, never
+ * of which envelope happened to be asked first, so the merge is
+ * commutative and idempotent (unit-proved via `mergeEnvelopes`). The third
+ * merge input is this tab's WRITE JOURNAL — the records this tab last
+ * installed — which is what makes a buried record REVIVABLE: the
+ * read→write hop is irreducible without a lease, so a racing tab's write
+ * can still transiently bury a key it never saw, but no re-merge or heal
+ * can lose it twice and the union converges from any interleaving.
+ * Deleting
+ * a record is NOT this function's vocabulary (that is `clearSave` /
  * `replaceSave`) — no production code ever dropped a build key, and a
  * key missing from the incoming envelope is treated as STALE VIEW, not
  * delete intent. Settings stay last-writer (the per-key law is builds and
@@ -448,6 +457,7 @@ export function migrateBlob(raw: string | null): SaveData {
 export function saveSave(data: SaveData, store: StorageLike | null = defaultStorage()): void {
   if (!store) return;
   try {
+    const journal = writeJournal(store);
     let raw: string | null = null;
     try {
       raw = store.getItem(SAVE_KEY);
@@ -455,13 +465,16 @@ export function saveSave(data: SaveData, store: StorageLike | null = defaultStor
       raw = null;
     }
     // localStorage reads are not atomic AS A GROUP across processes — a
-    // second tab's write can land between our read and our write. Verify
-    // the view right before installing it and re-merge once if the disk
-    // moved meanwhile (Recommendations §5: "refuse the write when the
-    // on-disk state moved since the load — retry once by re-merge"; the
-    // cheap shape of that, no lease, no rev bookkeeping).
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const envelope = mergeEnvelope(raw, data);
+    // second tab's write can land between our read and our write. This is
+    // a BOUNDED compare-and-set: verify the view IMMEDIATELY BEFORE EVERY
+    // INSTALL and re-merge on the fresh view when the disk moved (Recommendations
+    // §5, no lease, no rev bookkeeping). Two attempts were not enough under
+    // contention — every retry that exhausted them used to end in a BLIND
+    // write of a possibly-stale merge, which is exactly how a racing key
+    // could vanish from the union (and a disk-to-disk heal can never
+    // revive a key a blind write dropped).
+    for (let attempt = 0; attempt < CAS_ATTEMPTS; attempt++) {
+      const envelope = mergeEnvelope(raw, data, journal);
       let current: string | null;
       try {
         current = store.getItem(SAVE_KEY);
@@ -470,44 +483,200 @@ export function saveSave(data: SaveData, store: StorageLike | null = defaultStor
       }
       if (current === raw) {
         store.setItem(SAVE_KEY, envelope);
+        rememberInstalled(envelope, store);
         return;
       }
       raw = current;
     }
-    store.setItem(SAVE_KEY, mergeEnvelope(raw, data));
+    // Only here — verification impossible or lost CAS_ATTEMPTS races in a
+    // row — does anything install unverified, and it installs the merge
+    // against the FRESHEST view actually read. A merge never drops a key
+    // it saw, so the exposure is a write landing inside this one
+    // read→write hop; silently dropping THIS write would be worse.
+    const envelope = mergeEnvelope(raw, data, journal);
+    store.setItem(SAVE_KEY, envelope);
+    rememberInstalled(envelope, store);
   } catch {
     // quota or private mode: losing the save is survivable, crashing is not
   }
 }
 
-/** Merge the on-disk envelope's records with the incoming save — the body
- *  of `saveSave`, factored for the re-merge retry. */
-function mergeEnvelope(raw: string | null, data: SaveData): string {
-  const now = Date.now();
-  const base = raw === null ? null : migrateDetailed(raw);
+/** How many verify-then-install rounds `saveSave` gives itself before the
+ *  read→re-read race is declared unwinnable. Each round is two synchronous
+ *  localStorage reads plus an in-memory merge, so losing ALL of these means
+ *  another tab is writing in the same instruction window — pathological. */
+const CAS_ATTEMPTS = 8;
+
+/** The per-key stamped maps that a merge reads and writes — the currency
+ *  between an envelope on disk and a merge. */
+interface StampedMaps {
+  builds: Record<string, Stamped<string>>;
+  stars: Record<string, Stamped<number>>;
+  reached: Record<string, true>;
+  settings: SaveSettings;
+}
+
+/**
+ * The ONE per-key law, applied to the two candidates for a key:
+ * equal values keep the value at the NEWER stamp; different values are won
+ * by the HIGHER stamp; and a same-ms stamp TIE is broken by the content
+ * itself (the canonically-greater value wins — build values are canonical
+ * `serialize` JSON, so that comparison is deterministic), NOT by argument
+ * order. That last clause is what makes the merge COMMUTATIVE and
+ * IDEMPOTENT: `merge(merge(a,b),b) == merge(a,b)` and `merge(a,b) ==
+ * merge(b,a)` hold for any pair, which is what lets a re-merge retry and a
+ * heal from the other tab both converge to the SAME union. (A tie means
+ * two tabs wrote the same key in the same millisecond; which content wins
+ * is then arbitrary — WHICH one is not.)
+ */
+function chooseStamped<T>(a: Stamped<T> | undefined, b: Stamped<T> | undefined): Stamped<T> | undefined {
+  if (a === undefined) return b;
+  if (b === undefined) return a;
+  if (a.v === b.v) return { t: Math.max(a.t, b.t), v: a.v };
+  if (a.t !== b.t) return a.t > b.t ? a : b;
+  return String(a.v) > String(b.v) ? a : b;
+}
+
+/** Merge two stamped maps key by key with `chooseStamped`; keys sorted so
+ *  the SERIALIZED bytes do not depend on insertion order either. */
+function mergeStampedMaps<T>(
+  a: Record<string, Stamped<T>>,
+  b: Record<string, Stamped<T>>,
+): Record<string, Stamped<T>> {
+  const out: Record<string, Stamped<T>> = {};
+  for (const k of [...new Set([...Object.keys(a), ...Object.keys(b)])].sort()) {
+    const win = chooseStamped(a[k], b[k]);
+    if (win) out[k] = win;
+  }
+  return out;
+}
+
+/** The stamped view of a stored envelope (records pulled back out of the
+ *  schema-tolerant plain-or-`{t,…}` shapes), or null for nothing/unusable. */
+function stampedView(raw: string | null): StampedMaps | null {
+  if (raw === null) return null;
+  const outcome = migrateDetailed(raw);
+  if (!outcome.usable) return null;
   const builds: Record<string, Stamped<string>> = {};
   const stars: Record<string, Stamped<number>> = {};
-  const reached: Record<string, true> = {};
-  if (base) {
-    for (const [k, v] of Object.entries(base.data.builds)) builds[k] = { t: base.buildStamps[k] ?? 0, v };
-    for (const [k, v] of Object.entries(base.data.progress.stars))
-      stars[k] = { t: base.starStamps[k] ?? 0, v };
-    Object.assign(reached, base.data.progress.reached);
-  }
-  for (const [k, v] of Object.entries(data.builds)) if (builds[k]?.v !== v) builds[k] = { t: now, v };
-  for (const [k, v] of Object.entries(data.progress.stars))
-    if (stars[k]?.v !== v) stars[k] = { t: now, v };
-  Object.assign(reached, data.progress.reached); // monotone by design — union
+  for (const [k, v] of Object.entries(outcome.data.builds)) builds[k] = { t: outcome.buildStamps[k] ?? 0, v };
+  for (const [k, v] of Object.entries(outcome.data.progress.stars))
+    stars[k] = { t: outcome.starStamps[k] ?? 0, v };
+  return { builds, stars, reached: { ...outcome.data.progress.reached }, settings: outcome.data.settings };
+}
+
+/** Serialize a merged view back into the v2 envelope: stamp 0 rides as the
+ *  plain (pre-record) shape, keys sorted for byte-determinism. */
+function serializeView(
+  view: Pick<StampedMaps, 'builds' | 'stars' | 'reached'>,
+  settings: SaveSettings,
+): string {
   const outBuilds: Record<string, string | { t: number; s: string }> = {};
-  for (const [k, r] of Object.entries(builds)) outBuilds[k] = r.t === 0 ? r.v : { t: r.t, s: r.v };
+  for (const [k, r] of Object.entries(view.builds)) outBuilds[k] = r.t === 0 ? r.v : { t: r.t, s: r.v };
   const outStars: Record<string, number | { t: number; n: number }> = {};
-  for (const [k, r] of Object.entries(stars)) outStars[k] = r.t === 0 ? r.v : { t: r.t, n: r.v };
+  for (const [k, r] of Object.entries(view.stars)) outStars[k] = r.t === 0 ? r.v : { t: r.t, n: r.v };
+  const reachedSorted: Record<string, true> = {};
+  for (const k of Object.keys(view.reached).sort()) reachedSorted[k] = true;
   return JSON.stringify({
     v: SAVE_VERSION,
     builds: outBuilds,
-    settings: data.settings,
-    progress: { stars: outStars, reached },
+    settings,
+    progress: { stars: outStars, reached: reachedSorted },
   });
+}
+
+/**
+ * Merge two STORED envelopes key by key — the pure, ORDER-INDEPENDENT core
+ * (commutative and idempotent by the `chooseStamped` law; settings are
+ * taken from `b`, the incoming side, because settings are last-writer by
+ * law and outside the per-key claim). Exported for the unit proof; the
+ * game-side write is `saveSave`.
+ */
+export function mergeEnvelopes(aRaw: string | null, bRaw: string | null): string {
+  const empty = { builds: {}, stars: {}, reached: {} as Record<string, true>, settings: {} as SaveSettings };
+  const a = stampedView(aRaw) ?? empty;
+  const b = stampedView(bRaw) ?? empty;
+  return serializeView(
+    {
+      builds: mergeStampedMaps(a.builds, b.builds),
+      stars: mergeStampedMaps(a.stars, b.stars),
+      reached: { ...a.reached, ...b.reached }, // monotone by design — union
+    },
+    b.settings,
+  );
+}
+
+/**
+ * The WRITE JOURNAL — the records this tab last INSTALLED, per storage
+ * object (a WeakMap, so it lives exactly as long as the store it
+ * describes). It is the third input to every merge-write, and it is what
+ * the law “a merge never drops a key it saw” needs to be TRUE across
+ * tabs: the read→verify→write hop cannot be atomic without a lease, so a
+ * racing tab CAN still install an envelope that transiently buries a
+ * record it never read — but the record now lives in the burying tab's
+ * (or the victim's) journal, so the NEXT merge-write by either tab brings
+ * it back and the union only ever grows. Without it, a disk-to-disk heal
+ * is the identity on a phantom envelope and a lost record can NEVER come
+ * back — the exact shape of the R9 cross-tab flake. Journal entries carry
+ * their install-time stamps, so a genuinely newer on-disk value always
+ * wins the stamp comparison; the journal revives, it never overwrites.
+ * `replaceSave` rewrites the journal with what it installs (install
+ * semantics) and `clearSave` empties it — deliberate deletes stay
+ * deleted; nothing else may forget.
+ */
+const writeJournals = new WeakMap<StorageLike, StampedMaps>();
+
+function writeJournal(store: StorageLike): StampedMaps {
+  let j = writeJournals.get(store);
+  if (!j) {
+    j = { builds: {}, stars: {}, reached: {}, settings: {} };
+    writeJournals.set(store, j);
+  }
+  return j;
+}
+
+/** Remember what this tab just installed — the journal is a SNAPSHOT of
+ *  the last installed envelope, not an append log: every merge-write is
+ *  key-monotone, so the latest install already carries everything. */
+function rememberInstalled(envelope: string, store: StorageLike): void {
+  const view = stampedView(envelope);
+  const j = writeJournal(store);
+  if (view) {
+    j.builds = view.builds;
+    j.stars = view.stars;
+    j.reached = view.reached;
+    j.settings = view.settings;
+  }
+}
+
+/** Merge the on-disk envelope's records with the incoming save — the body
+ *  of `saveSave`, factored for the re-merge retry. Three inputs meet in
+ *  the commutative per-key law: the disk view, the incoming save (keys it
+ *  still carries UNCHANGED keep their on-disk stamp, so a settings-only
+ *  write is byte-stable; a key whose value differs is stamped now), and
+ *  this tab's write journal. */
+function mergeEnvelope(raw: string | null, data: SaveData, journal: StampedMaps): string {
+  const now = Date.now();
+  const base = stampedView(raw) ?? { builds: {}, stars: {}, reached: {}, settings: data.settings };
+  const incoming: StampedMaps = {
+    builds: {},
+    stars: {},
+    reached: { ...data.progress.reached },
+    settings: data.settings,
+  };
+  for (const [k, v] of Object.entries(data.builds))
+    incoming.builds[k] = base.builds[k]?.v === v ? { t: base.builds[k]!.t, v } : { t: now, v };
+  for (const [k, v] of Object.entries(data.progress.stars))
+    incoming.stars[k] = base.stars[k]?.v === v ? { t: base.stars[k]!.t, v } : { t: now, v };
+  return serializeView(
+    {
+      builds: mergeStampedMaps(mergeStampedMaps(base.builds, incoming.builds), journal.builds),
+      stars: mergeStampedMaps(mergeStampedMaps(base.stars, incoming.stars), journal.stars),
+      // union, monotone — journals only ever ADD
+      reached: { ...base.reached, ...incoming.reached, ...journal.reached },
+    },
+    data.settings,
+  );
 }
 
 /** The deliberate INSTALL write: the incoming envelope REPLACES the save
@@ -516,7 +685,9 @@ function mergeEnvelope(raw: string | null, data: SaveData): string {
 export function replaceSave(data: SaveData, store: StorageLike | null = defaultStorage()): void {
   if (!store) return;
   try {
-    store.setItem(SAVE_KEY, JSON.stringify(data));
+    const envelope = JSON.stringify(data);
+    store.setItem(SAVE_KEY, envelope);
+    rememberInstalled(envelope, store); // INSTALL semantics — the journal too
   } catch {
     // as above
   }
@@ -526,6 +697,11 @@ export function clearSave(store: StorageLike | null = defaultStorage()): void {
   if (!store) return;
   try {
     store.removeItem(SAVE_KEY);
+    const j = writeJournal(store); // a deliberate delete stays deleted
+    j.builds = {};
+    j.stars = {};
+    j.reached = {};
+    j.settings = {};
   } catch {
     // as above
   }

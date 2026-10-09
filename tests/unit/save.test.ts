@@ -11,6 +11,7 @@ import {
   listQuarantined,
   loadSave,
   memoryStorage,
+  mergeEnvelopes,
   migrateBlob,
   recordStars,
   rememberBuild,
@@ -440,5 +441,54 @@ describe('save', () => {
     expect(loadSave(store).builds.kitchen01).toBe(goodBuild);
     replaceSave(freshSave(), store); // the deliberate install path does
     expect(loadSave(store).builds).toEqual({});
+  });
+
+  // The ORDER-INDEPENDENCE PROOF of the per-key merge: whoever asks first,
+  // and however often a re-merge retries, the same two envelopes land on
+  // the SAME bytes. Same-ms stamp ties are broken by the CONTENT, never by
+  // argument order — this is what makes the cross-tab heal converge.
+  test('R9: the per-key merge is COMMUTATIVE — merge(a,b) and merge(b,a) are the same bytes', () => {
+    const env = (
+      builds: Record<string, string | { t: number; s: string }>,
+      stars: Record<string, number | { t: number; n: number }>,
+      reached: Record<string, true> = {},
+    ) => JSON.stringify({ v: 2, builds, settings: {}, progress: { stars, reached } });
+    const build = (levelId: string, seed: number) => serialize({ levelId, seed, pieces: [] });
+    // a hostile pair: disjoint keys, SAME-MS stamp ties on the SAME key
+    // with DIFFERENT content (builds AND stars), one-sided keys, a plain
+    // (stamp-0) entry vs a stamped one, equal values at different stamps,
+    // and reached sets that overlap without nesting.
+    const a = env(
+      {
+        kitchen01: { t: 5, s: build('kitchen01', 1) },
+        kitchen02: { t: 9, s: build('kitchen02', 1) }, // same content, older stamp than b
+        kitchen03: build('kitchen03', 0), // plain = stamp 0, one-sided
+      },
+      { kitchen01: { t: 7, n: 2 }, kitchen02: { t: 1, n: 1 } },
+      { kitchen01: true, kitchen02: true },
+    );
+    const b = env(
+      {
+        kitchen01: { t: 5, s: build('kitchen01', 2) }, // SAME stamp, DIFFERENT bytes — content tie-break
+        kitchen02: { t: 3, s: build('kitchen02', 1) },
+        kitchen04: { t: 8, s: build('kitchen04', 1) },
+      },
+      { kitchen01: { t: 7, n: 1 }, kitchen03: { t: 2, n: 3 } }, // stamp tie on a star too
+      { kitchen02: true, kitchen03: true },
+    );
+    expect(mergeEnvelopes(a, b)).toBe(mergeEnvelopes(b, a));
+    // …and IDEMPOTENT: healing the merged result against either input
+    // again is a no-op — the heal-write poll converges, it cannot ping-pong
+    expect(mergeEnvelopes(mergeEnvelopes(a, b), b)).toBe(mergeEnvelopes(a, b));
+    expect(mergeEnvelopes(mergeEnvelopes(a, b), a)).toBe(mergeEnvelopes(a, b));
+    // the union actually LANDED (not just "same bytes" by degenerate loss)
+    const merged = JSON.parse(mergeEnvelopes(a, b));
+    expect(Object.keys(merged.builds).sort()).toEqual(['kitchen01', 'kitchen02', 'kitchen03', 'kitchen04']);
+    expect(merged.builds.kitchen01.s).toBe(build('kitchen01', 2)); // content tie-break is stable
+    expect(merged.builds.kitchen02.t).toBe(9); // equal values keep the NEWER stamp
+    expect(merged.builds.kitchen03).toBe(build('kitchen03', 0)); // stamp 0 stays the plain shape
+    expect(merged.progress.stars.kitchen01.n).toBe(2); // star tie broken by content, once
+    expect(merged.progress.stars.kitchen03.n).toBe(3);
+    expect(Object.keys(merged.progress.reached).sort()).toEqual(['kitchen01', 'kitchen02', 'kitchen03']);
   });
 });

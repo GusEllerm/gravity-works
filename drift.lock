@@ -698,7 +698,7 @@ sig = "8078cc618d931b9f"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "src/save/save.ts"
-sig = "d5d710ea5de701ff"
+sig = "12b598f2e69e24b1"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
@@ -748,7 +748,7 @@ sig = "0fc4d437eb235619"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "tests/unit/save.test.ts"
-sig = "b6ef4e46f5ae7348"
+sig = "67837c46596536a2"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
@@ -973,7 +973,7 @@ sig = "86753621e0cfc51b"
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
 target = "src/save/save.ts"
-sig = "d5d710ea5de701ff"
+sig = "12b598f2e69e24b1"
 
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
@@ -1448,7 +1448,7 @@ sig = "58f5fe859fa18a99"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/save.test.ts"
-sig = "b6ef4e46f5ae7348"
+sig = "67837c46596536a2"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
