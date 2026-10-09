@@ -1463,6 +1463,16 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // the e2e seam for the hazard status path: the live zone count of the
   // current world (0 for hazard-free levels) — debug surface, not UI
   (window as unknown as Record<string, unknown>).__gwHazardZones = (): number => world?.hazardZones.length ?? 0;
+  // T0.5 game-shell leak gate (Action Plan R5): the WebGL-boundary counters
+  // (`renderer.info` — live programs + memory geometries/textures) the probe
+  // reads around real per-edit `rebuild()` cycles. Same counter idiom as the
+  // harness's `__postCycle`, but on the SHELL, so a gutted `World.dispose`
+  // cannot ship green. Debug surface, not UI.
+  (window as unknown as Record<string, unknown>).__gwRendererInfo = (): { programs: number; geometries: number; textures: number } => ({
+    programs: renderer.info.programs?.length ?? -1,
+    geometries: renderer.info.memory.geometries,
+    textures: renderer.info.memory.textures,
+  });
   // the e2e seam for the CAMERA FOLLOW assertion (§7.3 on the live path):
   // the render camera's current pose — a run that does not MOVE this object
   // is a run the player cannot watch (debug surface, not UI)
