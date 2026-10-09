@@ -60,10 +60,15 @@ const savedPieces = (page: import('@playwright/test').Page) =>
     (tray) => {
       const raw = localStorage.getItem('gravity-works.save')
       if (!raw) return -1
-      const env = JSON.parse(raw) as { builds?: Record<string, string> }
-      const blob = env.builds?.kitchen01
-      if (!blob) return 0
-      const pieces = (JSON.parse(blob) as { pieces: { def: string }[] }).pieces ?? []
+      const env = JSON.parse(raw) as { builds?: Record<string, unknown> }
+      // Program T1.2 note: the envelope has TWO record shapes by design (the
+      // R9 newest-wins merge stamps a write as `{ t, s }`; an unstamped one
+      // is the plain string) — the reader shipped reading the pre-R9 shape
+      // only and threw on `{t,s}`. Read BOTH.
+      const record = env.builds?.kitchen01
+      const str = typeof record === 'string' ? record : (record as { s?: string } | undefined)?.s ?? null
+      if (str === null) return 0
+      const pieces = (JSON.parse(str) as { pieces: { def: string }[] }).pieces ?? []
       return pieces.filter((p) => (tray as string[]).includes(p.def)).length
     },
     TRAY_KINDS,
@@ -82,8 +87,9 @@ test('a REAL background (app-switch, no pagehide) flushes the pending edit', asy
       let pieces = -2
       try {
         const raw = localStorage.getItem('gravity-works.save')
-        const env = raw ? (JSON.parse(raw) as { builds?: Record<string, string> }) : null
-        const blob = env?.builds?.kitchen01
+        const env = raw ? (JSON.parse(raw) as { builds?: Record<string, unknown> }) : null
+        const record = env?.builds?.kitchen01
+        const blob = typeof record === 'string' ? record : (record as { s?: string } | undefined)?.s ?? null
         const list = blob ? ((JSON.parse(blob) as { pieces: { def: string }[] }).pieces ?? []) : []
         pieces = list.filter((p) => (tray as string[]).includes(p.def)).length
       } catch {

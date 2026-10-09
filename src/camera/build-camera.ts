@@ -157,13 +157,20 @@ export class BuildCamera {
   private center = new THREE.Vector3();
   private d = 1.2;
   private span = 0.5;
+  /** the eye-offset law of the base framing — 'track' is the table
+   *  three-quarter (0.7, 0.55, 0.9)·d; 'set' is the framed-on-the-ROOM
+   *  canonical-still eye (0.7, 0.45, 0.85)·d — the ratified establishing
+   *  pitch on the wider track azimuth that keeps a run laid along +x in
+   *  the legal frame (program T1.2; see boot.frameCamera). */
+  private law: 'track' | 'set' = 'track';
 
   /** Set the base framing (world centre, the solved eye distance, the
    *  track span) — called by `frameCamera` on every static reframe. */
-  setFraming(center: THREE.Vector3, d: number, span: number): void {
+  setFraming(center: THREE.Vector3, d: number, span: number, law: 'track' | 'set' = 'track'): void {
     this.center.copy(center);
     this.d = d;
     this.span = span;
+    this.law = law;
   }
 
   /** Right-drag / space+drag: yaw-only turn. Vertical travel is IGNORED
@@ -223,11 +230,12 @@ export class BuildCamera {
     const s = Math.sin(this.yaw);
     // the base three-quarter offset (frameCamera's exact numbers) rotated
     // about the world Y axis through the framing centre
-    const ox = this.d * 0.7;
-    const oz = this.d * 0.9;
+    const [kx, ky, kz] = this.law === 'set' ? [0.7, 0.45, 0.85] : [0.7, 0.55, 0.9];
+    const ox = this.d * kx;
+    const oz = this.d * kz;
     const ex = ox * c + oz * s;
     const ez = -ox * s + oz * c;
-    const ey = this.d * 0.55;
+    const ey = this.d * ky;
     // screen basis of the yawed pose: forward f = -e/|e|; right = f × up;
     // camUp = right × f (pan moves the CENTRE in this plane, never the
     // eye distance: NO zoom lives here)

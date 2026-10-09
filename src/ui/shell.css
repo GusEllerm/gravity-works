@@ -1,7 +1,24 @@
 /* Gravity Works — stage 3 minimum-viable shell styling (the director's
  * quiet pass: a sane text face, a canvas with a real height, the tray as one
  * tidy row, a visible run-status line). Stage 6 owns the real UI pass; no
- * theming system lives here. */
+ * theming system lives here.
+ *
+ * PROGRAM T1.2 — THE DISPLAY FACE (player evaluation t+0: “Type is the
+ * system font everywhere — the brief demanded a display face with
+ * personality”). DECISION, stated honestly: no web-font download. The game
+ * is a 200 KB static page whose first paint is the product; shipping a
+ * woff2 for a heading is a render-blocking tax on the cold visit the beat
+ * exists to improve, and a procedural typeface was measured (too slow, too
+ * uncouth at small sizes). The face is a SYSTEM STACK WITH PERSONALITY —
+ * geometric-sans by name on every OS that has one: Futura (macOS),
+ * Avenir Next (macOS), Century Gothic (Windows), Trebuchet MS (both) — and
+ * the stack degrades to the platform grotesque nowhere else. It carries the
+ * TITLE, the headings and the result numerals only (the display register);
+ * body copy stays on the readable system UI face — a display face at 13 px
+ * is the tax without the personality. */
+:root {
+  --gw-display: 'Futura', 'Avenir Next', 'Century Gothic', 'Trebuchet MS', system-ui, sans-serif;
+}
 body {
   margin: 0;
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -9,10 +26,41 @@ body {
   background: #efe0c8;
 }
 #app { max-width: 980px; margin: 0 auto; padding: 12px 16px 32px; }
-h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
+h1 {
+  font-family: var(--gw-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 8px 0 12px;
+}
+h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
+/* THE PREMISE BEAT (program T1.2, `src/pages/intro.ts`): the cold first
+ * visit is the house with one silent car, BEFORE builder chrome — every
+ * builder surface is hidden by this one class on the app root. The h1
+ * STAYS: it is the title screen now (and the line the display face was
+ * chosen for); the campaign link, tray, controls, status/callout lines,
+ * the legal details and the sound toggle are the chrome being delayed,
+ * not the premise. The beat's dismiss listener swallows the first gesture
+ * at capture, so no control under it can be clicked mid-film. */
+.gw-premiere #gw-builder-host,
+.gw-premiere #gw-levels-nav,
+.gw-premiere #gw-help-toggle,
+.gw-premiere #gw-hash-details,
+.gw-premiere #gw-status,
+.gw-premiere #gw-callout,
+.gw-premiere #gw-sound,
+.gw-premiere #gw-dev-preview {
+  display: none;
+}
+.gw-premiere h1 { letter-spacing: 0.3em; }
 #gw-stage { background: #efe0c8; border-radius: 6px; overflow: hidden; }
 #gw-stage canvas { display: block; width: 100%; height: auto; max-height: 540px; max-width: 960px; margin-inline: auto; background: #efe0c8; }
 #gw-status, #gw-callout { font-size: 13px; margin: 8px 0; }
+/* the display register on the replay page's title line and the verdict
+ * numerals (the two screens the evaluation called Bootstrap-default) */
+#gw-replay-title { font-family: var(--gw-display); letter-spacing: 0.1em; text-transform: uppercase; }
+#gw-result-time { font-family: var(--gw-display); font-variant-numeric: tabular-nums; }
 /* the determinism fingerprint: engineer trivia behind a quiet disclosure
  * (playtest E+F: the hash on the player's status line was unreadable noise) */
 #gw-hash-details { font-size: 11px; color: #6a5636; margin: 2px 0; }

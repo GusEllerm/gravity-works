@@ -77,6 +77,18 @@ void main() {
 	// vignette term: soft corner falloff, enough to seat the frame, never a spotlight
 	float r = length( vUv - 0.5 ) / 0.7071;
 	c *= 1.0 - uVignette * smoothstep( 1.0 - uVignetteSoftness, 1.0, r );
+	// BLOWN-HIGHLIGHTS CAP (program T1.3, design evaluation §1: “blown highs
+	// the tiles did not have — kitchen mug and bowl milk, bedroom lamp post,
+	// garage blade band, porch window frame”). A knee at 0.80 LINEAR rolls
+	// the top band onto an asymptote 0.086 above it, so no channel can pin:
+	// pure white lands at ≈ 238/255 and the census blown test (every channel
+	// ≥ 243) becomes unreachable BY CONSTRUCTION. The roll is monotonic, is
+	// the identity below the knee (every mid-tone byte-identical), and lives
+	// here — at the terminal stage, after the bloom's add and the vignette —
+	// because a cap below the bloom could still be blown past by the bloom.
+	vec3 over = max( c - vec3( 0.80 ), vec3( 0.0 ) );
+	vec3 cap = vec3( 0.086 );
+	c = min( c, vec3( 0.80 ) ) + over * cap / ( over + cap );
 	gl_FragColor = vec4( c, 1.0 );
 
 	#include <colorspace_fragment>

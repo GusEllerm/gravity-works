@@ -223,3 +223,25 @@ export const STAGING = {
   /** The still's car: parameter on run 0 (the exploration's hero read). */
   car: { run: 0, t: 0.55 },
 } as const
+
+/** The bathroom's canonical rigs (program T1.3 — design evaluation §1/§7 #7:
+ *  “the bathroom has no production still scene and NO rig row at all (it
+ *  rides the provisional kitchen fallback) … a `bathroom-set` still scene +
+ *  a SET_SHOTS rig row (the other five rooms have them)”. The garden/porch
+ *  pattern: the numbers live with the SET and `dev/cameras.ts` copies the
+ *  row through.
+ *  - `establishing` copies the PROVISIONAL kitchen numbers VERBATIM (the
+ *    garage/porch precedent: the row the bathroom previously rode through
+ *    as the fallback keeps rendering byte-identically; only moved rows
+ *    change).
+ *  - `hero` is the cathedral money shot the exploration tiles were: the
+ *    tub + floating duck + the tile grid receding to the window wall, the
+ *    checkered floor seams in the lower third.
+ *  - `floor` obeys the studio floor-rig law (35 mm over the flush deck —
+ *    here the deck rides at 0.003, so the eye lives at 0.038) looking up
+ *    the STAGING lane into the tile island, the car in the focus band. */
+export const CAMERAS = {
+  establishing: { position: [0.62, 0.42, 0.78], target: [0, 0.05, 0], fov: 35, near: 0.01, far: 12 },
+  hero: { position: [0.28, 0.18, 0.34], target: [-0.03, 0.05, -0.08], fov: 35, near: 0.01, far: 12 },
+  floor: { position: [0.05, 0.038, 0.2], target: [0.01, 0.028, -0.08], fov: 35, near: 0.005, far: 12 },
+} as const

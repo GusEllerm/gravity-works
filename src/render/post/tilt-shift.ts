@@ -55,6 +55,11 @@ export function tiltShiftParams(
   const ndc = focus.clone().project(camera)
   const bandCenter = THREE.MathUtils.clamp(ndc.y * 0.5 + 0.5, 0, 1)
   const floorY = opts.floorY ?? 0
+  // THE DISTANCE IS TO THE FOCUS SUBJECT, NOT TO ITS FOOTPRINT PLANE:
+  // the art bible's "distance from the set floor" is the HEIGHT the
+  // focused thing rides above the deck (program T1.2 rig note: feeding
+  // the floor as the focus point pins strength at the floor value and
+  // removes the focus pull the law is named for).
   const dist = Math.abs(focus.y - floorY)
   const range = opts.strengthRange ?? 0.3
   const t = THREE.MathUtils.clamp(dist / range, 0, 1)

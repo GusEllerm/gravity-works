@@ -170,7 +170,7 @@ void RE_Direct_Toon(
 	// light only above 70 % coverage. Snapping a 50/50 penumbra to "lit"
 	// smeared bright patches wherever the tap shadow grazed the floor —
 	// snapping to tint reads as shadow, which is the truth anyway.
-	float hard = step( 0.7 + weave * 0.6, att );
+	float hard = step( 0.7 + weave * 0.15, att );
 	att = mix( hard, att, uShadowDither );
 	vec3 effective = mix( material.shadowTint * uKeyLength * 0.4, directLight.color, att );
 	// The punctual gate: the tint swap above is the DIRECTIONAL key's shadow
