@@ -539,7 +539,7 @@ async function bootSharedRun(root: HTMLElement): Promise<void> {
   const verifyNote = document.createElement('p');
   verifyNote.id = 'gw-replay-verify-note';
   verifyNote.textContent =
-    'The link carries the run’s final state hash. This page replays the level, build and seed on this machine and compares. Same machine, same engine — the same run.';
+    'The link carries the run’s final state hash. This page replays the level, build and seed on this machine and compares. Same machine, same engine — the same run. That identity has so far crossed machines intact: every reference-build hash in the game measures identical on Linux/x86-64 and Apple silicon (CI-measured) — other platforms remain unproven.';
   verify.appendChild(verifyNote);
   root.appendChild(verify);
 

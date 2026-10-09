@@ -19,7 +19,7 @@ Compression is injectable (`ShareCodec`): the browser uses platform `Compression
 
 ## Invariants
 
-- The hash inside a payload is the ONLY trust anchor: replay recomputes, compare prints the verdict. Same-machine verification is exact; the cross-platform claim awaits the stage-2 harness measurement ([[Home]] Deferred).
+- The hash inside a payload is the ONLY trust anchor: replay recomputes, compare prints the verdict. Same-machine verification is exact, and since 2026-10-09 the cross-machine identity is MEASURED, not assumed: all 37 reference-build hashes match between linux-x64 and darwin-arm64 in CI (`tools/hash-atlas.mjs`, `Reference/Cross-platform determinism 2026-10-09`) — platforms outside those two remain unproven, and the badge stays machine-local ("verified on THIS machine" is what the page itself proves; the note beside it names what machines mean).
 - A share URL is fully self-describing: `getLevel` + the embedded build determine the whole run (Track Kit invariant 4).
 
 ## Guarded by
