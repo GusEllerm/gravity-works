@@ -173,7 +173,7 @@ sig = "d01d2ba38efcad2e"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/boot.ts"
-sig = "96da4a309826296f"
+sig = "a84342dc1c0c26aa"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -548,7 +548,7 @@ sig = "d01d2ba38efcad2e"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "src/boot.ts"
-sig = "96da4a309826296f"
+sig = "a84342dc1c0c26aa"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -623,12 +623,12 @@ sig = "5032349490e77279"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "src/boot.ts"
-sig = "96da4a309826296f"
+sig = "a84342dc1c0c26aa"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "src/save/save.ts"
-sig = "ad4cb28f20aaebfb"
+sig = "d5d710ea5de701ff"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
@@ -642,13 +642,28 @@ sig = "8ce1d7d6a6596df5"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
+target = "src/ui/settings.ts"
+sig = "f83db9ef6b318b3f"
+
+[[bindings]]
+doc = "docs/vault/Modules/save.md"
 target = "src/world/campaign.ts"
 sig = "7122eb3cbe17e954"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
+target = "tests/e2e/cross-tab-save.spec.ts"
+sig = "6332a30ed6bc5959"
+
+[[bindings]]
+doc = "docs/vault/Modules/save.md"
 target = "tests/e2e/playtest-tu.spec.ts"
 sig = "e70356c18dcd77fc"
+
+[[bindings]]
+doc = "docs/vault/Modules/save.md"
+target = "tests/e2e/save-quarantine.spec.ts"
+sig = "5256185d38f49969"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
@@ -658,7 +673,7 @@ sig = "0fc4d437eb235619"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "tests/unit/save.test.ts"
-sig = "df368cf2410c6b13"
+sig = "b6ef4e46f5ae7348"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
@@ -833,7 +848,7 @@ sig = "68f378bf54ee5d36"
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
 target = "src/boot.ts"
-sig = "96da4a309826296f"
+sig = "a84342dc1c0c26aa"
 
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
@@ -873,12 +888,12 @@ sig = "1becf3bba294d4ef"
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
 target = "src/boot.ts"
-sig = "96da4a309826296f"
+sig = "a84342dc1c0c26aa"
 
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
 target = "src/save/save.ts"
-sig = "ad4cb28f20aaebfb"
+sig = "d5d710ea5de701ff"
 
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
@@ -913,7 +928,7 @@ sig = "2bcbeeffa80b98e6"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/boot.ts"
-sig = "96da4a309826296f"
+sig = "a84342dc1c0c26aa"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -1038,7 +1053,7 @@ sig = "0363c75d8183d368"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "src/boot.ts"
-sig = "96da4a309826296f"
+sig = "a84342dc1c0c26aa"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -1108,7 +1123,7 @@ sig = "8fccf7ad9cd3d485"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/boot.ts"
-sig = "0dfeaf8ad6e0eb41"
+sig = "a84342dc1c0c26aa"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1164,6 +1179,11 @@ sig = "e9d8f319019cbe3a"
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/result.ts"
 sig = "84926cddf7b7aa2a"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
+target = "src/ui/settings.ts"
+sig = "f83db9ef6b318b3f"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1272,6 +1292,11 @@ sig = "48135c8e914380bf"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
+target = "tests/e2e/save-quarantine.spec.ts"
+sig = "5256185d38f49969"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/shell-truth.spec.ts"
 sig = "3eb245e82df9489f"
 
@@ -1323,7 +1348,7 @@ sig = "865c4519f77f7583"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/save.test.ts"
-sig = "df368cf2410c6b13"
+sig = "b6ef4e46f5ae7348"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"

@@ -1,17 +1,21 @@
 import { describe, expect, test } from 'vitest';
 import {
   MIGRATIONS,
+  QUARANTINE_CAP,
   SAVE_KEY,
   SAVE_VERSION,
   clearSave,
   createBuildAutosave,
   freshSave,
   importSaveFile,
+  listQuarantined,
   loadSave,
   memoryStorage,
   migrateBlob,
   recordStars,
   rememberBuild,
+  replaceSave,
+  salvageBlob,
   saveFileJson,
   saveSave,
   savedBuild,
@@ -259,5 +263,182 @@ describe('save', () => {
     rememberBuild(KITCHEN01.parBuild(), store); // the store-level fact the shell relies on
     expect(savedBuild('bedroom01', store)).toBeUndefined();
     expect(savedBuild(KITCHEN01.id, store)!.pieces.length).toBe(KITCHEN01.parBuild().pieces.length);
+  });
+
+  // ---- T0.3 / R1: QUARANTINE — the corruption matrix (evaluator, red→green) --
+  //
+  // Every hostile shape the engineering evaluation measured live (truncated
+  // JSON, a string `builds`, one bad build among good, `v:3`, a string
+  // `settings`, star `9`, array-builds), each asserting the three claims the
+  // recommendation demanded: (i) the quarantine key NOW HOLDS the raw bytes,
+  // (ii) the game keeps playing on a live envelope, (iii) a subsequent
+  // `saveSave` of fresh state does NOT destroy recoverability. Mutation
+  // proof: delete the quarantine call in `loadSave` and every row goes RED.
+
+  const goodBuild = serialize(KITCHEN01.parBuild());
+  const CORRUPTION_MATRIX: Record<string, string> = {
+    'truncated JSON': '{"v":2,"builds":{"kitchen01":',
+    'string builds': JSON.stringify({ v: 2, builds: 'nope', settings: {}, progress: { stars: {}, reached: {} } }),
+    'one bad build among good': JSON.stringify({
+      v: 2,
+      builds: { kitchen01: goodBuild, kitchen02: '{{{' },
+      settings: {},
+      progress: { stars: { kitchen01: 2 }, reached: {} },
+    }),
+    'v:3 (the reserved version)': JSON.stringify({
+      v: 3,
+      builds: { kitchen01: goodBuild },
+      settings: {},
+      progress: { stars: { kitchen01: 3, kitchen02: 2 }, reached: {} },
+    }),
+    'string settings': JSON.stringify({ v: 2, builds: { kitchen01: goodBuild }, settings: 'loud', progress: { stars: {}, reached: {} } }),
+    'star 9': JSON.stringify({ v: 2, builds: {}, settings: {}, progress: { stars: { kitchen01: 9 }, reached: {} } }),
+    'array builds': JSON.stringify({ v: 2, builds: ['a', 'b'], settings: {}, progress: { stars: {}, reached: {} } }),
+  };
+
+  for (const [name, raw] of Object.entries(CORRUPTION_MATRIX)) {
+    test(`R1 matrix — ${name}: quarantined, playable, recoverable`, () => {
+      const store = memoryStorage({ [SAVE_KEY]: raw });
+      const data = loadSave(store);
+      // (i) the raw bytes moved OUTSIDE the envelope, under corrupt-<n>
+      expect(listQuarantined(store).map((q) => q.raw)).toContain(raw);
+      // the game keeps playing on a live v2 envelope
+      expect(data.v).toBe(SAVE_VERSION);
+      // (iii) a saveSave of FRESH state (the mute-click that used to commit
+      // the wipe forever) must not touch the quarantined copy
+      saveSave(freshSave(), store);
+      expect(listQuarantined(store).map((q) => q.raw)).toContain(raw);
+      // and the copy stays VALIDATABLE through the same migrate machinery
+      // (salvage: bytes the player can inspect are recoverable bytes —
+      // everything PARSEABLE can be salvaged; unparseable rows keep their
+      // bytes for archaeology but cannot self-describe)
+      const copy = listQuarantined(store).find((q) => q.raw === raw)!;
+      let parseable = true;
+      try {
+        JSON.parse(raw);
+      } catch {
+        parseable = false;
+      }
+      expect(salvageBlob(copy.raw).ok).toBe(parseable);
+    });
+  }
+
+  test('R1: the salvage keeps the GOOD entries — one bad build is not a whole-save wipe', () => {
+    const store = memoryStorage({
+      [SAVE_KEY]: JSON.stringify({
+        v: 2,
+        builds: { kitchen01: goodBuild, kitchen02: '{{{' },
+        settings: {},
+        progress: { stars: { kitchen01: 2 }, reached: {} },
+      }),
+    });
+    const data = loadSave(store);
+    expect(Object.keys(data.builds)).toEqual(['kitchen01']); // the good build SURVIVES
+    expect(data.progress.stars.kitchen01).toBe(2);
+    expect(listQuarantined(store).length).toBe(1); // and the raw is set aside
+  });
+
+  test('R1: quarantine dedupes — a damaged blob on disk quarantines exactly once', () => {
+    const raw = JSON.stringify({ v: 3, builds: {}, settings: {}, progress: { stars: {}, reached: {} } });
+    const store = memoryStorage({ [SAVE_KEY]: raw });
+    for (let i = 0; i < 10; i++) loadSave(store); // every boot reads the same blob many times
+    expect(listQuarantined(store).length).toBe(1);
+  });
+
+  test('R1: the quarantine is capped (a boot loop cannot fill localStorage)', () => {
+    const store = memoryStorage();
+    for (let i = 0; i < QUARANTINE_CAP + 5; i++) {
+      store.setItem(SAVE_KEY, JSON.stringify({ v: 42, junk: i }));
+      loadSave(store);
+    }
+    expect(listQuarantined(store).length).toBe(QUARANTINE_CAP);
+  });
+
+  test('R1: a HEALTHY save quarantines nothing — ordinary boots stay ordinary', () => {
+    const store = memoryStorage();
+    rememberBuild(KITCHEN01.parBuild(), store);
+    recordStars('kitchen01', 3, store);
+    loadSave(store);
+    expect(listQuarantined(store)).toEqual([]);
+  });
+
+  test('R1: import validates through migrate — an unusable file THROWS, a future-shape file is salvaged', async () => {
+    await expect(importSaveFile({ text: async () => '{{{ not json' })).rejects.toThrow(/not a usable save/);
+    const v3 = JSON.stringify({
+      v: 3,
+      builds: { kitchen01: goodBuild },
+      settings: {},
+      progress: { stars: { kitchen01: 3, kitchen02: 2 }, reached: {} },
+    });
+    const back = await importSaveFile({ text: async () => v3 });
+    expect(back.v).toBe(SAVE_VERSION); // clamped into the live shape
+    expect(back.progress.stars).toEqual({ kitchen01: 3, kitchen02: 2 }); // TWO BANKED STARS, recovered
+    // v3 stays RESERVED: the LIVE migrate never auto-loads a future blob
+    expect(migrateBlob(v3).progress.stars).toEqual({});
+  });
+
+  test('R1: SAVE_VERSION is STILL 2 — quarantine and records bought no schema bump', () => {
+    expect(SAVE_VERSION).toBe(2);
+    expect(MIGRATIONS.length).toBe(2);
+  });
+
+  // ---- T0.6 / R9: newest-wins MERGE on the builds/stars maps -----------------
+
+  test('R9: game writes store per-key timestamped records INSIDE the v2 envelope', () => {
+    const store = memoryStorage();
+    rememberBuild(KITCHEN01.parBuild(), store);
+    recordStars('kitchen01', 2, store);
+    const env = JSON.parse(store.getItem(SAVE_KEY)!);
+    expect(env.v).toBe(2);
+    expect(env.builds.kitchen01.t).toBeTypeOf('number');
+    expect(env.builds.kitchen01.s).toBe(goodBuild);
+    expect(env.progress.stars.kitchen01.n).toBe(2);
+  });
+
+  test('R9: schema-tolerant — plain (old-shape) entries still read, at stamp 0', () => {
+    const store = memoryStorage({
+      [SAVE_KEY]: JSON.stringify({
+        v: 2,
+        builds: { kitchen01: goodBuild },
+        settings: {},
+        progress: { stars: { kitchen01: 1 }, reached: { kitchen01: true } },
+      }),
+    });
+    const data = loadSave(store);
+    expect(data.builds.kitchen01).toBe(goodBuild);
+    expect(data.progress.stars.kitchen01).toBe(1);
+    expect(listQuarantined(store)).toEqual([]); // plain v2 is HEALTHY, not damaged
+  });
+
+  test('R9: the stale-tab race — a write whose view went stale MERGES, never clobbers', () => {
+    const store = memoryStorage();
+    const stale = loadSave(store); // tab B reads the envelope
+    rememberBuild(KITCHEN01.parBuild(), store); // tab A writes a build
+    stale.progress.stars.kitchen02 = 3; // tab B edits its OWN view…
+    saveSave(stale, store); // …and writes late (the racing save-side)
+    const saved = loadSave(store);
+    expect(saved.builds.kitchen01).toBe(goodBuild); // tab A's record SURVIVED
+    expect(saved.progress.stars.kitchen02).toBe(3); // tab B's change landed
+  });
+
+  test('R9: unchanged keys keep their on-disk stamp — a settings write is byte-stable', () => {
+    const store = memoryStorage();
+    rememberBuild(KITCHEN01.parBuild(), store);
+    const before = JSON.parse(store.getItem(SAVE_KEY)!);
+    const d = loadSave(store);
+    d.settings.reducedMotion = true;
+    saveSave(d, store);
+    const after = JSON.parse(store.getItem(SAVE_KEY)!);
+    expect(after.builds.kitchen01.t).toBe(before.builds.kitchen01.t);
+    expect(after.settings.reducedMotion).toBe(true);
+  });
+
+  test('R9/restore: replaceSave INSTALLS (import semantics), saveSave MERGES', () => {
+    const store = memoryStorage();
+    rememberBuild(KITCHEN01.parBuild(), store);
+    saveSave(freshSave(), store); // a merge-writer never deletes by omission
+    expect(loadSave(store).builds.kitchen01).toBe(goodBuild);
+    replaceSave(freshSave(), store); // the deliberate install path does
+    expect(loadSave(store).builds).toEqual({});
   });
 });

@@ -66,6 +66,7 @@ import type { PostStack } from './render/post/index.ts';
 import { parFor, starsFor, type RunOutcome, type RunResult, type StarCount } from './world/stars.ts';
 import { createResultPanel, createRunRecorder, resultModel, starRulesLine } from './ui/result.ts';
 import { createHelpDrawer } from './ui/help.ts';
+import { createSaveSettings } from './ui/settings.ts'; // T0.3/R1 — save export/import row + quarantine line
 import { firstLesson, firstSight } from './ui/callouts.ts';
 import { downloadBlob, generateShareCard } from './share/card.ts';
 import { SETS, isRegisteredSet, type SetRegistration } from './sets/index.ts';
@@ -1281,6 +1282,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   });
   soundWrap.append(soundToggle, soundVolume);
   root.appendChild(soundWrap); // page-corner absolute: zero layout flow
+  createSaveSettings(root); // T0.3/R1 — save row in src/ui/settings.ts (this line is the whole boot wiring)
   // the e2e seams (debug surface, not UI): engine state for the mute-
   // across-reload and repetition-guard specs, and the offline loudness
   // renderer the loudness spec measures through the SAME master chain

@@ -24,7 +24,7 @@ offline THROUGH that same chain and return measured peak and DC. `src/sound/soun
 first real gesture (autoplay policy); before that every method is a no-op, and a context that refuses to
 start makes the engine `deaf`, never a crash. Mute and volume persist as `settings.sound`
 (`SoundSettings` in `src/save/save.ts`) — an optional settings key, no schema bump, no migrade, the same
-technique `calloutsSeen` used.
+technique `calloutsSeen` used. The persist goes through `saveSave`, so a volume write is a MERGING write (T0.6/R9): it can never clobber a build another tab just placed.
 
 THE DETERMINISM FIREWALL (the stage-5 rule): nothing under `src/world`, `src/physics`, `src/render` or
 `src/camera` imports `src/sound`, and nothing there is imported BY it — the import graph is hard-asserted
