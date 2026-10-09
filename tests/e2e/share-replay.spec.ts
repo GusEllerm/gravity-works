@@ -144,16 +144,27 @@ async function paceHeld(page: Page, rate: number): Promise<boolean> {
 }
 
 async function ensurePaused(page: Page): Promise<void> {
-  // A click on Play at the END of the run restarts from 0 (real UX). If the
-  // run auto-paused in the window between the aria read and the click, the
-  // click restarts playback — so re-read and, if needed, press again; the
-  // loop converges on the first paused read.
-  for (let i = 0; i < 4; i++) {
-    if ((await page.getAttribute('#gw-replay-play', 'aria-pressed')) === 'false') return
+  // CONVERGE ON THE FACE, not on more clicks: a paused face AND an ENDED
+  // face both mean "not playing", and clicking either starts motion — the
+  // BB rewind law (a Play click on a finished film rewinds and rolls).
+  // The old aria-true-means-click rule never converged on CI at 4x (the
+  // stage-6 PR red): a clamped frame delivers ~1 s of a 3.9 s film, so the
+  // run ENDS between the read and the click (aria 'true' read, 'ended'
+  // state), the click then REWINDS AND PLAYS, and every "press again"
+  // iteration of the loop can watch a whole rewound film end before the
+  // next read. Only a face that says PLAYING gets clicked, and the ended
+  // face is success, not something to click through.
+  const face = () =>
+    page.evaluate(() => {
+      const b = document.querySelector<HTMLButtonElement>('#gw-replay-play')!
+      return b.dataset['phase'] ?? ''
+    })
+  for (let i = 0; i < 6; i++) {
+    if ((await face()) !== 'playing') return
     await page.click('#gw-replay-play')
     await page.waitForTimeout(30)
   }
-  expect(await page.getAttribute('#gw-replay-play', 'aria-pressed')).toBe('false')
+  expect(await face(), 'Play never settled to a paused/ended face').not.toBe('playing')
 }
 
 test.describe('stage 5 share link opens into the cinematic replay', () => {

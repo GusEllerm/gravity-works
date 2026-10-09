@@ -15,6 +15,7 @@ Both reds lived on the TEST side. (A) The playhead never stalled: the three CI `
 ## Decisions
 
 - No product change: the pace ledger law and the rewind-near-tail Play law are the shipped, note-documented, spec-pinned behaviors, and the CI numbers prove the playhead honored them to the end. The test asserted a bound the product's own (correct) rewind law makes unreachable from a nonzero baseline.
+- The PR CI check then reproduced the SAME class one layer deeper, exactly where the new loud assertion pointed: the run ended between `ensurePaused`'s aria read and its click (at 4x a clamped frame carries ~1 s of the 3.9 s film), so the click hit the BB rewind law — rewind AND PLAY — and the loop's "press again until a paused read" never converged (every iteration can watch a whole rewound film end before the next read). `ensurePaused` now converges ON THE FACE: it reads `#gw-replay-play`'s `data-phase`, clicks only a face that says PLAYING, and treats the ENDED face as success (not playing), never something to click through. Verified under `E2E_STARVE_RAF_MS=1000`, where every 4× block lands in exactly that ended-face state.
 
 ## Next
 
