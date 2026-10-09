@@ -63,6 +63,10 @@ export const SOUND = {
   /** Garden bird spacing (ms) — sparser still. */
   BIRD_MIN_MS: 3500,
   BIRD_MAX_MS: 9000,
+  /** R8: the volume slider's trailing persist window — the build-autosave
+   *  shape (one write per DRAG BURST, not one per `input` event). Mute is
+   *  a discrete verb and still persists immediately. */
+  VOLUME_PERSIST_MS: 350,
 } as const;
 
 /** The event voices the repetition guard counts (bed voices are governed
@@ -105,6 +109,9 @@ export interface SoundOptions {
   now?: () => number;
   /** Injectable rng for bed spacing (tests make it deterministic). */
   random?: () => number;
+  /** Injectable scheduler for the R8 volume-persist debounce (same shape
+   *  `createBuildAutosave` takes; the browser default is setTimeout). */
+  clock?: { schedule(fn: () => void, ms: number): unknown; cancel(handle: unknown): void };
 }
 
 /** The car-pose up-axis Y from a unit quaternion (rotate (0,1,0)) — the
@@ -168,11 +175,21 @@ export class SoundEngine {
   private lastRingAtMs = -1e9;
   private inverted = false;
   private running = false;
+  /** R8: the trailing volume-persist window (the autosave's shape) */
+  private volumePersistPending = false;
+  private volumePersistHandle: unknown = null;
+  private readonly clock: { schedule(fn: () => void, ms: number): unknown; cancel(handle: unknown): void };
 
   constructor(opts: SoundOptions = {}) {
     this.opts = opts;
     this.now = opts.now ?? (() => performance.now());
     this.random = opts.random ?? Math.random;
+    this.clock =
+      opts.clock ??
+      {
+        schedule: (fn, ms) => setTimeout(fn, ms),
+        cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+      };
     this.muted = opts.settings?.muted ?? false;
     const v = opts.settings?.volume;
     this.volume = typeof v === 'number' && v >= 0 && v <= 1 ? v : SOUND.DEFAULT_VOLUME;
@@ -217,7 +234,11 @@ export class SoundEngine {
 
   setMuted(muted: boolean): void {
     this.muted = muted;
-    this.persist();
+    // mute is a DISCRETE verb: it persists immediately, and any pending
+    // volume write rides the same envelope (R8 keeps the slider debounced,
+    // never the toggle)
+    if (this.volumePersistPending) this.flushPersist();
+    else this.persist();
     if (muted) {
       this.stopBed();
       this.stopRoll(0);
@@ -233,10 +254,35 @@ export class SoundEngine {
 
   setVolume(v: number): void {
     this.volume = Math.max(0, Math.min(1, v));
-    this.persist();
+    // R8: the slider's `input` storm costs ONE trailing write per drag
+    // burst — `createBuildAutosave`'s shape (replace the pending window,
+    // never stack it), flushed at every lifecycle edge the autosave
+    // obeys (see `createSound`: pagehide / visibility-hidden) plus mute
+    // and dispose below.
+    this.cancelVolumePersist();
+    this.volumePersistPending = true;
+    this.volumePersistHandle = this.clock.schedule(() => {
+      this.volumePersistHandle = null;
+      this.flushPersist();
+    }, SOUND.VOLUME_PERSIST_MS);
     if (this.master && this.ctx) {
       // live retrim: the ceiling never moves; the slider rides under it
       this.master.gain.setTargetAtTime(this.masterTarget(), this.ctx.currentTime, 0.03);
+    }
+  }
+
+  /** Write any pending volume NOW (the unload guarantee, autosave shape). */
+  flushPersist(): void {
+    this.cancelVolumePersist();
+    if (!this.volumePersistPending) return;
+    this.volumePersistPending = false;
+    this.persist();
+  }
+
+  private cancelVolumePersist(): void {
+    if (this.volumePersistHandle !== null) {
+      this.clock.cancel(this.volumePersistHandle);
+      this.volumePersistHandle = null;
     }
   }
 
@@ -435,6 +481,7 @@ export class SoundEngine {
 
   /** Stop the bed when the level changes and free the context. */
   dispose(): void {
+    this.flushPersist(); // a drag whose window never closed still lands
     this.stopBed();
     for (const bus of this.buses.values()) bus.dispose();
     this.room?.dispose();
@@ -452,13 +499,25 @@ export function createSound(
   opts: Omit<SoundOptions, 'settings' | 'persist'> & { store?: Parameters<typeof loadSave>[0] } = {},
 ): SoundEngine {
   const settings = loadSave(opts.store).settings.sound;
-  return new SoundEngine({
+  const engine = new SoundEngine({
     ...opts,
     settings,
     persist: (s) => {
       const data = loadSave(opts.store);
       data.settings.sound = s;
-      saveSave(data, opts.store);
+      saveSave(data, opts.store); // merging write (R9): a volume save can
+      // never clobber a build another tab just placed
     },
   });
+  // R8: the debounced volume write obeys the SAME lifecycle edges the build
+  // autosave does — a reload or a put-away tab inside the window still
+  // stores the last drag. Registered here, not in boot, so the sound
+  // module owns its own durability (and boot stays out of it).
+  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    window.addEventListener('pagehide', () => engine.flushPersist());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') engine.flushPersist();
+    });
+  }
+  return engine;
 }

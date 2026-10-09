@@ -24,7 +24,15 @@ offline THROUGH that same chain and return measured peak and DC. `src/sound/soun
 first real gesture (autoplay policy); before that every method is a no-op, and a context that refuses to
 start makes the engine `deaf`, never a crash. Mute and volume persist as `settings.sound`
 (`SoundSettings` in `src/save/save.ts`) — an optional settings key, no schema bump, no migrade, the same
-technique `calloutsSeen` used.
+technique `calloutsSeen` used. Since the stage-7 program (engineering R8) the WRITE SHAPE of that
+persistence is the build autosave's: `setVolume` (the slider's `input` storm — dozens of full
+load-merge-writes per second at the old code) schedules a TRAILING write, one per drag burst
+(`SOUND.VOLUME_PERSIST_MS` = 350, injectable `clock` in `SoundOptions` exactly like
+`createBuildAutosave`'s), and `flushPersist()` rides the same lifecycle edges — mute (a discrete verb,
+still an immediate persist that carries any pending volume in its envelope), `dispose`, and the
+`pagehide` / visibility-hidden listeners `createSound` registers on itself (the module owns its own
+durability; boot stays out of it). The persist goes through `saveSave`, so a volume write is a MERGING
+write (R9): it can never clobber a build another tab just placed.
 
 THE DETERMINISM FIREWALL (the stage-5 rule): nothing under `src/world`, `src/physics`, `src/render` or
 `src/camera` imports `src/sound`, and nothing there is imported BY it — the import graph is hard-asserted
@@ -58,9 +66,14 @@ firewall).
 `tests/unit/sound.test.ts` (18 tests: the import-graph firewall, gain tables, no-context-before-gesture,
 the repetition cap + reset-per-run, outcome→voice mapping, ≤20 Hz roll updates, one ring ping per loop,
 kitchen bed spacing under a pinned rng + fake timers, mute/volume persist, deaf fallback, the
-`settings.sound` save round-trip at v2) and `tests/e2e/sound.spec.ts` (autoplay gate on trusted gestures;
+`settings.sound` save round-trip at v2, and since the stage-7 program the R8 burst proofs — 50
+`setVolume` calls under a fake clock cost exactly ONE persist, `flushPersist` lands a pending drag
+exactly once and the dead timer writes nothing, and through a real store a 20-event drag writes the
+envelope once) and `tests/e2e/sound.spec.ts` (autoplay gate on trusted gestures;
 every voice rendered offline under 0.2512 peak with |DC| < 0.005; a `?build=par` sound-on run that throws
-nothing and trips no guard; mute honored across reload through localStorage).
+nothing and trips no guard; mute honored across reload through localStorage) and
+`tests/e2e/save-volume.spec.ts` (a keyboard drag then an INSTANT reload lands the value — the flush
+rides the pagehide edge exactly like the build autosave).
 
 ## Depends on / used by
 
