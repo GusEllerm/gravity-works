@@ -1,0 +1,307 @@
+{
+  "header": {
+    "generator": "tools/hash-atlas.mjs",
+    "generated": "2026-10-09",
+    "platform": "darwin-arm64",
+    "node": "v22.22.1",
+    "rapier": "0.21.0"
+  },
+  "levels": [
+    {
+      "levelId": "bathroom-sandbox",
+      "hash": "63b8e23e",
+      "steps": 328,
+      "time": 2.733333,
+      "parPieces": 5,
+      "parTime": 2.75
+    },
+    {
+      "levelId": "bathroom01",
+      "hash": "d32417dc",
+      "steps": 268,
+      "time": 2.233333,
+      "parPieces": 3,
+      "parTime": 2.25
+    },
+    {
+      "levelId": "bathroom02",
+      "hash": "60ffc024",
+      "steps": 282,
+      "time": 2.35,
+      "parPieces": 3,
+      "parTime": 2.35
+    },
+    {
+      "levelId": "bathroom03",
+      "hash": "2220333c",
+      "steps": 320,
+      "time": 2.666667,
+      "parPieces": 4,
+      "parTime": 2.7
+    },
+    {
+      "levelId": "bathroom04",
+      "hash": "69206512",
+      "steps": 322,
+      "time": 2.683333,
+      "parPieces": 4,
+      "parTime": 2.7
+    },
+    {
+      "levelId": "bathroom05",
+      "hash": "1b37dfed",
+      "steps": 362,
+      "time": 3.016667,
+      "parPieces": 4,
+      "parTime": 3.05
+    },
+    {
+      "levelId": "bedroom-sandbox",
+      "hash": "63b8e23e",
+      "steps": 328,
+      "time": 2.733333,
+      "parPieces": 5,
+      "parTime": 2.75
+    },
+    {
+      "levelId": "bedroom01",
+      "hash": "60ffc024",
+      "steps": 282,
+      "time": 2.35,
+      "parPieces": 3,
+      "parTime": 2.35
+    },
+    {
+      "levelId": "bedroom02",
+      "hash": "8166e5e1",
+      "steps": 206,
+      "time": 1.716667,
+      "parPieces": 4,
+      "parTime": 1.75
+    },
+    {
+      "levelId": "bedroom03",
+      "hash": "2220333c",
+      "steps": 320,
+      "time": 2.666667,
+      "parPieces": 4,
+      "parTime": 2.7
+    },
+    {
+      "levelId": "bedroom04",
+      "hash": "69206512",
+      "steps": 322,
+      "time": 2.683333,
+      "parPieces": 4,
+      "parTime": 2.7
+    },
+    {
+      "levelId": "bedroom05",
+      "hash": "1b37dfed",
+      "steps": 362,
+      "time": 3.016667,
+      "parPieces": 4,
+      "parTime": 3.05
+    },
+    {
+      "levelId": "feeltrack",
+      "hash": "099403c7",
+      "steps": 361,
+      "time": 3.008333,
+      "parPieces": 9,
+      "parTime": 3.05
+    },
+    {
+      "levelId": "garage-sandbox",
+      "hash": "63b8e23e",
+      "steps": 328,
+      "time": 2.733333,
+      "parPieces": 5,
+      "parTime": 2.75
+    },
+    {
+      "levelId": "garage01",
+      "hash": "d32417dc",
+      "steps": 268,
+      "time": 2.233333,
+      "parPieces": 3,
+      "parTime": 2.25
+    },
+    {
+      "levelId": "garage02",
+      "hash": "c9ff5b66",
+      "steps": 284,
+      "time": 2.366667,
+      "parPieces": 3,
+      "parTime": 2.4
+    },
+    {
+      "levelId": "garage03",
+      "hash": "2220333c",
+      "steps": 320,
+      "time": 2.666667,
+      "parPieces": 4,
+      "parTime": 2.7
+    },
+    {
+      "levelId": "garage04",
+      "hash": "69206512",
+      "steps": 322,
+      "time": 2.683333,
+      "parPieces": 4,
+      "parTime": 2.7
+    },
+    {
+      "levelId": "garage05",
+      "hash": "1f99683a",
+      "steps": 161,
+      "time": 1.341667,
+      "parPieces": 4,
+      "parTime": 1.35
+    },
+    {
+      "levelId": "garden-sandbox",
+      "hash": "63b8e23e",
+      "steps": 328,
+      "time": 2.733333,
+      "parPieces": 5,
+      "parTime": 2.75
+    },
+    {
+      "levelId": "garden01",
+      "hash": "d32417dc",
+      "steps": 268,
+      "time": 2.233333,
+      "parPieces": 3,
+      "parTime": 2.25
+    },
+    {
+      "levelId": "garden02",
+      "hash": "60ffc024",
+      "steps": 282,
+      "time": 2.35,
+      "parPieces": 3,
+      "parTime": 2.35
+    },
+    {
+      "levelId": "garden03",
+      "hash": "2220333c",
+      "steps": 320,
+      "time": 2.666667,
+      "parPieces": 4,
+      "parTime": 2.7
+    },
+    {
+      "levelId": "garden04",
+      "hash": "69206512",
+      "steps": 322,
+      "time": 2.683333,
+      "parPieces": 4,
+      "parTime": 2.7
+    },
+    {
+      "levelId": "garden05",
+      "hash": "1f99683a",
+      "steps": 161,
+      "time": 1.341667,
+      "parPieces": 4,
+      "parTime": 1.35
+    },
+    {
+      "levelId": "kitchen-sandbox",
+      "hash": "7f008f48",
+      "steps": 320,
+      "time": 2.666667,
+      "parPieces": 5,
+      "parTime": 2.7
+    },
+    {
+      "levelId": "kitchen01",
+      "hash": "d32417dc",
+      "steps": 268,
+      "time": 2.233333,
+      "parPieces": 3,
+      "parTime": 2.25
+    },
+    {
+      "levelId": "kitchen02",
+      "hash": "0b4dbab2",
+      "steps": 121,
+      "time": 1.008333,
+      "parPieces": 3,
+      "parTime": 1.05
+    },
+    {
+      "levelId": "kitchen03",
+      "hash": "a1a50d05",
+      "steps": 172,
+      "time": 1.433333,
+      "parPieces": 5,
+      "parTime": 1.45
+    },
+    {
+      "levelId": "kitchen04",
+      "hash": "c6a63a80",
+      "steps": 302,
+      "time": 2.516667,
+      "parPieces": 4,
+      "parTime": 2.55
+    },
+    {
+      "levelId": "kitchen05",
+      "hash": "1d8d1713",
+      "steps": 287,
+      "time": 2.391667,
+      "parPieces": 6,
+      "parTime": 2.4
+    },
+    {
+      "levelId": "porch-sandbox",
+      "hash": "766a327f",
+      "steps": 139,
+      "time": 1.158333,
+      "parPieces": 4,
+      "parTime": 1.2
+    },
+    {
+      "levelId": "porch01",
+      "hash": "2962b649",
+      "steps": 127,
+      "time": 1.058333,
+      "parPieces": 3,
+      "parTime": 1.1
+    },
+    {
+      "levelId": "porch02",
+      "hash": "521ae194",
+      "steps": 139,
+      "time": 1.158333,
+      "parPieces": 4,
+      "parTime": 1.2
+    },
+    {
+      "levelId": "porch03",
+      "hash": "193358e4",
+      "steps": 149,
+      "time": 1.241667,
+      "parPieces": 4,
+      "parTime": 1.25
+    },
+    {
+      "levelId": "porch04",
+      "hash": "36b9d978",
+      "steps": 130,
+      "time": 1.083333,
+      "parPieces": 4,
+      "parTime": 1.1
+    },
+    {
+      "levelId": "porch05",
+      "hash": "1e367c94",
+      "steps": 143,
+      "time": 1.191667,
+      "parPieces": 4,
+      "parTime": 1.2
+    }
+  ]
+}

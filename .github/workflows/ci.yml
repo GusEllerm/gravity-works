@@ -26,3 +26,31 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv tool install livedocs
       - run: livedocs verify --repo . --vault docs/vault
+
+  # Stage-6 determinism experiment (Final Report "next" #2): re-derive the
+  # par-build hash atlas on another OS/CPU and diff it against the committed
+  # docs/vault/Reference/hash-atlas.json. MISMATCH IS REPORTED, NOT GATED —
+  # warnings + step summary only; this job never fails itself or the gates
+  # above. ubuntu is the experiment (linux-x64 vs the darwin-arm64 atlas);
+  # macOS is the cheap self-check (same OS family, different machine).
+  determinism-atlas:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Diff the hash atlas (reported, not gated)
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node tools/hash-atlas.mjs --check | tee atlas.log
+      - name: Record the experiment
+        if: always()
+        run: cat atlas.log >> "$GITHUB_STEP_SUMMARY"

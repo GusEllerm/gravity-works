@@ -12,6 +12,7 @@
     "test:e2e": "playwright test",
     "test:e2e:filmstrip": "playwright test --config playwright.filmstrip.config.ts",
     "pars": "node scripts/gen-pars.mjs",
+    "atlas": "node tools/hash-atlas.mjs",
     "render": "node tools/render.mjs",
     "feel": "node tools/feel.mjs",
     "replay:all": "node tools/replay-all.mjs",
