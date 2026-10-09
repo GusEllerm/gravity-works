@@ -12,6 +12,7 @@ import { transformSocket } from '../../src/track/socket.ts';
 import type { Socket } from '../../src/track/socket.ts';
 import { PIECES, type PieceKind } from '../../src/track/pieces.ts';
 import type { Build, PlacedPiece } from '../../src/track/build.ts';
+import { moveHintFor } from '../../src/ui/advice.ts';
 
 const ev = emptyEvidence(0);
 const par = { pieces: 3, time: 2.21 };
@@ -581,5 +582,163 @@ describe('the WHERE tail names the end an ADD asks for (stage 6, playtest DD)', 
     expect(
       physicsNote(fell, nose, new Set<PieceKind>(['ramp', 'landing', 'gapLip']), new Set<PieceKind>(['ramp'])),
     ).toBe('fell off nose-first — add a flat landing or add a lip');
+  });
+});
+
+// ---- THE MOVE CLAUSE (program T2.1) ------------------------------------------------
+//
+// When the tray is spent and the failure is where a piece SITS, the drive-off head
+// says MOVE, not ADD — and it names the piece and the socket from the build graph
+// (`moveHintFor`, `src/ui/advice.ts`). Derivation is asserted at the data source and
+// the line at the phrasing layer; the shipped lines above this block are the
+// byte-identical `moveHint === null` gate — every one of them runs unchanged.
+describe('physicsNote MOVE clause (program T2.1)', () => {
+  const fellDrive = { status: 'fell', time: 2.74, piecesUsed: 4, hazardsTouched: 0 } as any;
+  const rampEnd = { label: 'end of the pre-built ramp', ringHere: true };
+  const spent = new Set<PieceKind>(); // tray has nothing left to ADD
+
+  test('the orphan clause names the piece and the goal, riding the WHERE tail', () => {
+    const note = physicsNote(
+      fellDrive,
+      ev,
+      null,
+      null,
+      null,
+      spent,
+      null,
+      rampEnd,
+      { move: 'orphan', clause: 'the drop sits past the cup — pull it back', teachWalk: true },
+    );
+    expect(note).toBe(
+      'fell off — the line let go before the cup; the drop sits past the cup — pull it back · place at: end of the pre-built ramp',
+    );
+  });
+
+  test('the booster clause carries the sequencing truth and teaches the walk', () => {
+    const note = physicsNote(
+      fellDrive,
+      ev,
+      new Set<PieceKind>(['booster']),
+      null,
+      null,
+      spent,
+      null,
+      rampEnd,
+      {
+        move: 'booster',
+        clause: 'remove back to the ramp and place the booster FIRST, before the first lip',
+        teachWalk: true,
+      },
+    );
+    expect(note).toBe(
+      'fell off — the line let go before the cup; the booster needs spending EARLY — remove back to the ramp and place the booster FIRST, before the first lip · press ] to walk the open ends',
+    );
+  });
+
+  test('a booster the player CANNOT act on is never named (playtest Q law)', () => {
+    // actionableKinds without booster — the clause is silent, the shipped bare
+    // head stands exactly as before this clause existed
+    const note = physicsNote(
+      fellDrive,
+      ev,
+      new Set<PieceKind>(['gapLip', 'drop']),
+      null,
+      null,
+      spent,
+      null,
+      rampEnd,
+      { move: 'booster', clause: 'place the booster FIRST, straight off the start', teachWalk: true },
+    );
+    expect(note).toBe('fell off — the line let go before the cup');
+  });
+
+  test('the orphan reading outranks the ADD list (the misplaced piece IS the truth)', () => {
+    // stock left AND a piece past the goal: naming the kinds while the
+    // placed piece sits past the cup is the lie-by-silence this clause
+    // fixes — the pull-back sentence wins
+    const note = physicsNote(
+      fellDrive,
+      ev,
+      null,
+      null,
+      null,
+      new Set<PieceKind>(['straight']),
+      null,
+      rampEnd,
+      { move: 'orphan', clause: 'the drop sits past the cup — pull it back', teachWalk: true },
+    );
+    expect(note).toBe(
+      'fell off — the line let go before the cup; the drop sits past the cup — pull it back · place at: end of the pre-built ramp',
+    );
+  });
+
+  test('the booster reading never overrides an actionable ADD line', () => {
+    const note = physicsNote(
+      fellDrive,
+      ev,
+      new Set<PieceKind>(['booster']),
+      null,
+      null,
+      new Set<PieceKind>(['straight']),
+      null,
+      rampEnd,
+      { move: 'booster', clause: 'place the booster FIRST, straight off the start', teachWalk: true },
+    );
+    expect(note).toBe('fell off — the line let go before the cup; add a straight · place at: end of the pre-built ramp');
+  });
+
+  test('no hint (a shared or replay page, a sandbox) keeps the bare head byte-identical', () => {
+    expect(physicsNote(fellDrive, ev, null, null, null, spent, null, rampEnd, null)).toBe(
+      'fell off — the line let go before the cup',
+    );
+  });
+
+  // ---- derivation: the two readings off the real kitchen data -----------------
+
+  /** Seat one extra piece of `def` on the cup's own exit socket of a chain build. */
+  function seatOnCupExit(build: Build, def: PieceKind, params: any): Build {
+    const cup = build.pieces.filter((p) => p.def === 'finishCup').at(-1)!;
+    const cupExit = transformSocket(PIECES.finishCup.sockets(cup.params)[1], cup.transform);
+    const transform = fitSocket(cupExit, PIECES[def].sockets(params)[0]);
+    return { ...build, pieces: [...build.pieces, { def, params, transform, seq: build.pieces.length }] };
+  }
+
+  test('kitchen04: a piece stranded past the cup reads as the orphan clause; the par build reads as nothing', async () => {
+    const { KITCHEN04 } = await import('../../src/world/levels/kitchen04.level.ts');
+    const { levelTrayParams } = await import('../../src/ui/advice.ts');
+    const par = KITCHEN04.parBuild();
+    expect(moveHintFor(KITCHEN04, par, KITCHEN04.tray)).toBeNull();
+    const stranded = seatOnCupExit(par, 'drop', levelTrayParams(KITCHEN04, KITCHEN04.tray)!.drop!);
+    expect(moveHintFor(KITCHEN04, stranded, KITCHEN04.tray)).toEqual({
+      move: 'orphan',
+      clause: 'the drop sits past the cup — pull it back',
+      teachWalk: true,
+    });
+  });
+
+  test('kitchen02: the AUTHORED run-out curve past the cup is never called an orphan', async () => {
+    const { KITCHEN02 } = await import('../../src/world/levels/kitchen02.level.ts');
+    expect(moveHintFor(KITCHEN02, KITCHEN02.parBuild(), KITCHEN02.tray)).toBeNull();
+  });
+
+  test('kitchen05: the booster reads EARLY (par), LATE (wrong A), and LAST (spent tray) alike', async () => {
+    const k05 = await import('../../src/world/levels/kitchen05.level.ts');
+    const { KITCHEN05 } = k05;
+    // spent EARLY — the answer itself — nothing to say
+    expect(moveHintFor(KITCHEN05, KITCHEN05.parBuild(), KITCHEN05.tray)).toBeNull();
+    const late = {
+      move: 'booster',
+      clause: 'remove back to the ramp and place the booster FIRST, before the first lip',
+      teachWalk: true,
+    };
+    // five of six placed, booster stock left in the tray, seated after the lips
+    expect(moveHintFor(KITCHEN05, k05.kitchen05NoBoosterBuild(), KITCHEN05.tray)).toEqual(late);
+    // the whole tray in the wrong order — spent tray, sequencing is the answer
+    expect(moveHintFor(KITCHEN05, k05.kitchen05LastBoosterBuild(), KITCHEN05.tray)).toEqual(late);
+  });
+
+  test('a level with no booster anywhere reads as nothing (the clause never invents the piece)', async () => {
+    const { KITCHEN01 } = await import('../../src/world/levels/kitchen01.level.ts');
+    expect(moveHintFor(KITCHEN01, KITCHEN01.parBuild(), KITCHEN01.tray)).toBeNull();
   });
 });

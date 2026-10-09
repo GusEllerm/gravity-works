@@ -693,7 +693,17 @@ toll has no stakes yet (ask #2b's lateral half). R's wall itself was a
 REVERSED `gapLip` mount (the R flag left up), pinned falling at the sink
 (2.192 s) and past the cup (2.533 s) under one identical note — the
 advice-honesty fix is note-side, see
-`Sessions/2026-10-09 Stage 4 - K4 tap wall`. The zone's grip physics are
+`Sessions/2026-10-09 Stage 4 - K4 tap wall`. **PROGRAM T2.1 FIND (2026-10-09,
+`Sessions/2026-10-09 Program T2 voice`):** that audit's socket list missed the
+MID-CHAIN seats — the live builder refuses EVERY whole-tray order's SECOND seat
+(`blocked — the tap is in the way` at `end of lip`): the `tap` group box's bottom
+edge (`setPlacementGuard` → `blockerOf`, group granularity) sits 2.2–7 mm below
+the sink-exit deck plane the par's own pieces run through, so the rung is
+placeably UNWINNABLE as shipped (a browser whole-tray walk finds no legal second
+seat; `tests/e2e/program-voice.spec.ts` therefore asserts the buildable half —
+the lip + a drop on the cup's own exit — and the MOVE-clause note it earns). The
+mount-row fix (lift the tap base a few mm, or leaf-granularity guard per the
+camera lane's precedent) is Deferred (`Home`). The zone's grip physics are
 still measured — on
 `kitchen04GroundBuild()`, which is now explicitly the HAZARD/JUICE PROBE it
 physically always was: two loose `straight`s bridge the sink at ramp height
@@ -743,7 +753,16 @@ the par as the second intended line; a tighter line is out there), not
 obvious. Common failure: booster too late. The useful booster socket is
 visible by construction: the builder's boot target ring sits on the ramp's
 open exit (`chainHeadIndex`), which is exactly where the par seats it and
-where a held booster reports `fits here` on the fixture-only rail. STAGE-3 COHERENCE: this rung is where the tray rule was
+where a held booster reports `fits here` on the fixture-only rail. PROGRAM
+T2.1 (THE BOOSTER SEQUENCING TRUTH): when the booster is actionable but not
+spent at the head of the line, the failure note itself says the order —
+"the booster needs spending EARLY — … before the first lip · press ] to
+walk the open ends" (`moveHintFor` → `physicsNote`, `Modules/ui`) — and
+`tests/e2e/program-voice.spec.ts` EXECUTES the sentence live: Remove ×5 (each
+label naming the piece it takes), `]` to the ramp exit, booster-first, and
+the par build is byte-rebuilt and finished ★★★; the booster-first ordering
+is expressible through the DEFAULT aim exactly as the boot-ring sentence
+above says. STAGE-3 COHERENCE: this rung is where the tray rule was
 checked against, not changed — its tray is ALREADY the exact multiset the par
 build places (`gapLip`×2, `drop`×2, `landing`, `booster` = 6 = budget), both
 wrong allocations fit the same tray, and every tray kind appears at ONE

@@ -1253,7 +1253,7 @@ sig = "f83db9ef6b318b3f"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/shell.css"
-sig = "e796b269a5e69d25"
+sig = "ce610c8a8f47a622"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1349,6 +1349,11 @@ sig = "e70356c18dcd77fc"
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/playtest-y-clickdiff.spec.ts"
 sig = "d5b3f3ece12aa46f"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
+target = "tests/e2e/program-voice.spec.ts"
+sig = "b945cfa3a695730e"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"

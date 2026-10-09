@@ -60,8 +60,9 @@ const savedPieces = (page: import('@playwright/test').Page) =>
     (tray) => {
       const raw = localStorage.getItem('gravity-works.save')
       if (!raw) return -1
-      const env = JSON.parse(raw) as { builds?: Record<string, string> }
-      const blob = env.builds?.kitchen01
+      const env = JSON.parse(raw) as { builds?: Record<string, string | { s?: string; v?: string }> }
+      const rec = env.builds?.kitchen01
+      const blob = typeof rec === 'string' || !rec ? rec : rec.s ?? rec.v
       if (!blob) return 0
       const pieces = (JSON.parse(blob) as { pieces: { def: string }[] }).pieces ?? []
       return pieces.filter((p) => (tray as string[]).includes(p.def)).length
@@ -82,8 +83,9 @@ test('a REAL background (app-switch, no pagehide) flushes the pending edit', asy
       let pieces = -2
       try {
         const raw = localStorage.getItem('gravity-works.save')
-        const env = raw ? (JSON.parse(raw) as { builds?: Record<string, string> }) : null
-        const blob = env?.builds?.kitchen01
+        const env = raw ? (JSON.parse(raw) as { builds?: Record<string, string | { s?: string; v?: string }> }) : null
+        const rec = env?.builds?.kitchen01
+        const blob = typeof rec === 'string' || !rec ? rec : rec.s ?? rec.v
         const list = blob ? ((JSON.parse(blob) as { pieces: { def: string }[] }).pieces ?? []) : []
         pieces = list.filter((p) => (tray as string[]).includes(p.def)).length
       } catch {
