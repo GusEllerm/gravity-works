@@ -16,7 +16,7 @@
  *   normalizes it to `bounds` (the adapter below is the only translation);
  * - the kitchen places per level via `kitchenSetPlacement`; a set without
  *   level placements returns null and mounts at the set's canonical origin.
- * - the guard-box walker in `src/boot.ts` still identifies the non-solid
+ * - the guard-box walker in `src/pages/mount.ts` still identifies the non-solid
  *   shell by NAME (`counter`, `shell`) and the dress group by the name
  *   `dress` — a naming convention, not data. It is documented at both ends
  *   and every future set must read this paragraph.

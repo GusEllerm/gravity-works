@@ -29,7 +29,8 @@ import { BATHROOM03, bathroom03SplashBuild } from '../../src/world/levels/bathro
 import { BATHROOM04, bathroom04ProbeBuild } from '../../src/world/levels/bathroom04.level.ts';
 import { BATHROOM05, BATHROOM_SANDBOX, bathroom05BoosterBuild, bathroom05ProbeBuild } from '../../src/world/levels/bathroom05.level.ts';
 import { trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
-import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
+import { trayParityBuild } from '../../src/boot.ts';
+import { levelTrayParams } from '../../src/ui/advice.ts';
 import { PARS } from '../../src/world/stars.ts';
 import { PIECE_KINDS, PIECES, type PieceKind } from '../../src/track/pieces.ts';
 import { fitSocket } from '../../src/track/snap.ts';

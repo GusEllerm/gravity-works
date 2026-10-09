@@ -48,7 +48,8 @@ import { PORCH03, porch03BounceBuild } from '../../src/world/levels/porch03.leve
 import { PORCH04 } from '../../src/world/levels/porch04.level.ts';
 import { PORCH05, PORCH_SANDBOX, porch05CatchFirstBuild } from '../../src/world/levels/porch05.level.ts';
 import { trayCount, type KitchenLevel } from '../../src/world/levels/kitchen01.level.ts';
-import { levelTrayParams, trayParityBuild } from '../../src/boot.ts';
+import { trayParityBuild } from '../../src/boot.ts';
+import { levelTrayParams } from '../../src/ui/advice.ts';
 import { PARS } from '../../src/world/stars.ts';
 import { PIECE_KINDS, PIECES, type PieceKind } from '../../src/track/pieces.ts';
 import { fitSocket } from '../../src/track/snap.ts';

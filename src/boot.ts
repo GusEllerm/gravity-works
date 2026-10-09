@@ -1,16 +1,22 @@
 /**
- * The browser game shell (stage 2: plain materials, no styled UI). One call,
- * `boot(root)`, and either of two pages:
+ * The browser game shell — one call, `boot(root)`, and the ROUTER; the
+ * pages themselves have moved out (program T0.2, end of the boot.ts line
+ * wars — the technical evaluation's extraction, behavior untouched):
  *
- * - The game: the level's placeholder build reified into a `World`, a fixed
- *   timestep loop (never a variable step) with renderer interpolation —
- *   the renderer reads only the last two `state()` snapshots and the leftover
- *   fraction as alpha — plus the builder tray. Launch re-launches the run
- *   where it stands; editing the build rebuilds the world.
- * - A shared run: if the URL fragment carries a share payload (`#s=…`), the
- *   page replays it headlessly through `src/replay`, compares the recomputed
- *   hash to the embedded one and prints `verified` or `mismatch`. No camera,
- *   no canvas — the hash is the page.
+ * - The game (`bootGame`, below): the level's starting build reified into
+ *   a `World`, a fixed timestep loop (never a variable step) with renderer
+ *   interpolation — the renderer reads only the last two `state()`
+ *   snapshots and the leftover fraction as alpha — plus the builder tray.
+ *   Launch re-launches the run where it stands; editing the build rebuilds
+ *   the world.
+ * - A shared run (`src/pages/share.ts`): a share payload (`#s=…`) opens the
+ *   cinematic replay player above the fold and the honest `verified` /
+ *   `mismatch` verification half below it.
+ * - The level select (`src/pages/select.ts`): `?levels=1` renders the
+ *   campaign board.
+ *
+ * The set mount shared by the pages lives in `src/pages/mount.ts`; the
+ * pure advice-data derivations in `src/ui/advice.ts` (program T0.1).
  *
  * `?harness=1` is routed elsewhere (`src/main.ts`); nothing here runs then.
  */
@@ -50,115 +56,55 @@ import { PORCH05, PORCH_SANDBOX } from './world/levels/porch05.level.ts';
 import { World, type RunStatus } from './world/world.ts';
 import { fixtureQuota, serialize, type Build } from './track/build.ts';
 export { fixtureQuota };
-import { PIECES, pieceLabel } from './track/pieces.ts';
-import { fitSocket, SNAP_ANGLE_TOL, SNAP_TRANSLATION_TOL } from './track/snap.ts';
-import { socketGap, tangentAngle, transformSocket } from './track/socket.ts';
-import type { Socket } from './track/socket.ts';
+import { PIECES } from './track/pieces.ts';
+import { fitSocket } from './track/snap.ts';
+import { transformSocket } from './track/socket.ts';
 import type { Level } from './world/level.ts';
-import { createBuilder, type Builder, type SetGuard } from './ui/builder.ts';
-import { encodeShareUrl, parseShareUrl, type SharePayload } from './share/share.ts';
-import { replayRun } from './replay/replay.ts';
-import { TapeRecorder, ReplayDirector, cupView, REPLAY_FOV } from './replay/cinematic.ts';
+import { createBuilder, type Builder } from './ui/builder.ts';
+import { encodeShareUrl, type SharePayload } from './share/share.ts';
+import { bootSharedRun } from './pages/share.ts';
+import { bootLevelSelect } from './pages/select.ts';
+import { buildGameSet, levelSet, setCameraSolids, setPlacementGuard } from './pages/mount.ts';
+import { paragraph } from './ui/dom.ts';
+import {
+  boundaryStopped,
+  failedToStart,
+  installErrorBoundary,
+  registerAutosaveFlush,
+} from './ui/errors.ts';
 import { createBuildAutosave, loadSave, rememberBuild, recordStars, savedBuild } from './save/save.ts';
 import { createSound, upAxisYOfQuat } from './sound/sound.ts';
 import { SET_TOKENS } from './render/tokens.ts';
 import type { PostStack } from './render/post/index.ts';
-import { parFor, starsFor, type RunOutcome, type RunResult, type StarCount } from './world/stars.ts';
+import { parFor, type RunResult, type StarCount } from './world/stars.ts';
 import { createResultPanel, createRunRecorder, resultModel, starRulesLine } from './ui/result.ts';
 import { createHelpDrawer } from './ui/help.ts';
 import { firstLesson, firstSight } from './ui/callouts.ts';
 import { downloadBlob, generateShareCard } from './share/card.ts';
 import { SETS, isRegisteredSet, type SetRegistration } from './sets/index.ts';
 import { CAMPAIGN_LADDER, levelUnlock, nextInCampaign } from './world/campaign.ts';
-import { createLevelSelect } from './ui/levelselect.ts';
-import { reducedMotionActive } from './ui/motion.ts';
+export { setPlacementGuard, setCameraSolids } from './pages/mount.ts';
+import {
+  actionableKindsFor,
+  flippedKindsFor,
+  goalNounFor,
+  levelTray,
+  levelTrayParams,
+  placedKindsFor,
+  stockedKindsFor,
+} from './ui/advice.ts';
 import type { SetInstance } from './sets/index.ts';
-import { placeSet } from './world/setPlacement.ts';
 import { KitRig, finishCapture } from './feel/kittrack.ts';
 import { RunCamera } from './camera/run-camera.ts';
 import type { RunCameraSolid } from './camera/run-camera.ts';
 import { BuildCamera, attachBuildView, frameDeathHold } from './camera/build-camera.ts';
-import type { PieceKind, PieceParams } from './track/pieces.ts';
+import type { PieceKind } from './track/pieces.ts';
 
 // Level registry ids reachable through ?level= (importing each file is what
 // registers it; the feel track stays addressable for the stage-2 specs). The
 // campaign table (`src/world/campaign.ts`) names its rungs; the sandboxes and
 // the feel rig are imported here for addressing only.
 void [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04, KITCHEN05, KITCHEN_SANDBOX, BEDROOM01, BEDROOM02, BEDROOM03, BEDROOM05, BEDROOM_SANDBOX, BEDROOM04, BATHROOM01, BATHROOM02, BATHROOM03, BATHROOM05, BATHROOM_SANDBOX, BATHROOM04, GARDEN01, GARDEN02, GARDEN03, GARDEN05, GARDEN_SANDBOX, GARDEN04, GARAGE01, GARAGE02, GARAGE03, GARAGE05, GARAGE_SANDBOX, GARAGE04, PORCH01, PORCH02, PORCH03, PORCH05, PORCH_SANDBOX, PORCH04];
-
-/** The set a level declares (`KitchenLevel.set` / any set-carrying level),
- *  structurally — the boot must not depend on the level modules' types to
- *  decide what to mount. It must also name a registered set: an unknown id
- *  mounts nothing (the pre-stage-3 empty-space render), never a wrong set. */
-function levelSet(level: Level): string | null {
-  const set = (level as { set?: string }).set;
-  return typeof set === 'string' && isRegisteredSet(set) ? set : null;
-}
-
-/** The named solid props of a built set as world-space NAMED boxes — the
- *  builder's placement-guard input (cheap: boxes, never mesh tests). Films
- *  and the counter floor are excluded: a wet patch must never block a piece,
- *  and the deck the track rides on is not an obstacle.
- *
- *  STAGE 6 (kitchen03's second wall): each box carries the NAME of the object
- *  that owns it, because the refusal line has to name the thing that refused
- *  the seat — "blocked — furniture is in the way" over the cereal bowl on a
- *  rung called "The Bowl" read to two strangers as "move the furniture"
- *  (playtests BB/DD). The name is the object's own path (`cereal-bowl`,
- *  `lazy-pencil/pencil-shaft`), which is the SAME naming convention the guard
- *  walker already uses to decide what is a solid; `solidWord` in
- *  `src/ui/builder.ts` turns it into the player words, and
- *  `tests/unit/named-props.test.ts` proves the authority: the guard's names
- *  and a walk of the mounted set's meshes agree box-for-box. */
-export function setPlacementGuard(group: THREE.Group): SetGuard[] {
-  return collectSetBoxes(group, false);
-}
-
-/** The same boxes at LEAF-MESH granularity — the run camera's input (stage 3
- *  "beige wall"). A named group's single AABB is the right placement
- *  contract ("no piece inside the tap") but too crude for a flypast: the
- *  TAP group's box spans column→spout-tip as one solid slab, and its
- *  bottom face cuts right through the sink lane the deck legally runs
- *  under — the camera would crane over a spout the car passes cleanly
- *  beneath. Leaf boxes are the actual solids: the column beside the lane,
- *  the spout above it, none of them on the corridor. */
-export function setCameraSolids(group: THREE.Group): THREE.Box3[] {
-  return collectSetBoxes(group, true).map((g) => g.box);
-}
-
-function collectSetBoxes(group: THREE.Group, leaves: boolean): SetGuard[] {
-  const boxes: SetGuard[] = [];
-  // Box3.setFromObject does not refresh PARENT matrices — a freshly repositioned
-  // mount would otherwise box the props at their UNPLACED coordinates
-  group.updateMatrixWorld(true);
-  // The guard collects from the set's `dress` group by NAMING CONVENTION
-  // (src/sets/index.ts §SetInstance): `counter`/`shell` are the floor/wall
-  // surfaces outside the dress, `wet-patch-films` and anything named *film*
-  // are never solids.
-  const skip = new Set(['counter', 'shell', 'wet-patch-films']);
-  const collect = (root: THREE.Object3D, path: string[]): void => {
-    for (const child of root.children) {
-      if (child.name.includes('film') || skip.has(child.name)) continue;
-      const namedSolid =
-        child.children.length === 0 || child.name === 'book-stack' || child.name === 'tap';
-      if (leaves ? child.children.length === 0 : namedSolid) {
-        // the object's PATH under the dress, joined with `/` — the mesh's own
-        // name is often generic (`mug-body`), the group it hangs under is the
-        // object a player would name (`mug`); `solidWord` reads the first
-        path.push(child.name);
-        boxes.push({ name: path.join('/'), box: new THREE.Box3().setFromObject(child) });
-        path.pop();
-        continue;
-      }
-      path.push(child.name);
-      collect(child, path);
-      path.pop();
-    }
-  };
-  const dress = group.getObjectByName('dress');
-  if (dress) collect(dress, []);
-  return boxes;
-}
 
 /** The level the game boots: ?level=<id> for anything registered, KITCHEN 01
  *  by default (the ladder's first rung; the feel track remains reachable as
@@ -171,14 +117,6 @@ export function resolveLevel(params: URLSearchParams): Level {
   } catch {
     return KITCHEN01; // an unknown id is the default level, not a dead page
   }
-}
-
-/** The level's tray map when it declares one (a `KitchenLevel` seam; the
- *  contract `Level` has no tray, so the builder treats undefined as
- *  everything-unlocked). Read structurally, like `levelSet`. */
-function levelTray(level: Level): Partial<Record<PieceKind, number>> | undefined {
-  const tray = (level as { tray?: Partial<Record<PieceKind, number>> }).tray;
-  return tray && typeof tray === 'object' ? tray : undefined;
 }
 
 /** The ladder, in order — the order `Next level` walks and the level select
@@ -206,32 +144,6 @@ export function nextLevelId(id: string): string | null {
 const ALT_LINES: Readonly<Record<string, () => Build>> = {
   kitchen02: kitchen02ArcBuild,
 };
-
-/** Geometry of the tray pieces: the LEVEL's tuned parameters per kind,
- *  taken from that kind's FIRST placement in the par build (the kitchen
- *  authoring kit's per-instance params, Concepts/Levels). A tray button that
- *  placed kit DEFAULTS would build a different gap than the one the level
- *  was par'd on. ONE geometry per kind is the tray's whole contract — the
- *  builder ghosts and seats a held kind with these params — so a level that
- *  uses one kind with two parameter sets has a par build NO tray can place
- *  (`trayParityBuild` is the probe, `tests/unit/kitchen-levels.test.ts` the
- *  gate). Exported for that parity probe. */
-export function levelTrayParams(
-  level: Level,
-  tray: Partial<Record<PieceKind, number>>,
-): Partial<Record<PieceKind, PieceParams>> | undefined {
-  const declared = (level as unknown as { trayParams?: Partial<Record<PieceKind, PieceParams>> }).trayParams;
-  const parBuild = (level as unknown as { parBuild?: () => Build }).parBuild;
-  if (!parBuild && !declared) return undefined;
-  // the level's own declaration first (kinds its par line never places — the
-  // geometry a tray button must still seat with), the par build's tuned
-  // occurrences on top of it
-  const out: Partial<Record<PieceKind, PieceParams>> = { ...declared };
-  for (const p of parBuild ? parBuild().pieces : []) {
-    if (tray[p.def] && out[p.def] === undefined) out[p.def] = p.params;
-  }
-  return out;
-}
 
 /**
  * The build the GAME starts a level in: the level's BUILT-IN fixtures only
@@ -342,809 +254,40 @@ export function trayParityBuild(level: Level): Build {
   return { levelId: level.id, pieces, seed: level.seed };
 }
 
-/** Pieces of a build the PLAYER placed — the tray basis every piece-count
- *  star line compares against. `Builder.playerCount` reports this live; a
- *  replay/share payload has no builder, so the same rule is applied to the
- *  build here (a level's built-in fixtures are nobody's purchase). The
- *  fixture side is the SAME occurrence quota `initialBuild` mounts — on a
- *  shared kind the fixture's own copies are the FIRST ones, the rest are
- *  the player's. */
-export function playerPieceCount(level: Level, build: Build): number {
-  const fixtures = (level as unknown as { fixtures?: Partial<Record<PieceKind, number>> }).fixtures;
-  if (!fixtures) return build.pieces.length;
-  const isFixture = fixtureQuota(fixtures);
-  return build.pieces.filter((p) => !isFixture(p.def)).length;
-}
-
-/** Pieces a PLAYER placed (fixtures excluded) plus tray stock — the kinds
- *  a failure note's ADVICE may name (playtest Q item 5: "flatten the
- *  landing" printed on a level whose tray has no landing). A kind is
- *  ACTIONABLE when it is PLACED in the build (the player can remove/
- *  re-seat it) or still STOCKED in the level's tray (one press away);
- *  neither = the advice cannot name it. UI-side only — the physics and the
- *  run hash never see the tray. Levels with no declared tray (the feel rig)
- *  act on their build kinds alone. */
-export function actionableKindsFor(
-  build: Build,
-  tray: Partial<Record<PieceKind, number>> | undefined,
-): Set<PieceKind> {
-  const out = new Set<PieceKind>(build.pieces.map((p) => p.def));
-  if (!tray) return out;
-  for (const k of Object.keys(tray) as PieceKind[]) {
-    const left = (tray[k] ?? 0) - build.pieces.filter((p) => p.def === k).length;
-    if (left > 0) out.add(k);
-  }
-  return out;
-}
-
-/** The kinds PLACED in a build — the PHRASING side of the note's advice
- *  gates (round-5 playtest W: "flatten the landing" on a build with no
- *  landing placed read as a lie though the tray made it actionable).
- *  Critique verbs fit kinds in this set; tray-only kinds get add verbs —
- *  see `physicsNote` in `src/ui/result.ts`. A subset of
- *  `actionableKindsFor` by construction. UI-side only, like that gate. */
-export function placedKindsFor(build: Build): Set<PieceKind> {
-  return new Set(build.pieces.map((p) => p.def));
-}
-
-/** The kinds PLACED in a REVERSED mount — the HOW side of the nose-first
- *  advice (stage 5, playtest BB item 3: "flatten the landing names a
- *  change but never says HOW — Rotate only flips"). A placement is
- *  rotated exactly when its in-socket sits AT a chain anchor (the start
- *  socket or another piece's exit, within `SNAP_TRANSLATION_TOL`) with
- *  its travel direction NOT parallel to the anchor's (past
- *  `SNAP_ANGLE_TOL`) — the builder's own amber `flipped fit` test, read
- *  back off the build data: the flip is the half turn about the anchor's
- *  up, which leaves the socket POSITION joined and flips the tangent
- *  (see `placement` in `src/ui/builder.ts`). UI-side copy, like the
- *  other kind-sets — the physics and the run hash never see it. */
-export function flippedKindsFor(level: Level, build: Build): Set<PieceKind> {
-  const out = new Set<PieceKind>();
-  const anchors: Socket[] = [level.startSocket];
-  for (const p of build.pieces) {
-    anchors.push(transformSocket(PIECES[p.def].sockets(p.params)[1], p.transform));
-  }
-  for (const p of build.pieces) {
-    const entry = transformSocket(PIECES[p.def].sockets(p.params)[0], p.transform);
-    if (anchors.some((a) => socketGap(entry, a) < SNAP_TRANSLATION_TOL && tangentAngle(entry, a) > SNAP_ANGLE_TOL)) {
-      out.add(p.def);
-    }
-  }
-  return out;
-}
-
-/**
- * The GOAL FIXTURE NOUN for a level's player copy — the word the fell-line
- * ends on ("the line let go before the ___"). Stage 5, playtest AA: "'the
- * line let go before the cup' fired where no cup was visible" — a noun
- * hardcoded in `physicsNote` names an object the level may never have
- * shipped. The rule mirrors the builder's target sweep (`targets()` in
- * `src/ui/builder.ts`): read the level's `fixtures` table — the SAME table
- * `initialBuild` mounts and `buildTrackMeshes` signals — and name the
- * fixture whose kind ENDS a run: the one the registry gives a
- * `captureVolume` (world.ts resolves exactly one such piece to the capture
- * sphere). A bowl or a mat joins that rule for free the day the registry
- * ships one — the noun follows the data, never the prose. `null` when the
- * level declares no fixture table or no capturing fixture (the note then
- * keeps its shipped default, which is honest only for cup levels).
- * UI-side copy, like the two kind-gates above — the physics never sees it.
- */
-export function goalNounFor(level: Level): string | null {
-  const fixtures = (level as unknown as { fixtures?: Partial<Record<PieceKind, number>> }).fixtures;
-  if (!fixtures) return null;
-  for (const k of Object.keys(fixtures) as PieceKind[]) {
-    if ((fixtures[k] ?? 0) > 0 && PIECES[k].captureVolume) return pieceLabel(k).toLowerCase();
-  }
-  return null;
-
-}
-
-/** Kinds with STOCK LEFT — tray count minus the copies the build placed
- *  (stage-5 B2 pass 2, playtest AA). The drive-off note tail may name
- *  ONLY these: a kind the tray still holds is one press away, so "add a
- *  X" is always true for it, and a kind used up or absent can never make
- *  the list — the strictest ADD-only reading of the three-way phrasing
- *  rule. Six different wrong builds then print six different honest
- *  lists instead of one undifferentiated line. UI-side only, like the
- *  other two sets — the physics and the run hash never see it. */
-export function stockedKindsFor(
-  build: Build,
-  tray: Partial<Record<PieceKind, number>> | undefined,
-): Set<PieceKind> {
-  const out = new Set<PieceKind>();
-  if (!tray) return out;
-  for (const k of Object.keys(tray) as PieceKind[]) {
-    if ((tray[k] ?? 0) - build.pieces.filter((p) => p.def === k).length > 0) out.add(k);
-  }
-  return out;
-}
-
 export function boot(root: HTMLElement): void {
+  // THE ERROR BOUNDARY FIRST (T0.4/R2): whatever a page does later, an
+  // unexpected error lands on ONE honest face, not a frozen canvas.
+  installErrorBoundary();
   // a bare fragment change is a new run request on a static host: reload into it
   window.addEventListener('hashchange', () => window.location.reload())
   const fragment = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
   if (fragment.startsWith('s=')) {
-    void bootSharedRun(root);
+    startPage(() => bootSharedRun(root));
     return;
   }
   const params = new URLSearchParams(window.location.search);
   // the stage-4 campaign page: `?levels=1` lists the ladder grouped by room
   // (player surface; `?level=` stays the recorded debug addressing)
   if (params.has('levels')) {
-    createLevelSelect(root);
+    startPage(() => bootLevelSelect(root));
     return;
   }
-  void bootGame(root, resolveLevel(params));
+  startPage(() => bootGame(root, resolveLevel(params)));
 }
 
-function paragraph(id: string, parent: HTMLElement, role = 'status'): HTMLParagraphElement {
-  const p = document.createElement('p');
-  p.id = id;
-  p.setAttribute('role', role);
-  p.setAttribute('aria-live', 'polite');
-  parent.appendChild(p);
-  return p;
-}
-
-// ---- shared-run page --------------------------------------------------------
-//
-// Stage 5: a share link OPENS INTO the replay. The verification half is
-// unchanged and still honest — the tape IS the verification: the chunked
-// wind (`TapeRecorder`, below) steps the deterministic sim in timer-sized
-// slices and its terminal hash is the verdict — `parseShareUrl` → wind →
-// compare → `verified`/`mismatch` in `#gw-replay-status`, now in the
-// section BELOW the fold; above it the page is a cinematic player — the
-// same deterministic run recorded step-for-step by `TapeRecorder.pump` and
-// rendered through a three-shot camera sequence with the house post stack,
-// scrubber and all. Playback reads recorded sim states only: seeking never
-// invents a state between two steps. Readiness has a SURFACE (feel pass,
-// Playtest CC: "the tape only starts ~6 s after the click"): the bar is
-// up-front WAITING with a progress label, a click during the wind is
-// QUEUED not swallowed, and on ready the playhead snaps to 0 and rolls.
-
-async function bootSharedRun(root: HTMLElement): Promise<void> {
-  root.innerHTML = '';
-  const title = document.createElement('h1');
-  title.id = 'gw-replay-title';
-  title.textContent = 'Watch this run';
-  root.appendChild(title);
-  const tagline = document.createElement('p');
-  tagline.id = 'gw-replay-tagline';
-  tagline.textContent = 'One build, one release — this page replays it exactly.';
-  root.appendChild(tagline);
-  const badge = document.createElement('p');
-  badge.id = 'gw-replay-badge';
-  badge.hidden = true;
-  root.appendChild(badge);
-
-  const stage = document.createElement('div');
-  stage.id = 'gw-stage';
-  stage.style.position = 'relative';
-  root.appendChild(stage);
-  const bar = document.createElement('div');
-  bar.id = 'gw-replay-bar';
-  bar.hidden = true;
-  root.appendChild(bar);
-
-  // the honest half, BELOW the fold: the verdict and the two hashes, exactly
-  // the strings the stage-2/3/4 specs read
-  const verify = document.createElement('section');
-  verify.id = 'gw-replay-verify';
-  const verifyHeading = document.createElement('h2');
-  verifyHeading.textContent = 'How this link verifies';
-  verify.appendChild(verifyHeading);
-  const status = paragraph('gw-replay-status', verify);
-  const computed = paragraph('gw-replay-hash', verify, 'text');
-  const embedded = paragraph('gw-replay-embedded', verify, 'text');
-  const verifyNote = document.createElement('p');
-  verifyNote.id = 'gw-replay-verify-note';
-  verifyNote.textContent =
-    'The link carries the run’s final state hash. This page replays the level, build and seed on this machine and compares. Same machine, same engine — the same run. That identity has so far crossed machines intact: every reference-build hash in the game measures identical on Linux/x86-64 and Apple silicon (CI-measured) — other platforms remain unproven.';
-  verify.appendChild(verifyNote);
-  root.appendChild(verify);
-
-  status.textContent = 'replaying…';
-  let payload;
-  let level: Level;
+/** THE PAGE STARTER (T0.4/R3): a page boot runs synchronously up to its
+ *  first await, exactly as the bare `void bootX(root)` calls did — the
+ *  difference is only where a FAILURE lands: a rejected set-chunk import
+ *  or any throw before the builder exists shows the boundary's face with
+ *  Retry (a document re-entry — the module map caches a failed chunk, so
+ *  an in-page re-run could only reject again), never the half-page of an
+ *  h1 over an empty stage. */
+function startPage(start: () => void | Promise<void>): void {
   try {
-    payload = await parseShareUrl(window.location.href);
-    level = getLevel(payload.levelId);
+    void Promise.resolve(start()).catch(() => failedToStart());
   } catch {
-    status.textContent = 'invalid share link';
-    return;
+    failedToStart();
   }
-  embedded.textContent = `link hash ${payload.hash}`;
-  // The verdict is LAZY: the cinematic wind settles it as soon as the tape
-  // is done (`settle` below), and the share card reads `run` at click time.
-  // Nothing here blocks the bar on a simulation any more.
-  const run: { time: number; status: RunStatus; verified: boolean } = {
-    time: 0,
-    status: 'timeout',
-    verified: false,
-  };
-  let verdictSettled = false;
-  const settle = (hash: string, time: number, st: RunStatus): boolean => {
-    run.time = time;
-    run.status = st;
-    run.verified = hash === payload.hash;
-    verdictSettled = true;
-    computed.textContent = `replay hash ${hash}`;
-    status.textContent = run.verified ? 'verified' : 'mismatch';
-    badge.hidden = false;
-    badge.textContent = run.verified ? '✓ verified on this machine' : '⚠ differs on this machine';
-    return run.verified;
-  };
-  wireShareCard(verify, payload, level, run);
-
-  // the cinematic layer — a failed WebGL build must never eat the verdict
-  // the specs (and the visitor) came for: if the player cannot mount (or
-  // died before the wind settled the verdict), fall back to the headless
-  // one-shot replay for the verdict alone.
-  try {
-    await startReplayPlayer({ stage, bar }, level, payload, settle);
-  } catch {
-    bar.hidden = true;
-    if (!verdictSettled) {
-      try {
-        const headless = await replayRun(level, payload.build);
-        settle(headless.hash, headless.time, headless.status);
-      } catch {
-        status.textContent = 'mismatch';
-      }
-    }
-  }
-}
-
-/** Brief §9.4: the share page exports the run as a share-card PNG. The run
- *  fields are read at CLICK time from the lazy verdict object. */
-function wireShareCard(
-  root: HTMLElement,
-  payload: { levelId: string; build: Build; hash: string },
-  level: Level,
-  run: { time: number; status: RunStatus; verified: boolean },
-): void {
-  const cardStatus = paragraph('gw-card-status', root, 'text');
-  const button = document.createElement('button');
-  button.id = 'gw-share-card';
-  button.type = 'button';
-  button.textContent = 'Download share card';
-  root.appendChild(button);
-  button.addEventListener('click', () => {
-    cardStatus.textContent = 'rendering card…';
-    const outcome: RunOutcome =
-      run.status === 'finished' || run.status === 'fell' || run.status === 'stalled' || run.status === 'timeout'
-        ? run.status
-        : 'timeout'; // a never-started replay is not a card-worthy run; stars read 0
-    const result: RunResult = {
-      status: outcome,
-      time: run.time,
-      piecesUsed: playerPieceCount(level, payload.build),
-      hazardsTouched: 0,
-    };
-    void generateShareCard({
-      levelId: payload.levelId,
-      build: payload.build,
-      time: run.time,
-      stars: starsFor(result, parFor(payload.levelId, level.par)),
-      url: window.location.href,
-      verified: run.verified,
-    })
-      .then((blob) => {
-        downloadBlob(blob, `gravity-works-${payload.levelId}.png`);
-        cardStatus.textContent = 'card ready';
-      })
-      .catch(() => {
-        cardStatus.textContent = 'card failed';
-      });
-  });
-}
-
-// ---- cinematic replay player (stage 5) ---------------------------------------
-
-/** The chunk law of the wind (feel pass, Playtest CC): pump at most 32
- *  fixed sim steps per pump and no more than 8 ms of wall clock per pump
- *  slice — half a 60 Hz frame, so the page keeps painting and answering
- *  clicks while the tape winds. 32 steps ≈ 0.27 s of film per slice, which
- *  on a typical kitchen run (≈270 steps) finishes well inside 1.5 s of
- *  first paint while staying interactive the whole way. */
-const WIND_CHUNK_STEPS = 32;
-const WIND_CHUNK_BUDGET_MS = 8;
-
-/**
- * The replay half of the shared-run page: mount the level's set and build in
- * a visual `World`, wind the run step-for-step (`TapeRecorder` pumped
- * across timer slices — the tape BUILD is now a progress-reported, resumable
- * wind, not a silent synchronous block), then hand the trace to the shot-
- * sequence director and a scrubber. Playback reads ONLY recorded sim states
- * (`stepAt` floors to a step, never blends two); the camera poses are
- * functions of sim time alone, so 1×/2×/4× and any seek cannot perturb what
- * is shown. The build-view gesture stack is untouched — nothing here
- * attaches to the game page. `settle` gets the terminal hash the moment the
- * wind ends — the tape IS the verification (the hash equals the headless
- * `replayRun` hash by the determinism law the specs pin).
- */
-async function startReplayPlayer(
-  host: { stage: HTMLElement; bar: HTMLElement },
-  level: Level,
-  payload: SharePayload,
-  settle: (hash: string, time: number, status: RunStatus) => boolean,
-): Promise<void> {
-  const { stage, bar } = host;
-  // ---- READINESS FIRST (feel pass, Playtest CC: "first Play click works,
-  // but the tape only starts ~6 s after the click… the button still reads
-  // Play, so a stranger double-clicks"). The bar goes up BEFORE any heavy
-  // work in a WAITING state: a spinner label with honest progress, never a
-  // dead button. A click during the wind is QUEUED — auto-plays from 0 the
-  // instant the tape is ready — never swallowed.
-  bar.innerHTML = '';
-  const windBtn = document.createElement('button');
-  windBtn.id = 'gw-replay-play';
-  windBtn.type = 'button';
-  windBtn.dataset['phase'] = 'waiting';
-  windBtn.setAttribute('aria-busy', 'true');
-  windBtn.setAttribute('aria-label', 'Play (tape winding)');
-  windBtn.textContent = '⏳ winding the tape… 0%';
-  const windNote = document.createElement('span');
-  windNote.id = 'gw-replay-progress';
-  windNote.setAttribute('role', 'status');
-  windNote.setAttribute('aria-live', 'polite');
-  windNote.textContent = 'winding the tape…';
-  const wind = {
-    phase: 'waiting' as 'waiting' | 'ready',
-    pendingPlay: false,
-    steps: 0,
-    estSteps: Math.max(120, Math.round(Math.min(Math.max(level.par.time, 0.5), level.maxTime) * (1 / FIXED_DT))),
-    chunks: [] as { steps: number; hash: string }[],
-    windMs: 0,
-    /** Wall-clock phase ledger of the ready path (ms since the bar went up):
-     *  mount = set + world build, post = stack + preview paint, wind = the
-     *  chunked sim, ready = full bar + first traced frame. The e2e asserts
-     *  the TOTAL against the ready bound and reads the breakdown to say
-     *  WHERE time went when it misses. */
-    marks: { mount: 0, post: 0, wind: 0, ready: 0 } as Record<string, number>,
-    t0: performance.now(),
-  };
-  windBtn.addEventListener('click', () => {
-    wind.pendingPlay = true;
-    windBtn.textContent = '⏳ queued — winding the tape…';
-  });
-  bar.append(windBtn, windNote);
-  bar.hidden = false;
-  /** The button-state ledger (e2e): waiting → playing/paused → ended, in
-   *  order, deduped — the proof there is no silent window. */
-  const phases: string[] = ['waiting'];
-  const phasePush = (p: string): void => {
-    if (phases[phases.length - 1] !== p) phases.push(p);
-  };
-  const seamWindow = window as unknown as Record<string, unknown>;
-  seamWindow.__gwReplayWind = (): typeof wind => ({
-    ...wind,
-    chunks: wind.chunks.map((c) => ({ steps: c.steps, hash: c.hash })),
-  });
-  seamWindow.__gwReplayPhases = (): string[] => phases.slice();
-
-  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-  renderer.setSize(960, 540, false);
-  renderer.domElement.id = 'gw-canvas';
-  // STAGE 6 A11Y: the canvas is the world a screen-reader visitor cannot
-  // see — it gets a NAME (never a bare canvas node in the a11y tree) and
-  // the live status lines beside it stay the running commentary. The keys
-  // live on the page, so the canvas is deliberately not a tab stop (the
-  // world's own tab stop is the builder group).
-  renderer.domElement.setAttribute('role', 'img');
-  renderer.domElement.setAttribute('aria-label', 'Replay view — a recorded run of the track');
-  stage.appendChild(renderer.domElement);
-  const camera = new THREE.PerspectiveCamera(REPLAY_FOV, 960 / 540, 0.01, 24);
-  const setReg = levelSet(level) ? SETS[levelSet(level)!] : null;
-  // warm frame before the wasm await (the game page's rule, same reason)
-  {
-    const warm = new THREE.Scene();
-    warm.background = new THREE.Color(setReg?.tokens.background ?? SET_TOKENS.kitchen.background);
-    renderer.render(warm, camera);
-  }
-  const setInstance = setReg ? await buildGameSet(setReg, level.id) : null;
-  const solids: readonly RunCameraSolid[] = setInstance
-    ? setCameraSolids(setInstance.group).map((b) => ({
-        min: [b.min.x, b.min.y, b.min.z],
-        max: [b.max.x, b.max.y, b.max.z],
-      }))
-    : [];
-  const world = await World.create(level, payload.build, { visuals: true });
-  wind.marks.mount = Math.round(performance.now() - wind.t0);
-  const scene = world.scene;
-  if (!scene) throw new Error('replay player: world has no scene');
-  if (setInstance && setReg) {
-    scene.add(setInstance.group);
-    scene.background = new THREE.Color(setReg.tokens.background);
-  }
-  // the house look rides along: the quarter-res tilt-shift stack, focus band
-  // centred on the car at the step being shown (the game page's §7.3 rule).
-  // BUILT BEFORE THE WIND (feel pass): its first render compiles the post
-  // shaders as ONE early block — measured cheaper than compiling plain
-  // scene shaders first and the stack's after — and that block sits inside
-  // the WAITING label's window, with the rig already on stage: the visitor
-  // sees WHAT they are about to watch, not an empty stage.
-  const { createPostStack } = await import('./render/post/index.ts');
-  const post = createPostStack(renderer, camera, { tokens: setReg?.tokens ?? SET_TOKENS.kitchen });
-  const track = scene.getObjectByName('track');
-  const box = track ? new THREE.Box3().setFromObject(track) : new THREE.Box3();
-  // PRE-WIND PREVIEW FRAME (same analytic wide framing the director will
-  // open on — no trace needed).
-  {
-    const size = box.isEmpty() ? new THREE.Vector3(0.5, 0.2, 0.5) : box.getSize(new THREE.Vector3());
-    const center = box.isEmpty() ? new THREE.Vector3() : box.getCenter(new THREE.Vector3());
-    const tanV = Math.tan((REPLAY_FOV / 2) * (Math.PI / 180));
-    const tanH = tanV * (960 / 540);
-    const d = Math.max(
-      1.2,
-      1.25 * ((Math.max(size.x, size.z) / 2 + 0.25) / tanH),
-      1.25 * ((size.y / 2 + 0.2) / tanV),
-    );
-    camera.position.copy(center).add(new THREE.Vector3(0.55, 0.62, 0.75).normalize().multiplyScalar(d));
-    camera.lookAt(center);
-    post.setFocus([world.state().car.pos.x, world.state().car.pos.y, world.state().car.pos.z]);
-    post.render(scene);
-  }
-  wind.marks.post = Math.round(performance.now() - wind.t0);
-  // ---- THE CHUNKED WIND — the deterministic sim stepped in timer-sized
-  // slices (WIND_CHUNK_STEPS per pump, WIND_CHUNK_BUDGET_MS per slice) so
-  // the page PAINTS and COUNTS while the tape winds: the label reports
-  // "winding the tape… 40%" (progress against the par-length estimate,
-  // capped at 99 % until the run is genuinely over — it never claims ready
-  // early). Slicing changes only WHEN steps run: the per-slice world state
-  // hash follows the one-shot wind step for step (`__gwReplayWind().chunks`
-  // is the evidence the e2e compares against the Node sim's hashes).
-  const recorder = new TapeRecorder(world, payload.build, { solids });
-  const windT0 = performance.now();
-  await new Promise<void>((resolve) => {
-    // THE PUMP CLOCK IS A MESSAGE PORT — timers and rAF are BOTH untrusted
-    // (stage-5 CI-red fix, then the close-review F-1 fix on top of it). The
-    // frame callback can be STARVED, not just slow: CI's SwiftShader
-    // compositor paces rAF coarsely and Chrome stops firing rAF on a HIDDEN
-    // tab ENTIRELY, so the old rAF-raced arm left the tape unwound there.
-    // Its replacement — a chained setTimeout(0) — fixed the foreground and
-    // rAF never, but NOT the background: Chrome CLAMPS chained timers when
-    // hidden, and intensive throttling aligns a tab hidden past ~5 minutes
-    // to roughly ONE WAKE PER MINUTE, so an N-slice tape waits N minutes.
-    // The slices now ride their OWN MessageChannel port (a self-posted
-    // port message is a message-loop task — no timer to clamp), never more
-    // than one wake in flight, so chunks progress on ANY machine; the 0 ms
-    // timer survives only as the fallback for an engine without
-    // MessageChannel. rAF carries only the progress-label repaint — at most
-    // one paint in flight, skipped while no frames exist — so the bar still
-    // counts on any machine that PAINTS, and the wind answers to no clock
-    // but its own budget (`tests/e2e/stage5-ready.spec.ts` item 4 proves
-    // rAF-independence, item 5 proves timer-clamp-independence).
-    // E2E SLICE KNOB — `?e2eWindSlice=N` forces EXACTLY N steps per
-    // scheduled tick (budget dropped) so a spec can make the WAITING state
-    // PERSIST and the queued-click proof never races the wind (close
-    // review F-2; the debug-param doctrine's line, as `?set=`). Absent the
-    // param — every real share link — the chunk law below is untouched.
-    const windSliceParam = new URLSearchParams(window.location.search).get('e2eWindSlice');
-    const windSteps =
-      windSliceParam === null ? WIND_CHUNK_STEPS : Math.max(1, Math.floor(Number(windSliceParam)) || 1);
-    const windBudgetMs = windSliceParam === null ? WIND_CHUNK_BUDGET_MS : 0;
-    let pendingPaint = 0;
-    const paint = (): void => {
-      pendingPaint = 0;
-      const pct = Math.min(99, Math.round((recorder.totalSteps / wind.estSteps) * 100));
-      if (!wind.pendingPlay) windBtn.textContent = `⏳ winding the tape… ${pct}%`;
-      windNote.textContent = `winding the tape… ${pct}%`;
-    };
-    const pumpPort = typeof MessageChannel === 'function' ? new MessageChannel() : null;
-    let portArmed = false;
-    const schedulePump = (): void => {
-      if (pumpPort) {
-        if (portArmed) return; // never more than one wake in flight
-        portArmed = true;
-        pumpPort.port2.postMessage(0); // self-post: throttled by NOTHING
-      } else {
-        setTimeout(pumpSlice, 0); // fallback: an engine without MessageChannel
-      }
-    };
-    if (pumpPort) {
-      pumpPort.port1.onmessage = (): void => {
-        portArmed = false;
-        pumpSlice();
-      };
-    }
-    const pumpSlice = (): void => {
-      const t0 = performance.now();
-      do {
-        recorder.pump(windSteps);
-      } while (!recorder.done && performance.now() - t0 < windBudgetMs);
-      wind.steps = recorder.totalSteps;
-      if (recorder.done) {
-        if (pendingPaint) cancelAnimationFrame(pendingPaint);
-        pumpPort?.port1.close();
-        resolve();
-        return;
-      }
-      if (!pendingPaint) pendingPaint = requestAnimationFrame(paint);
-      schedulePump();
-    };
-    pumpSlice();
-  });
-  wind.chunks = recorder.sliceHashes.map((c) => ({ steps: c.steps, hash: c.hash }));
-  wind.windMs = performance.now() - windT0;
-  wind.phase = 'ready';
-  wind.marks.wind = Math.round(performance.now() - wind.t0);
-  if (!wind.pendingPlay) windBtn.textContent = '⏳ winding the tape… 100%';
-  const trace = recorder.finish();
-  // the tape IS the verdict: settle the honest half the moment the wind ends
-  const verified = settle(trace.hash, trace.time, trace.status);
-  const reducedMotion = reducedMotionActive(loadSave().settings.reducedMotion);
-  const director = new ReplayDirector({
-    trace,
-    box,
-    cup: cupView(payload.build),
-    fov: REPLAY_FOV,
-    aspect: 960 / 540,
-    reducedMotion,
-  });
-
-  const duration = Math.max(trace.duration, 0.1);
-  const stepAt = (t: number): number =>
-    Math.min(trace.steps - 1, Math.max(0, Math.floor(t / trace.dt + 1e-6)));
-  let time = 0;
-  // A click made while the tape was winding is HONOURED here, not lost: the
-  // queued click wins over the reduced-motion pause default, and the
-  // playhead starts at 0 either way (the snap — never at the end).
-  if (wind.pendingPlay) phases.push('queued-click');
-  let playing = wind.pendingPlay || !reducedMotion;
-  let rate = 1;
-  let dragging = false;
-  let resumeAfterDrag = false;
-  /** Below this much remaining watchable motion a Play click rewinds to 0
-   *  (see the play-button comment — the dead-first-click fix). */
-  const PLAY_RESUME_MIN = Math.min(0.5, duration * 0.5);
-  /** The PACE LEDGER (e2e debug surface): [wallMs, playheadS, rate] for every
-   *  frame that ADVANCED the playhead. The share-replay rate law is asserted
-   *  from it PER RENDERED FRAME — advance === min(frame gap, 0.25 s) × rate —
-   *  because CI truth (SwiftShader) can make one frame outlast any fixed
-   *  wall-clock sampling wait: a 300 ms `waitForTimeout` on the 15.8 s
-   *  feeltrack link could hold zero frames (the playhead "never moved") or
-   *  one clamped giant. Any event that breaks frame-gap continuity (Play/
-   *  pause, seek, resume-after-drag, speed change) or clamps at the end
-   *  clears the ledger, so no asserted interval ever spans a discontinuity. */
-  const pace: [number, number, number][] = [];
-  const paceBreak = (): void => {
-    pace.length = 0;
-  };
-
-  const renderAt = (t: number): void => {
-    const k = stepAt(t);
-    const px = trace.pos[k * 3]!;
-    const py = trace.pos[k * 3 + 1]!;
-    const pz = trace.pos[k * 3 + 2]!;
-    if (world.carMesh) {
-      world.carMesh.position.set(px, py, pz);
-      world.carMesh.quaternion.set(
-        trace.quat[k * 4]!,
-        trace.quat[k * 4 + 1]!,
-        trace.quat[k * 4 + 2]!,
-        trace.quat[k * 4 + 3]!,
-      );
-    }
-    director.poseAt(t);
-    camera.position.copy(director.position);
-    camera.quaternion.copy(director.quaternion);
-    post.setFocus([px, py, pz]);
-    post.render(scene);
-  };
-
-  // ---- the replay bar: play/pause, time, scrub track with event ticks,
-  // speed, and the obvious way out of the audience seat
-  bar.innerHTML = '';
-  const playBtn = document.createElement('button');
-  playBtn.id = 'gw-replay-play';
-  playBtn.type = 'button';
-  const syncPlay = (): void => {
-    playBtn.textContent = playing ? '⏸' : '▶';
-    playBtn.setAttribute('aria-label', playing ? 'Pause' : 'Play');
-    playBtn.setAttribute('aria-pressed', String(playing));
-    playBtn.removeAttribute('aria-busy');
-    playBtn.dataset['phase'] = playing ? 'playing' : 'paused';
-    phasePush(playing ? 'playing' : 'paused');
-  };
-  playBtn.addEventListener('click', () => {
-    // PLAY always STARTS MOTION when it is the resume click (playtest BB:
-    // "first Play click did nothing... second click worked"). The restart
-    // test used to be `time >= duration`, but the film LOOKS over long
-    // before it IS over: the finish lock-off holds on a settled cup for
-    // REPLAY_TAIL, and the last steps before the end crawl. A click that
-    // lands in that window (paused mid-tail from a scrub, or just after a
-    // pause taken during the hold) advanced one or two steps, hit the
-    // clamp, and re-paused — motion the eye cannot catch reads as a dead
-    // click, and only the NEXT click (now truly at the end) restarted.
-    // If the playable window left is shorter than a second of watchable
-    // motion, Play means REWIND AND PLAY — the tail's last sliver is the
-    // settle the viewer has already seen.
-    if (!playing && duration - time < PLAY_RESUME_MIN) time = 0;
-    playing = !playing;
-    paceBreak();
-    syncPlay();
-  });
-  const timeEl = document.createElement('span');
-  timeEl.id = 'gw-replay-time';
-  const timeline = document.createElement('div');
-  timeline.id = 'gw-replay-timeline';
-  timeline.setAttribute('role', 'slider');
-  timeline.setAttribute('tabindex', '0');
-  timeline.setAttribute('aria-label', 'Replay timeline');
-  timeline.setAttribute('aria-valuemin', '0');
-  timeline.setAttribute('aria-valuemax', duration.toFixed(2));
-  const head = document.createElement('div');
-  head.id = 'gw-replay-head';
-  timeline.appendChild(head);
-  for (const ev of trace.events) {
-    const tick = document.createElement('span');
-    tick.className = 'gw-replay-tick';
-    tick.dataset['t'] = String(ev.t);
-    tick.style.left = `${(THREE.MathUtils.clamp(ev.t / duration, 0, 1) * 100).toFixed(3)}%`;
-    tick.title = ev.label;
-    tick.setAttribute('aria-hidden', 'true');
-    timeline.appendChild(tick);
-  }
-  const syncBar = (): void => {
-    head.style.left = `${(THREE.MathUtils.clamp(time / duration, 0, 1) * 100).toFixed(3)}%`;
-    timeEl.textContent = `${time.toFixed(1)}s / ${duration.toFixed(1)}s`;
-    timeline.setAttribute('aria-valuenow', time.toFixed(2));
-    timeline.setAttribute('aria-valuetext', `${time.toFixed(1)} of ${duration.toFixed(1)} seconds`);
-  };
-  const seek = (t: number): void => {
-    time = THREE.MathUtils.clamp(t, 0, duration);
-    paceBreak();
-    syncBar();
-    renderAt(time);
-  };
-  const ratioAt = (ev: PointerEvent): number => {
-    const r = timeline.getBoundingClientRect();
-    return THREE.MathUtils.clamp((ev.clientX - r.left) / Math.max(r.width, 1), 0, 1);
-  };
-  timeline.addEventListener('pointerdown', (ev) => {
-    dragging = true;
-    resumeAfterDrag = playing;
-    playing = false;
-    syncPlay();
-    try {
-      timeline.setPointerCapture(ev.pointerId); // synthetic/ended pointers may not capture
-    } catch {
-      /* seek anyway */
-    }
-    seek(ratioAt(ev) * duration);
-    ev.preventDefault();
-  });
-  timeline.addEventListener('pointermove', (ev) => {
-    if (dragging) seek(ratioAt(ev) * duration);
-  });
-  const endDrag = (ev: PointerEvent): void => {
-    if (!dragging) return;
-    dragging = false;
-    playing = resumeAfterDrag && time < duration;
-    paceBreak();
-    syncPlay();
-    try {
-      timeline.releasePointerCapture(ev.pointerId);
-    } catch {
-      /* not captured */
-    }
-  };
-  timeline.addEventListener('pointerup', endDrag);
-  timeline.addEventListener('pointercancel', endDrag);
-  timeline.addEventListener('keydown', (ev) => {
-    const k = ev as KeyboardEvent;
-    if (k.key === 'ArrowLeft') seek(time - 0.25);
-    else if (k.key === 'ArrowRight') seek(time + 0.25);
-    else if (k.key === 'Home') seek(0);
-    else if (k.key === 'End') seek(duration);
-    else return;
-    k.preventDefault();
-  });
-  const speedBtns: HTMLButtonElement[] = [];
-  for (const s of [1, 2, 4]) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'gw-replay-speed';
-    b.dataset['speed'] = String(s);
-    b.textContent = `${s}×`;
-    b.addEventListener('click', () => {
-      rate = s;
-      paceBreak(); // the ledger's next interval carries the NEW multiplier
-      for (const o of speedBtns) o.setAttribute('aria-pressed', String(o === b));
-    });
-    speedBtns.push(b);
-  }
-  const exit = document.createElement('a');
-  exit.id = 'gw-replay-build';
-  exit.href = `?level=${encodeURIComponent(level.id)}`;
-  exit.textContent = 'Build your own';
-  bar.append(playBtn, timeEl, timeline, ...speedBtns, exit);
-  syncPlay();
-  syncBar();
-  bar.hidden = false;
-
-  // e2e seams (debug surface, not UI): the recorded trace for the node↔
-  // browser seek proof, the live rendered state, and the finish shot's cup
-  // projected through the replay camera
-  const w = window as unknown as Record<string, unknown>;
-  w.__gwReplayTrace = () => ({
-    dt: trace.dt,
-    steps: trace.steps,
-    time: trace.time,
-    duration: trace.duration,
-    status: trace.status,
-    hash: trace.hash,
-    events: trace.events,
-    shots: trace.plan.shots,
-    cuts: trace.plan.cuts,
-    verified,
-    poses: Array.from({ length: trace.steps }, (_, i) => [
-      trace.pos[i * 3]!,
-      trace.pos[i * 3 + 1]!,
-      trace.pos[i * 3 + 2]!,
-      trace.quat[i * 4]!,
-      trace.quat[i * 4 + 1]!,
-      trace.quat[i * 4 + 2]!,
-      trace.quat[i * 4 + 3]!,
-    ]),
-  });
-  w.__gwReplayState = () => {
-    const k = stepAt(time);
-    return {
-      t: time,
-      step: k,
-      pos: [trace.pos[k * 3]!, trace.pos[k * 3 + 1]!, trace.pos[k * 3 + 2]!],
-      quat: [trace.quat[k * 4]!, trace.quat[k * 4 + 1]!, trace.quat[k * 4 + 2]!, trace.quat[k * 4 + 3]!],
-    };
-  };
-  // the pacing ledger of the CURRENT contiguous play session (see `pace`)
-  w.__gwReplayPace = (): [number, number, number][] => pace.map((p) => [p[0]!, p[1]!, p[2]!]);
-  const cup = cupView(payload.build);
-  w.__gwReplayCarNdc = (): number[] | null => {
-    const k = stepAt(time);
-    camera.updateMatrixWorld();
-    const v = new THREE.Vector3(trace.pos[k * 3]!, trace.pos[k * 3 + 1]!, trace.pos[k * 3 + 2]!).project(camera);
-    return [v.x, v.y];
-  };
-  w.__gwReplayGoalNdc = (): number[] | null => {
-    if (!cup) return null;
-    camera.updateMatrixWorld();
-    const v = cup.center.clone().project(camera);
-    return [v.x, v.y];
-  };
-
-  let last = performance.now();
-  const frame = (now: number): void => {
-    requestAnimationFrame(frame);
-    const dt = Math.min((now - last) / 1000, 0.25);
-    last = now;
-    if (playing && !dragging) {
-      time = Math.min(duration, time + dt * rate);
-      if (time >= duration) {
-        time = duration;
-        playing = false;
-        // NO paceBreak here: the clamped final frame is never PUSHED, and
-        // every continuation that WOULD break interval continuity (Play,
-        // seek, speed) clears the ledger itself. The ledger therefore
-        // survives as the pure law-honouring record of a session that ran
-        // the film out — under CI frame pacing a 4× tail can end the
-        // window in 2–3 painted frames and a wipe-before-the-poll could
-        // destroy the only evidence the rate law exists (the CI-red feel
-        // pass).
-        syncPlay();
-        playBtn.dataset['phase'] = 'ended';
-        phasePush('ended');
-      } else {
-        pace.push([now, time, rate]);
-        if (pace.length > 240) pace.shift();
-      }
-      syncBar();
-      renderAt(time);
-    }
-  };
-  renderAt(0);
-  requestAnimationFrame(frame);
 }
 
 // ---- game page --------------------------------------------------------------
@@ -1193,7 +336,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // dev preview, so the line cannot open the next rung — the badge is true
   // because the write is gated, not merely worded). Off-ladder rigs (the
   // sandbox, the feel track) report unlocked and wear no badge; the shared
-  // replay page never builds this DOM at all (`bootSharedRun`).
+  // replay page never builds this DOM at all (`src/pages/share.ts`).
   const devPreview = !levelUnlock(loadSave().progress, level.id).unlocked;
   if (devPreview) {
     const badge = document.createElement('p');
@@ -1441,6 +584,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // tab put away inside the debounce window still stores the last edit) mean
   // no edit is ever younger than the bytes the next boot reads back.
   const autosave = createBuildAutosave((b) => rememberBuild(b));
+  // the boundary flushes the pending edit BEFORE its face goes up (T0.4:
+  // a crash must not cost the build the player was placing)
+  registerAutosaveFlush(() => autosave.flush());
   window.addEventListener('pagehide', () => autosave.flush());
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') autosave.flush();
@@ -1806,6 +952,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     // the set group belongs to the shell, not to any one world — pull it out
     // before dispose() traverses (it disposes every mesh material it finds)
     setInstance?.group.removeFromParent();
+    // THE SAME LAW FOR THE TRAY (R7): the ghost and the target ring are the
+    // builder's, created once, and left in the scene they were being disposed
+    // and re-uploaded on EVERY placement — a shader recompile hitch per piece
+    builder.liftFromScene();
     world?.dispose();
     world = next;
     post?.dispose();
@@ -1868,6 +1018,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
 
   let last = performance.now();
   const frame = (now: number): void => {
+    // FROZEN BY THE BOUNDARY (T0.4): an uncaught error owns the page now —
+    // the loop STOPS instead of re-throwing every frame (R2's silently
+    // stuttering world); the honest overlay already says so.
+    if (boundaryStopped()) return;
     requestAnimationFrame(frame);
     const dt = Math.min((now - last) / 1000, 0.25);
     last = now;
@@ -2059,15 +1213,6 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     }
   };
   requestAnimationFrame(frame);
-}
-
-/** Build a registered set once per game boot, mounted where this level wants
- *  it (a null placement = the set's canonical origin). */
-async function buildGameSet(reg: SetRegistration, levelId: string): Promise<SetInstance> {
-  const placement = reg.placement(levelId);
-  const instance = await reg.build(THREE);
-  if (placement) placeSet(instance.group, placement);
-  return instance;
 }
 
 /**
