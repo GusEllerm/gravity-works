@@ -109,6 +109,9 @@ test.describe('kitchen03 is discoverable, not just solvable (playtest DD)', () =
   })
 
   test('the rung clears on the on-screen copy alone: five blind Places, one launch', async ({ page }) => {
+    // CI-starve budget (P3): five Places + a launched run — the run ENDS on
+    // its event; the budget is the software-GL wall-clock truth.
+    test.slow()
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(String(err)))
 

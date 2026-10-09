@@ -41,6 +41,9 @@ const targetSocket = (page: import('@playwright/test').Page): Promise<number[] |
   page.evaluate(() => (window as unknown as Record<string, () => number[] | null>).__gwTargetSocket())
 
 test('a clicked toolbar button releases focus: Enter places, arrows aim, nothing re-clicks', async ({ page }) => {
+  // CI-starve budget (P3): the run launched by Enter finishes on its event;
+  // the wall-clock to that event on a saturated runner is the honest budget.
+  test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 

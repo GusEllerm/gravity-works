@@ -79,6 +79,9 @@ test('kitchen01 boots framed, empty, tray-gated, and says no literal "hidden"', 
 })
 
 test('building all three tray pieces launches, finishes, and shows the result panel', async ({ page }) => {
+  // CI-starve budget (P3): the launch→panel edge is an event; a saturated
+  // software-GL runner spends longer wall-clock to reach it.
+  test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 

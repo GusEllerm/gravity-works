@@ -183,7 +183,13 @@ test.describe('T2.1 the move wave — kitchen04 names the piece past the cup', (
 
 test.describe('T2.1 the booster sequencing truth — kitchen05', () => {
   test('a booster kept out of the head of the line gets the EARLY sentence, and the sentence rebuilds par', async ({ page }) => {
+    // CI-starve budget (P3): TWO launched runs plus two full placement
+    // chains — `slow()` (90 s) was still starved on the saturated software
+    // runner (run 38003676911 died mid-`page.click` with the sim still
+    // rolling); the wait stays the 90 s EVENT on the stars line, the TEST
+    // budget is what the machine honestly costs.
     test.slow()
+    test.setTimeout(180_000)
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(String(err)))
 

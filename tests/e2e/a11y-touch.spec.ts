@@ -61,6 +61,11 @@ function describeAt(width: number, height: number): void {
     })
 
     test('tap-to-place builds the par line and Launch taps finish the run', async ({ page }) => {
+      // CI-starve budget (P3, Decision Log 2026-10-10): the terminal edge is
+      // still an EVENT (the panel, not a clock) — but a fully saturated
+      // software-GL runner advances the 24-substep-capped sim at a fraction
+      // of real time, so what the finish needs is TIME, not a new wait.
+      test.slow()
       const errors: string[] = []
       page.on('pageerror', (err) => errors.push(String(err)))
       await goto(page, '/?level=kitchen01')

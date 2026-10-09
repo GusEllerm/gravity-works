@@ -29,6 +29,9 @@ const ready = (page: import('@playwright/test').Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
 
 test('the open result panel passes world clicks through to the canvas and selects no text', async ({ page }) => {
+  // CI-starve budget (P3): a launched run ENDS on its own event; a saturated
+  // software-GL runner just spends longer wall-clock getting there.
+  test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
@@ -207,6 +210,9 @@ test('a spent tray button steals nothing on hover and names BOTH kinds on click'
 })
 
 test('fresh kitchen01 aims the FIRST Place at the par rail and the pure-UI build finishes', async ({ page }) => {
+  // CI-starve budget (P3): the whole finish-the-run loop is event-driven;
+  // the budget is the software-GL wall-clock truth, not a hidden sleep.
+  test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
