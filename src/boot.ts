@@ -64,6 +64,7 @@ import { createBuilder, type Builder } from './ui/builder.ts';
 import { encodeShareUrl, type SharePayload } from './share/share.ts';
 import { bootSharedRun } from './pages/share.ts';
 import { bootLevelSelect } from './pages/select.ts';
+import { premiereWanted, startPremiereBeat, type PremiereBeat } from './pages/intro.ts';
 import { buildGameSet, levelSet, setCameraSolids, setPlacementGuard } from './pages/mount.ts';
 import { paragraph } from './ui/dom.ts';
 import {
@@ -78,7 +79,8 @@ import { createCarRig, CAR_GROUND_LIFT, CAR_SPIN_DAMP } from './render/car-rig.t
 import { JuiceFeed } from './juice/juice.ts';
 import { createJuiceLayer, zoneAt } from './juice/layer.ts';
 import { reducedMotionActive } from './ui/motion.ts';
-import { SET_TOKENS } from './render/tokens.ts';
+import { SET_TOKENS, darken } from './render/tokens.ts';
+import { paintedWood } from './render/materials.ts';
 import type { PostStack } from './render/post/index.ts';
 import { parFor, type RunResult, type StarCount } from './world/stars.ts';
 import { createResultPanel, createRunRecorder, resultModel, starRulesLine } from './ui/result.ts';
@@ -527,9 +529,23 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // there is a builder to answer, and press state is tracked from the
   // FIRST event the canvas sees, never from mid-sequence.
   let builderRef: Builder | null = null;
+  // THE PREMISE BEAT (program T1.2): decided ONCE here, before the canvas
+  // gesture owner and before the builder exist, so the beat's own capture
+  // listeners are the FIRST thing the dismissing gesture meets (see
+  // `src/pages/intro.ts` for who plays and who skips).
+  const premiere: PremiereBeat | null = premiereWanted(params)
+    ? startPremiereBeat(root, level)
+    : null;
   attachBuildView(renderer.domElement, buildView, {
-    onHover: (x, y) => builderRef?.aimAt(x, y),
-    onPlace: (x, y) => builderRef?.clickPlaceAt(x, y),
+    // A beat owns the screen: the aim ring and the place verb stay home
+    // until the chrome is back (a ring floating over the premise title is
+    // exactly the builder chrome the beat exists to delay).
+    onHover: (x, y) => {
+      if (!premiere?.running) builderRef?.aimAt(x, y);
+    },
+    onPlace: (x, y) => {
+      if (!premiere?.running) builderRef?.clickPlaceAt(x, y);
+    },
   });
 
   // Stage 3 wiring, stage 4 registry: a level that declares a set (or a
@@ -544,6 +560,17 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   const setInstance: SetInstance | null = setReg ? await buildGameSet(setReg, level.id) : null;
   const setSolids = setInstance ? setPlacementGuard(setInstance.group) : undefined;
   const setCamBoxes = setInstance ? setCameraSolids(setInstance.group) : undefined;
+  // the mounted set's floor-bounds centre in world space — every set's
+  // bounds circle is centred on the group origin (`SetInstance.bounds`), so
+  // the group position IS the room centre; this is `frameCamera`'s
+  // framed-on-the-SET subject (program T1.2).
+  const framingSetCenter = setInstance
+    ? {
+        x: setInstance.group.position.x,
+        y: setInstance.group.position.y,
+        z: setInstance.group.position.z,
+      }
+    : null;
   // the same set boxes the builder guards placement with, in the camera
   // class's plain-array form: the run camera never intersects or looks
   // through a set prop (stage 3 "beige wall" — see src/camera/run-camera.ts)
@@ -599,11 +626,27 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   let pendingPop = false;
   let contactEdge = false;
 
-  // Stage 3 post-stack hook: the game renders through the composer only when
-  // the URL explicitly asks (?post=on); the module is imported dynamically
-  // so the default page ships the exact stage-2 render path, untouched.
-  const wantPost = params.get('post') === 'on';
+  // PROGRAM T1.2: the post stack is ON BY DEFAULT — the tilt-shift look the
+  // art bible sells is what a first visitor must see (player evaluation
+  // t+0: “the tilt-shift post is OFF by default, so the signature look … is
+  // not what a first-time visitor ever sees”), and the stage-6 hardware note
+  // already certifies every set at 60 fps WITH post ON (16.70 ms medians,
+  // `Reference/Performance 2026-10-08`). The quality ladder is the fallback:
+  // `?post=high|medium|low` picks a tier (the drop order never pays
+  // resolution — `render/post/index.ts`), and `?post=off` still ships the
+  // exact stage-2 raw `renderer.render` path (`?post=on` remains valid and
+  // means the default high tier). The module stays dynamically imported at
+  // rebuild, so the raw path never even loads the composer chunk.
+  const postParam = params.get('post');
+  const wantPost = postParam !== 'off';
+  // the three tier names are `applyQuality`'s ladder, restated here only as
+  // a URL parse (`dev/post-params.ts` keeps the SAME acceptance rule for the
+  // harness; a non-tier value — including `on` — is the default high tier).
+  const postQuality = postParam === 'medium' || postParam === 'low' ? postParam : 'high';
   let post: PostStack | null = null;
+  // the set's floor-plane height while mounted — the build-table gaze
+  // plane for the post focus law (see the frame loop) and the tilt datum
+  let postFloorY: number | null = null;
 
   let world: World | null = null;
   let acc = 0;
@@ -634,7 +677,13 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // route — the camera's filmstrip gate frames the second rail too, playtest
   // M; the alt is ADDRESSED from the level module's existing export, never a
   // level-data edit).
-  const startBuild = startBuildFor(level, params, savedBuild(level.id));
+  const playerBuild = startBuildFor(level, params, savedBuild(level.id));
+  // The beat plays on the level's PAR reference line — the same build the
+  // `?build=par` test rig mounts, so the premise film is the rung's own
+  // authored line, not a bespoke animation. The builder is built with the
+  // PLAYER's build either way: what the beat shows is the house, not a
+  // tray, and nothing the beat runs can edit anything.
+  const startBuild = premiere ? premiere.build : playerBuild;
   // THE EDIT-SIDE AUTOSAVE (playtest T round4: "reload kept 1 of 3"): the
   // working build is stored per EDIT BURST, not per run — a level change is
   // a cross-document navigation, so the two flush hooks below (a reload or a
@@ -659,8 +708,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // deck grip dipped below 1 this run (0 for every grip-independent line)
   let hazardsTouched = 0;
   // ?launch=1 releases as soon as the first world is ready — the test hook
-  // the result e2e drives the whole loop with, and nothing else reads it
-  let launchQueued = params.has('launch');
+  // the result e2e drives the whole loop with; the premise beat uses the same
+  // door, which is how the film is the shipped machinery and not a rig.
+  let launchQueued = params.has('launch') || premiere !== null;
 
   if (setInstance && setReg) stage.dataset.setMounted = setReg.id;
   // the e2e seam for the hazard status path: the live zone count of the
@@ -760,7 +810,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // playtest Y round6); this only hands the live builder to them.
   const builder = (builderRef = createBuilder(builderHost, {
     level,
-    build: startBuild,
+    build: playerBuild,
     tray,
     trayParams: tray ? levelTrayParams(level, tray) : undefined,
     solids: setSolids,
@@ -952,7 +1002,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     runCamActive = false;
     endHold = null;
     buildView.reset();
-    if (w.scene) frameCamera(camera, w.scene, framingFocus, null, buildView);
+    if (w.scene) frameCamera(camera, w.scene, framingFocus, null, buildView, framingSetCenter);
     resultPanel.hide();
   }
 
@@ -976,7 +1026,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     runCamActive = false;
     endHold = null; // the damping tick must not re-solve the death hold
     buildView.reset();
-    if (world?.scene) frameCamera(camera, world.scene, framingFocus, null, buildView);
+    if (world?.scene) frameCamera(camera, world.scene, framingFocus, null, buildView, framingSetCenter);
   }
 
   window.addEventListener(
@@ -1036,6 +1086,30 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       if (setInstance && setReg) {
         next.scene.add(setInstance.group);
         next.scene.background = new THREE.Color(setReg.tokens.background);
+        // THE TABLE, NOT THE VOID (program T1.2 rig repair): the plain
+        // Lambert catch plane sits 20 cm BELOW the decks, and at the
+        // set-framed eye every pixel outside the set's footprint rendered
+        // as grey broken texture — the "tan disc on a grey table" the
+        // evaluation named. On a SET-mounted level it becomes the wooden
+        // tabletop the dev stills' `ground` already is: set-token painted
+        // wood, flush 2 mm under the set's own floor plane (the thin seam
+        // reads as contact shadow), big enough that no camera finds an
+        // edge, and a shadow catcher like the stills'. The bare plane
+        // stays for the set-less sandbox.
+        const table = next.scene.getObjectByName('table');
+        if (table instanceof THREE.Mesh) {
+          table.position.y = setInstance.group.position.y - 0.002;
+          table.scale.set(7, 7, 1);
+          table.receiveShadow = true;
+          const t = setReg.tokens;
+          table.material = paintedWood(t, darken(t.ground, 0.06), {
+            fillHigh: t.fillHigh,
+            fillLow: t.fillLow,
+            shadowTint: t.shadowTint,
+            grain: 0.3,
+            grainScale: 0.05,
+          });
+        }
       }
       // THE IN-GAME CAR mounts where the box stands; the World's fallback
       // box stays in the graph (hidden) so every scene probe and the
@@ -1056,8 +1130,20 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       );
       pendingPop = false;
       if (wantPost) {
-        const { createPostStack } = await import('./render/post/index.ts');
-        post = createPostStack(renderer, camera, { tokens: setReg?.tokens ?? SET_TOKENS.kitchen });
+        const { createPlayPostStack } = await import('./render/post/index.ts');
+        const setFloorY = setInstance ? setInstance.group.position.y : null;
+        post = createPlayPostStack(renderer, camera, {
+          tokens: setReg?.tokens ?? SET_TOKENS.kitchen,
+          quality: postQuality,
+          // THE DEFOCUS DATUM IS THE SET'S FLOOR, NOT WORLD 0 (program
+          // T1.2 item 2): the tilt law ties strength to the car's height
+          // ABOVE THE SET FLOOR; the mounted deck sits ~0.4 m under world
+          // zero, and with the default datum every build-phase frame paid
+          // the top of the ramp — the whole table milked into haze. The
+          // set-less sandbox keeps the world-zero datum it always used.
+          floorY: setFloorY ?? 0,
+        });
+        postFloorY = setFloorY;
       }
     }
     builder.setScene(next.scene);
@@ -1081,11 +1167,23 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         : null;
     runCamActive = false;
     endHold = null; // an edited build retires the last death witness
-    frameCamera(camera, next.scene, framingFocus, null, buildView)
+    frameCamera(camera, next.scene, framingFocus, null, buildView, framingSetCenter)
     // the same tally line the frame loop writes (ONE counter, ONE verb —
     // never a bare "ready" that skips the number the tray already shows)
     statusLine.textContent = runStatusLine(next, builder.playerCount(), level.budget)
   }
+
+  // the frame-loop's premise-beat ender (armed just below when a beat is
+  // running; see the terminal edge — the logic all lives in
+  // `pages/intro.ts`, this is the one seam back into the boot's rebuild line)
+  let premiereEnd: (() => void) | null = null;
+  // The beat's terminal edge is OWNED until it has been spent — whether the
+  // beat ran to its finish or was SKIPPED a second in, the first terminal
+  // status after this boot belongs to the film, not to the player: no panel,
+  // no star, no share freeze, no end-hold ever reads that run. A flag (not
+  // `premiere.running`) decides, because a skip ends the chrome long before
+  // the car stops rolling.
+  let premiereOwned = premiere !== null;
 
   await rebuild(startBuild);
 
@@ -1094,8 +1192,22 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // on the level's FIRST boot, the same three lines with this level's par
   // numbers, shown once per level through the callouts' seen set
   // (`firstLesson`). The rung on the level select carries the same line.
-  const rulesLesson = firstLesson(`rules:${level.id}`, starRulesLine(parFor(level.id, level.par)));
-  if (rulesLesson) calloutLine.textContent = rulesLesson;
+  // Program T1.2: when a premise beat is running the callout line is
+  // hidden chrome, so the lesson DEFERS to the beat's end rather than
+  // burning its once-per-level seen-flag on a line nobody could see.
+  const showRulesLesson = (): void => {
+    const rulesLesson = firstLesson(`rules:${level.id}`, starRulesLine(parFor(level.id, level.par)));
+    if (rulesLesson) calloutLine.textContent = rulesLesson;
+  };
+  if (!premiere) showRulesLesson();
+  else {
+    // the beat's END (terminal edge, skip, or the safety timeout) lands the
+    // player's own starting build back and lifts the chrome with it
+    premiereEnd = (): void => {
+      premiere.end();
+      void rebuild(playerBuild).then(showRulesLesson);
+    };
+  }
 
   // the terminal state of the LAST finished run, for the honest same-hash
   // line: equal hashes on DIFFERENT builds mean the added piece never
@@ -1166,6 +1278,23 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         steps += 1;
       }
       if (w.status !== 'running') acc = 0;
+    }
+    if (
+      premiereOwned &&
+      w.status !== 'running' &&
+      w.status !== 'idle' &&
+      lastStatus === 'running'
+    ) {
+      // THE BEAT'S TERMINAL EDGE (program T1.2): the par film stopped
+      // rolling — the chrome lifts and the player's own starting build comes
+      // back under it. NOTHING else happens: no verdict panel, no stars
+      // recorded, no share freeze, no end-hold. The player's first star is
+      // the first run THEY launch, never the one they watched.
+      premiereOwned = false;
+      premiere?.end();
+      lastStatus = 'idle'; // the film's terminal edge is spent, not the run's
+      premiereEnd?.();
+      return;
     }
     if (w.status !== 'running' && w.status !== 'idle' && lastStatus === 'running') {
       // the run just ended: stars, time, pieces, and the one-line note (§9.1)
@@ -1340,7 +1469,21 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       else buildView.apply(camera);
     }
     if (post) {
-      post.setFocus([pose.pos.x, pose.pos.y, pose.pos.z]); // §7.3: band centred on the car
+      // §7.3: band centred on the car DURING A RUN (the follow camera's
+      // subject is the car, and the height ramp pulls with it). In the
+      // BUILD table the framed subject is the TABLE — the car sits parked
+      // at the launch corner, and a band centred on a corner left the
+      // entire subject outside focus (program T1.2: “the room must read
+      // while you play it”, design evaluation §7 #2). The build-phase
+      // focus point is therefore where the static camera's gaze crosses
+      // the deck plane: band centred on the composition, strength at the
+      // floor datum (0.55) with the frame-edge edges taking the miniature
+      // roll-off — the stills' own distribution of sharp and soft.
+      post.setFocus(
+        runCamActive
+          ? [pose.pos.x, pose.pos.y, pose.pos.z]
+          : gazeOnDeck(camera, postFloorY ?? 0.05, framingScratch),
+      );
       post.render(w.scene);
     } else {
       renderer.render(w.scene, camera);
@@ -1350,11 +1493,23 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
 }
 
 /**
- * The static TABLE framing: the TRACK's bbox with margin, never the whole
- * scene's. The scene-wide box centres on the mounted set (and the World's
- * 6 m ground plane), which on a small kitchen line put the camera looking
- * past the counter into a cream void (deployed-page finding 1). The set is
- * visible scenery, not the framing subject.
+ * The static TABLE framing. Since program T1.2 the LOOK-AT is framed on the
+ * SET — the mounted room's floor-bounds centre (Art Bible §Camera: “Build
+ * camera: orbital, framed on the set, never free-fly”) — while the EYE
+ * DISTANCE stays solved from the BUILD's span exactly as before (car size on
+ * screen unchanged; the aim/pan proofs keep their scale). The player
+ * evaluation's t+0 finding named the failure of the old rule: centring the
+ * look-at on the TRACK's bbox with the set mounted 0.45 m off the run axis
+ * marched the counter's rim and the grey background across the frame — “the
+ * kitchen reads as a tan disc with grey corner wedges — closer to a broken
+ * texture than to a monumental breakfast table”. Framed on the SET the disc
+ * is larger than the frame at this distance (the canonical establishing
+ * reads it as endless for the same reason), the rim never crosses the shot,
+ * and the room fills it. The scene-wide box is STILL never the subject (the
+ * 6 m ground plane re-centring the old cream-void finding); when no set is
+ * mounted the track-centre rule stands untouched, and every end-hold framing
+ * (`extra`) keeps the track/death-site subject — a death, not a room, is the
+ * story of a failed run.
  */
 export function frameCamera(
   camera: THREE.PerspectiveCamera,
@@ -1362,6 +1517,7 @@ export function frameCamera(
   focus: THREE.Vector3 | null = null,
   extra: { x: number; y: number; z: number } | null = null,
   view: BuildCamera | null = null,
+  setCenter: { x: number; y: number; z: number } | null = null,
 ): void {
   const track = scene?.getObjectByName('track');
   const box = track ? new THREE.Box3().setFromObject(track) : new THREE.Box3();
@@ -1380,7 +1536,33 @@ export function frameCamera(
   }
   const center = box.isEmpty() ? new THREE.Vector3() : box.getCenter(new THREE.Vector3());
   const span = box.isEmpty() ? 0.5 : Math.max(...box.getSize(new THREE.Vector3()).toArray());
-  const d = Math.max(1.2, span * 1.4);
+  // FRAMED ON THE SET (program T1.2, header): the static look-at centres on
+  // the mounted room's floor-bounds centre — a circle at the set group's
+  // origin on all six sets (`SetInstance.bounds`), so the group position IS
+  // the centre; the eye keeps the ratified stills' band (see the distance
+  // law below). Only the plain static framing takes the room as subject;
+  // end-hold passes (`extra`) keep the track/death subject law.
+  let setFramed = false
+  if (setCenter && !box.isEmpty() && !extra) {
+    // the TARGET sits at the set's deck plane (the mount rule puts the
+    // counter top at the group origin + 5 mm), like the ratified stills'
+    // target `[0, 0.05, 0]` — NOT at the track box centre, whose book-stack
+    // height lifts the eye a metre over the deck and flattens the room
+    // into a wall (measured at the book-stack law: rail and wall junction
+    // land on the same screen row).
+    center.set(setCenter.x, setCenter.y + 0.05, setCenter.z)
+    setFramed = true
+  }
+  // DISTANCE ON THE ROOM, NOT THE FIXTURES: on the set-framed path the eye
+  // solves into the ratified still's eye band — plan radius INSIDE the disc
+  // rim (rim off-frame = the counter reads endless, the canonical stills'
+  // trick), distance capped so the long FIXTURE spines (the books-to-cup
+  // span of `initialBuild` is ~1.6 m on L01) cannot lift the camera over
+  // the rim the way `span * 1.4` alone did. Build views orbit/pan to reach
+  // a wide build's ends; the ROOM is the subject here.
+  const d = setFramed
+    ? Math.min(Math.max(1.3, span * 1.4), 1.55)
+    : Math.max(1.2, span * 1.4);
   // THE GOAL IS IN THE SUBJECT: the static framing biases its look-at 35 %
   // of the way from the track's centre toward the build's FINISH CUP (the
   // capture centre, `finishCapture`) — an establishing shot that puts the
@@ -1394,21 +1576,68 @@ export function frameCamera(
   // build still fits with room. A level with no cup (a hazard sandbox, the
   // feel rig) frames its track exactly as before.
   if (focus && !box.isEmpty()) {
-    center.addScaledVector(framingScratch.copy(focus).sub(center), 0.35);
+    // THE GOAL STAYS IN THE LEGAL FRAME — A FLOOR, NOT A FRACTION. On the
+    // set path the room-centred subject needs less of this pull than the
+    // track-box law did (the room already sits near the cup): the look-at
+    // moves toward the cup only until the cup is 0.55 m from it — the
+    // distance its |ndc| crosses under 0.85 on the 16:9 table (measured
+    // L01: full-0.35-ratio bias overshoots into a cup-hugging close-up
+    // that abandons the rim contract; the 0.55 m residual law lands the
+    // cup at 0.70 with the eye still inside the disc rim). The 0.35 goal
+    // law below is untouched for a set-less level.
+    framingScratch.copy(focus).sub(center);
+    if (setFramed) {
+      framingScratch.y = 0; // the ROOM's deck plane owns the eye height
+      // 45 % of the way to the cup, paired with the wide-azimuth eye
+      // above: at the 35 % track-law fraction the cup clips the frame
+      // edge on L01 (|ndc| 0.958, the T+U3 gate) because the cup sits
+      // ~1 m x-past the room centre the law now frames; deeper than 45 %
+      // the room slides out of the middle third. With the eye's extra
+      // 0.15·d of x (the azimuth), 45 % is the balance both gates
+      // measure — cup <= 0.9 everywhere, room near-centred.
+      framingScratch.multiplyScalar(0.45);
+      center.add(framingScratch);
+    } else {
+      center.addScaledVector(framingScratch, 0.35);
+    }
   }
   // with a build view attached the solved base framing lives in it and the
   // view composes the pose (at zero yaw/pan that composition is bit-for-bit
   // the direct set below — the proofs and visual baselines do not move)
   if (view) {
-    view.setFraming(center, d, span);
+    view.setFraming(center, d, span, setFramed ? 'set' : 'track');
     view.apply(camera);
     return;
   }
-  camera.position.set(center.x + d * 0.7, center.y + d * 0.55, center.z + d * 0.9);
+  if (setFramed) {
+    // the ratified still's PITCH with the wider track azimuth — canonical
+    // offset (0.62, 0.42, 0.78) at |d| 1.14 sets the ~21°; the plan drifts
+    // onto the rim at the goal-biased centre, which the WOODEN TABLE (see
+    // the mounted-set table resurface below) turned from a grey void into
+    // an intentional stage edge (program T1.2). See the distance law above.
+    camera.position.set(center.x + d * 0.7, center.y + d * 0.45, center.z + d * 0.85);
+  } else {
+    camera.position.set(center.x + d * 0.7, center.y + d * 0.55, center.z + d * 0.9);
+  }
   camera.lookAt(center);
 }
 
 const framingScratch = new THREE.Vector3();
+
+/** Where `camera`'s gaze crosses the horizontal plane at `planeY` (the
+ *  build-table focus point — see the frame loop's post-focus law). */
+function gazeOnDeck(camera: THREE.PerspectiveCamera, planeY: number, out: THREE.Vector3): [number, number, number] {
+  camera.getWorldDirection(framingScratchB);
+  const t = framingScratchB.y !== 0 ? (planeY - camera.position.y) / framingScratchB.y : 0;
+  out.set(
+    camera.position.x + framingScratchB.x * Math.max(0, t),
+    planeY,
+    camera.position.z + framingScratchB.z * Math.max(0, t),
+  );
+  return [out.x, out.y, out.z];
+}
+
+const framingScratchB = new THREE.Vector3();
 
 /** Plain-text run status; the aria-live line the run reports through. The
  *  hash is NOT here (playtest E: engineer trivia on the player's line) — it

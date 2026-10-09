@@ -1,10 +1,11 @@
 // The post stack (PROMPT §8, §5.6): RenderPass → tilt-shift (separable
 // quarter-res pair + CoC composite) → soft bloom → color grade (with the
 // vignette term and the sRGB encode inside) — one entry point,
-// `createPostStack`, used by the render harness (`?post=on`) and — behind a
-// URL flag only — the game shell in `src/boot.ts`. Post is OFF by default
-// everywhere: with the flag absent nothing here is even constructed, so
-// stage-1/2 renders stay byte-stable.
+// `createPostStack`, used by the render harness (`?post=on`) and — the
+// SHELL's play entry `createPlayPostStack` — the game page in `src/boot.ts`.
+// Since program T1.2 post is ON by default on the shell (the stage-6 hardware
+// note certifies every set at 60 fps post-ON; `?post=off` keeps the raw
+// stage-2 path byte-stable).
 //
 // Quality contract: the toggle **drops post stages before it drops
 // resolution** (brief §8) — and in this stack it never drops resolution at
@@ -72,6 +73,50 @@ export function applyQuality(stages: PostStages, quality: PostQuality): void {
   stages.bloom.enabled = quality === 'high'
   stages.tilt.enabled = quality !== 'low'
   stages.tilt.setTaps(quality === 'high' ? 6 : 3)
+}
+
+/**
+ * The PLAY-camera tilt law (program T1.2, design evaluation §7 #2: “defocus
+ * budget for play cameras — the tilt-shift strength saturates at 0.30 m; cap
+ * floor→top strength … the room must read while you play it”). The RATIFIED
+ * law (art bible §Camera / Feel.md: band ≈ 20 % of frame centred on the car,
+ * defocus tied to distance from the set floor) is untouched — what moves is
+ * the STRENGTH RAMP the harness default carries: its `topStrength` 1.0 is
+ * reached 0.30 m above the floor, and the kitchen release pose sits at
+ * ~0.22 m (the L01 launch book-stack top is 0.45 m above the deck, so the
+ * ramp saturates there), the build-phase frame rode strength ≈ 1.0 and the
+ * room was milked into haze. The play tuning keeps the band and the 0.30 m
+ * ramp, and caps the TOP strength at 0.65 — the strength the ratified hero
+ * stills actually carry (focus ~0.05 m off the floor on the 0.30 m ramp) —
+ * so no play frame is ever softer than the art that was ratified.
+ *
+ * THE RADIUS MEASUREMENT IS BUFFER-RELATIVE (program T1.2 rig repair): the
+ * separable pair runs at QUARTER resolution, so a kernel of N buffer px
+ * smears 4N SCREEN px — the harness default's 14 px is ~56 px of frame,
+ * which at the wide build-table framing (a large band-outside area at
+ * coc→1) milked the whole room. The ratified stills only pay that radius
+ * on their close-composed foreground slivers, which is why the look was
+ * ratified soft and the play table is not. The play tuning keeps the
+ * law's shape and caps the KERNEL so the band-edge maximum on screen is
+ * the ~20 px the stills' foreground defocus measures (6 buffer px), with
+ * the strength ramp still driving 0.55→0.65 of it.
+ */
+export const PLAY_TILT_TUNING: Required<TiltShiftTuning> = {
+  bandHeight: 0.2,
+  maxRadiusPx: 6,
+  floorStrength: 0.55,
+  topStrength: 0.65,
+  strengthRange: 0.3,
+}
+
+/** The shell's entry: the review stack under the PLAY tilt law (opts win, so
+ *  a future scene can still override one knob). */
+export function createPlayPostStack(
+  renderer: THREE.WebGLRenderer,
+  camera: THREE.Camera,
+  opts: PostStackOptions = {},
+): PostStack {
+  return createPostStack(renderer, camera, { ...PLAY_TILT_TUNING, ...opts })
 }
 
 export function createPostStack(

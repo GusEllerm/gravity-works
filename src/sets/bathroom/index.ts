@@ -131,7 +131,7 @@ export function buildBathroomSet(T = THREE_NS, opts: BathroomSetOptions = {}): B
 
   const wall = new T.Mesh(
     new T.PlaneGeometry(20, 4),
-    paintedWood(tokens, SURFACES.wall, { ...fillOver(), grain: 0.08, grainScale: 0.2, diffuseStrength: 0.9, fillStrength: MATERIAL_TUNES.fillStrengthWood }),
+    paintedWood(tokens, SURFACES.wall, { ...fillOver(), grain: 0.08, grainScale: 0.05, diffuseStrength: 0.9, fillStrength: MATERIAL_TUNES.fillStrengthWood }),
   )
   wall.name = 'back-wall'
   wall.position.set(0, 1.6, TILES.backWall.z)
@@ -153,7 +153,7 @@ export function buildBathroomSet(T = THREE_NS, opts: BathroomSetOptions = {}): B
       paintedWood(tokens, SURFACES.grout, {
         ...fillOver(),
         grain: 0.12,
-        grainScale: 0.3,
+        grainScale: 0.1,
         diffuseStrength: SURFACES.groutDiffuse,
         fillStrength: MATERIAL_TUNES.fillStrengthWood,
       }),

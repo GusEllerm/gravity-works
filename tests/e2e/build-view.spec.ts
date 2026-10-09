@@ -99,7 +99,26 @@ test('a click (press→release within 6 px) still places at the aimed socket', a
   await ready(page)
   await holdPiece(page)
   const box = (await page.locator('#gw-canvas').boundingBox())!
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  // AIM VIA THE RING, NOT THE CANVAS CENTRE: program T1.2 re-framed the
+  // static build view on the SET, and under the room-centred law the dead
+  // centre is counter, not necessarily an aimable deck pixel (it happened
+  // to be one under the old track-box law). The seam that names the ring
+  // a click would act on is the legit aim point for gesture specs (see
+  // the playtest specs); sweep from the centre until one is under the
+  // cursor, then click THAT pixel — the law-independent statement of
+  // "press→release within 6 px places at the aimed socket".
+  let px: number[] | null = null
+  outer: for (const [dy, dx] of [
+    [0, 0], [0, -90], [0, 90], [-60, 0], [60, 0], [-60, -90], [60, 90], [-60, 90], [60, -90],
+  ] as const) {
+    await page.mouse.move(box.x + box.width / 2 + dx, box.y + box.height / 2 + dy)
+    px = await page.evaluate(() =>
+      (window as unknown as { __gwTargetSocketPx?: () => number[] | null }).__gwTargetSocketPx?.() ?? null,
+    )
+    if (px) break outer
+  }
+  expect(px, 'no aimable socket ring under any probe point').not.toBeNull()
+  await page.mouse.click(px![0]!, px![1]!)
   await expect(page.locator('#gw-piece-count')).toHaveText('1 of 3 pieces used', { timeout: 10_000 })
   expect((await view(page)).panTarget).toEqual([0, 0]) // a click never frames
   expect((await view(page)).yawTarget).toBe(0)

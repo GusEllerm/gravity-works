@@ -65,6 +65,16 @@ import { CAMERAS as GARDEN_CAMERAS } from '../sets/garden/data.ts'
 // floor rows are the new porch framings.
 import { CAMERAS as PORCH_CAMERAS } from '../sets/porch/data.ts'
 
+// The BATHROOM ships its own canonical rigs (program T1.3 rig repair —
+// design evaluation §1: the room with the best exploration (14/15) was the
+// room with no evidence trail, riding the provisional kitchen fallback).
+// One deliberate asymmetry, the garage/porch precedent: the establishing
+// row copies the PROVISIONAL kitchen numbers VERBATIM (what the bathroom
+// established through before this row existed keeps rendering byte-
+// identically), the hero/floor rows are the new cathedral framings — the
+// tub + duck + tile-grid money shot and the 35 mm law on the flush deck.
+import { CAMERAS as BATHROOM_CAMERAS } from '../sets/bathroom/data.ts'
+
 const SET_SHOTS: Record<string, Partial<Record<CanonicalShot, CameraRig>>> = {
   // The GARAGE ships only its SIDE rig (stage 4 production round — the AD's
   // one knob on Review 2026-10-09: re-aim the establishing rig). The old rig
@@ -91,6 +101,11 @@ const SET_SHOTS: Record<string, Partial<Record<CanonicalShot, CameraRig>>> = {
     establishing: { ...PORCH_CAMERAS.establishing, position: [...PORCH_CAMERAS.establishing.position], target: [...PORCH_CAMERAS.establishing.target] },
     hero: { ...PORCH_CAMERAS.hero, position: [...PORCH_CAMERAS.hero.position], target: [...PORCH_CAMERAS.hero.target] },
     floor: { ...PORCH_CAMERAS.floor, position: [...PORCH_CAMERAS.floor.position], target: [...PORCH_CAMERAS.floor.target] },
+  },
+  'bathroom-set': {
+    establishing: { ...BATHROOM_CAMERAS.establishing, position: [...BATHROOM_CAMERAS.establishing.position], target: [...BATHROOM_CAMERAS.establishing.target] },
+    hero: { ...BATHROOM_CAMERAS.hero, position: [...BATHROOM_CAMERAS.hero.position], target: [...BATHROOM_CAMERAS.hero.target] },
+    floor: { ...BATHROOM_CAMERAS.floor, position: [...BATHROOM_CAMERAS.floor.position], target: [...BATHROOM_CAMERAS.floor.target] },
   },
 }
 

@@ -11,104 +11,21 @@
  * with the parallel e2e suite.
  */
 import { test, expect } from '@playwright/test'
-import { PNG } from 'pngjs'
 import * as THREE from 'three'
 
 const SAMPLE_MS = 250
 const MAX_DOMINANT = 0.6
 
-/** Share of pixels in the most common 4-bit-per-channel colour bucket —
- *  the "is this frame one flat colour" metric a blur fails (quantised to
- *  16 levels/channel so dithered gradients and AA do not fake diversity). */
-function dominantShare(pngPng: Buffer): number {
-  const png = PNG.sync.read(pngPng)
-  const buckets = new Map<number, number>()
-  let n = 0
-  for (let i = 0; i < png.data.length; i += 4) {
-    if (png.data[i + 3]! < 8) continue
-    const key =
-      ((png.data[i]! >> 4) << 8) | ((png.data[i + 1]! >> 4) << 4) | (png.data[i + 2]! >> 4)
-    buckets.set(key, (buckets.get(key) ?? 0) + 1)
-    n++
-  }
-  let max = 0
-  for (const v of buckets.values()) max = Math.max(max, v)
-  return max / n
-}
 
-test('L02 par run filmstrip every 250 ms: no frame >60 % single-colour', async ({ page }) => {
-  test.slow()
-  // WARM START (stage-4 L02-redesign follow-through): the line's par run is
-  // 1.00–1.13 s of SIMULATION now (pars table, LD 2026-10-09), and the old
-  // launch=1 + poll-for-running start spent 300–500 ms of that second on
-  // wasm boot and poll lag — the strip then caught 4–5 boundary samples
-  // and the coverage floor (≥ 6) went red on fast machines while every
-  // PIXEL bar passed (failing identically at baseline e37bc70). Clicking
-  // Launch on a booted page starts the strip AT the release tick instead:
-  // the sample clock and the run clock share a zero, and the same
-  // wall-clock boundaries land deterministically inside the run.
-  await page.goto('/?level=kitchen02&build=par')
-  await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
-  await page.click('#gw-launch')
-  await expect
-    .poll(async () => (await page.locator('#gw-status').textContent()) ?? '', { timeout: 20_000, intervals: [10, 25, 50] })
-    .toMatch(/running/)
-
-  const frames: { t: number; share: number }[] = []
-  const canvas = page.locator('#gw-canvas')
-  const t0 = Date.now()
-  for (;;) {
-    const shot = await canvas.screenshot()
-    const status = (await page.locator('#gw-status').textContent()) ?? ''
-    frames.push({ t: Date.now() - t0, share: dominantShare(shot) })
-    if (!/running/.test(status) || Date.now() - t0 > 8_000) break
-    const next = t0 + frames.length * SAMPLE_MS
-    await page.waitForTimeout(Math.max(0, next - Date.now()))
-  }
-
-  const worst = frames.reduce((a, b) => (b.share > a.share ? b : a))
-  // eslint-disable-next-line no-console
-  console.log(
-    `filmstrip: ${frames.length} frames, worst ${worst.t} ms ${(worst.share * 100).toFixed(1)} %`,
-  )
-  // coverage of the strip, not a magic count: five 250 ms boundaries fit
-  // inside a 1.0 s run clocked from its own release (0, 250, 500, 750,
-  // 1000), and NO GAP may exceed one sample-and-read period
-  expect(frames.length).toBeGreaterThanOrEqual(5)
-  for (let i = 1; i < frames.length; i++) {
-    expect(frames[i]!.t - frames[i - 1]!.t, `gap before frame ${i}`).toBeLessThan(SAMPLE_MS * 2)
-  }
-  for (const f of frames) {
-    expect(f.share, `frame at ${f.t} ms: ${(f.share * 100).toFixed(1)} % single colour`).toBeLessThanOrEqual(
-      MAX_DOMINANT,
-    )
-  }
-})
-
-/**
- * STAGE 4 — THE DENSE END-OF-RUN GATE (playtests J+K, camera reopen 1:
- * "the camera buries itself halfway into a wall at run end, only the car's
- * roof", "a wall of woodgrain"). The stage-3 trailing fix holds MID-run,
- * but 250 ms sampling skipped the END frames where the finish framing
- * fails: measured on the L01 par run BEFORE the fix, the frames inside the
- * FINAL SECOND reached 88 % one flat colour (the table surface filling the
- * shot at eye height, 2.4 s into the release). The gate therefore samples
- * EVERY 100 ms across the final second of the L01, L04 and BOTH L02 lines'
- * par runs — on the page itself, in a wrapper around the game's own
- * `requestAnimationFrame` callbacks, so a sampled frame cannot slip
- * between round-trips — with the same per-frame bar: no frame >60 %
- * single-colour. STAGE 4 watchability (playtest M: "the cup and death spot
- * were NEVER visible"; "the whole far half of Two Ways stays off-frame"):
- * L02 is WIDER than L01 — its rail runs past the cup into the visible
- * curve run-out, so BOTH its authored lines (`build=par` the lazy line,
- * `build=alt` the arc line — the two lanes the level is named for) join
- * the dense window: a finish framing that only works when the cup sits at
- * the rail END (L01/L04) is exactly what L02 exposes. The dense window
- * ENDS at the terminal status: the static framing the shell owns after
- * hand-back is a different frame-set (and a different owner).
- */
-test('L01+L02(par+alt)+L04 par runs: EVERY 100 ms of the final second, no frame >60 % single-colour', async ({ page }) => {
-  test.slow()
+/** THE IN-PAGE STRIP SAMPLER (stage-4 mechanism, program T1.2): a rAF
+ *  wrapper that quantises every drawn frame into 100 ms buckets and
+ *  meters the dominant-colour share in-page. Sampling through page
+ *  round-trips cannot keep a 250 ms cadence through the post chain that
+ *  program T1.2 made the page default (a `canvas.screenshot()` round-trip
+ *  costs ~350 ms), and the gate is a property of the CAMERA, not of the
+ *  capture pipe — this sampler was already the dense gate's answer to the
+ *  same problem, and both halves of this file now share it. */
+async function installStrip(page: import('@playwright/test').Page): Promise<void> {
   await page.addInitScript(() => {
     const raf = window.requestAnimationFrame.bind(window)
     const buckets = new Map<number, { share: number; status: string }>()
@@ -149,6 +66,90 @@ test('L01+L02(par+alt)+L04 par runs: EVERY 100 ms of the final second, no frame 
         buckets.set(bucket, { share: mx / n, status: st })
       })) as typeof window.requestAnimationFrame
   })
+}
+
+test('L02 par run filmstrip every 250 ms: no frame >60 % single-colour', async ({ page }) => {
+  test.slow()
+  await installStrip(page)
+  // WARM START (stage-4 L02-redesign follow-through): the line's par run is
+  // 1.00–1.13 s of SIMULATION now (pars table, LD 2026-10-09), and the old
+  // launch=1 + poll-for-running start spent 300–500 ms of that second on
+  // wasm boot and poll lag. Clicking Launch on a booted page starts the
+  // strip AT the release tick instead: the sample clock and the run clock
+  // share a zero.
+  //
+  // SAMPLING MOVED IN-PAGE at program T1.2 (see `installStrip`): the
+  // screenshot-round-trip sampler cost ~350 ms per sample once the post
+  // stack became the page default, which fit only ~4 samples inside the
+  // ~1.1 s run — a capture-pipe cost, not a missing frame. The buckets
+  // below are frames the rAF loop ACTUALLY drew (the dense gate's own
+  // mechanism), so the 250 ms grid and the coverage floor measure the
+  // camera again.
+  await page.goto('/?level=kitchen02&build=par')
+  await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
+  await page.click('#gw-launch')
+  await expect
+    .poll(async () => (await page.locator('#gw-result').isVisible().catch(() => false)), { timeout: 30_000 })
+    .toBe(true)
+  await page.waitForTimeout(400)
+  const strip = (await page.evaluate(() =>
+    [...((window as unknown as Record<string, unknown>).__gwStrip as Map<number, { share: number; status: string }>).entries()])) as [number, { share: number; status: string }][]
+  await page.evaluate(() =>
+    ((window as unknown as Record<string, unknown>).__gwStrip as Map<number, unknown>).clear())
+
+  // the running window, and the 250 ms grid inside it (every 2nd ~100 ms
+  // bucket of a 60 fps strip is the dense gate's same quantiser as the
+  // old PNG sampler's 250 ms wall-clock boundaries)
+  const running = strip.filter(([, x]) => /running/.test(x.status))
+  expect(running.length, 'the run was never sampled running').toBeGreaterThan(0)
+  const frames = running.filter(([b]) => b % 2 === 0)
+  // eslint-disable-next-line no-console
+  console.log(
+    `filmstrip: ${frames.length} frames, worst ${(Math.max(...frames.map(([, x]) => x.share)) * 100).toFixed(1)} %`,
+  )
+  // coverage of the strip, not a magic count (same shape the dense gate
+  // uses): the running window must not have collapsed (< 9 × 100 ms
+  // buckets would mean L02's ~1 s par line stopped being a second-long
+  // run — a PHYSICS fact the pars table gates, surfaced here honestly),
+  // and the 250 ms grid must cover it with a gap no wider than one
+  // sample-and-read period
+  expect(running.length, 'L02 par run window collapsed below ~0.7 s').toBeGreaterThanOrEqual(7)
+  expect(frames.length).toBeGreaterThanOrEqual(Math.floor(running.length / 2) - 1)
+  for (let i = 1; i < frames.length; i++) {
+    expect((frames[i]![0] - frames[i - 1]![0]) * 100, `gap before frame ${i}`).toBeLessThan(SAMPLE_MS * 2)
+  }
+  for (const [b, x] of frames) {
+    expect(x.share, `frame at bucket ${b}: ${(x.share * 100).toFixed(1)} % single colour`).toBeLessThanOrEqual(
+      MAX_DOMINANT,
+    )
+  }
+})
+
+/**
+ * STAGE 4 — THE DENSE END-OF-RUN GATE (playtests J+K, camera reopen 1:
+ * "the camera buries itself halfway into a wall at run end, only the car's
+ * roof", "a wall of woodgrain"). The stage-3 trailing fix holds MID-run,
+ * but 250 ms sampling skipped the END frames where the finish framing
+ * fails: measured on the L01 par run BEFORE the fix, the frames inside the
+ * FINAL SECOND reached 88 % one flat colour (the table surface filling the
+ * shot at eye height, 2.4 s into the release). The gate therefore samples
+ * EVERY 100 ms across the final second of the L01, L04 and BOTH L02 lines'
+ * par runs — on the page itself, in a wrapper around the game's own
+ * `requestAnimationFrame` callbacks, so a sampled frame cannot slip
+ * between round-trips — with the same per-frame bar: no frame >60 %
+ * single-colour. STAGE 4 watchability (playtest M: "the cup and death spot
+ * were NEVER visible"; "the whole far half of Two Ways stays off-frame"):
+ * L02 is WIDER than L01 — its rail runs past the cup into the visible
+ * curve run-out, so BOTH its authored lines (`build=par` the lazy line,
+ * `build=alt` the arc line — the two lanes the level is named for) join
+ * the dense window: a finish framing that only works when the cup sits at
+ * the rail END (L01/L04) is exactly what L02 exposes. The dense window
+ * ENDS at the terminal status: the static framing the shell owns after
+ * hand-back is a different frame-set (and a different owner).
+ */
+test('L01+L02(par+alt)+L04 par runs: EVERY 100 ms of the final second, no frame >60 % single-colour', async ({ page }) => {
+  test.slow()
+  await installStrip(page)
 
   for (const [level, build] of [
     ['kitchen01', 'par'],

@@ -60,6 +60,11 @@ const savedPieces = (page: import('@playwright/test').Page) =>
     (tray) => {
       const raw = localStorage.getItem('gravity-works.save')
       if (!raw) return -1
+      // Program T1.2 note: the envelope has TWO record shapes by design (the
+      // R9 newest-wins merge stamps a write as `{ t, s }`; an unstamped one
+      // is the plain string) — the reader shipped reading the pre-R9 shape
+      // only and threw on `{t,s}`. Read BOTH (`.v` rides as the quarantine
+      // variant's field).
       const env = JSON.parse(raw) as { builds?: Record<string, string | { s?: string; v?: string }> }
       const rec = env.builds?.kitchen01
       const blob = typeof rec === 'string' || !rec ? rec : rec.s ?? rec.v
@@ -137,7 +142,15 @@ test('a REAL background (app-switch, no pagehide) flushes the pending edit', asy
   for (let attempt = 0; attempt < 8 && !kill; attempt++) {
     await page.bringToFront()
     await page.click('#gw-remove-piece')
-    await other.bringToFront()
+    // The steal RPC only belongs on the REAL path. On the proxy path an
+    // extra `bringToFront` between the remove and the kill evaluate was a
+    // second page-task boundary the 300 ms debounce could (and under the
+    // parallel suite's load, did) slip through — the disk already showed
+    // the flush when the recorder read "pending", and every attempt lost
+    // the race the loop re-arms forever. The proxy's whole guarantee is
+    // that ONE task flips, dispatches and reads; keep the RPCs off its
+    // critical path (full-suite flake sweep, program T1.2 close).
+    if (realPath) await other.bringToFront()
     let killedBySteal = false
     if (realPath) {
       try {

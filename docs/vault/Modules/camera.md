@@ -136,7 +136,20 @@ the run camera's final pose kept forever.
 The static bounding-box framing owns the table between runs and at run
 end: it boxes the TRACK group alone (named `track` in `buildTrackMeshes`),
 never the whole scene, so the set and the ground plane cannot steal the
-frame. Empty builds (no rail) stay on the static framing. The live-path
+frame. On SET-mounted levels the frame is owned by the ROOM since program
+T1.2 ("the build camera framed on the SET not the disc"): `frameCamera`
+takes the set's centre as the subject centre, biases the look-at 45 % of
+the planar vector to the cup (y left to the deck plane, which owns eye
+height), and sets the eye at `centre + (0.7d, 0.45d, 0.85d)` with
+d = clamp(span·1.4, 1.3, 1.55) — the azimuth/pitch family of the canonical
+establishing still (`Reference/Canonical Cameras`; the tighter 1.55 cap is
+because a set's fixture span runs ~2 m in par and an uncapped d lifts the
+eye over the disc rim); `BuildCamera.setFraming` records the law ('set' vs
+'track') so the damping tick re-solves the same family. Levels with no
+mount keep the track-bbox law and the 35 % bias unchanged, and the cup
+promise is unchanged on both paths: `__gwGoalNdc` |ndc| ≤ 0.9 per rung
+(`tests/e2e/playtest-tu.spec.ts`). Empty builds (no rail) stay on the
+static framing. The live-path
 follow is asserted on the BUILT app through the `__gwCameraPose` seam
 (`tests/e2e/loop.spec.ts`) — the e2e that should have caught this ran
 dev-time only once.
@@ -232,7 +245,8 @@ camera never frames the cup". Four fixes, all camera-side:
 
 framing lives with `frameCamera` (`src/boot.ts`, exported for the proof):
 the static/table/load framing biases its look-at 35 % toward the cup's
-capture centre (cup |ndc| ≤ 0.28 vs 0.43/0.46 cornering when N could not
+capture centre (45 % and set-centre-subject on SET-mounted levels, program
+T1.2 — see the set-framing law above; cup |ndc| ≤ 0.28 vs 0.43/0.46 cornering when N could not
 find the goal; every track corner still ≤ 0.49 — and SINCE playtest U
 round 4 the promise is SWEPT, not asserted: the shell's `__gwGoalNdc`
 seam projects the cup at build framing and

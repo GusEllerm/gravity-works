@@ -446,6 +446,10 @@ export class World {
       );
       ground.rotation.x = -Math.PI / 2;
       ground.position.y = this.floorY + 0.55;
+      // named so a SET-mounted shell can re-surface it as the wooden table
+      // the dev stills' `ground` is (program T1.2: at the set-framed eye it
+      // otherwise reads as a grey broken floor outside the set's footprint)
+      ground.name = 'table';
       this.scene.add(ground);
       // plain blocky proxy at the chassis box's world size (sim half-extents
       // 0.375 x 0.1 x 0.175 -> 0.075 x 0.02 x 0.035 m at 1:64)

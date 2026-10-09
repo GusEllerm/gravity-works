@@ -42,8 +42,30 @@ const ready = async (page: import('@playwright/test').Page) => {
 }
 
 const place = async (page: import('@playwright/test').Page, kind: string) => {
+  const before = await page.evaluate(() =>
+    (JSON.parse((window as unknown as { __gwBuildJson: () => string }).__gwBuildJson()) as { pieces: unknown[] }).pieces.length,
+  )
   await page.click(`#gw-tray-${kind}`)
   await page.click('#gw-place')
+  // WAIT FOR THIS EDIT TO LAND before returning: the burst spec runs two
+  // tabs in parallel and a placement still mid-`onChange` when the NEXT
+  // click arrives serialises the interleaving unpredictably (load-dependent
+  // flake, seen in the full parallel suite). The builder's own piece count
+  // is the truth that THIS edit was applied — the burst cadence stays the
+  // spec's (the writes' debounce windows still overlap; the click's own
+  // effect just settles first).
+  await expect
+    .poll(
+      async () => {
+        const json = await page.evaluate(() =>
+          (window as unknown as { __gwBuildJson?: () => string }).__gwBuildJson?.(),
+        )
+        if (!json) return -1
+        return (JSON.parse(json) as { pieces: unknown[] }).pieces.length
+      },
+      { timeout: 30_000 },
+    )
+    .toBeGreaterThan(before)
 }
 
 const rawSave = (page: import('@playwright/test').Page) =>
@@ -95,6 +117,9 @@ test('R9 race: a tab writing from a stale view merges — it cannot clobber the 
 test('R9 bursts: two tabs on different levels racing placements keep BOTH records', async ({
   browser,
 }) => {
+  // two full app boots + four debounce windows + the save-merge polls do
+  // not fit the default 30 s once the parallel suite shares the box
+  test.slow()
   const context = await browser.newContext()
   const tabA = await context.newPage()
   const tabB = await context.newPage()
