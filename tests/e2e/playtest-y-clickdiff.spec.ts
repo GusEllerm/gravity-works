@@ -13,6 +13,7 @@
  * "the page received it and ignored it" failure.
  */
 import { test, expect, type Page } from '@playwright/test'
+import { goto } from './goto.ts'
 
 type Pose = { pos: number[]; quat: number[] }
 type Box = { x: number; y: number; width: number; height: number }
@@ -197,7 +198,7 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
   test.beforeEach(({ context }) => context.addInitScript(installProbe))
 
   test('T0 director path: move → down+up at fits places', async ({ page }) => {
-    await page.goto('/?level=kitchen01')
+    await goto(page, '/?level=kitchen01')
     await ready(page)
     await grabViaDom(page, 'drop')
     const spot = await ringSpot(page)
@@ -212,7 +213,7 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
   })
 
   test('T1 zero-move CDP down/up at fits places', async ({ page }) => {
-    await page.goto('/?level=kitchen01')
+    await goto(page, '/?level=kitchen01')
     await ready(page)
     await grabViaDom(page, 'drop')
     const spot = await ringSpot(page)
@@ -226,7 +227,7 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
   })
 
   test('T2 move BEFORE canvas listeners attach, click after, places', async ({ page }) => {
-    await page.goto('/?level=kitchen01', { waitUntil: 'commit' })
+    await goto(page, '/?level=kitchen01', { waitUntil: 'commit' })
     const cdp = await cdpInput(page)
     // a teleport move DURING boot — before the gesture owner may exist
     await cdp.move(560, 650)
@@ -242,7 +243,7 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
   })
 
   test('T3 down/up within the first 500 ms of boot', async ({ page }) => {
-    await page.goto('/?level=kitchen01', { waitUntil: 'commit' })
+    await goto(page, '/?level=kitchen01', { waitUntil: 'commit' })
     const cdp = await cdpInput(page)
     for (let i = 0; i < 5; i++) {
       await cdp.down(560, 650)
@@ -265,7 +266,7 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
   })
 
   test('T4 stale TOOLBAR-only move then zero-canvas-move click places', async ({ page }) => {
-    await page.goto('/?level=kitchen01')
+    await goto(page, '/?level=kitchen01')
     await ready(page)
     // a real hover over the toolbar (pointermove on the BUTTON, none on the
     // canvas ever), then the click happens at a canvas point never moved to
@@ -296,7 +297,7 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
     // coordinate split. What settles Y's machine: her tool's dispatch log
     // against this page-side probe — if the probe sees zero pointerdown/
     // up AT the cursor point, the events never arrived there.
-    await page.goto('/?level=kitchen01')
+    await goto(page, '/?level=kitchen01')
     await ready(page)
     await grabViaDom(page, 'drop')
     const spot = await ringSpot(page)
@@ -324,7 +325,7 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
     // NOTHING the page can do reaches it. This cell pins that law with
     // the probe: the reproduction fingerprint is pointermove arriving and
     // zero pointerdown/pointerup for the tool's own down/up.
-    await page.goto('/?level=kitchen01')
+    await goto(page, '/?level=kitchen01')
     await ready(page)
     await grabViaDom(page, 'drop')
     const spot = await ringSpot(page)
@@ -346,7 +347,7 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
   })
 
   test('T5 down with no tracked up (up over chrome) then click places', async ({ page }) => {
-    await page.goto('/?level=kitchen01')
+    await goto(page, '/?level=kitchen01')
     await ready(page)
     await grabViaDom(page, 'drop')
     const spot = await ringSpot(page)
@@ -372,7 +373,7 @@ test.describe('Y round6 click-differential matrix (1280x768 dpr1)', () => {
     // release point. A press that began on a control is that control's
     // gesture: it places nothing (and the button gets no activation click
     // either — down and up targets differ — the sequence is neither verb).
-    await page.goto('/?level=kitchen01')
+    await goto(page, '/?level=kitchen01')
     await ready(page)
     await grabViaDom(page, 'drop')
     const spot = await ringSpot(page)
@@ -406,7 +407,7 @@ test.describe('X round6 short-viewport geometry (1280x633)', () => {
   test.beforeEach(({ context }) => context.addInitScript(installProbe))
 
   test('T6 ghost equals cursor within 3 px at the fits point and the click places', async ({ page }) => {
-    await page.goto('/?level=kitchen01')
+    await goto(page, '/?level=kitchen01')
     await ready(page)
     await page.hover('#gw-tray button[data-kind="drop"]')
     // hover the ring spot with a REAL move; the target under the cursor
@@ -429,7 +430,7 @@ test.describe('X round6 short-viewport geometry (1280x633)', () => {
   })
 
   test('T6b clicks below the viewport fold are a no-op (documented browser law)', async ({ page }) => {
-    await page.goto('/?level=kitchen01')
+    await goto(page, '/?level=kitchen01')
     await ready(page)
     await grabViaDom(page, 'drop')
     const s = await live(page)
@@ -469,7 +470,7 @@ test.describe('below-fold release at canvas coords (1280x721 — the shape where
     // still runs the RECT past the fold (bottom ~859), and the release
     // point below the fold is routed OFF the canvas by the browser —
     // asserted below, so this cell can only pass on the COORDINATES path.
-    await page.goto('/?level=kitchen01')
+    await goto(page, '/?level=kitchen01')
     await ready(page)
     await grabViaDom(page, 'drop')
     const s = await live(page)
@@ -523,7 +524,7 @@ test.describe('target-source label audit (Y item 4)', () => {
     // kind's word may appear ONLY inside a "pre-built" phrase that says
     // plainly it is already there, and the retired copy ("where the car
     // starts", "level start") must be gone.
-    await page.goto('/?level=kitchen02')
+    await goto(page, '/?level=kitchen02')
     await ready(page)
     await page.click('#gw-tray button[data-kind="drop"]')
     const labels = new Set<string>()
@@ -563,7 +564,7 @@ test.describe('camera latch + context accounting', () => {
       await cdp.rightUp(720, 500)
       await page.waitForTimeout(150)
     }
-    await page.goto('/?level=kitchen01')
+    await goto(page, '/?level=kitchen01')
     await ready(page)
     await drag()
     const y1 = (await view(page)).yawTarget
@@ -579,7 +580,7 @@ test.describe('camera latch + context accounting', () => {
       .poll(async () => (await view(page)).yawTarget, { timeout: 5_000 })
       .toBe(0)
     // and after a fresh load of ANOTHER level the drag still works
-    await page.goto('/?level=kitchen02')
+    await goto(page, '/?level=kitchen02')
     await ready(page)
     await drag()
     expect((await view(page)).yawTarget, 'right-drag on the next page load').not.toBe(0)
@@ -589,7 +590,7 @@ test.describe('camera latch + context accounting', () => {
     await page.context().addInitScript(installProbe)
     const cdp = await cdpInput(page)
     for (const lvl of ['kitchen01', 'kitchen02', 'kitchen03', 'kitchen04']) {
-      await page.goto(`/?level=${lvl}`)
+      await goto(page, `/?level=${lvl}`)
       await ready(page)
       // exercise the drag path the black-death was reported on
       await cdp.rightDown(600, 500)

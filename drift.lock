@@ -298,7 +298,7 @@ sig = "f2bf545d550efbb9"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/playtest-y-clickdiff.spec.ts"
-sig = "d5b3f3ece12aa46f"
+sig = "d46c82ea92f7d9d6"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -1383,7 +1383,7 @@ sig = "f2bf545d550efbb9"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/playtest-y-clickdiff.spec.ts"
-sig = "d5b3f3ece12aa46f"
+sig = "d46c82ea92f7d9d6"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"

@@ -9,8 +9,11 @@
  * CI-honesty first: NON-VISUAL specs opt OUT explicitly through this one
  * door, and the specs that TEST the post/intro/tint-shift visuals —
  * `visual`, `filmstrip`, the `replay`/`share-replay`/`determinism` hash
- * family, `perf*`, `post-dispose`, `intro`, `harness`, `playtest-y-clickdiff` —
+ * family, `perf*`, `post-dispose`, `intro`, `harness` —
  * never import this file and ride the DEFAULT page, with honest budgets.
+ * (`playtest-y-clickdiff` is named by the P3 audit as the cautionary tale:
+ * its name sounds visual, its assertions are event-order probes — it is a
+ * NON-visual rider and imports the door like everyone else.)
  *
  * The opt-out is PARAMETER, not mutation: `specUrl` appends only what the
  * address does not already carry (an explicit `post=`/`intro=` on the call

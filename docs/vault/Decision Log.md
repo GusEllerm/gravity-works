@@ -419,8 +419,11 @@ mutations — `tests/e2e/goto.ts` is the one door non-visual specs land through 
 `post=off&intro=off` to relative addresses; an explicit param on the call always wins; hash routes
 and absolute URLs pass through; pinned by `tests/unit/spec-url.test.ts`), and the specs that TEST
 post/intro/tint-shift visuals (`visual`, `filmstrip`, the `replay`/`share-replay`/`determinism` hash
-family, `perf*`, `post-dispose`, `intro`, `harness`, `playtest-y-clickdiff`) never import it and ride
-the DEFAULT page with their honest budgets. The beat needed a param to opt out BY WORD, not by
+family, `perf*`, `post-dispose`, `intro`, `harness`) never import it and ride
+the DEFAULT page with their honest budgets — `playtest-y-clickdiff` is the cautionary name: it SOUNDS
+visual, its assertions are event-order probes, and its T5 cell failed a SwiftShader contention sweep
+in the first P3 round precisely for riding the composer, so it opts out through the door like the
+non-visual rest. The beat needed a param to opt out BY WORD, not by
 signal: `?intro=off` joins the family (`src/pages/intro.ts` — off wins over every audience
 inference; `navigator.webdriver` stays as belt-and-braces for real browsers; `tests/unit/
 intro-params.test.ts` pins the logic). Amends the family list of Decision Log 2026-10-07 ("recorded,
