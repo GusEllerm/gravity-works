@@ -2,15 +2,17 @@
  * The stage-4 campaign gate: the room picker is a PLAYED thing, not a table.
  *
  * 1. CAMPAIGN ORDER ACROSS THE BOUNDARY — kitchen05 built through the real
- *    UI finishes, and its `Next level` lands on bedroom01 with the BEDROOM
- *    set mounted (the set swap rides the same page boot, error-free);
- * 2. BEDROOM LOCKED UNTIL KITCHEN05 EARNS A STAR (§9.2) — a fresh save's
- *    level select shows the bedroom rungs locked and the locked button
+ *    UI finishes, and its `Next level` lands on bedroom03 with the BEDROOM
+ *    set mounted (the set swap rides the same page boot, error-free; the
+ *    stage-6 re-weave puts the booster lesson's next rung on Pyramid Air);
+ * 2. BEDROOM03 LOCKED UNTIL KITCHEN05 EARNS A STAR (§9.2) — a fresh save's
+ *    level select shows the woven frontier locked and the locked button
  *    SAYS what opens it (no dead affordance); after kitchen05 earns a star
  *    the rung is open and the earned stars print on their levels;
  * 3. BEDROOM01 FINISHABLE THROUGH THE REAL UI — reached by CLICKING the
- *    unlocked rung on the level select, built with the tray, launched with
- *    the button: the placement guard, the par line and the bedroom props
+ *    unlocked rung on the level select (the re-weave puts it third rung in,
+ *    behind kitchen03's star), built with the tray, launched with the
+ *    button: the placement guard, the par line and the bedroom props
  *    coexist on a real run;
  * 4. SET-SWITCH RENDER — the bedroom level paints (non-black probe) with
  *    zero console/page errors, kitchen unchanged.
@@ -125,7 +127,7 @@ const noErrors = (page: import('@playwright/test').Page): string[] => {
   return errors
 }
 
-test('campaign order across the boundary: kitchen05 Next lands on bedroom01 with the bedroom mounted', async ({ page }) => {
+test('campaign order across the boundary: kitchen05 Next lands on bedroom03 with the bedroom mounted', async ({ page }) => {
   const errors = noErrors(page)
   await finishKitchen05(page)
 
@@ -135,7 +137,7 @@ test('campaign order across the boundary: kitchen05 Next lands on bedroom01 with
   await expect(page.locator('#gw-result-next')).toBeVisible()
   await page.click('#gw-result-next')
 
-  await page.waitForURL(/\?level=bedroom01/)
+  await page.waitForURL(/\?level=bedroom03/)
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'bedroom', {
     timeout: 60_000,
   })
@@ -143,30 +145,30 @@ test('campaign order across the boundary: kitchen05 Next lands on bedroom01 with
   expect(errors).toEqual([])
 })
 
-test('bedroom01 is locked until kitchen05 earns a star, and the locked button says why', async ({ page }) => {
+test('bedroom03 is locked until kitchen05 earns a star, and the locked button says why', async ({ page }) => {
   const errors = noErrors(page)
 
-  // fresh save: kitchen01 open (stars absent, reached absent), the frontier
-  // locked with its rule on-screen — never a silent dead button
+  // fresh save: kitchen01 open (stars absent, reached absent), the woven
+  // frontier locked with its rule on-screen — never a silent dead button
   await page.goto('/?levels=1')
   await expect(page.locator('#gw-level-kitchen01')).toBeVisible()
   expect(await page.getAttribute('#gw-level-kitchen01', 'aria-disabled')).toBeNull()
-  await expect(page.locator('#gw-level-bedroom01')).toHaveAttribute('aria-disabled', 'true')
+  await expect(page.locator('#gw-level-bedroom03')).toHaveAttribute('aria-disabled', 'true')
 
   // playtest K ("taught nothing about what's unlocked or why"): the rule is
   // INLINE in every locked button, not only on the page line or a click —
   // and a locked rung never shows ☆☆☆ (that readout belongs to unlocked
   // rungs; playtest K read plain-text ☆☆☆ as "merely unstarred")
   await expect(page.locator('#gw-level-kitchen02')).toContainText('Earn a star on Book Drop to open this')
-  await expect(page.locator('#gw-level-bedroom01')).toContainText('Earn a star on Sunday Run to open this')
-  expect(((await page.textContent('#gw-level-bedroom01')) ?? '').includes('☆')).toBe(false)
+  await expect(page.locator('#gw-level-bedroom03')).toContainText('Earn a star on Sunday Run to open this')
+  expect(((await page.textContent('#gw-level-bedroom03')) ?? '').includes('☆')).toBe(false)
   // at a glance the three states differ: locked = lock glyph + rule; open
   // and unplayed = ☆☆☆ (kitchen01, first rung, nothing earned yet)
   await expect(page.locator('#gw-level-kitchen01')).toContainText('☆☆☆')
 
   // the locked button is aria-disabled (greyed, honest) but FOCUSABLE and
   // ANSWERS a click — dispatched past the disabled-actionability wait
-  await page.locator('#gw-level-bedroom01').dispatchEvent('click')
+  await page.locator('#gw-level-bedroom03').dispatchEvent('click')
   await expect(page.locator('#gw-levelselect-status')).toContainText(
     'Locked — earn at least one star on',
   )
@@ -176,12 +178,12 @@ test('bedroom01 is locked until kitchen05 earns a star, and the locked button sa
   // (kitchen05 is SEEDED unlocked first: a locked rung addressed by URL is
   // a dev preview and mints nothing since stage 5 (playtest BB item 5), so
   // the star this run writes is earned on a live board — exactly what the
-  // bedroom lock rule below reads)
+  // bedroom03 lock rule below reads)
   await finishKitchen05(page)
   await page.goto('/?levels=1')
-  expect(await page.getAttribute('#gw-level-bedroom01', 'aria-disabled')).toBeNull()
+  expect(await page.getAttribute('#gw-level-bedroom03', 'aria-disabled')).toBeNull()
   await expect(page.locator('#gw-level-kitchen05')).toContainText('★')
-  await expect(page.locator('#gw-level-bedroom01')).toContainText('☆☆☆')
+  await expect(page.locator('#gw-level-bedroom03')).toContainText('☆☆☆')
   // the grouping is rooms, in campaign order
   await expect(page.locator('section[data-room="kitchen"] ~ section[data-room="bedroom"]')).toHaveCount(1)
   expect(errors).toEqual([])
@@ -189,7 +191,11 @@ test('bedroom01 is locked until kitchen05 earns a star, and the locked button sa
 
 test('bedroom01 is finishable through the real UI, reached via the unlocked rung on the level select', async ({ page }) => {
   const errors = noErrors(page)
-  await finishKitchen05(page)
+  // The re-weave puts bedroom01 third rung in — its key is kitchen03's
+  // star (the previous rung). The seed makes it a genuinely UNLOCKED board
+  // (playtest BB item 5: a locked rung mints nothing); the star this run
+  // writes is still earned through the tray, the Launch button and the run.
+  await page.addInitScript(seedStars({ kitchen03: 3 }))
 
   // the player travels THROUGH the level select, not by URL
   await page.goto('/?levels=1')
@@ -204,7 +210,8 @@ test('bedroom01 is finishable through the real UI, reached via the unlocked rung
   await expect(page.locator('#gw-status')).toContainText('finished')
   const stars = (await page.textContent('#gw-result-stars')) ?? ''
   expect(stars.includes('★')).toBe(true)
-  // and the campaign continues: bedroom01 has a next
+  // the campaign continues: bedroom01 has a next (the woven ladder walks it
+  // onto its own room's ramp rung)
   await expect(page.locator('#gw-result-next')).toBeVisible()
   expect(errors).toEqual([])
 })
@@ -261,7 +268,7 @@ test('set switch renders error-free: the bedroom level paints with zero console 
 test('the ENCORE rungs are playable from a clean browser: bedroom05, bathroom05, garden05, garage05 mint and walk to the finale', async ({ browser }) => {
   test.slow()
   for (const [id, prev] of [
-    ['bedroom05', 'bedroom03'],
+    ['bedroom05', 'garden02'], // the woven rung before the bedroom encore
     ['bathroom05', 'bathroom03'],
     ['garden05', 'garden03'],
     ['garage05', 'garage03'],
@@ -288,12 +295,13 @@ test('the ENCORE mint opens the room finale: a clean bedroom05 finish unlocks be
   test.slow()
   const context = await browser.newContext()
   const page = await context.newPage()
-  await page.addInitScript(seedStars({ bedroom03: 1 }))
+  await page.addInitScript(seedStars({ garden02: 1 })) // bedroom05's PREVIOUS rung on the woven ladder
   await page.goto('/?level=bedroom05&build=par&launch=1')
   await expect(page.locator('#gw-status')).toContainText('finished', { timeout: 60_000 })
   await page.goto('/?levels=1')
   await expect(page.locator('#gw-level-bedroom04')).toBeVisible()
   expect(await page.getAttribute('#gw-level-bedroom04', 'aria-disabled')).toBeNull()
+  await expect(page.locator('#gw-level-garden03')).toHaveAttribute('aria-disabled', 'true') // the rung after the finale
   await expect(page.locator('#gw-level-bathroom01')).toHaveAttribute('aria-disabled', 'true')
   await context.close()
 })

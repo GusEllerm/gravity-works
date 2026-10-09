@@ -216,7 +216,14 @@ test('every open rung and the first boot state THAT level’s par numbers', asyn
         builds: {},
         settings: {},
         progress: {
-          stars: { kitchen01: 1, kitchen02: 3, kitchen03: 3, kitchen04: 3, kitchen05: 1, bedroom01: 1 },
+          // an EARNED WOVEN LADDER: the first seven rungs starred (the
+          // stage-6 re-weave puts bedroom01/02 between kitchen03 and the
+          // tap), so the whole front block is open on the page
+          stars: {
+            kitchen01: 1, kitchen02: 3, kitchen03: 3,
+            bedroom01: 1, bedroom02: 1,
+            kitchen04: 3, kitchen05: 1, bedroom03: 1,
+          },
           reached: {},
         },
       }),
@@ -236,9 +243,11 @@ test('every open rung and the first boot state THAT level’s par numbers', asyn
     ['kitchen01', ...par('kitchen01')],
     ['kitchen02', ...par('kitchen02')],
     ['kitchen03', ...par('kitchen03')],
+    ['bedroom01', ...par('bedroom01')],
+    ['bedroom02', ...par('bedroom02')],
     ['kitchen04', ...par('kitchen04')],
     ['kitchen05', ...par('kitchen05')],
-    ['bedroom01', ...par('bedroom01')],
+    ['bedroom03', ...par('bedroom03')],
   ]
   for (const [id, pieces, time] of rungs) {
     const line = page.locator(`#gw-level-${id} .gw-level-rules`)

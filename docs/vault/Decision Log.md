@@ -6,6 +6,42 @@ livedocs: snapshot
 
 Dated entries tagged `[agent decision]`. Newest first.
 
+## 2026-10-09 — The campaign ladder is re-WOVEN flat: grammar rungs ≥3 apart, arcs and hashes frozen `[agent decision]` `[level designer]`
+
+The player evaluation's structural verdict — "a player at rung 8 (bedroom01)
+feels déjà vu because rung 8 is rung 1 with different wallpaper… the rooms'
+grammar clusters" — is a ORDER problem, not a content problem: five rooms ship
+the same five-beat rhythm (01 gap lesson, 02 CHOICE, 03 TRADE-OFF, 05 encore,
+04 capstone) back to back. T3.1 re-wove the FLAT ladder in `campaign.ts`
+(nav data only). Chosen: interleave-WITH-RAMPS (short same-room runs, then
+weave) over pure round-robin — a pure weave front-loads six 01 rungs, which
+is the disease itself. The order and the five asserted laws (grammar gap,
+prerequisite table, room arcs, rising curve, beginner walk) live in
+[[Concepts/Levels]] §Ordering of the ladder; the prerequisite table derived
+from the rung notes is the load-bearing part: capstone ← own room's 01-03;
+encore ← own 01/03 + kitchen05 (every encore tray carries a `booster`
+TEMPTATION — the lesson is Sunday Run's); every live grip zone ← kitchen04
+(the `hazards` declarations are the source, including the wet rooms' 01s);
+bedroom01 ← kitchen01 (the no-launch lesson reframes the launch verb).
+Edge cases ruled NON-prerequisites: geometry citations (the ENCORE_DIP's
+PORCH THRESHOLD lead) are rung-local authoring references, not player
+lessons; `garden01`'s shadow is not a grip zone; porch rungs carry no live
+zone and no booster. Design calls defended in the note: first five = kitchen
+ramp → bedroom ramp; every encore lands DIRECTLY on its room's `04` (all four
+encore→finale adjacencies survive, so the encore specs' semantics are
+unchanged); `porch05` stays last. The honesty line the plan demanded:
+nav-only TREATS THE SYMPTOM — the repetition is spaced out, not cured; T3.2's
+ghost is the cure. Frozen by gate: ZERO level-data change — `replay:all`
+verified byte-identical rung-for-rung against the pre-weave tree; ids are the
+append-only shipped thirty (no save migration: `stars`/`reached` record IDS,
+and the next-rung resolution from ids is unit-asserted across the re-weave).
+Regenerated rows: campaign/boot expected-next rows (unlock = previous star,
+meaning preserved — `kitchen05`'s star now opens `bedroom03`, `garden02`'s
+opens `bedroom05`); dev-select grouping unchanged (rooms stay visually
+grouped — `CAMPAIGN` is now a projection of the flat ladder, one source of
+order). See `Sessions/2026-10-09 Program T3 warp.md`.
+
+
 ## 2026-10-09 — The same-machine caveat is UPGRADED with evidence: 37/37 reference hashes reproduce on linux-x64 `[agent decision]` `[technical artist]`
 
 Final Report "next" #2 asked whether the share-hash claim — proven same-machine, hedged everywhere it is spoken — actually survives a different OS/CPU, given Rapier is CPU WASM over IEEE-754 doubles. Ran the cheap experiment GitHub Actions makes free (the software GL rasterizer never touches physics, so a headless derive costs one `replayRun` per level per runner): `tools/hash-atlas.mjs` derives every registered level's reference-build terminal hash (+ steps, time, tray pieces, par lines) into the committed `docs/vault/Reference/hash-atlas.json` with a platform/node/rapier header, and the CI `determinism-atlas` job re-derives and diffs it on ubuntu-latest and macos-latest — REPORTED, never gating (per-level `::warning::` + step summary; the other gates cannot see it). Result: **37/37 on linux-x64, 37/37 on a second darwin-arm64 machine**, no rung's hash or step count budged, across Node patch drift v22.22.1 ↔ v22.23.x; the suite's node↔browser hard assert also rode the same ubuntu job green. Chose to UPGRADE the claim honestly rather than keep a caveat the data has outgrown: "verified on linux-x64 + darwin-arm64; Windows/iOS/Android/arm-linux/x86-32 remain unproven". The UI wording law moves with it: the badge stays machine-local ("verified on this machine" is what the page itself proves) and the verification NOTE now names the machines the cross-machine claim covers (`src/boot.ts`). The job stays report-only until a stage-7 promotion decision — if a future run diverges, the table localises it (same-rung different-hash = float divergence; a subset of rungs = a solver-branch story, a stage-7 question). Any par-hash re-derivation must regenerate the atlas in the same commit. Full table and law: `Reference/Cross-platform determinism 2026-10-09`, `Modules/replay`, `Modules/share`.

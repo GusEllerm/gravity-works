@@ -10,6 +10,70 @@ tags: [concept, levels]
 > gaps between level intent and shipped physics. Owner: Level Designer;
 > [[Reference/Level Ladder]] carries the table.
 
+## Ordering of the ladder (stage 6 T3.1 re-weave)
+
+`CAMPAIGN_LADDER` in `campaign.ts` is authored FLAT and the rooms are a
+projection of it (`CAMPAIGN` groups its rungs under room headings for the
+select; `nextInCampaign`/`previousInCampaign`/`levelUnlock` read the flat
+order and nothing else). The weave answers the player evaluation's déjà vu
+("rung 8 is rung 1 with different wallpaper" — the five rooms' 01-style gap
+rungs and every room's identical grammar cluster) by interleaving the rooms.
+**The honest line the plan insists on: nav-only interleaving TREATS THE
+SYMPTOM — the grammar repetition is still there, it is no longer
+back-to-back; the cure is T3.2 (ghost racing).** Laws, all asserted in
+`campaign.test.ts`:
+
+1. **Grammar gap.** Grammar = the room's rung number (01 intro/gap lesson,
+   02 CHOICE, 03 TRADE-OFF/order, 04 capstone, 05 encore/finale). Consecutive
+   same-grammar rungs sit ≥3 indices apart.
+2. **Prerequisite table** (derived from the rung notes; a rung never assumes
+   a lesson it has not yet had): every `X04` after `X01,X02,X03` (each
+   capstone spends its room's verbs); `kitchen05` after `kitchen01..04`;
+   `porch05` after `porch01..04` and LAST; every encore `X05` after
+   `X01,X03` (it doubles the room's founding sentence and spends its
+   catcher); every encore after `kitchen05` (each carries a `booster`
+   TEMPTATION — the booster lesson is Sunday Run's); every rung SHIPING A
+   LIVE GRIP ZONE (the `hazards` rows: `bathroom01/03/04/05`,
+   `garage01/03/04/05`, `garden03/04/05`) after `kitchen04` (the wet-patch
+   lesson); `bedroom01` after `kitchen01` (its no-launch lesson reframes the
+   launch verb the tutorial taught). Edge cases: `garden01`'s shadow bars
+   are NOT a grip zone (no live hazards — exempt); the encoures' PORCH
+   THRESHOLD dip-lead geometry is a rung-local AUTHORING citation, not a
+   player lesson (no porch prerequisite); the porch rungs ship no live zone
+   and no booster (exempt except by room arc).
+3. **Arcs preserved.** Within every room the authored order is intact
+   (01,02,03,05,04 — kitchen/porch straight 01..05), every encore lands
+   DIRECTLY on its room's `04`, and each room's `04` is that room's last
+   rung — `bedroom04` still reads as a capstone. The per-room "entering the
+   campaign after X04" sentences in the room sections below describe ARRIVAL
+   eras in the set registry; the FLAT play order is the weave, stated here
+   and in `campaign.ts`.
+4. **Rising curve.** No rung's tray (`pars.json` parPieces) is more than two
+   pieces smaller than its predecessor's, and the second half is not easier
+   than the first (means from `pars.json`). The room-intro rungs reset FELT
+   difficulty gently by design; parTime is not comparable across clock
+   families (the porch clocks are kitchen02's chute clocks), so the curve law
+   speaks in tray size.
+5. **Beginner walk (design call).** The first five rungs are the KITCHEN RAMP
+   (tutorial, choice, speed — the house's verbs in the shipped tutorial
+   order) into the BEDROOM RAMP (the ride-over reframe and its choice):
+   interleave-WITH-RAMPS, not interleave-only — pure round-robin front-loads
+   six wallpaper variants of the same intro rung, which is the disease. Then
+   the weave opens: back to the kitchen's tap and booster (6–7), the bathroom
+   era (8–12), the garden's wake carrying the bedroom encore onto its finale
+   (13–19), the garage block (20–24), the porch as the closing block (25–29).
+
+The shipped order: kitchen01, kitchen02, kitchen03, bedroom01, bedroom02,
+kitchen04, kitchen05, bedroom03, bathroom01, bathroom02, bathroom03,
+bathroom05, bathroom04, garden01, garden02, bedroom05, bedroom04, garden03,
+garden05, garden04, garage01, garage02, garage03, garage05, garage04, porch01,
+porch02, porch03, porch04, porch05. Nav data only: ids are the shipped
+append-only ones, no level file moved, and `replay:all` is byte-identical
+rung-for-rung (verified by per-rung hash diff against the pre-weave tree).
+Saves need no migration: `stars`/`reached` record IDS, so a mid-campaign save
+resolves its next rung from the new order sanely (asserted in
+`campaign.test.ts`).
+
 ## The data model
 
 A level is a plain-data `Level` (`src/world/level.ts`): start socket, budget, par, seed, max time, a build factory, and an optional `parBuild` seam (the reference build `scripts/gen-pars.mjs` replays to regenerate `src/world/pars.json`; falls back to the build factory until a designer authors one). The kitchen levels are one rung

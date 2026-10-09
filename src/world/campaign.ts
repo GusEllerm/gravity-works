@@ -2,14 +2,23 @@
  * THE CAMPAIGN (stage 4): the ordered set of rooms a player walks, and the
  * one unlock rule every surface (level select, Next, boot) reads.
  *
- * The model is the flat ladder the shell already walked — kitchen01..05 →
- * bedroom01..04 — grouped by ROOM for the level select. Rooms are ORDERED
- * GROUPS, not a second axis of state: a level belongs to exactly one room
- * (its `set` declaration is scenery; the campaign table is progression), and
- * `CAMPAIGN_LADDER` is the rooms' levelIds concatenated — the SAME sequence
- * `nextLevelId` walked before the level select existed, so the Next button
- * and the page cannot disagree. Importing the level modules is what
- * REGISTERS them (the registry convention); boot keeps importing them too.
+ * The model is a FLAT LADDER (stage-6 T3.1: the order re-weave). The rooms
+ * are ORDERED GROUPS derived from the ladder for the level select, not a
+ * second axis of state: a level belongs to exactly one room (its `set`
+ * declaration is scenery; the campaign table is progression), and
+ * `CAMPAIGN_LADDER` is the ONE sequence `nextLevelId` walks and the page
+ * flattens, so the Next button and the page cannot disagree. The ladder is
+ * authored flat — the rooms' queues INTERLEAVE (nav data only: ids are
+ * untouched, zero hash movement) so the same grammar rung — every room's
+ * 01-style gap lesson, every room's choice, capstone, encore — sits at least
+ * THREE rungs from its wallpaper-swap sibling (the player evaluation's
+ * "rung 8 is rung 1 with different wallpaper"; the Decision Log
+ * 2026-10-09 (T3.1) entry states the law and the prerequisite table). Within every
+ * room the authored rung order is PRESERVED — an encore still lands directly
+ * on its own room's finale, and a room's 04 is always that room's last rung
+ * — so the room arcs survive as sequences even though the eras no longer
+ * run in blocks. Importing the level modules is what REGISTERS them (the
+ * registry convention); boot keeps importing them too.
  *
  * The unlock rule is §9.2's, stated once: a rung is unlocked when it is the
  * campaign's first rung, when the PREVIOUS rung earned at least one star
@@ -59,6 +68,29 @@ import { PORCH03_ID } from './levels/porch03.level.ts';
 import { PORCH04_ID } from './levels/porch04.level.ts';
 import { PORCH05_ID } from './levels/porch05.level.ts';
 
+/**
+ * THE FLAT LADDER, in play order (stage-6 T3.1 re-weave). Nav data only:
+ * the thirty rung ids are the shipped ones, append-only, and no level file
+ * moved — `replay:all` stays byte-identical rung per rung. The weave law:
+ * same-grammar rungs ≥3 apart; the prerequisite table (Levels note,
+ * "Ordering of the ladder") respected — the tap (kitchen04) precedes every live grip
+ * zone, Sunday Run (kitchen05, the booster's debut) precedes every encore's
+ * booster TEMPTATION, a room's 04 follows its own 01-03, and every encore
+ * lands on its own room's 04; within a room the authored rung order is
+ * preserved (01,02,03,05,04 — kitchen and porch are straight 01..05);
+ * the first five rungs are the beginner walk — the kitchen ramp
+ * (tutorial, choice, speed) into the bedroom's ride-over pair — and
+ * porch05, the house's last word, is last.
+ */
+export const CAMPAIGN_LADDER: readonly string[] = [
+  KITCHEN01_ID, KITCHEN02_ID, KITCHEN03_ID, BEDROOM01_ID, BEDROOM02_ID,
+  KITCHEN04_ID, KITCHEN05_ID, BEDROOM03_ID, BATHROOM01_ID, BATHROOM02_ID,
+  BATHROOM03_ID, BATHROOM05_ID, BATHROOM04_ID, GARDEN01_ID, GARDEN02_ID,
+  BEDROOM05_ID, BEDROOM04_ID, GARDEN03_ID, GARDEN05_ID, GARDEN04_ID,
+  GARAGE01_ID, GARAGE02_ID, GARAGE03_ID, GARAGE05_ID, GARAGE04_ID,
+  PORCH01_ID, PORCH02_ID, PORCH03_ID, PORCH04_ID, PORCH05_ID,
+];
+
 /** One room of the campaign: an ordered run of rung ids under a heading. */
 export interface CampaignRoom {
   id: string;
@@ -67,53 +99,20 @@ export interface CampaignRoom {
   levelIds: readonly string[];
 }
 
-/** The campaign, in play order. Levels outside the table (the sandbox, the
- *  feel rig) are addressable by `?level=` but are nobody's rung. */
-export const CAMPAIGN: readonly CampaignRoom[] = [
-  {
-    id: 'kitchen',
-    label: 'Kitchen',
-    levelIds: [KITCHEN01_ID, KITCHEN02_ID, KITCHEN03_ID, KITCHEN04_ID, KITCHEN05_ID],
-  },
-  {
-    id: 'bedroom',
-    label: 'Bedroom',
-    // The ENCORE (05) slots between the lesson rung and the room's finale
-    // in the FLAT order — difficulty stays monotone (the encore rides two
-    // crossings but is gentler than the capstone's whole-tray squeeze) —
-    // while the ids stay APPEND-ONLY (a new id, never a renumber, per the
-    // campaign decision note) and each room's 04 stays its last rung and
-    // boundary rung. Kitchen and porch have no encore: kitchen05 is the
-    // booster's debut rung (its law is on the wall), and porch05 is the
-    // campaign's finale — the house's last word.
-    levelIds: [BEDROOM01_ID, BEDROOM02_ID, BEDROOM03_ID, BEDROOM05_ID, BEDROOM04_ID],
-  },
-  {
-    id: 'bathroom',
-    label: 'Bathroom',
-    levelIds: [BATHROOM01_ID, BATHROOM02_ID, BATHROOM03_ID, BATHROOM05_ID, BATHROOM04_ID],
-  },
-  {
-    id: 'garden',
-    label: 'Garden',
-    levelIds: [GARDEN01_ID, GARDEN02_ID, GARDEN03_ID, GARDEN05_ID, GARDEN04_ID],
-  },
-  {
-    id: 'garage',
-    label: 'Garage',
-    levelIds: [GARAGE01_ID, GARAGE02_ID, GARAGE03_ID, GARAGE05_ID, GARAGE04_ID],
-  },
-  {
-    id: 'porch',
-    label: 'Porch',
-    levelIds: [PORCH01_ID, PORCH02_ID, PORCH03_ID, PORCH04_ID, PORCH05_ID],
-  },
-];
-
-/** The flat ladder, in order: the rooms' rungs concatenated. This is the
- *  sequence `nextLevelId` walks and the level select flattens — one table,
- *  so the Next button and the page cannot disagree about the boundary. */
-export const CAMPAIGN_LADDER: readonly string[] = CAMPAIGN.flatMap((r) => [...r.levelIds]);
+/** The campaign, grouped by ROOM for the level select — a PROJECTION of the
+ *  flat ladder (each room's rungs in ladder order, the rooms in house order),
+ *  never a second source of order. Levels outside the table (the sandbox,
+ *  the feel rig) are addressable by `?level=` but are nobody's rung. */
+export const CAMPAIGN: readonly CampaignRoom[] = (
+  [
+    { id: 'kitchen', label: 'Kitchen' },
+    { id: 'bedroom', label: 'Bedroom' },
+    { id: 'bathroom', label: 'Bathroom' },
+    { id: 'garden', label: 'Garden' },
+    { id: 'garage', label: 'Garage' },
+    { id: 'porch', label: 'Porch' },
+  ] as const
+).map((room) => ({ ...room, levelIds: CAMPAIGN_LADDER.filter((id) => id.startsWith(room.id)) }));
 
 /** Position of `id` on the ladder, or -1 (off-campaign). */
 export function campaignIndex(id: string): number {
