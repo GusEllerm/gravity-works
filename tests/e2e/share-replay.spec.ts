@@ -152,15 +152,23 @@ async function ensurePaused(page: Page): Promise<void> {
   // run ENDS between the read and the click (aria 'true' read, 'ended'
   // state), the click then REWINDS AND PLAYS, and every "press again"
   // iteration of the loop can watch a whole rewound film end before the
-  // next read. Only a face that says PLAYING gets clicked, and the ended
-  // face is success, not something to click through.
+  // next read; (ii) even clicking a truly-playing face lost the same way
+  // when one click round-trip outlasted duration/rate of wall clock and
+  // the film ended IN FLIGHT. So a playing face is first REWOUND by the
+  // timeline's own Home key — full-duration runway makes the click land
+  // unambiguously as a PAUSE — and only then clicked. The seek clears the
+  // pace ledger, but every ledger proof in this spec runs BEFORE the
+  // ensurePaused that follows it.
   const face = () =>
     page.evaluate(() => {
       const b = document.querySelector<HTMLButtonElement>('#gw-replay-play')!
       return b.dataset['phase'] ?? ''
     })
-  for (let i = 0; i < 6; i++) {
+  const rewind = page.locator('#gw-replay-timeline')
+  for (let i = 0; i < 8; i++) {
     if ((await face()) !== 'playing') return
+    await rewind.focus()
+    await page.keyboard.press('Home')
     await page.click('#gw-replay-play')
     await page.waitForTimeout(30)
   }
