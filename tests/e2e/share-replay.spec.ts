@@ -152,23 +152,28 @@ async function ensurePaused(page: Page): Promise<void> {
   // run ENDS between the read and the click (aria 'true' read, 'ended'
   // state), the click then REWINDS AND PLAYS, and every "press again"
   // iteration of the loop can watch a whole rewound film end before the
-  // next read; (ii) even clicking a truly-playing face lost the same way
-  // when one click round-trip outlasted duration/rate of wall clock and
-  // the film ended IN FLIGHT. So a playing face is first REWOUND by the
-  // timeline's own Home key — full-duration runway makes the click land
-  // unambiguously as a PAUSE — and only then clicked. The seek clears the
-  // pace ledger, but every ledger proof in this spec runs BEFORE the
-  // ensurePaused that follows it.
+  // next read; (ii) even clicking a truly-playing face lost the SAME way
+  // when one click round-trip outlasted duration/rate of wall clock — at
+  // 4x on CI's frames that window is ~duration/4 ≈ 1 s, SHORTER than one
+  // actionability round-trip, so a rewind-first loop can lose EVERY
+  // iteration in lockstep (the third PR red). So a playing face has its
+  // CLOCK SLOWED FIRST through the real speed control: a speed click has
+  // no rewind rule and can NEVER start motion, and at 1x the runway
+  // under the pause click is the whole film measured in wall SECONDS.
+  // If the film did end in flight, the Play click rewound and rolled it
+  // back to a fresh 1x full-runway film and the next iteration
+  // converges. The reset leaves the player at 1x — harmless by
+  // construction: every later assertion that needs a multiplier sets it
+  // itself, and the pace-ledger proofs all run BEFORE the ensurePaused
+  // that follows them.
   const face = () =>
     page.evaluate(() => {
       const b = document.querySelector<HTMLButtonElement>('#gw-replay-play')!
       return b.dataset['phase'] ?? ''
     })
-  const rewind = page.locator('#gw-replay-timeline')
   for (let i = 0; i < 8; i++) {
     if ((await face()) !== 'playing') return
-    await rewind.focus()
-    await page.keyboard.press('Home')
+    await page.click('.gw-replay-speed[data-speed="1"]')
     await page.click('#gw-replay-play')
     await page.waitForTimeout(30)
   }
