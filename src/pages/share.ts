@@ -24,6 +24,7 @@ import { downloadBlob, generateShareCard } from '../share/card.ts';
 import { SETS } from '../sets/index.ts';
 import { reducedMotionActive } from '../ui/motion.ts';
 import { paragraph } from '../ui/dom.ts';
+import { boundaryStopped } from '../ui/errors.ts';
 import { buildGameSet, levelSet, setCameraSolids } from './mount.ts';
 import type { RunCameraSolid } from '../camera/run-camera.ts';
 
@@ -657,6 +658,7 @@ async function startReplayPlayer(
 
   let last = performance.now();
   const frame = (now: number): void => {
+    if (boundaryStopped()) return; // T0.4: an uncaught error freezes the loop honestly
     requestAnimationFrame(frame);
     const dt = Math.min((now - last) / 1000, 0.25);
     last = now;

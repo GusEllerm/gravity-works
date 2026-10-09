@@ -66,6 +66,12 @@ import { bootSharedRun } from './pages/share.ts';
 import { bootLevelSelect } from './pages/select.ts';
 import { buildGameSet, levelSet, setCameraSolids, setPlacementGuard } from './pages/mount.ts';
 import { paragraph } from './ui/dom.ts';
+import {
+  boundaryStopped,
+  failedToStart,
+  installErrorBoundary,
+  registerAutosaveFlush,
+} from './ui/errors.ts';
 import { createBuildAutosave, loadSave, rememberBuild, recordStars, savedBuild } from './save/save.ts';
 import { createSound, upAxisYOfQuat } from './sound/sound.ts';
 import { SET_TOKENS } from './render/tokens.ts';
@@ -249,21 +255,39 @@ export function trayParityBuild(level: Level): Build {
 }
 
 export function boot(root: HTMLElement): void {
+  // THE ERROR BOUNDARY FIRST (T0.4/R2): whatever a page does later, an
+  // unexpected error lands on ONE honest face, not a frozen canvas.
+  installErrorBoundary();
   // a bare fragment change is a new run request on a static host: reload into it
   window.addEventListener('hashchange', () => window.location.reload())
   const fragment = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
   if (fragment.startsWith('s=')) {
-    void bootSharedRun(root);
+    startPage(() => bootSharedRun(root));
     return;
   }
   const params = new URLSearchParams(window.location.search);
   // the stage-4 campaign page: `?levels=1` lists the ladder grouped by room
   // (player surface; `?level=` stays the recorded debug addressing)
   if (params.has('levels')) {
-    bootLevelSelect(root);
+    startPage(() => bootLevelSelect(root));
     return;
   }
-  void bootGame(root, resolveLevel(params));
+  startPage(() => bootGame(root, resolveLevel(params)));
+}
+
+/** THE PAGE STARTER (T0.4/R3): a page boot runs synchronously up to its
+ *  first await, exactly as the bare `void bootX(root)` calls did — the
+ *  difference is only where a FAILURE lands: a rejected set-chunk import
+ *  or any throw before the builder exists shows the boundary's face with
+ *  Retry (a document re-entry — the module map caches a failed chunk, so
+ *  an in-page re-run could only reject again), never the half-page of an
+ *  h1 over an empty stage. */
+function startPage(start: () => void | Promise<void>): void {
+  try {
+    void Promise.resolve(start()).catch(() => failedToStart());
+  } catch {
+    failedToStart();
+  }
 }
 
 // ---- game page --------------------------------------------------------------
@@ -560,6 +584,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // tab put away inside the debounce window still stores the last edit) mean
   // no edit is ever younger than the bytes the next boot reads back.
   const autosave = createBuildAutosave((b) => rememberBuild(b));
+  // the boundary flushes the pending edit BEFORE its face goes up (T0.4:
+  // a crash must not cost the build the player was placing)
+  registerAutosaveFlush(() => autosave.flush());
   window.addEventListener('pagehide', () => autosave.flush());
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') autosave.flush();
@@ -977,6 +1004,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
 
   let last = performance.now();
   const frame = (now: number): void => {
+    // FROZEN BY THE BOUNDARY (T0.4): an uncaught error owns the page now —
+    // the loop STOPS instead of re-throwing every frame (R2's silently
+    // stuttering world); the honest overlay already says so.
+    if (boundaryStopped()) return;
     requestAnimationFrame(frame);
     const dt = Math.min((now - last) / 1000, 0.25);
     last = now;
