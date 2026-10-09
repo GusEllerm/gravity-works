@@ -23,7 +23,7 @@ import { join } from 'node:path';
 import { SoundEngine, EVENT_VOICES, SOUND } from '../../src/sound/sound.ts';
 import { MASTER_CEILING, MASTER_TRIM, makeBus } from '../../src/sound/bus.ts';
 import { VOICES, VOICE_GAIN, VOICE_NAMES, startRoll } from '../../src/sound/voices.ts';
-import { SAVE_VERSION, MIGRATIONS, freshSave, loadSave, saveSave, memoryStorage } from '../../src/save/save.ts';
+import { SAVE_KEY, SAVE_VERSION, MIGRATIONS, freshSave, loadSave, saveSave, memoryStorage } from '../../src/save/save.ts';
 
 // ---- the mock audio graph ----------------------------------------------------
 
@@ -308,6 +308,7 @@ describe('sound engine', () => {
   });
 
   it('mute and volume persist through the persist hook and the master gain', () => {
+    vi.useFakeTimers();
     const saved: { muted?: boolean; volume?: number }[] = [];
     const e = new SoundEngine({
       Ctor: MockCtx as unknown as new () => AudioContext,
@@ -316,8 +317,9 @@ describe('sound engine', () => {
     });
     e.unlock();
     e.setVolume(0.5);
+    vi.advanceTimersByTime(SOUND.VOLUME_PERSIST_MS); // R8: the trailing window closes
     expect(saved.at(-1)).toEqual({ muted: false, volume: 0.5 });
-    e.setMuted(true);
+    e.setMuted(true); // mute is a discrete verb: immediate, carrying the volume
     expect(saved.at(-1)).toEqual({ muted: true, volume: 0.5 });
     const s = e.state();
     expect(s.muted).toBe(true);
@@ -397,5 +399,66 @@ describe('sound settings (save integration)', () => {
     const e = createSound({ store, Ctor: MockCtx as unknown as new () => AudioContext });
     expect(e.muted).toBe(true);
     expect(e.volume).toBe(0.42);
+  });
+
+  // ---- R8: the volume persist is DEBOUNCED (the autosave's shape) ----------
+
+  it('a volume drag storm costs ONE trailing write — the whole R8 claim', () => {
+    vi.useFakeTimers();
+    const saved: { muted?: boolean; volume?: number }[] = [];
+    const e = new SoundEngine({
+      Ctor: MockCtx as unknown as new () => AudioContext,
+      now: () => clock,
+      persist: (s) => saved.push(s),
+    });
+    for (let i = 0; i <= 50; i++) e.setVolume(i / 50);
+    expect(saved.length).toBe(0); // the window is open: ZERO writes mid-drag
+    vi.advanceTimersByTime(SOUND.VOLUME_PERSIST_MS);
+    expect(saved.length).toBe(1); // one write per BURST, carrying the latest
+    expect(saved[0].volume).toBe(1);
+  });
+
+  it('flush lands the pending drag exactly once; mute carries it immediately', () => {
+    vi.useFakeTimers();
+    const saved: { muted?: boolean; volume?: number }[] = [];
+    const e = new SoundEngine({
+      Ctor: MockCtx as unknown as new () => AudioContext,
+      now: () => clock,
+      persist: (s) => saved.push(s),
+    });
+    e.flushPersist(); // clean: flushing nothing writes nothing
+    expect(saved.length).toBe(0);
+    e.setVolume(0.3);
+    e.setVolume(0.2);
+    e.flushPersist(); // the reload-inside-the-window case
+    expect(saved).toEqual([{ muted: false, volume: 0.2 }]);
+    vi.advanceTimersByTime(SOUND.VOLUME_PERSIST_MS + 1); // the dead timer writes nothing
+    expect(saved.length).toBe(1);
+    e.setVolume(0.4);
+    e.setMuted(true); // mute lands the pending volume in the same envelope
+    expect(saved.at(-1)).toEqual({ muted: true, volume: 0.4 });
+    vi.advanceTimersByTime(SOUND.VOLUME_PERSIST_MS + 1);
+    expect(saved.length).toBe(2);
+  });
+
+  it('through the real save: a 20-event drag writes the envelope ONCE', async () => {
+    vi.useFakeTimers();
+    const { createSound } = await import('../../src/sound/sound.ts');
+    const mem = memoryStorage();
+    let envelopeWrites = 0;
+    const store = {
+      getItem: (k: string) => mem.getItem(k),
+      setItem: (k: string, v: string) => {
+        if (k === SAVE_KEY) envelopeWrites++;
+        mem.setItem(k, v);
+      },
+      removeItem: (k: string) => mem.removeItem(k),
+    };
+    const e = createSound({ store });
+    for (let i = 0; i < 20; i++) e.setVolume(0.2 + i / 100);
+    expect(envelopeWrites).toBe(0); // the R8 indictment: today this is 20 full writes
+    vi.advanceTimersByTime(SOUND.VOLUME_PERSIST_MS);
+    expect(envelopeWrites).toBe(1);
+    expect(loadSave(store).settings.sound?.volume).toBeCloseTo(0.2 + 19 / 100, 10);
   });
 });
