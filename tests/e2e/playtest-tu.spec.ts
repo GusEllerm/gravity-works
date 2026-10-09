@@ -38,7 +38,7 @@ const kitchenBuild = async (page: import('@playwright/test').Page, kinds: string
 test('a mid-build reload keeps EVERY piece: 3 placed, 3 restored (T: "1 of 3 survived")', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   await kitchenBuild(page, ['gapLip', 'drop', 'landing'])
@@ -58,7 +58,7 @@ test('a mid-build reload keeps EVERY piece: 3 placed, 3 restored (T: "1 of 3 sur
 test('a reload fired instantly after an edit loses nothing (the before-unload flush)', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   await kitchenBuild(page, ['gapLip', 'drop'])
@@ -78,11 +78,11 @@ test('a kitchen edit never restores onto a bedroom level — and each level rest
   page.on('pageerror', (err) => errors.push(String(err)))
 
   // build the full kitchen01 tray line, then WALK to the bedroom mid-build
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   await kitchenBuild(page, ['gapLip', 'drop', 'landing'])
 
-  await page.goto('/?level=bedroom01')
+  await goto(page, '/?level=bedroom01')
   await ready(page)
   // the kitchen autosave must NOT be this page's build: fresh, fixtures only
   await expect(page.locator('#gw-piece-count')).toHaveText(`0 of ${BEDROOM01.budget} pieces used`)
@@ -93,11 +93,11 @@ test('a kitchen edit never restores onto a bedroom level — and each level rest
   await page.click('#gw-place')
   await expect(page.locator('#gw-piece-count')).toHaveText(`1 of ${BEDROOM01.budget} pieces used`)
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   await expect(page.locator('#gw-piece-count')).toHaveText('3 of 3 pieces used')
 
-  await page.goto('/?level=bedroom01')
+  await goto(page, '/?level=bedroom01')
   await ready(page)
   await expect(page.locator('#gw-piece-count')).toHaveText(`1 of ${BEDROOM01.budget} pieces used`)
 
@@ -107,7 +107,7 @@ test('a kitchen edit never restores onto a bedroom level — and each level rest
 test('the switch hint is plain words with the key named, and silent with no ambiguity (U)', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   // no near-tie (a straight-on boot view, keyboard-walked target): the aim
@@ -130,6 +130,7 @@ test('the switch hint is plain words with the key named, and silent with no ambi
   expect(errors).toEqual([])
 })
 import { CAMPAIGN_LADDER } from '../../src/world/campaign.ts'
+import { goto } from './goto.ts'
 
 // --- FE half (rotated-view click + home, T+U round4) ---
 
@@ -221,7 +222,7 @@ test('T+U 1: 10 ghost click-places register after a 40-degree orbit', async ({ p
   test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=feeltrack')
+  await goto(page, '/?level=feeltrack')
   await ready(page)
   const box = (await page.locator('#gw-canvas').boundingBox())!
   await page.hover('#gw-tray button[data-kind="straight"]')
@@ -235,7 +236,7 @@ test('T+U 1: and again with the R flip armed (rotated fit variants)', async ({ p
   test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=feeltrack')
+  await goto(page, '/?level=feeltrack')
   await ready(page)
   const box = (await page.locator('#gw-canvas').boundingBox())!
   await page.hover('#gw-tray button[data-kind="straight"]')
@@ -248,7 +249,7 @@ test('T+U 1: and again with the R flip armed (rotated fit variants)', async ({ p
 
 test('T+U 1: the click binds to the SHOWN ghost during the damping tail', async ({ page }) => {
   test.slow()
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   const box = (await page.locator('#gw-canvas').boundingBox())!
   await page.hover('#gw-tray button[data-kind="gapLip"]')
@@ -283,7 +284,7 @@ test('T+U 1: a lost right-release cannot eat the next left click (zombie reconci
   test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=feeltrack')
+  await goto(page, '/?level=feeltrack')
   await ready(page)
   await page.hover('#gw-tray button[data-kind="straight"]')
   await expect(spoken(page)).not.toHaveText('', { timeout: 10_000 })
@@ -322,7 +323,7 @@ test('T+U 1: a lost right-release cannot eat the next left click (zombie reconci
 })
 
 test('T+U 1: an empty-handed world click speaks instead of silently moving the ring', async ({ page }) => {
-  await page.goto('/?level=feeltrack')
+  await goto(page, '/?level=feeltrack')
   await ready(page)
   const box = (await page.locator('#gw-canvas').boundingBox())!
   await expect(spoken(page)).toHaveText('')
@@ -335,7 +336,7 @@ test('T+U 1: an empty-handed world click speaks instead of silently moving the r
 
 test('T+U 2: Esc Esc brings the framing home at real human timing', async ({ page }) => {
   test.slow()
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   const box = (await page.locator('#gw-canvas').boundingBox())!
   const cx = box.x + box.width / 2
@@ -377,7 +378,7 @@ test('T+U 2: Esc Esc brings the framing home at real human timing', async ({ pag
 })
 
 test('T+U 2: the hint states the home chord once, honestly', async ({ page }) => {
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   await page.hover('#gw-tray button[data-kind="gapLip"]')
   await expect(page.locator('#gw-tray-hint')).toBeVisible()
@@ -392,7 +393,7 @@ test('T+U 3: the finish cup is inside the build framing on every campaign rung',
   expect(CAMPAIGN_LADDER.length).toBe(30) // the stage-6 encore pass: 26 → 30
   for (const id of CAMPAIGN_LADDER) {
     for (const build of ['', '&build=par']) {
-      await page.goto(`/?level=${id}${build}`)
+      await goto(page, `/?level=${id}${build}`)
       await ready(page)
       // poll through the first render tick: the seam projects through the
       // LIVE camera (matrixWorldInverse only exists after a frame)

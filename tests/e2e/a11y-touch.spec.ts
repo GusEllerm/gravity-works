@@ -27,6 +27,7 @@
  *  manual, and this file does not fake it.
  */
 import { test, expect, devices, type Page } from '@playwright/test'
+import { goto } from './goto.ts'
 
 const ready = (page: Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
@@ -62,7 +63,7 @@ function describeAt(width: number, height: number): void {
     test('tap-to-place builds the par line and Launch taps finish the run', async ({ page }) => {
       const errors: string[] = []
       page.on('pageerror', (err) => errors.push(String(err)))
-      await page.goto('/?level=kitchen01')
+      await goto(page, '/?level=kitchen01')
       await ready(page)
 
       await tapPlaceRing(page, 'gw-tray-gapLip')
@@ -87,7 +88,7 @@ function describeAt(width: number, height: number): void {
     test('a travelling tap PANS and places nothing; a two-finger drag ORBITS', async ({ page }) => {
       const errors: string[] = []
       page.on('pageerror', (err) => errors.push(String(err)))
-      await page.goto('/?level=kitchen01')
+      await goto(page, '/?level=kitchen01')
       await ready(page)
       await page.locator('#gw-tray-gapLip').tap() // hold a piece: a place would COUNT
 
@@ -153,7 +154,7 @@ function describeAt(width: number, height: number): void {
         dialogs.push(d.message())
         void d.dismiss()
       })
-      await page.goto('/?level=kitchen01')
+      await goto(page, '/?level=kitchen01')
       await ready(page)
       await page.locator('#gw-tray-gapLip').tap()
       const [x, y] = (await targetPx(page))!

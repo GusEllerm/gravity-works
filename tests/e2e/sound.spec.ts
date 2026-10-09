@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 /**
  * Stage 5 sound specs. The page is driven with TRUSTED gestures (Playwright
@@ -64,7 +65,7 @@ const soundState = (page: import('@playwright/test').Page) =>
   page.evaluate(() => (window as unknown as SoundWindow).__gwSound!())
 
 test('no AudioContext is created before the first gesture (autoplay policy)', async ({ page }) => {
-  await page.goto('/')
+  await goto(page, '/')
   await ready(page)
   // loading the page is not a gesture: the engine is armed but dark
   expect((await soundState(page)).unlocked).toBe(false)
@@ -74,7 +75,7 @@ test('no AudioContext is created before the first gesture (autoplay policy)', as
 })
 
 test('every voice renders offline under the -12 dBFS ceiling with no DC', async ({ page }) => {
-  await page.goto('/')
+  await goto(page, '/')
   await ready(page)
   await page.waitForFunction(
     () => typeof (window as unknown as SoundWindow).__gwSoundRender === 'function',
@@ -100,7 +101,7 @@ test('a sound-on par run never throws and trips no repetition guard', async ({ p
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(m.text())
   })
-  await page.goto('/?build=par')
+  await goto(page, '/?build=par')
   await ready(page)
   // the Launch button press is the gesture AND the run: the engine unlocks
   // on the capture-phase pointerdown, then the run plays with real audio
@@ -125,7 +126,7 @@ test('a sound-on par run never throws and trips no repetition guard', async ({ p
 })
 
 test('mute is honored across a reload', async ({ page }) => {
-  await page.goto('/')
+  await goto(page, '/')
   await ready(page)
   await page.click('#gw-sound-toggle') // gesture + mute in one press
   expect((await soundState(page)).muted).toBe(true)

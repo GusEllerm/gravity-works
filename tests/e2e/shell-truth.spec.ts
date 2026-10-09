@@ -21,6 +21,7 @@
 import { test, expect } from '@playwright/test'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
+import { goto } from './goto.ts'
 
 const ready = (page: import('@playwright/test').Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
@@ -60,7 +61,7 @@ test('keyboard-only: kitchen01 is built, finished and advanced with arrows + Ent
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   // THE MARKER MOVES: the arrows drive the visible target socket — an
@@ -103,7 +104,7 @@ test('a 0-star fail gets Retry only — Next level never rides on a failure', as
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   // nothing built: the car leaves the set, the run is a 0-star `fell`
@@ -146,7 +147,7 @@ test('the first canvas frame is non-black — the shell never shows a black flas
       w.__gwFirstPaint = max
     }, 4)
   })
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   const first = await page.evaluate(() => (window as unknown as Record<string, number | null>).__gwFirstPaint)
   expect(first, 'canvas probe never sampled a frame').not.toBeNull()
@@ -158,7 +159,7 @@ test('R visibly re-renders the ghost (rotate animation, ≤150 ms)', async ({ pa
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   await page.click('#gw-tray-landing') // the asymmetric catcher: a flip is obvious
   await expect(page.locator('#gw-ghost-state')).not.toHaveText('', { timeout: 10_000 })

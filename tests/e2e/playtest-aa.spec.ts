@@ -20,6 +20,7 @@
  *    tail — names `]`, the key the bindings actually speak.
  */
 import { test, expect, type Page } from '@playwright/test'
+import { goto } from './goto.ts'
 
 const ready = (page: Page) => expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
 
@@ -32,7 +33,7 @@ test('the panel shares the run: the produced link opens the replay page and veri
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?build=par&launch=1')
+  await goto(page, '/?build=par&launch=1')
   await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
 
   // AA's exact want: a control ON the panel that hands over a link
@@ -49,7 +50,7 @@ test('the panel shares the run: the produced link opens the replay page and veri
 
   // THE ACCEPTANCE LINE: a friend's click on that URL opens the replay and
   // the hash verdict is honest
-  await page.goto(url)
+  await goto(page, url)
   await expect(page.locator('#gw-replay-status')).toHaveText('verified', { timeout: 90_000 })
   expect(errors).toEqual([])
 })
@@ -58,7 +59,7 @@ test('Escape closes the failure overlay and brings the view home; the second Esc
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/')
+  await goto(page, '/')
   await ready(page)
   const home = await cameraPose(page)
 
@@ -98,7 +99,7 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 1280, height: 633
       const errors: string[] = []
       page.on('pageerror', (err) => errors.push(String(err)))
 
-      await page.goto('/?build=par')
+      await goto(page, '/?build=par')
       await ready(page)
       // the AA state: a reader scrolled to look at something under the
       // world (help thumbnails, the status lines) when the run ends
@@ -143,7 +144,7 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 1280, height: 633
 }
 
 test('every "other spot" hint names the same key: ] (the binding)', async ({ page }) => {
-  await page.goto('/')
+  await goto(page, '/')
   await ready(page)
   await page.click('#gw-tray-drop')
   // source 1 — the one-line tray lesson; source 2 is the live tie tail on

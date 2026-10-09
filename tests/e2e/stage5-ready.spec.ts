@@ -40,6 +40,7 @@ import { World } from '../../src/world/world.ts'
 import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts'
 import { encodeShareUrl, type ShareCodec } from '../../src/share/share.ts'
 import type { Build } from '../../src/track/build.ts'
+import { goto } from './goto.ts'
 
 const zlibCodec: ShareCodec = {
   deflate: async (b) => new Uint8Array(zlib.deflateRawSync(Buffer.from(b))),
@@ -122,7 +123,7 @@ test.describe('stage 5 replay readiness (feel pass)', () => {
   test('1: the wait is a WAITING state — spinner label counting, never a dead Play', async ({ page }) => {
     test.slow()
     const { url } = await kitchen01ShareUrl()
-    await page.goto(`/${url}`)
+    await goto(page, `/${url}`)
     await expect(page.locator('#gw-replay-status')).toHaveText('verified', { timeout: 90_000 })
     const seen = await page.evaluate(() => (window as never as { __gwFace: { faces: { text: string; busy: string | null; pressed: string | null; phase: string }[]; phaseOrder: string[] } }).__gwFace)
     const first = seen.faces[0]
@@ -169,7 +170,7 @@ test.describe('stage 5 replay readiness (feel pass)', () => {
       mo.observe(document, { childList: true, subtree: true })
       take()
     })
-    await page.goto(`/?e2eWindSlice=1${url}`)
+    await goto(page, `/?e2eWindSlice=1${url}`)
     // the click LANDED, and it landed on the WAITING face — always
     await page.waitForFunction(
       () => (window as never as { __gwEarlyClick: { clicked: boolean } }).__gwEarlyClick.clicked,
@@ -236,7 +237,7 @@ test.describe('stage 5 replay readiness (feel pass)', () => {
   test('3: every slice boundary carries the one-shot sim hash (chunked wind ≡ one-shot)', async ({ page }) => {
     test.slow()
     const { url, node, build } = await kitchen01ShareUrl()
-    await page.goto(`/${url}`)
+    await goto(page, `/${url}`)
     await page.waitForFunction(
       () => (window as never as { __gwReplayWind: () => WindInfo }).__gwReplayWind().phase === 'ready',
       undefined,
@@ -289,7 +290,7 @@ test.describe('stage 5 replay readiness (feel pass)', () => {
       Object.defineProperty(document, 'hidden', { get: () => true, configurable: true })
       window.requestAnimationFrame = (): number => 0
     })
-    await page.goto(`/${url}`)
+    await goto(page, `/${url}`)
     // TIMER-polled (polling: 1000) — waitForFunction's DEFAULT poll rides
     // rAF, which this harness swallows: the PROBE must not need frames
     // either, exactly like the wind itself.
@@ -335,7 +336,7 @@ test.describe('stage 5 replay readiness (feel pass)', () => {
       window.setInterval = ((cb: TimerHandler, ms?: number, ...rest: unknown[]) =>
         si(cb, Math.max(ms ?? 0, FLOOR), ...rest)) as typeof window.setInterval
     })
-    await page.goto(`/${url}`)
+    await goto(page, `/${url}`)
     // THE PROBE CLOCK IS THIS PROCESS, not the page: every page-side timer
     // is floored to a minute, so even `waitForFunction` with polling: 1000
     // would pay a minute per tick. Node-side polling with REAL timers

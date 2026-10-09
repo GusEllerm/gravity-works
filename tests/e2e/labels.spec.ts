@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 /**
  * Playtest M's label/layout/copy ledger, pinned as the shell's contract:
@@ -25,7 +26,7 @@ const RAW_CODENAMES = /gapLip|bigCurve|sbend|springLauncher|finishCup/
 test.use({ viewport: { width: 1280, height: 720 } })
 
 test('the tray speaks player words, never codenames (ids stay)', async ({ page }) => {
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
 
   await expect(page.locator('#gw-tray button')).toHaveCount(13)
@@ -55,7 +56,7 @@ test('the tray speaks player words, never codenames (ids stay)', async ({ page }
 })
 
 test('locked/spent tray messages and the Help glossary speak player words', async ({ page }) => {
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
 
   // a locked kind explains itself in its WORD, not its id (aria-disabled:
@@ -75,7 +76,7 @@ test('locked/spent tray messages and the Help glossary speak player words', asyn
 test('Help overlays the world: the canvas keeps >60 % visible with Help OPEN (1280x720)', async ({
   page,
 }) => {
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
 
   const frame = () =>
@@ -103,7 +104,7 @@ test('Help overlays the world: the canvas keeps >60 % visible with Help OPEN (12
 })
 
 test('the fingerprint disclosure reads one human line (hash still behind it)', async ({ page }) => {
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
   await expect(page.locator('#gw-hash-details > summary')).toHaveText(
     'Why the same build always runs the same way',
@@ -114,7 +115,7 @@ test('the fingerprint disclosure reads one human line (hash still behind it)', a
 })
 
 test('the R/Flip press prints a passive rotated line', async ({ page }) => {
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
 
   await page.click('#gw-tray-landing') // the asymmetric catcher: a flip matters

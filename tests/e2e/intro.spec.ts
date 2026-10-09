@@ -21,6 +21,17 @@ test('automation on a bare landing never sits through the film', async ({ page }
   await expect(page.locator('#gw-launch')).toBeVisible({ timeout: 60_000 })
 })
 
+test('the explicit ?intro=off opt-out lands straight in the builder', async ({ page }) => {
+  // P3: the opt-out the e2e harness (`tests/e2e/goto.ts`) appends for every
+  // non-visual spec — the URL contract end to end (the param LOGIC — off
+  // wins over every audience inference — is pinned by
+  // `tests/unit/intro-params.test.ts`). The page must boot clean WITH the
+  // param present, chrome up, no beat.
+  await page.goto('/?intro=off')
+  await expect(page.locator('.gw-premiere')).toHaveCount(0)
+  await expect(page.locator('#gw-launch')).toBeVisible({ timeout: 60_000 })
+})
+
 test('the beat hides the chrome, rolls the par line silently, and lifts at the end', async ({
   page,
 }) => {

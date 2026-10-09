@@ -16,6 +16,7 @@
  * boots ready, the set reports mounted, the pixels land, zero errors.
  */
 import { test, expect, type Page } from '@playwright/test'
+import { goto } from './goto.ts'
 
 const ready = (page: Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
@@ -32,7 +33,7 @@ function noErrors(page: Page): string[] {
 for (const set of ['bedroom', 'bathroom', 'garden', 'garage', 'porch'] as const) {
   test(`the ${set} sandbox boots ready, dressed, and screenshots clean`, async ({ page }, testInfo) => {
     const errors = noErrors(page)
-    await page.goto(`/?level=${set}-sandbox`)
+    await goto(page, `/?level=${set}-sandbox`)
     await ready(page)
     // the set mounts UNDER the lap (the placement rows are live, not null)
     await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', set, {
@@ -47,7 +48,7 @@ for (const set of ['bedroom', 'bathroom', 'garden', 'garage', 'porch'] as const)
   })
 
   test(`the ${set} sandbox is campaign-invisible on the level select, like the kitchen one`, async ({ page }) => {
-    await page.goto('/?levels=1')
+    await goto(page, '/?levels=1')
     // the ladder shows its 30 rungs and NO sandbox button anywhere — the
     // kitchen sandbox's discoverability (exactly) is the reference
     await expect(page.locator(`#gw-level-${set}-sandbox`)).toHaveCount(0)

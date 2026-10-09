@@ -13,6 +13,7 @@
 // 3. the dev entry `?set=garage` mounts the garage set in the GAME shell
 //    (the registry's no-placement canonical-origin fallback).
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 interface HarnessWindow {
   __sceneReady?: boolean
@@ -27,7 +28,7 @@ test('game shell boots kitchen01 unchanged with the garage in the registry (no r
     if (m.type() === 'error') errors.push(m.text())
   })
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'kitchen', { timeout: 60_000 })
   await expect(page.locator('#gw-status')).toContainText('pieces used', { timeout: 60_000 })
   expect(errors).toEqual([])
@@ -40,7 +41,7 @@ test('garage set renders in the harness, post-ON, without console errors', async
     if (m.type() === 'error') errors.push(m.text())
   })
 
-  await page.goto('/?harness=1&scene=garage-set&shot=hero&post=on')
+  await goto(page, '/?harness=1&scene=garage-set&shot=hero&post=on')
   await page.waitForFunction(() => {
     const w = window as unknown as HarnessWindow
     return w.__sceneReady === true || w.__sceneError !== undefined
@@ -62,7 +63,7 @@ test('the game-shell dev entry ?set=garage mounts the garage set at the canonica
     if (m.type() === 'error') errors.push(m.text())
   })
 
-  await page.goto('/?set=garage')
+  await goto(page, '/?set=garage')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'garage', { timeout: 60_000 })
   await expect(page.locator('#gw-status')).toContainText('pieces used', { timeout: 60_000 })
   expect(errors).toEqual([])

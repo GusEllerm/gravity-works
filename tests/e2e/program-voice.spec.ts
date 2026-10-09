@@ -46,6 +46,7 @@ import { fitSocket } from '../../src/track/snap.ts'
 import { transformSocket } from '../../src/track/socket.ts'
 import { levelTrayParams } from '../../src/ui/advice.ts'
 import { encodeShareUrl, type ShareCodec } from '../../src/share/share.ts'
+import { goto } from './goto.ts'
 
 const ready = (page: Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
@@ -140,7 +141,7 @@ test.describe('T2.1 the move wave — kitchen04 names the piece past the cup', (
     const fixed = await replayRun(KITCHEN04, KITCHEN04.parBuild())
     expect(fixed.status).toBe('finished')
 
-    await page.goto('/?level=kitchen04')
+    await goto(page, '/?level=kitchen04')
     await ready(page)
 
     // build the wrong line the player builds it: a lip at the ramp, then
@@ -207,7 +208,7 @@ test.describe('T2.1 the booster sequencing truth — kitchen05', () => {
     const par = KITCHEN05.parBuild()
     expect((await replayRun(KITCHEN05, par)).status).toBe('finished')
 
-    await page.goto('/?level=kitchen05')
+    await goto(page, '/?level=kitchen05')
     await ready(page)
 
     // the five-piece line, booster held back — each placement at the chain
@@ -268,7 +269,7 @@ test.describe('T2.2 the first two seconds — the share link opens playing', () 
       { levelId: KITCHEN01.id, seed: KITCHEN01.parBuild().seed, hash: node.hash, build: KITCHEN01.parBuild() } as never,
       zlibCodec,
     )
-    await page.goto(`/${url}`)
+    await goto(page, `/${url}`)
 
     // ONE HONEST LINE under the player, from first paint: it promises
     // while the tape winds and pronouns when it lands — never a badge to
@@ -317,7 +318,7 @@ test.describe('T2.2 the first two seconds — the share link opens playing', () 
   })
 
   test('an invalid link says so in the line, not just in the fold', async ({ page }) => {
-    await page.goto('/#s=not-a-real-link')
+    await goto(page, '/#s=not-a-real-link')
     await expect(page.locator('#gw-replay-status')).toHaveText('invalid share link', { timeout: 15_000 })
     await expect(page.locator('#gw-replay-verdict')).toContainText('not a run')
   })

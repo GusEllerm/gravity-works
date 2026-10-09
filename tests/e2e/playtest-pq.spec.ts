@@ -28,6 +28,7 @@
  */
 import { test, expect } from '@playwright/test'
 import PARS_JSON from '../../src/world/pars.json' with { type: 'json' }
+import { goto } from './goto.ts'
 
 const ready = (page: import('@playwright/test').Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
@@ -43,7 +44,7 @@ test('a clicked toolbar button releases focus: Enter places, arrows aim, nothing
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   // click a TRAY button — after activation the world holds focus again
@@ -103,7 +104,7 @@ test('one counter, one verb: the tray tally and the status line never contradict
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   // at rest both lines state the SAME tally in the SAME words
@@ -136,7 +137,7 @@ test('the ring names itself once per session and retires at the first placement'
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   // the ring is visible on the idle table and the line names it (Q: the
@@ -169,7 +170,7 @@ test('placing the LAST of a kind releases the hold — no stranded spent piece',
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   // hold the Drop (its tray count is 1) and place it: the kind is now spent
@@ -229,7 +230,7 @@ test('every open rung and the first boot state THAT level’s par numbers', asyn
       }),
     )
   })
-  await page.goto('/?levels=1')
+  await goto(page, '/?levels=1')
   // the rungs are the level's OWN par numbers from pars.json — DERIVED from
   // the table, not mirrored: the K3 re-sweep moved kitchen03's parTime and
   // a hardcoded row went red on the merge. Asserted per rung (the N pass
@@ -263,7 +264,7 @@ test('every open rung and the first boot state THAT level’s par numbers', asyn
   const ctx2 = await browser.newContext()
   const boot = await ctx2.newPage()
   boot.on('pageerror', (err) => errors.push(String(err)))
-  await boot.goto('/?level=kitchen03')
+  await goto(boot, '/?level=kitchen03')
   await ready(boot)
   await expect(boot.locator('#gw-callout')).toContainText('Stars: finish the run')
   await expect(boot.locator('#gw-callout')).toContainText(`${par('kitchen03')[0]} pieces (par)`)

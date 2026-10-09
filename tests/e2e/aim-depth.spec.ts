@@ -22,6 +22,7 @@
  */
 import { test, expect } from '@playwright/test'
 import { AIM_TIE_PX, HOVER_PX } from '../../src/ui/builder.ts'
+import { goto } from './goto.ts'
 
 type Pose = { pos: number[]; quat: number[] }
 type Box = { x: number; y: number; width: number; height: number }
@@ -56,7 +57,7 @@ test('K3 at a 30° orbit: the ambiguous midpoint aims the NEARER socket, and [ ]
   test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen03')
+  await goto(page, '/?level=kitchen03')
   await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
   const box = (await page.locator('#gw-canvas').boundingBox())!
   const cx = box.x + box.width / 2
@@ -69,8 +70,14 @@ test('K3 at a 30° orbit: the ambiguous midpoint aims the NEARER socket, and [ ]
   await page.mouse.move(cx + 100, cy, { steps: 8 })
   await page.mouse.up({ button: 'right' })
   await expect
-    .poll(async () => (await page.evaluate(() => (window as unknown as Record<string, () => { yaw: number; yawTarget: number } >).__gwBuildView())).yawTarget, { timeout: 5_000 })
-    .toBeGreaterThan(0.3)
+    .poll(async () => {
+      // SETTLED, not merely TARGETED (P3): the midpoint math below projects
+      // the LIVE pose — a mid-damping read makes the tie pick frame-pacing
+      // roulette (the same law as `stage5-bb-feel` tests 3/4)
+      const v = await page.evaluate(() => (window as unknown as Record<string, () => { yaw: number; yawTarget: number } >).__gwBuildView())
+      return v.yawTarget > 0.3 && Math.abs(v.yaw - v.yawTarget) < 1e-3
+    }, { timeout: 10_000, message: 'the 30° orbit never SETTLED past 0.3 rad' })
+    .toBe(true)
 
   const pose = (await page.evaluate(() => (window as unknown as Record<string, () => Pose>).__gwCameraPose())) as Pose
   const sockets = (await page.evaluate(() => (window as unknown as Record<string, () => number[][]>).__gwOpenSockets())) as number[][]

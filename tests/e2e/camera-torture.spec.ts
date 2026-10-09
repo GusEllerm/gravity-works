@@ -21,6 +21,7 @@
  */
 import { test, expect } from '@playwright/test'
 import { BUILD_VIEW } from '../../src/camera/build-camera.ts'
+import { goto } from './goto.ts'
 
 const ready = (page: import('@playwright/test').Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
@@ -58,7 +59,7 @@ const sane = async (page: import('@playwright/test').Page, where: string) => {
 test('a lost pointer release cannot turn hover into a drag (zombie-camera proof)', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen02')
+  await goto(page, '/?level=kitchen02')
   await ready(page)
   const box = (await page.locator('#gw-canvas').boundingBox())!
   const cx = box.x + box.width / 2
@@ -103,7 +104,7 @@ test('a lost pointer release cannot turn hover into a drag (zombie-camera proof)
 test('Escape Escape brings the view home from any state', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen02')
+  await goto(page, '/?level=kitchen02')
   await ready(page)
   const box = (await page.locator('#gw-canvas').boundingBox())!
   const cx = box.x + box.width / 2
@@ -136,7 +137,7 @@ test('torture: 20 randomized pointer ops leave the camera sane, responsive and h
   test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen02')
+  await goto(page, '/?level=kitchen02')
   await ready(page)
   const box = (await page.locator('#gw-canvas').boundingBox())!
   const cx = box.x + box.width / 2

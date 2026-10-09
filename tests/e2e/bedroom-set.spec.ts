@@ -10,6 +10,7 @@
 //    no `__sceneError`, no console errors, and paints the frame; and the
 //    dev entry `?set=bedroom` mounts the bedroom set in the GAME shell.
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 interface HarnessWindow {
   __sceneReady?: boolean
@@ -24,7 +25,7 @@ test('game shell boots kitchen01 unchanged through the set registry (no regressi
     if (m.type() === 'error') errors.push(m.text())
   })
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'kitchen', { timeout: 60_000 })
   await expect(page.locator('#gw-status')).toContainText('pieces used', { timeout: 60_000 })
   expect(errors).toEqual([])
@@ -37,7 +38,7 @@ test('bedroom set renders in the harness, post-ON, without console errors', asyn
     if (m.type() === 'error') errors.push(m.text())
   })
 
-  await page.goto('/?harness=1&scene=bedroom-set&shot=hero&post=on')
+  await goto(page, '/?harness=1&scene=bedroom-set&shot=hero&post=on')
   await page.waitForFunction(() => {
     const w = window as unknown as HarnessWindow
     return w.__sceneReady === true || w.__sceneError !== undefined
@@ -60,7 +61,7 @@ test('the game-shell dev entry ?set=bedroom mounts the bedroom set', async ({ pa
     if (m.type() === 'error') errors.push(m.text())
   })
 
-  await page.goto('/?set=bedroom')
+  await goto(page, '/?set=bedroom')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'bedroom', { timeout: 60_000 })
   await expect(page.locator('#gw-status')).toContainText('pieces used', { timeout: 60_000 })
   expect(errors).toEqual([])

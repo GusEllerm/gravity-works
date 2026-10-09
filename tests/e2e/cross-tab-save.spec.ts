@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 /**
  * T0.6 / R9 — CROSS-TAB SAVE RACE (Evaluation 2026-10-09 engineering R9,
@@ -80,9 +81,9 @@ test('R9 race: a tab writing from a stale view merges — it cannot clobber the 
   const errors: string[] = []
   for (const p of [tabA, tabB]) p.on('pageerror', (err) => errors.push(String(err)))
 
-  await tabA.goto('/?level=kitchen01')
+  await goto(tabA, '/?level=kitchen01')
   await ready(tabA)
-  await tabB.goto('/?level=kitchen02')
+  await goto(tabB, '/?level=kitchen02')
   await ready(tabB)
 
   // the race's READ: tab B's view of the envelope, taken BEFORE tab A writes
@@ -126,9 +127,9 @@ test('R9 bursts: two tabs on different levels racing placements keep BOTH record
   const errors: string[] = []
   for (const p of [tabA, tabB]) p.on('pageerror', (err) => errors.push(String(err)))
 
-  await tabA.goto('/?level=kitchen01')
+  await goto(tabA, '/?level=kitchen01')
   await ready(tabA)
-  await tabB.goto('/?level=kitchen02')
+  await goto(tabB, '/?level=kitchen02')
   await ready(tabB)
 
   // interleaved bursts: each tab keeps editing its OWN level while the

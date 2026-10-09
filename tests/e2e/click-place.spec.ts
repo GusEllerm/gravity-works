@@ -22,6 +22,7 @@
 import { test, expect } from '@playwright/test'
 import { FEEL_TRACK_KINDS } from '../../src/feel/feeltrack.ts'
 import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts'
+import { goto } from './goto.ts'
 
 const laid = FEEL_TRACK_KINDS.length
 const budget = FEELTRACK.budget
@@ -46,7 +47,7 @@ test('ten mouse-API click-places all register (playtest R: click = nothing)', as
   test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=feeltrack')
+  await goto(page, '/?level=feeltrack')
   await ready(page)
   await expect(count(page)).toHaveText(`${laid} of ${budget} pieces used`)
   // hold a piece by HOVER (no button focused — the world owns Enter and
@@ -66,7 +67,7 @@ test('ten mouse-API click-places all register (playtest R: click = nothing)', as
 test('a click with ordinary finger travel (12 px) places and never pans', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=feeltrack')
+  await goto(page, '/?level=feeltrack')
   await ready(page)
   await page.hover('#gw-tray button[data-kind="straight"]')
   await expect(page.locator('#gw-ghost-state')).not.toHaveText('', { timeout: 10_000 })
@@ -94,7 +95,7 @@ test('a place-intent that cannot land says why (budget wall, never silent)', asy
   test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=feeltrack')
+  await goto(page, '/?level=feeltrack')
   await ready(page)
   await page.hover('#gw-tray button[data-kind="straight"]')
   // drive the sandbox budget to the wall with click-places...
@@ -112,7 +113,7 @@ test('a place-intent that cannot land says why (budget wall, never silent)', asy
 test('a synthetic click (no pointer sequence) places exactly once', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=feeltrack')
+  await goto(page, '/?level=feeltrack')
   await ready(page)
   await page.hover('#gw-tray button[data-kind="straight"]')
   await expect(page.locator('#gw-ghost-state')).not.toHaveText('', { timeout: 10_000 })

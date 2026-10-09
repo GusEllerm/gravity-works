@@ -268,17 +268,17 @@ sig = "94a2ee27e5931879"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/a11y-touch.spec.ts"
-sig = "b129df01ba6450b4"
+sig = "67745686156a0593"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/build-view.spec.ts"
-sig = "62528658c2ed3a8d"
+sig = "89483735cca2eb87"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/camera-torture.spec.ts"
-sig = "08b28fa0582747ff"
+sig = "51a7558d3b260ed0"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -288,12 +288,12 @@ sig = "5636ae9f5e71b390"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/loop.spec.ts"
-sig = "d1c73cfbb03c0f29"
+sig = "d4c50c7057aafa6c"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/playtest-tu.spec.ts"
-sig = "e70356c18dcd77fc"
+sig = "f2bf545d550efbb9"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -868,12 +868,12 @@ sig = "6143c0d8b5dcd826"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "tests/e2e/bedroom-set.spec.ts"
-sig = "69776ca83ac7634e"
+sig = "7a9b8333cdfac9b3"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "tests/e2e/porch-set.spec.ts"
-sig = "279dc86bcc2aa401"
+sig = "2b24068cdedb9162"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -993,7 +993,7 @@ sig = "a38e01706f33daf6"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/pages/intro.ts"
-sig = "81532b16c7128f61"
+sig = "6b615c2f26d89972"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -1073,52 +1073,52 @@ sig = "2292c87818bc3c75"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/builder.spec.ts"
-sig = "956a5f92a21353d6"
+sig = "bce1a05de2d8cb2c"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/campaign.spec.ts"
-sig = "51b50281255a0d3f"
+sig = "ec632ace702f8f1d"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/error-boundary.spec.ts"
-sig = "394bd917c3193593"
+sig = "18307e4ee9098b5e"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/intro.spec.ts"
-sig = "0aea9fbcf36a8265"
+sig = "b7e66aa56b0ad5ee"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/loop.spec.ts"
-sig = "d1c73cfbb03c0f29"
+sig = "d4c50c7057aafa6c"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/playtest-rs.spec.ts"
-sig = "79d4ae0679f88eef"
+sig = "b71c68df5d5db463"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/playtest-tu.spec.ts"
-sig = "e70356c18dcd77fc"
+sig = "f2bf545d550efbb9"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/result.spec.ts"
-sig = "48135c8e914380bf"
+sig = "a93edd89aaa69e87"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/shell-truth.spec.ts"
-sig = "3eb245e82df9489f"
+sig = "86430a422610f461"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/smoke.spec.ts"
-sig = "3dc33ac21de385ff"
+sig = "20e80db307cc71e3"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -1223,7 +1223,7 @@ sig = "a38e01706f33daf6"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/pages/intro.ts"
-sig = "81532b16c7128f61"
+sig = "6b615c2f26d89972"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1298,87 +1298,87 @@ sig = "af3dda9ec71a2fd4"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/a11y-touch.spec.ts"
-sig = "b129df01ba6450b4"
+sig = "67745686156a0593"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/a11y.spec.ts"
-sig = "b44f12a7d35e02e8"
+sig = "384d1a65b302636b"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/aim-depth.spec.ts"
-sig = "8d93b93c8e1daa23"
+sig = "eeafb22c670a62b7"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/build-view.spec.ts"
-sig = "62528658c2ed3a8d"
+sig = "89483735cca2eb87"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/builder.spec.ts"
-sig = "956a5f92a21353d6"
+sig = "bce1a05de2d8cb2c"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/camera-torture.spec.ts"
-sig = "08b28fa0582747ff"
+sig = "51a7558d3b260ed0"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/campaign.spec.ts"
-sig = "51b50281255a0d3f"
+sig = "ec632ace702f8f1d"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/click-place.spec.ts"
-sig = "468de52685960611"
+sig = "ddbe32d0124dd69d"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/labels.spec.ts"
-sig = "e339b79c89d210f5"
+sig = "c3733190fd86fe7c"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/loop.spec.ts"
-sig = "d1c73cfbb03c0f29"
+sig = "d4c50c7057aafa6c"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/place-honesty.spec.ts"
-sig = "d037ea1761fa55f2"
+sig = "c87c4b940d80f160"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/playtest-aa.spec.ts"
-sig = "576d95a1fb26c5b4"
+sig = "c42f3b9e25bbf792"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/playtest-bb.spec.ts"
-sig = "f8ab9a80ed071f03"
+sig = "7bb52182553590b5"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/playtest-n.spec.ts"
-sig = "14d735d3bf222e41"
+sig = "13aa3515bab3d344"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/playtest-pq.spec.ts"
-sig = "1ea5d0a7e4f28dcf"
+sig = "4ba4084e1938c779"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/playtest-rs.spec.ts"
-sig = "79d4ae0679f88eef"
+sig = "b71c68df5d5db463"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/playtest-tu.spec.ts"
-sig = "e70356c18dcd77fc"
+sig = "f2bf545d550efbb9"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1388,37 +1388,37 @@ sig = "d5b3f3ece12aa46f"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/program-voice.spec.ts"
-sig = "b945cfa3a695730e"
+sig = "8957eaa634a736af"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/result.spec.ts"
-sig = "48135c8e914380bf"
+sig = "a93edd89aaa69e87"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/save-quarantine.spec.ts"
-sig = "5256185d38f49969"
+sig = "17684f9bc1d1a69e"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/shell-truth.spec.ts"
-sig = "3eb245e82df9489f"
+sig = "86430a422610f461"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/shell.spec.ts"
-sig = "87c92c266d308daf"
+sig = "ca4895142ae314a6"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/stage6-k3-discoverability.spec.ts"
-sig = "876fb775cfcac91e"
+sig = "cf0e2899c2afe398"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/viewport-aim.spec.ts"
-sig = "0a7e1d32f2900184"
+sig = "bdb97b5d8f764945"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"

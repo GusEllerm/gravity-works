@@ -17,6 +17,7 @@
  */
 import { test, expect } from '@playwright/test'
 import { BUILD_VIEW } from '../../src/camera/build-camera.ts'
+import { goto } from './goto.ts'
 
 const ready = (page: import('@playwright/test').Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
@@ -41,7 +42,7 @@ async function holdPiece(page: import('@playwright/test').Page) {
 test('right-drag orbits the build camera — the view turns, nothing is placed', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   await holdPiece(page)
   const box = (await page.locator('#gw-canvas').boundingBox())!
@@ -68,7 +69,7 @@ test('right-drag orbits the build camera — the view turns, nothing is placed',
 test('left-drag pans the framing — it never places (playtest Q click-vs-drag)', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   await holdPiece(page)
   const box = (await page.locator('#gw-canvas').boundingBox())!
@@ -95,7 +96,7 @@ test('left-drag pans the framing — it never places (playtest Q click-vs-drag)'
 test('a click (press→release within 6 px) still places at the aimed socket', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   await holdPiece(page)
   const box = (await page.locator('#gw-canvas').boundingBox())!
@@ -128,7 +129,7 @@ test('a click (press→release within 6 px) still places at the aimed socket', a
 test('space+drag is the orbit alternative — turns the view, places nothing', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   await holdPiece(page)
   const box = (await page.locator('#gw-canvas').boundingBox())!

@@ -29,6 +29,7 @@
  *    spinner share the same source, `src/ui/motion.ts`).
  */
 import { test, expect, type Page } from '@playwright/test'
+import { goto } from './goto.ts'
 
 const ready = (page: Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
@@ -64,7 +65,7 @@ async function tabTo(page: Page, selector: string, max = 45): Promise<string[]> 
 test('the Tab walk visits every control exactly once and traps on none', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   const trayIds = await page.$$eval('#gw-tray button', (bs) => bs.map((b) => `#${b.id}`))
@@ -108,7 +109,7 @@ test('keyboard end-to-end: kitchen01 built, launched, finished and retried with 
   test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   /** Hold a kind with Tab + the focused button's native Enter (after the
@@ -155,7 +156,7 @@ test('keyboard end-to-end: kitchen01 built, launched, finished and retried with 
 })
 
 test('focus is visible: the ring shows on the paper toolbar AND on the dark result panel', async ({ page }) => {
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   await tabTo(page, '#gw-tray-gapLip')
@@ -186,9 +187,9 @@ test('the replay page is a keyboard surface: play, slider scrubber with a keyboa
 
   // earn a real run through the keyboard flow, then Share it through the
   // panel's own control — the link the audit then walks
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
-  await page.goto('/?level=kitchen01&build=par&launch=1')
+  await goto(page, '/?level=kitchen01&build=par&launch=1')
   await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
   await page.click('#gw-result-share')
   await expect(page.locator('#gw-result-share-row')).toBeVisible()
@@ -197,7 +198,7 @@ test('the replay page is a keyboard surface: play, slider scrubber with a keyboa
   const url = await page.inputValue('#gw-result-share-url')
   expect(url).toContain('#s=')
 
-  await page.goto(url)
+  await goto(page, url)
   await expect
     .poll(
       async () =>
@@ -233,7 +234,7 @@ test('the replay page is a keyboard surface: play, slider scrubber with a keyboa
 })
 
 test('never color-only: ghost words, star labels, and lock glyphs speak', async ({ page }) => {
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   // the ghost's fit verdict is a WORD on a live line, never just a tint
@@ -242,14 +243,14 @@ test('never color-only: ghost words, star labels, and lock glyphs speak', async 
   expect(ghost).toMatch(/fits here|flipped fit|no seat|blocked/i)
 
   // stars are SHAPE plus a counted label
-  await page.goto('/?level=kitchen01&build=par&launch=1')
+  await goto(page, '/?level=kitchen01&build=par&launch=1')
   await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
   await expect(page.locator('#gw-result-stars')).toHaveAttribute('role', 'img')
   await expect(page.locator('#gw-result-stars')).toHaveAttribute('aria-label', /\d of 3 stars/)
   await expect(page.locator('#gw-result-stars')).toContainText(/[★☆]/)
 
   // locked rungs are a LOCK GLYPH plus the rule in words (never a dim ☆)
-  await page.goto('/?levels=1')
+  await goto(page, '/?levels=1')
   const locked = page.locator('button[aria-disabled="true"]').first()
   await expect(locked).toContainText('🔒')
   await expect(locked).toContainText(/Earn a star on .* to open this/)
@@ -263,12 +264,12 @@ test('never color-only: ghost words, star labels, and lock glyphs speak', async 
 test('reduced motion (OS setting): the replay cinematic defaults to its still frame', async ({ page }) => {
   test.setTimeout(180_000)
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.goto('/?level=kitchen01&build=par&launch=1')
+  await goto(page, '/?level=kitchen01&build=par&launch=1')
   await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
   await page.click('#gw-result-share')
   await expect(page.locator('#gw-result-share-row')).toBeVisible()
   const url = await page.inputValue('#gw-result-share-url')
-  await page.goto(url)
+  await goto(page, url)
   await expect
     .poll(
       async () => (await page.locator('#gw-replay-play').getAttribute('data-phase')) ?? 'waiting',
@@ -282,7 +283,7 @@ test('reduced motion (OS setting): the replay cinematic defaults to its still fr
 })
 
 test('the share row speaks through a live region and the input is a tab stop', async ({ page }) => {
-  await page.goto('/?level=kitchen01&build=par&launch=1')
+  await goto(page, '/?level=kitchen01&build=par&launch=1')
   await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
   await page.click('#gw-result-share')
   await expect(page.locator('#gw-result-share-note')).toBeVisible()

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 /**
  * T0.6 / R8 — the volume slider persists with the AUTOSAVE's shape: a drag
@@ -24,7 +25,7 @@ test('R8: a slider drag then an instant reload lands the value (flush rides the 
 }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/')
+  await goto(page, '/')
   await ready(page)
 
   // a real drag: keyboard on the range input fires real `input` events

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 /**
  * T0.3 / R1 — SAVE QUARANTINE (Action Plan 2026-10-09, Evaluation 2026-10-09
@@ -73,7 +74,7 @@ test('R1 repro: a parseable v3 save with two banked stars is quarantined, not si
 }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   // the evaluator's probe: drop a v3 save holding two banked stars into the key
@@ -110,7 +111,7 @@ test('R1 settings row: import validates through migrate before accepting — gar
 }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   // a real banked star the player owns today

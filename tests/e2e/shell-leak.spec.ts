@@ -25,6 +25,7 @@
  * per round, monotonic) and lands far outside it.
  */
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 interface LeakWindow {
   __gwRendererInfo?: () => { programs: number; geometries: number; textures: number }
@@ -59,7 +60,7 @@ test("the game shell's place→remove cycles return GPU counters to baseline (Wo
   test.setTimeout(300_000)
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 30_000 })
   await frames(page, 5) // the boot world must be fully uploaded before the baseline
 

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { FEEL_TRACK_KINDS } from '../../src/feel/feeltrack.ts'
 import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts'
+import { goto } from './goto.ts'
 
 /**
  * The stage-3 result layer, end to end on the real boot:
@@ -28,7 +29,7 @@ test('finishing the feel track shows the result panel with stars and time', asyn
   })
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=feeltrack&launch=1')
+  await goto(page, '/?level=feeltrack&launch=1')
   // during the run: no panel over the set (§5.11)
   await expect(page.locator('#gw-result')).toBeHidden({ timeout: 5_000 })
 
@@ -63,7 +64,7 @@ test.describe('the panel at 960x540 (playtest J: the Next button was cut off)', 
 
     // the BOTH-BUTTONS case: kitchen01's par build finishes with a star and
     // the ladder has a next rung, so the panel shows Retry AND Next level
-    await page.goto('/?level=kitchen01&build=par&launch=1')
+    await goto(page, '/?level=kitchen01&build=par&launch=1')
     await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
     await expect(page.locator('#gw-result-stars')).toContainText('★')
     await expect(page.locator('#gw-result-retry')).toBeVisible()
@@ -98,7 +99,7 @@ test.describe('the panel at 960x540 (playtest J: the Next button was cut off)', 
 
     // FIRST finish (nothing earned yet): the par is the genuine target —
     // the target lines with their per-line marks ride the panel
-    await page.goto('/?level=feeltrack&build=par&launch=1')
+    await goto(page, '/?level=feeltrack&build=par&launch=1')
     await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
     await expect(page.locator('#gw-result-pieces')).toHaveText(
       new RegExp(`^${FEEL_TRACK_KINDS.length} pieces — par ${FEELTRACK.par.pieces} ✓$`),
@@ -134,7 +135,7 @@ test.describe('the panel at 1280x633 (playtest Z round7: stars/Retry/Next and th
     })
     page.on('pageerror', (err) => errors.push(String(err)))
 
-    await page.goto('/?level=kitchen01&build=par&launch=1')
+    await goto(page, '/?level=kitchen01&build=par&launch=1')
     await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
     await expect(page.locator('#gw-result-next')).toBeVisible()
 
@@ -180,7 +181,7 @@ test.describe('the panel at 1280x633 (playtest Z round7: stars/Retry/Next and th
     // the fixture-only launch falls off (Z’s line: "fell off — the line let
     // go before the cup"); the note lives IN the panel, and the status and
     // callout caption lines ride right under the shrunken canvas
-    await page.goto('/?level=kitchen01&launch=1')
+    await goto(page, '/?level=kitchen01&launch=1')
     await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
     await expect(page.locator('#gw-result-note')).toBeVisible()
     await expect(page.locator('#gw-result-note')).toContainText('fell off')
@@ -205,25 +206,25 @@ test('the panel Next agrees with the level select for already-starred rungs (clo
   // save's prior best — deterministic from the save, no sim impact.
   // Both directions in one context (the star must exist in the save the
   // failure is judged against):
-  await page.goto('/?level=kitchen01&launch=1')
+  await goto(page, '/?level=kitchen01&launch=1')
   // DIRECTION 1 — a fresh save, a failed run: Retry only, and the level
   // select agrees kitchen02 is locked.
   await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
   await expect(page.locator('#gw-result-stars')).toHaveText('☆☆☆')
   await expect(page.locator('#gw-result-retry')).toBeVisible()
   await expect(page.locator('#gw-result-next')).toBeHidden()
-  await page.goto('/?levels=1')
+  await goto(page, '/?levels=1')
   await expect(page.locator('#gw-level-kitchen02')).toHaveAttribute('aria-disabled', 'true')
 
   // bank the star with the par line (real physics, real recordStars)
-  await page.goto('/?level=kitchen01&build=par&launch=1')
+  await goto(page, '/?level=kitchen01&build=par&launch=1')
   await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
   await expect(page.locator('#gw-result-stars')).toContainText('★')
 
   // DIRECTION 2 — replay the starred level and FAIL (0 stars this run):
   // the panel must show Next, because the SAVE says kitchen02 is open —
   // verified against the level select on the same save.
-  await page.goto('/?level=kitchen01&launch=1')
+  await goto(page, '/?level=kitchen01&launch=1')
   await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
   await expect(page.locator('#gw-result-stars')).toHaveText('☆☆☆') // this run earned nothing
   await expect(page.locator('#gw-result-next')).toBeVisible()
@@ -231,7 +232,7 @@ test('the panel Next agrees with the level select for already-starred rungs (clo
   // rung on the level select — one answer
   await page.click('#gw-result-next')
   await expect(page).toHaveURL(/level=kitchen02/)
-  await page.goto('/?levels=1')
+  await goto(page, '/?levels=1')
   await expect(page.locator('#gw-level-kitchen02')).not.toHaveAttribute('aria-disabled', 'true')
 })
 
@@ -265,7 +266,7 @@ test.describe('toolbar under the open panel (close-review F4: panel z 6 vs stick
     test.use({ viewport: { width: 1280, height: 720 } })
 
     test('Launch/Remove stay hittable at every scroll depth with the panel open', async ({ page }) => {
-      await page.goto('/?level=kitchen01&build=par&launch=1')
+      await goto(page, '/?level=kitchen01&build=par&launch=1')
       await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
       // the page genuinely scrolls (the regime the review flagged)
       expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeGreaterThan(720)
@@ -285,7 +286,7 @@ test.describe('toolbar under the open panel (close-review F4: panel z 6 vs stick
     test.use({ viewport: { width: 520, height: 760 } })
 
     test('the tray wraps to extra rows and Launch/Remove still hit with the panel open', async ({ page }) => {
-      await page.goto('/?level=kitchen01&build=par&launch=1')
+      await goto(page, '/?level=kitchen01&build=par&launch=1')
       await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
       // the toolbar WRAPPED — its host is far taller than the unwrapped
       // ~210 px, which is what puts the controls rows lower on the page
@@ -307,7 +308,7 @@ test('the help drawer lists the unlocked pieces and its renders are not black', 
   })
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/')
+  await goto(page, '/')
   await page.click('#gw-help-toggle')
   await expect(page.locator('#gw-help-list')).toBeVisible()
   await expect(page.locator('#gw-help-toggle')).toHaveAttribute('aria-expanded', 'true')

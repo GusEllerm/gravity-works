@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts'
 import { KITCHEN04 } from '../../src/world/levels/kitchen04.level.ts'
 import { replayRun } from '../../src/replay/replay.ts'
+import { goto } from './goto.ts'
 
 /**
  * Stage-3 level↔set wiring, end to end on the built shell:
@@ -36,7 +37,7 @@ test('kitchen01 finishes in its mounted set at the headless replay hash', async 
   const node = await replayRun(KITCHEN01, KITCHEN01.parBuild())
   expect(node.status).toBe('finished')
 
-  await page.goto('/?level=kitchen01&launch=1&build=par')
+  await goto(page, '/?level=kitchen01&launch=1&build=par')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'kitchen', { timeout: 60_000 })
   await expect(page.locator('#gw-status')).toContainText('finished', { timeout: 60_000 })
 
@@ -54,7 +55,7 @@ test('kitchen04 par finishes at the replay hash and the hazard path is live', as
   const node = await replayRun(KITCHEN04, KITCHEN04.parBuild())
   expect(node.status).toBe('finished')
 
-  await page.goto('/?level=kitchen04&launch=1&build=par')
+  await goto(page, '/?level=kitchen04&launch=1&build=par')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'kitchen', { timeout: 60_000 })
   // the mounted world carries the tap's wet-patch zone (the grip field the
   // car's wheel contacts sample — this par line is grip-independent by design)
@@ -68,7 +69,7 @@ test('kitchen04 par finishes at the replay hash and the hazard path is live', as
 })
 
 test('the builder ghost goes red on a set solid (L03 bowl-rim socket)', async ({ page }) => {
-  await page.goto('/?level=kitchen03')
+  await goto(page, '/?level=kitchen03')
   await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
 
   // the default boot is the FIXTURE build: ramp + cup + the two rim
@@ -96,7 +97,7 @@ test('the builder ghost goes red on a set solid (L03 bowl-rim socket)', async ({
 })
 
 test('the help drawer is collapsed behind its toggle until clicked', async ({ page }) => {
-  await page.goto('/')
+  await goto(page, '/')
   await expect(page.locator('#gw-help-list')).toBeHidden()
   await expect(page.locator('#gw-help-toggle')).toHaveAttribute('aria-expanded', 'false')
   await page.click('#gw-help-toggle')
@@ -107,7 +108,7 @@ test('the help drawer is collapsed behind its toggle until clicked', async ({ pa
 })
 
 test('harness scene=kitchen-set&level=kitchen03 mounts the level in the set', async ({ page }) => {
-  await page.goto('/?harness=1&scene=kitchen-set&level=kitchen03&shot=hero')
+  await goto(page, '/?harness=1&scene=kitchen-set&level=kitchen03&shot=hero')
   await page.waitForFunction(() => {
     const w = window as unknown as HarnessWindow
     return w.__sceneReady === true || w.__sceneError !== undefined

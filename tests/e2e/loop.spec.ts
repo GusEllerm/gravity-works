@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 /**
  * The playtest-fix spec (2026-10-05 stage 3): everything three fresh-eye
@@ -80,7 +81,7 @@ test('the end-of-run panel is in the viewport even when the page was scrolled', 
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/')
+  await goto(page, '/')
   await ready(page)
 
   // a human scrolls down to read under the canvas (status, hash, callouts)
@@ -111,7 +112,7 @@ test('the result states the par rules, and Retry / Launch / Next close the loop'
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/')
+  await goto(page, '/')
   await ready(page)
   await buildAllThree(page)
 
@@ -147,7 +148,7 @@ test('the permanent Retry returns the car and the view home after a terminal sta
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/')
+  await goto(page, '/')
   await ready(page)
   const home = await cameraPose(page)
 
@@ -167,7 +168,7 @@ test('the run camera follows on the live path', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?build=par&launch=1')
+  await goto(page, '/?build=par&launch=1')
   await expect(page.locator('#gw-status')).toContainText('running', { timeout: 60_000 })
   const a = await cameraPose(page)
   // §7.3: the render camera must travel while the car travels — a static
@@ -196,7 +197,7 @@ test('holding a tray piece teaches Place, and disabled buttons say why', async (
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/')
+  await goto(page, '/')
   await ready(page)
   await expect(page.locator('#gw-tray-hint')).toBeHidden()
 

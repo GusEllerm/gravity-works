@@ -50,6 +50,7 @@ import { dryRunHash } from '../../src/ui/builder.ts'
 import { deserialize } from '../../src/track/build.ts'
 import type { PieceKind, PieceParams } from '../../src/track/pieces.ts'
 import type { Build } from '../../src/track/build.ts'
+import { goto } from './goto.ts'
 
 const zlibCodec: ShareCodec = {
   deflate: async (b) => new Uint8Array(zlib.deflateRawSync(Buffer.from(b))),
@@ -64,7 +65,7 @@ async function openKitchen01Share(page: Page): Promise<{ time: number; duration:
   const build = KITCHEN01.parBuild()
   const node = await replayRun(KITCHEN01, build)
   const url = await encodeShareUrl({ levelId: 'kitchen01', seed: build.seed, hash: node.hash, build }, zlibCodec)
-  await page.goto(`/${url}`)
+  await goto(page, `/${url}`)
   await expect(page.locator('#gw-replay-status')).toHaveText('verified', { timeout: 90_000 })
   await page.waitForFunction(
     () => typeof (window as never as { __gwReplayState?: unknown }).__gwReplayState === 'function',
@@ -170,7 +171,7 @@ test.describe('stage 5 playtest-BB feel fixes', () => {
     test.slow()
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(String(err)))
-    await page.goto('/?level=kitchen03')
+    await goto(page, '/?level=kitchen03')
     await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
     const box = (await page.locator('#gw-canvas').boundingBox())!
     await page.hover('#gw-tray button[data-kind="landing"]')
@@ -219,8 +220,14 @@ test.describe('stage 5 playtest-BB feel fixes', () => {
     await page.mouse.move(cx + 100, cy, { steps: 8 })
     await page.mouse.up({ button: 'right' })
     await expect
-      .poll(async () => (await page.evaluate(() => (window as unknown as Record<string, () => { yawTarget: number }>).__gwBuildView())).yawTarget, { timeout: 5_000 })
-      .toBeGreaterThan(0.3)
+      .poll(async () => {
+        // SETTLED, not merely TARGETED (P3): the geometry below projects
+        // the LIVE pose, so a pose read mid-damping makes the tie-pair pick
+        // frame-pacing roulette — the frame-rate truth, not a clock
+        const v = await page.evaluate(() => (window as unknown as Record<string, () => { yaw: number; yawTarget: number }>).__gwBuildView())
+        return v.yawTarget > 0.3 && Math.abs(v.yaw - v.yawTarget) < 1e-3
+      }, { timeout: 10_000, message: 'the 30° orbit never SETTLED past 0.3 rad' })
+      .toBe(true)
     const pose2 = (await page.evaluate(() => (window as unknown as Record<string, () => { pos: number[]; quat: number[] }>).__gwCameraPose())) as { pos: number[]; quat: number[] }
     const sockets2 = (await page.evaluate(() => (window as unknown as Record<string, () => number[][]>).__gwOpenSockets())) as number[][]
     const proj2 = sockets2.map((s) => ({ s, p: projectPoint(pose2, box, s) })).filter((c) => c.p !== null && c.p.z > 0) as { s: number[]; p: { x: number; y: number; dCam: number; z: number } }[]
@@ -254,7 +261,7 @@ test.describe('stage 5 playtest-BB feel fixes', () => {
 
   test('4: the tie hint counts DISTINCT dry-run build outcomes, not sockets', async ({ page }) => {
     test.slow()
-    await page.goto('/?level=kitchen03')
+    await goto(page, '/?level=kitchen03')
     await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
     const box = (await page.locator('#gw-canvas').boundingBox())!
     await page.hover('#gw-tray button[data-kind="landing"]')
@@ -268,8 +275,13 @@ test.describe('stage 5 playtest-BB feel fixes', () => {
     await page.mouse.move(cx + 100, cy, { steps: 8 })
     await page.mouse.up({ button: 'right' })
     await expect
-      .poll(async () => (await page.evaluate(() => (window as unknown as Record<string, () => { yawTarget: number }>).__gwBuildView())).yawTarget, { timeout: 5_000 })
-      .toBeGreaterThan(0.3)
+      .poll(async () => {
+        // SETTLED, not merely TARGETED (P3) — the tie-pair pick projects
+        // the LIVE pose and must not depend on how fast the box renders
+        const v = await page.evaluate(() => (window as unknown as Record<string, () => { yaw: number; yawTarget: number }>).__gwBuildView())
+        return v.yawTarget > 0.3 && Math.abs(v.yaw - v.yawTarget) < 1e-3
+      }, { timeout: 10_000, message: 'the 30° orbit never SETTLED past 0.3 rad' })
+      .toBe(true)
     const pose = (await page.evaluate(() => (window as unknown as Record<string, () => { pos: number[]; quat: number[] }>).__gwCameraPose())) as { pos: number[]; quat: number[] }
     const sockets = (await page.evaluate(() => (window as unknown as Record<string, () => number[][]>).__gwOpenSockets())) as number[][]
     const proj = sockets.map((s) => ({ s, p: projectPoint(pose, box, s) })).filter((c) => c.p !== null && c.p.z > 0) as { s: number[]; p: { x: number; y: number; dCam: number; z: number } }[]

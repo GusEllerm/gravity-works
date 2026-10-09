@@ -31,6 +31,7 @@
  */
 import { test, expect, type Page } from '@playwright/test'
 import { AIM_TIE_PX, HOVER_PX } from '../../src/ui/builder.ts'
+import { goto } from './goto.ts'
 
 type Pose = { pos: number[]; quat: number[] }
 type Box = { x: number; y: number; width: number; height: number }
@@ -101,7 +102,7 @@ const count = (page: Page) => page.locator('#gw-piece-count')
 async function sweepAndPlace(page: Page) {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=feeltrack')
+  await goto(page, '/?level=feeltrack')
   await ready(page)
   await page.hover('#gw-tray button[data-kind="straight"]')
   await expect(page.locator('#gw-ghost-state')).not.toHaveText('', { timeout: 10_000 })
@@ -183,7 +184,7 @@ for (const [label, vp] of [
     test('the canvas rect never teleports between session states', async ({ page }) => {
       const errors: string[] = []
       page.on('pageerror', (err) => errors.push(String(err)))
-      await page.goto('/?level=kitchen01')
+      await goto(page, '/?level=kitchen01')
       await ready(page)
       const rect0 = (await live(page)).box
       await page.hover('#gw-tray button[data-kind="drop"]')
@@ -211,7 +212,7 @@ test.describe('scrolled page', () => {
   test.use({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 })
   test('sweep + click-the-ghost hold with the page scrolled', async ({ page }) => {
     test.slow()
-    await page.goto('/?level=feeltrack')
+    await goto(page, '/?level=feeltrack')
     await ready(page)
     const yBefore = (await live(page)).box.y
     await page.evaluate(() => window.scrollTo(0, 130))
@@ -244,7 +245,7 @@ test.describe('scrolled page', () => {
 })
 
 test('re-validation equals a live hover after the layout moves under a still cursor', async ({ page }) => {
-  await page.goto('/?level=feeltrack')
+  await goto(page, '/?level=feeltrack')
   await ready(page)
   await page.hover('#gw-tray button[data-kind="straight"]')
   let s = await live(page)
@@ -272,7 +273,7 @@ test('re-validation equals a live hover after the layout moves under a still cur
 test('graphics hiccup: lost context pauses cleanly, one click restores a painted page', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=feeltrack')
+  await goto(page, '/?level=feeltrack')
   await ready(page)
   await page.evaluate(() => (window as unknown as Record<string, () => void>).__gwForceContextLoss())
   await expect(page.locator('#gw-hiccup')).toContainText('graphics hiccup — click to restore')
@@ -309,7 +310,7 @@ test('graphics hiccup: lost context pauses cleanly, one click restores a painted
 })
 
 test('stuck press: a release with no tracked pointerdown places, never gets eaten', async ({ page }) => {
-  await page.goto('/?level=feeltrack')
+  await goto(page, '/?level=feeltrack')
   await ready(page)
   await page.hover('#gw-tray button[data-kind="straight"]')
   const s = await live(page)

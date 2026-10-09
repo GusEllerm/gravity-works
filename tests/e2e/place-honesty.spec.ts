@@ -27,6 +27,7 @@
  *    `playtest-bb.spec.ts`; the naming claim is what lives here).
  */
 import { test, expect, type Page } from '@playwright/test'
+import { goto } from './goto.ts'
 
 const ready = (page: Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
@@ -95,7 +96,7 @@ test.describe('place button names the socket it drops (playtest DD)', () => {
     test.slow()
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(String(err)))
-    await page.goto('/?level=kitchen01')
+    await goto(page, '/?level=kitchen01')
     await ready(page)
 
     // The button cannot place yet, so it names NO spot (a disabled button
@@ -177,7 +178,7 @@ test.describe('place button names the socket it drops (playtest DD)', () => {
 
   test('the button label rides every aim change the mouse makes', async ({ page }) => {
     test.slow()
-    await page.goto('/?level=kitchen01')
+    await goto(page, '/?level=kitchen01')
     await ready(page)
     await page.click('#gw-tray button[data-kind="drop"]')
     let s = await seams(page)

@@ -14,6 +14,7 @@
 //    the canonical origin (the empty-placement-table fallback every future
 //    porch rung will override with its own row).
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 interface HarnessWindow {
   __sceneReady?: boolean
@@ -28,7 +29,7 @@ test('game shell boots kitchen01 unchanged with the porch in the registry (no re
     if (m.type() === 'error') errors.push(m.text())
   })
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'kitchen', { timeout: 60_000 })
   await expect(page.locator('#gw-status')).toContainText('pieces used', { timeout: 60_000 })
   expect(errors).toEqual([])
@@ -41,7 +42,7 @@ test('porch set renders in the harness, post-ON, without console errors', async 
     if (m.type() === 'error') errors.push(m.text())
   })
 
-  await page.goto('/?harness=1&scene=porch-set&shot=hero&post=on')
+  await goto(page, '/?harness=1&scene=porch-set&shot=hero&post=on')
   await page.waitForFunction(() => {
     const w = window as unknown as HarnessWindow
     return w.__sceneReady === true || w.__sceneError !== undefined
@@ -63,7 +64,7 @@ test('the game-shell dev entry ?set=porch mounts the porch set', async ({ page }
     if (m.type() === 'error') errors.push(m.text())
   })
 
-  await page.goto('/?set=porch')
+  await goto(page, '/?set=porch')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'porch', { timeout: 60_000 })
   await expect(page.locator('#gw-status')).toContainText('pieces used', { timeout: 60_000 })
   expect(errors).toEqual([])

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 test('placeholder page loads without console errors', async ({ page }) => {
   const errors: string[] = []
@@ -7,7 +8,7 @@ test('placeholder page loads without console errors', async ({ page }) => {
   })
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/')
+  await goto(page, '/')
   await expect(page).toHaveTitle('Gravity Works')
   await expect(page.getByRole('heading', { name: 'Gravity Works' })).toBeVisible()
 

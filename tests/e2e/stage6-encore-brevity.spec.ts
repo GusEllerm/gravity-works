@@ -11,6 +11,7 @@
  * porch clock.
  */
 import { test, expect, type Page } from '@playwright/test'
+import { goto } from './goto.ts'
 
 const ready = (page: Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
@@ -29,7 +30,7 @@ for (const id of ['garden05', 'garage05'] as const) {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(String(err)))
 
-    await page.goto(`/?level=${id}`)
+    await goto(page, `/?level=${id}`)
     await ready(page)
 
     // NO hover, NO advice: the boot ring sits on the head of the chain, and

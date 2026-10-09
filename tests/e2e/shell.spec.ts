@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 /**
  * The shell-readiness gate the deployed-page check demanded (stage 3):
@@ -47,7 +48,7 @@ test('kitchen01 boots framed, empty, tray-gated, and says no literal "hidden"', 
   })
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
 
   // the camera shows the track, not a cream void
@@ -81,7 +82,7 @@ test('building all three tray pieces launches, finishes, and shows the result pa
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
 
   // the player builds the line: lip -> drop -> landing on the open exits

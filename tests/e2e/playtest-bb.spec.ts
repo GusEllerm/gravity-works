@@ -19,6 +19,7 @@
  *    dev-preview finish. The share/replay page wears no badge.
  */
 import { test, expect, type Page } from '@playwright/test'
+import { goto } from './goto.ts'
 
 const ready = (page: Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
@@ -42,7 +43,7 @@ test.describe('place with the result modal up (BB item 2)', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(String(err)))
 
-    await page.goto('/?level=bedroom02')
+    await goto(page, '/?level=bedroom02')
     await ready(page)
     const home = await cameraPose(page)
 
@@ -70,7 +71,7 @@ test.describe('place with the result modal up (BB item 2)', () => {
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(String(err)))
 
-    await page.goto('/?level=bedroom02')
+    await goto(page, '/?level=bedroom02')
     await ready(page)
 
     await page.click('#gw-launch')
@@ -108,7 +109,7 @@ test.describe('the failure caption never covers the ball (BB item 6)', () => {
       const errors: string[] = []
       page.on('pageerror', (err) => errors.push(String(err)))
 
-      await page.goto('/?launch=1')
+      await goto(page, '/?launch=1')
       await waitPanel(page)
       await expect(page.locator('#gw-result')).toHaveClass(/gw-result-strip/)
 
@@ -138,7 +139,7 @@ test.describe('the failure caption never covers the ball (BB item 6)', () => {
   }
 
   test('a finished run keeps the centred panel', async ({ page }) => {
-    await page.goto('/?build=par&launch=1')
+    await goto(page, '/?build=par&launch=1')
     await waitPanel(page)
     await expect(page.locator('#gw-result')).not.toHaveClass(/gw-result-strip/)
     await expect(page.locator('#gw-result-stars')).toHaveText('★★★')
@@ -147,7 +148,7 @@ test.describe('the failure caption never covers the ball (BB item 6)', () => {
 
 test.describe('the dev-preview badge on a locked ?level= (BB item 5)', () => {
   test('a locked rung loaded by URL wears the honest badge', async ({ page }) => {
-    await page.goto('/?level=bedroom02')
+    await goto(page, '/?level=bedroom02')
     await ready(page)
     await expect(page.locator('#gw-dev-preview')).toBeVisible()
     await expect(page.locator('#gw-dev-preview')).toHaveText(
@@ -156,13 +157,13 @@ test.describe('the dev-preview badge on a locked ?level= (BB item 5)', () => {
   })
 
   test('an unlocked rung wears nothing', async ({ page }) => {
-    await page.goto('/?level=kitchen01')
+    await goto(page, '/?level=kitchen01')
     await ready(page)
     await expect(page.locator('#gw-dev-preview')).toHaveCount(0)
   })
 
   test('finishing a dev preview mints nothing: no star enters the save', async ({ page }) => {
-    await page.goto('/?level=bedroom02&build=par&launch=1')
+    await goto(page, '/?level=bedroom02&build=par&launch=1')
     await waitPanel(page)
     await expect(page.locator('#gw-result-stars')).not.toHaveText('☆☆☆')
     const stars = await page.evaluate(
@@ -175,14 +176,14 @@ test.describe('the dev-preview badge on a locked ?level= (BB item 5)', () => {
 
   test('the share/replay page wears no badge, even for a locked rung', async ({ page }) => {
     // make the link from a dev-preview finish of the LOCKED bedroom02…
-    await page.goto('/?level=bedroom02&build=par&launch=1')
+    await goto(page, '/?level=bedroom02&build=par&launch=1')
     await waitPanel(page)
     await page.click('#gw-result-share')
     await expect(page.locator('#gw-result-share-row')).toBeVisible()
     const url = await page.locator('#gw-result-share-url').inputValue()
     expect(url).toMatch(/#s=[A-Za-z0-9_-]+$/)
     // …a friend opening it lands on the replay page: no badge anywhere
-    await page.goto(url)
+    await goto(page, url)
     await expect(page.locator('#gw-replay-status')).toHaveText('verified', { timeout: 90_000 })
     await expect(page.locator('#gw-dev-preview')).toHaveCount(0)
   })

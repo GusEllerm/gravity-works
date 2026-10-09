@@ -28,6 +28,7 @@
  * this spec's finished run, never a URL.
  */
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 // Budget: this spec plays TWO full build-and-run cycles (kitchen05 + the
 // bedroom rung) through the real UI in one test. The every-other-wait budget
@@ -94,7 +95,7 @@ const unlockKitchen05 = (page: import('@playwright/test').Page) =>
  *  opens the bedroom on every claim below. */
 const finishKitchen05 = async (page: import('@playwright/test').Page): Promise<void> => {
   await unlockKitchen05(page)
-  await page.goto('/?level=kitchen05')
+  await goto(page, '/?level=kitchen05')
   await ready(page)
   await buildAndLaunch(page, ['booster', 'gapLip', 'drop', 'gapLip', 'drop', 'landing'], 'end of the pre-built ramp')
   await expect(page.locator('#gw-status')).toContainText('finished')
@@ -150,7 +151,7 @@ test('bedroom03 is locked until kitchen05 earns a star, and the locked button sa
 
   // fresh save: kitchen01 open (stars absent, reached absent), the woven
   // frontier locked with its rule on-screen — never a silent dead button
-  await page.goto('/?levels=1')
+  await goto(page, '/?levels=1')
   await expect(page.locator('#gw-level-kitchen01')).toBeVisible()
   expect(await page.getAttribute('#gw-level-kitchen01', 'aria-disabled')).toBeNull()
   await expect(page.locator('#gw-level-bedroom03')).toHaveAttribute('aria-disabled', 'true')
@@ -180,7 +181,7 @@ test('bedroom03 is locked until kitchen05 earns a star, and the locked button sa
   // the star this run writes is earned on a live board — exactly what the
   // bedroom03 lock rule below reads)
   await finishKitchen05(page)
-  await page.goto('/?levels=1')
+  await goto(page, '/?levels=1')
   expect(await page.getAttribute('#gw-level-bedroom03', 'aria-disabled')).toBeNull()
   await expect(page.locator('#gw-level-kitchen05')).toContainText('★')
   await expect(page.locator('#gw-level-bedroom03')).toContainText('☆☆☆')
@@ -198,7 +199,7 @@ test('bedroom01 is finishable through the real UI, reached via the unlocked rung
   await page.addInitScript(seedStars({ kitchen03: 3 }))
 
   // the player travels THROUGH the level select, not by URL
-  await page.goto('/?levels=1')
+  await goto(page, '/?levels=1')
   await page.click('#gw-level-bedroom01')
   await page.waitForURL(/\?level=bedroom01/)
   await ready(page)
@@ -226,7 +227,7 @@ test('the campaign OPENS: garage04\u2019s Next lands on porch01 with the porch m
   // the ladder walk, not the unlock (campaign unlock semantics are the
   // domain of the unit suite and the tests above).
   await page.addInitScript(seedStars({ garage05: 3 })) // garage04's PREVIOUS rung is now the encore (stage 6: 05 slots before the finale)
-  await page.goto('/?level=garage04&launch=1&build=par')
+  await goto(page, '/?level=garage04&launch=1&build=par')
   await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
   await expect(page.locator('#gw-status')).toContainText('finished')
   await expect(page.locator('#gw-result-next')).toBeVisible()
@@ -242,7 +243,7 @@ test('the campaign OPENS: garage04\u2019s Next lands on porch01 with the porch m
 
 test('set switch renders error-free: the bedroom level paints with zero console errors', async ({ page }) => {
   const errors = noErrors(page)
-  await page.goto('/?level=bedroom01')
+  await goto(page, '/?level=bedroom01')
   await expect(page.locator('#gw-stage')).toHaveAttribute('data-set-mounted', 'bedroom', {
     timeout: 60_000,
   })
@@ -277,7 +278,7 @@ test('the ENCORE rungs are playable from a clean browser: bedroom05, bathroom05,
     const page = await context.newPage()
     const errors = noErrors(page)
     await page.addInitScript(seedStars({ [prev]: 1 })) // the previous rung's ONE star — the whole key
-    await page.goto(`/?level=${id}&build=par&launch=1`)
+    await goto(page, `/?level=${id}&build=par&launch=1`)
     await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
     await expect(page.locator('#gw-status')).toContainText('finished')
     // the encore's par line on an unlocked board is a 3★ run (4 tray
@@ -296,9 +297,9 @@ test('the ENCORE mint opens the room finale: a clean bedroom05 finish unlocks be
   const context = await browser.newContext()
   const page = await context.newPage()
   await page.addInitScript(seedStars({ garden02: 1 })) // bedroom05's PREVIOUS rung on the woven ladder
-  await page.goto('/?level=bedroom05&build=par&launch=1')
+  await goto(page, '/?level=bedroom05&build=par&launch=1')
   await expect(page.locator('#gw-status')).toContainText('finished', { timeout: 60_000 })
-  await page.goto('/?levels=1')
+  await goto(page, '/?levels=1')
   await expect(page.locator('#gw-level-bedroom04')).toBeVisible()
   expect(await page.getAttribute('#gw-level-bedroom04', 'aria-disabled')).toBeNull()
   await expect(page.locator('#gw-level-garden03')).toHaveAttribute('aria-disabled', 'true') // the rung after the finale

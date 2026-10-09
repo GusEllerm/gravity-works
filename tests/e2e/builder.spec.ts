@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { FEEL_TRACK_KINDS } from '../../src/feel/feeltrack.ts'
 import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts'
+import { goto } from './goto.ts'
 
 /**
  * The builder surface contract (stable selectors): #gw-tray with a button per
@@ -21,7 +22,7 @@ test('builder: ghost appears on hover, place and remove move the piece counter',
   })
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=feeltrack')
+  await goto(page, '/?level=feeltrack')
   await expect(page.getByRole('heading', { name: 'Gravity Works' })).toBeVisible()
   await expect(page.getByRole('toolbar', { name: 'Piece tray' })).toBeVisible()
   await expect(page.locator('#gw-tray button')).toHaveCount(13)
@@ -67,7 +68,7 @@ test('builder: empty-handed R says what it did, once (playtest R\u2019s K4 wall)
   })
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=feeltrack')
+  await goto(page, '/?level=feeltrack')
   await expect(page.locator('#gw-piece-count')).toBeVisible({ timeout: 30_000 })
   // nothing held: the line is silent before the first press
   await expect(page.locator('#gw-ghost-state')).toHaveText('')
@@ -106,7 +107,7 @@ test('builder: remove is one spoken shot per click — round-trip, never silent 
   // Z's finding: two Remove clicks "eaten" with the counter unmoved and the
   // mode "quietly off". Remove is ONE-SHOT per click, and every click now
   // SPEAKS — success names the piece, refusal names why. No silent drift.
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
   await expect(page.locator('#gw-piece-count')).toHaveText('0 of 3 pieces used')
 

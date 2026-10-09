@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 /**
  * THE ERROR BOUNDARY (program T0.4, evaluation R2/R3): an unexpected error
@@ -25,7 +26,7 @@ test('a thrown exception lands on the honest overlay, not a frozen canvas', asyn
   })
   // ?launch=1 so a run is PLAYING at the injection: the pre-fix truth was a
   // frozen canvas with this line stuck at "running — t" and nothing to click
-  await page.goto('/?level=kitchen01&launch=1')
+  await goto(page, '/?level=kitchen01&launch=1')
   await expect(page.locator('#gw-status')).toContainText('running', { timeout: 30_000 })
 
   const overlay = page.locator('#gw-error')
@@ -46,7 +47,7 @@ test('a rejected set-chunk import shows the same face with Retry, never a half-p
   // killing that fetch is the flaky-CDN shape of evaluation R3
   const blocked = '**/assets/kitchen-*.js'
   await page.route(blocked, (route) => route.abort())
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
 
   // the face goes up (not the pre-fix half-page: an h1 and a warm canvas
   // with no builder and no message)

@@ -408,3 +408,23 @@ merge brought half-done checkpoint code under old tests and two unit tests went 
 where the agent ran them. Rule: for any worktree branch, `git -C <worktree> rev-parse HEAD` and
 `git status --porcelain` FIRST; merge THAT sha (objects are shared across worktrees), and re-push
 the branch from the worktree before concluding. Wire-fault salvage must verify the PUSH, not the commit.
+
+## 2026-10-10 — The spec harness speaks through the URL-affordance family (post/intro off) [agent decision] `[systems engineer]`
+The face-lane merge made the post stack and the premise beat DEFAULT (program T1.2), and CI — a
+SwiftShader box with no GPU — turned that into a mass-timeout event (run 37998013944: a11y-touch ×2,
+the Tab walk, focus-visible, camera-torture, lifecycle-kill, playtest N/PQ/TU, program-voice, shell,
+stage6-k3 — every failure an actionability wait starved of frames, all green on Metal). Chosen: the
+e2e harness opts NON-VISUAL specs out through the RECORDED PARAMS, not through build flavors or
+mutations — `tests/e2e/goto.ts` is the one door non-visual specs land through (`specUrl` appends
+`post=off&intro=off` to relative addresses; an explicit param on the call always wins; hash routes
+and absolute URLs pass through; pinned by `tests/unit/spec-url.test.ts`), and the specs that TEST
+post/intro/tint-shift visuals (`visual`, `filmstrip`, the `replay`/`share-replay`/`determinism` hash
+family, `perf*`, `post-dispose`, `intro`, `harness`, `playtest-y-clickdiff`) never import it and ride
+the DEFAULT page with their honest budgets. The beat needed a param to opt out BY WORD, not by
+signal: `?intro=off` joins the family (`src/pages/intro.ts` — off wins over every audience
+inference; `navigator.webdriver` stays as belt-and-braces for real browsers; `tests/unit/
+intro-params.test.ts` pins the logic). Amends the family list of Decision Log 2026-10-07 ("recorded,
+not stripped" — doctrine unchanged, roster longer); the param is a skip, never a behavior change for
+humans. Stragglers fixed event-driven, not slowed: `lifecycle-kill` folds its proxy remove-click INTO
+the kill task (the old click→evaluate RPC gap was the 350 ms debounce's under CPU load) and settles
+by polling the save on disk instead of out-waiting clocks. See [[src]] for the param roster.

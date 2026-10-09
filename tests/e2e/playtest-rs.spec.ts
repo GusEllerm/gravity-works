@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts'
+import { goto } from './goto.ts'
 
 /**
  * Playtests R+S round-3 shell fixes (stage 4, Systems Engineer):
@@ -28,7 +29,7 @@ const ready = async (page: import('@playwright/test').Page) => {
 test('the open result panel blocks NOTHING: tray selects and Remove works behind it (R)', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   // build one piece and launch it into a terminal status: the panel is up
@@ -87,7 +88,7 @@ test('the open result panel blocks NOTHING: tray selects and Remove works behind
 test('reload preserves the working build, and stays fresh where the save says fresh (S)', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   await expect(page.locator('#gw-piece-count')).toHaveText('0 of 3 pieces used')
 
@@ -103,7 +104,7 @@ test('reload preserves the working build, and stays fresh where the save says fr
 
   // …and the fresh direction: ?build=par is recorded addressing, a test rig,
   // and re-mounts the reference build whatever the autosave holds
-  await page.goto('/?level=kitchen01&build=par')
+  await goto(page, '/?level=kitchen01&build=par')
   await ready(page)
   await expect(page.locator('#gw-piece-count')).toHaveText(
     `${KITCHEN01.parBuild().pieces.filter((p) => p.def !== 'ramp' && p.def !== 'finishCup').length} of 3 pieces used`,
@@ -115,7 +116,7 @@ test('reload preserves the working build, and stays fresh where the save says fr
 test('after Remove both count lines are ONE source — identical everywhere (S)', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   const tally = async (): Promise<string[]> =>
@@ -146,14 +147,14 @@ test('target labels name the thing, never the internals (R+S)', async ({ page })
   page.on('pageerror', (err) => errors.push(String(err)))
 
   // kitchen01: the cup's open exit is the CUP they can see, not "end of cup"
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   await expect(page.locator('#gw-target-label')).toHaveText('target: end of the pre-built ramp')
   await page.keyboard.press('ArrowRight')
   await expect(page.locator('#gw-target-label')).toHaveText('target: cup on the table')
 
   // kitchen04: the bare release-point socket says what it is, not "level start"
-  await page.goto('/?level=kitchen04')
+  await goto(page, '/?level=kitchen04')
   await ready(page)
   await page.keyboard.press('ArrowLeft')
   await expect(page.locator('#gw-target-label')).toHaveText('target: the car\u2019s start point')
@@ -172,7 +173,7 @@ test('target labels name the thing, never the internals (R+S)', async ({ page })
 test('par is defined where it first appears (R+S)', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
-  await page.goto('/?levels=1')
+  await goto(page, '/?levels=1')
   await expect(page.locator('.gw-level-rules').first()).toContainText(
     'par = the target time for this run',
   )

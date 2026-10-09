@@ -23,6 +23,7 @@
  *    advances the par chain, and the pure-UI three-click build finishes.
  */
 import { test, expect } from '@playwright/test'
+import { goto } from './goto.ts'
 
 const ready = (page: import('@playwright/test').Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
@@ -33,7 +34,7 @@ test('the open result panel passes world clicks through to the canvas and select
 
   // two of three pieces, then a launch that FAILS: the panel is up while a
   // tray piece is still holdable — the exact state N lost clicks in
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   await page.click('#gw-tray-gapLip')
   await page.click('#gw-place')
@@ -119,7 +120,7 @@ test('the permanent Retry sits outside the panel and retries as-built', async ({
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   // the control is there BEFORE any panel exists, and it says the word
   await expect(page.locator('#gw-reset')).toBeVisible()
@@ -145,7 +146,7 @@ test('the star rules ride the level select before the first run', async ({ page 
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?levels=1')
+  await goto(page, '/?levels=1')
   // an open rung states what its stars cost, with ITS par numbers (kitchen01:
   // par 3 pieces, par 2.25 s per pars.json)
   await expect(page.locator('#gw-level-kitchen01 .gw-level-rules')).toContainText('finish the run')
@@ -159,7 +160,7 @@ test('a level quietly states the star rules on its first boot and never again', 
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   // before any run exists, the quiet line is up (playtest N: the rules only
   // appeared AFTER a run)
@@ -167,7 +168,7 @@ test('a level quietly states the star rules on its first boot and never again', 
 
   // a second boot of the same level says it no more (the seen set rode the
   // save, exactly like the piece callouts)
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   await expect(page.locator('#gw-callout')).toHaveText('')
 
@@ -178,7 +179,7 @@ test('a spent tray button steals nothing on hover and names BOTH kinds on click'
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
   // spend the Landing only: it goes onto the ramp exit (legal, off-par)
   await page.click('#gw-tray-landing')
@@ -209,7 +210,7 @@ test('fresh kitchen01 aims the FIRST Place at the par rail and the pure-UI build
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
-  await page.goto('/?level=kitchen01')
+  await goto(page, '/?level=kitchen01')
   await ready(page)
 
   // ZERO aiming: holding the first tray piece shows the target on the

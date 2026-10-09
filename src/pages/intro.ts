@@ -23,7 +23,13 @@
  *   `?intro=1`, so the cinematic stays gated by its own tests, never by
  *   accident;
  * - `?intro=1` forces the beat for that spec (and for a human who wants
- *   the encore) — but never past reduced-motion, which wins outright.
+ *   the encore) — but never past reduced-motion, which wins outright;
+ * - `?intro=off` is the family's explicit opt-OUT (program P3): the same
+ *   recorded-address affordance `?post=off` is for the composer — the
+ *   e2e harness appends it so a non-visual spec can never sit through
+ *   the beat even on a surface where the webdriver signal is absent.
+ *   It is a skip, never a suppression of anything else: with `off` the
+ *   page is the ordinary builder.
  *
  * SILENT is structural, not a volume hack: a cold first visit has made no
  * gesture, the audio engine is unlocked ONLY by a gesture, and the beat's
@@ -55,6 +61,10 @@ const BEAT_TIMEOUT_MS = 9000;
 /** Decide, per the header's law, whether THIS landing plays the beat. */
 export function premiereWanted(params: URLSearchParams): boolean {
   const forced = params.get('intro') === '1';
+  // the explicit opt-out wins first — an addressed skip is a decision,
+  // not a signal to infer (the `?post=off` law; see the URL-affordance
+  // family in the Decision Log 2026-10-07 entry)
+  if (params.get('intro') === 'off') return false;
   // the reduced-motion law wins outright — straight to the builder
   if (reducedMotionActive(loadSave().settings.reducedMotion)) return false;
   if (forced) return true;

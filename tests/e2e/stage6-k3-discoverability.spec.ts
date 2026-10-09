@@ -25,6 +25,7 @@
  *    one launch — clears the rung.
  */
 import { test, expect, type Page } from '@playwright/test'
+import { goto } from './goto.ts'
 
 const ready = (page: Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
@@ -34,7 +35,7 @@ test.describe('kitchen03 is discoverable, not just solvable (playtest DD)', () =
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(String(err)))
 
-    await page.goto('/?level=kitchen03')
+    await goto(page, '/?level=kitchen03')
     await ready(page)
     await page.click('#gw-tray-straight')
 
@@ -68,7 +69,7 @@ test.describe('kitchen03 is discoverable, not just solvable (playtest DD)', () =
   })
 
   test('a legal seat past the finish says the run ends at the cup', async ({ page }) => {
-    await page.goto('/?level=kitchen03')
+    await goto(page, '/?level=kitchen03')
     await ready(page)
     await page.click('#gw-tray-straight')
     await page.locator('#gw-builder').press('ArrowRight') // the cup's own open exit
@@ -81,7 +82,7 @@ test.describe('kitchen03 is discoverable, not just solvable (playtest DD)', () =
   })
 
   test('the drive-off and nose-first ADD lines both name the END (DD loop-breaker)', async ({ page }) => {
-    await page.goto('/?level=kitchen03')
+    await goto(page, '/?level=kitchen03')
     await ready(page)
 
     // DD's build: the tray piece seated at the end they could see (the cup),
@@ -111,7 +112,7 @@ test.describe('kitchen03 is discoverable, not just solvable (playtest DD)', () =
     const errors: string[] = []
     page.on('pageerror', (err) => errors.push(String(err)))
 
-    await page.goto('/?level=kitchen03')
+    await goto(page, '/?level=kitchen03')
     await ready(page)
 
     // NO hover, NO advice, NO instructions: the boot ring sits on the head of
