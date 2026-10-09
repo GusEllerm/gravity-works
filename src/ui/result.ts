@@ -669,6 +669,32 @@ export function formatTime(seconds: number): string {
   return `${Math.max(0, seconds).toFixed(2)} s`;
 }
 
+/**
+ * THE "YOU VS PAR" BEAT (program T3.2): the par ghost beside the car makes
+ * the finish line a RACE, and the finish line must say what the race was in
+ * the stars' OWN numbers — the same two par lines the stars are scored on,
+ * as deltas. `time` is the signed gap (negative = you were quicker); a
+ * finished run always gets a line, a failure gets nothing (the note already
+ * owns that story, and a delta over a run that never finished is noise —
+ * the same rule that keeps ✓/✗ off the failure tallies).
+ */
+export function vsParLine(model: ResultModel): string {
+  if (model.status !== 'finished') return '';
+  const dt = model.time - model.par.time;
+  const dTime =
+    Math.abs(dt) < 0.005
+      ? 'time even with par'
+      : `time ${dt < 0 ? '−' : '+'}${Math.abs(dt).toFixed(2)} s vs par`;
+  const dp = model.piecesUsed - model.par.pieces;
+  const dPieces =
+    dp === 0
+      ? 'same pieces as par'
+      : dp < 0
+        ? `${-dp} fewer piece${dp === -1 ? '' : 's'} than par`
+        : `${dp} more piece${dp === 1 ? '' : 's'} than par`;
+  return `you vs par — ${dTime} · ${dPieces}`;
+}
+
 export interface ResultPanel {
   element: HTMLElement;
   /** The as-built retry: one click back to Launch (wired by the shell). */
@@ -692,6 +718,12 @@ export interface ResultPanel {
   shareNote: HTMLElement;
   /** Retire the last run's share artifacts (a new run invalidates them). */
   resetShare(): void;
+  /** THE "you vs par" delta beat (program T3.2): the stars' two numbers as
+   *  a race result, filled by `show` on a finished run, empty otherwise. */
+  vsPar: HTMLElement;
+  /** The daily chip (program T3.4): the shell fills it on a daily-seeded
+   *  page and hides it everywhere else; `show` never touches it. */
+  daily: HTMLElement;
   show(model: ResultModel): void;
   hide(): void;
 }
@@ -722,6 +754,8 @@ function makePanel(): {
   stars: HTMLElement;
   time: HTMLElement;
   pieces: HTMLElement;
+  vsPar: HTMLElement;
+  daily: HTMLElement;
   rules: HTMLElement;
   note: HTMLElement;
   retry: HTMLButtonElement;
@@ -756,6 +790,11 @@ function makePanel(): {
   time.id = 'gw-result-time';
   const pieces = document.createElement('p');
   pieces.id = 'gw-result-pieces';
+  const vsPar = document.createElement('p');
+  vsPar.id = 'gw-result-vspar';
+  const daily = document.createElement('p');
+  daily.id = 'gw-result-daily';
+  daily.hidden = true;
   const rules = document.createElement('p');
   rules.id = 'gw-result-rules';
   const note = document.createElement('p');
@@ -791,9 +830,9 @@ function makePanel(): {
   shareNote.setAttribute('role', 'status');
   shareNote.setAttribute('aria-live', 'polite');
   shareRow.prepend(shareUrl, shareNote);
-  root.append(stars, time, pieces, rules, note, buttons, shareRow);
+  root.append(stars, time, pieces, vsPar, daily, rules, note, buttons, shareRow);
   return {
-    root, stars, time, pieces, rules, note, retry, next,
+    root, stars, time, pieces, vsPar, daily, rules, note, retry, next,
     share, shareRow, shareUrl, shareCard, shareNote,
   };
 }
@@ -805,7 +844,7 @@ function makePanel(): {
  */
 export function createResultPanel(host: HTMLElement): ResultPanel {
   const {
-    root, stars, time, pieces, rules, note, retry, next,
+    root, stars, time, pieces, vsPar, daily, rules, note, retry, next,
     share, shareRow, shareUrl, shareCard, shareNote,
   } = makePanel();
   host.appendChild(root);
@@ -818,6 +857,8 @@ export function createResultPanel(host: HTMLElement): ResultPanel {
     shareUrl,
     shareCard,
     shareNote,
+    vsPar,
+    daily,
     resetShare() {
       shareRow.hidden = true;
       shareUrl.value = '';
@@ -832,6 +873,9 @@ export function createResultPanel(host: HTMLElement): ResultPanel {
       const lines = outcomeLines(model);
       time.textContent = lines.time;
       pieces.textContent = lines.pieces;
+      const delta = vsParLine(model);
+      vsPar.textContent = delta;
+      vsPar.hidden = delta === '';
       rules.textContent = lines.rules;
       note.textContent = model.note;
       note.hidden = model.note === '';

@@ -210,6 +210,9 @@ h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
 #gw-result.gw-result-strip #gw-result-buttons { margin-top: 0; }
 #gw-result.gw-result-strip #gw-result-share-row { margin-top: 4px; flex-basis: 100%; }
 #gw-result-stars, #gw-result-time, #gw-result-pieces { margin: 0; }
+/* the T3.2 delta beat and the T3.4 daily chip ride the panel's type */
+#gw-result-vspar, #gw-result-daily { margin: 2px 0 0; font-size: 11px; opacity: 0.9; }
+#gw-result-vspar[hidden], #gw-result-daily[hidden] { display: none; }
 #gw-result-stars { font-size: 20px; letter-spacing: 2px; }
 #gw-result-rules { margin: 2px 0 0; font-size: 11px; opacity: 0.85; }
 #gw-result-note { margin: 4px 0 0; font-style: italic; }

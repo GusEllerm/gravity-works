@@ -408,3 +408,36 @@ merge brought half-done checkpoint code under old tests and two unit tests went 
 where the agent ran them. Rule: for any worktree branch, `git -C <worktree> rev-parse HEAD` and
 `git status --porcelain` FIRST; merge THAT sha (objects are shared across worktrees), and re-push
 the branch from the worktree before concluding. Wire-fault salvage must verify the PUSH, not the commit.
+
+## 2026-10-09 — A ghost is a TRACE, not a second simulation: the racing and daily-seed laws `[agent decision]` `[feel engineer]`
+
+The design evaluation's "retention 10×" (§8) was cheap ONLY if a ghost cost what a replay costs; the
+plan (Action Plan 2026-10-09 T3.2) also demanded a MEASURED answer to the piece-order question before
+any cross-player equality claim. Two shapes were on the table: run a second live `World` beside the
+player's and step both (a coupling the hash COULD leak through, a second solver cost per frame, and a
+ghost that could diverge from its own recorded run), or make the ghost the recorded STEP LIST of a
+headless wind of the very build the deterministic engine already hashes — the same `TapeRecorder` list
+`replayRun({record:true})` yields, read at the live sim's clock. Chose the trace: the coupling is one
+`sync(world.time)` line, `hashedBodies` never sees a ghost (`replay:all` 30/30 at this HEAD; the live
+page's run hashes byte-equal to the Node replay, asserted), and a ghost cannot diverge from a run that
+already happened. THE ORDER PROBE: `scripts/probe-piece-order.mjs` — every registered level's
+reference build under 4 deterministic piece-ARRAY permutations — measured **148/148 permuted replays
+hash-identical with `seq` kept** (`reify` re-sorts by `seq`) and **148/148 identical even RENUMBERED**
+(array order becoming canonical order — hash AND step count); the answer is recorded HERE and in [[replay]] so no
+future note has to re-wonder, and the par ghost never leaned on the claim anyway (it winds the
+canonical `parBuild()` array itself). A friend link follows the same law with the build as its public
+face: the share payload decodes with the shipped parser, THEIR build mounts as the TRACK through the
+ordinary rebuild line (a build that refuses to mount SAYS so and stays their run — the alternative,
+mounting half a build, was refused), their car is that build's trace, and an edit that replaces their
+track LIFTS their ghost rather than racing a stranger's track. THE LAUNCH LAW: the ghost car is painted
+FROM THE LAUNCH (the grid stays one car — a translucent duplicate in the player's own grid pose is a
+double-exposure, and the committed idle-shell baseline stays byte-stable, no re-baseline owed);
+reduced motion defaults the toggle OFF (the ghost is pure motion — the choice stays the player's).
+DAILY rode the same rails at the SMALLEST honest shape (T3.4): `?seed=` is the page feature,
+`?daily=1` is `seed = hash(UTC date)` riding the build's existing seed field into the hash and nowhere
+else (zero shipped hashes move), the record is one localStorage triple with the SINGLE-MACHINE clause
+inside the chip's sentence — a leaderboard would be a server we do not have, so the copy says what the
+mechanism can honour. Rejected: a second live World (coupling risk, cost, divergence), a daily "page"
+(new chrome for what is one param plus one chip line), storing ghosts in the save envelope (a ghost is
+derivable data; the save carries choices, not caches). Proof: `tests/unit/ghost.test.ts`,
+`tests/e2e/ghosts.spec.ts`. See [[replay]], [[ui]], [[save]], `Sessions/2026-10-09 Program T3 ghosts`.
