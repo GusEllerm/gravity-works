@@ -15,7 +15,7 @@ tags: [module, camera]
 (`railPointAt(s)`, `frameAt(s)`, `length` — the interface `KitRig` in
 `src/feel/kittrack.ts` satisfies via `rail()` / `frameAt()`), an optional
 `{ solids }` list of world-space AABBs (`RunCameraSolid`, the set's prop
-boxes at leaf granularity — `setCameraSolids` in `src/boot.ts`, fed by
+boxes at leaf granularity — `setCameraSolids` in `src/pages/mount.ts` (re-exported by `src/boot.ts`), fed by
 whichever set the level MOUNTS through the registry walk — a new set needs
 no camera-code edit, which is how the stage-4 bathroom and garden dresses ride the
 same clearing), and the
