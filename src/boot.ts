@@ -942,6 +942,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     // the set group belongs to the shell, not to any one world — pull it out
     // before dispose() traverses (it disposes every mesh material it finds)
     setInstance?.group.removeFromParent();
+    // THE SAME LAW FOR THE TRAY (R7): the ghost and the target ring are the
+    // builder's, created once, and left in the scene they were being disposed
+    // and re-uploaded on EVERY placement — a shader recompile hitch per piece
+    builder.liftFromScene();
     world?.dispose();
     world = next;
     post?.dispose();

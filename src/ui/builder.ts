@@ -325,6 +325,15 @@ export interface Builder {
   build(): Build;
   /** Move the ghost and target marker into a (re)built world's scene. */
   setScene(scene: THREE.Scene | null): void;
+  /** TAKE THE GHOST AND THE RING OUT of the scene about to be destroyed
+   *  (R7, mirroring the set group's law): `World.dispose` traverses the
+   *  scene it frees and disposes every mesh geometry and material it
+   *  finds, and these two belong to the BUILDER, not to any one world.
+   *  Left in place, every placement paid a shader recompile and a
+   *  geometry re-upload for the ghost and the target ring — a
+   *  placement-time hitch on weak GPUs for things that are never
+   *  re-created. The shell calls this before `world?.dispose()`. */
+  liftFromScene(): void;
   /** Attach the game canvas (stores the projection camera). Pointer
    *  GESTURES are owned by `attachBuildView` (`src/camera/build-camera.ts`),
    *  which calls `aimAt` on hover and `clickPlaceAt` on a clean click. */
@@ -1480,6 +1489,10 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
         next.add(marker);
       }
       updateGhost();
+    },
+    liftFromScene() {
+      ghostGroup.removeFromParent();
+      marker.removeFromParent();
     },
     attachCanvas(canvas, cam) {
       // the projection context only: the POINTER GESTURES (hover/click vs

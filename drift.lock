@@ -53,7 +53,7 @@ sig = "75fe014791ac0c81"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/ui/builder.ts"
-sig = "255d8cdd0891d905"
+sig = "1706119672077b56"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -178,7 +178,7 @@ sig = "d01d2ba38efcad2e"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/boot.ts"
-sig = "a4b8a26043ec5797"
+sig = "80c4254dde574a67"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -238,7 +238,7 @@ sig = "cb7dd5d5414784c4"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/boot.ts"
-sig = "a4b8a26043ec5797"
+sig = "80c4254dde574a67"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -563,7 +563,7 @@ sig = "d01d2ba38efcad2e"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "src/boot.ts"
-sig = "a4b8a26043ec5797"
+sig = "80c4254dde574a67"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -648,7 +648,7 @@ sig = "5032349490e77279"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "src/boot.ts"
-sig = "a4b8a26043ec5797"
+sig = "80c4254dde574a67"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
@@ -748,7 +748,7 @@ sig = "30af55b32a0f0f22"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/boot.ts"
-sig = "a4b8a26043ec5797"
+sig = "80c4254dde574a67"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -823,7 +823,7 @@ sig = "d80fcdaccddc7908"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/ui/builder.ts"
-sig = "255d8cdd0891d905"
+sig = "1706119672077b56"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -863,7 +863,7 @@ sig = "68f378bf54ee5d36"
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
 target = "src/boot.ts"
-sig = "a4b8a26043ec5797"
+sig = "80c4254dde574a67"
 
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
@@ -903,7 +903,7 @@ sig = "1becf3bba294d4ef"
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
 target = "src/boot.ts"
-sig = "a4b8a26043ec5797"
+sig = "80c4254dde574a67"
 
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
@@ -943,7 +943,7 @@ sig = "2bcbeeffa80b98e6"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/boot.ts"
-sig = "a4b8a26043ec5797"
+sig = "80c4254dde574a67"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -1093,7 +1093,7 @@ sig = "9c6d05daff1e0345"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "src/boot.ts"
-sig = "a4b8a26043ec5797"
+sig = "80c4254dde574a67"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -1163,7 +1163,7 @@ sig = "8fccf7ad9cd3d485"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/boot.ts"
-sig = "a4b8a26043ec5797"
+sig = "80c4254dde574a67"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1203,7 +1203,7 @@ sig = "85920b82ecda91cd"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/builder.ts"
-sig = "255d8cdd0891d905"
+sig = "1706119672077b56"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
