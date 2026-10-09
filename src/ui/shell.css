@@ -280,10 +280,13 @@ h1 { font-size: 20px; letter-spacing: 0.02em; margin: 8px 0 12px; }
  * quiet bar under the canvas (bible §5.11: UI is a thin layer, no game-UI),
  * the scrub track carrying the run's event beats as ticks, and the honest
  * verification hash pushed BELOW the fold. See src/boot.ts bootSharedRun. */
-#gw-replay-title { margin: 4px 0 0; }
-#gw-replay-tagline { font-size: 13px; color: #6a5636; margin: 2px 0 8px; }
-#gw-replay-badge { display: inline-block; font-size: 12px; color: #2c2013; background: #f0d9a8; border: 1px solid #8a7040; border-radius: 999px; padding: 2px 10px; margin: 0 0 8px; }
-#gw-replay-badge[hidden] { display: none; }
+#gw-replay-title { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: #4a3a20; }
+#gw-replay-tagline { font-size: 12px; color: #6a5636; margin: 2px 0 8px; }
+#gw-replay-verdict { font-size: 14px; color: #2c2013; margin: 6px 0 0; }
+#gw-replay-verdict[data-verdict='verified'] { color: #22602a; }
+#gw-replay-verdict[data-verdict='mismatch'] { color: #8a3413; }
+#gw-replay-verify-fold { margin: 6px 0; }
+#gw-replay-verify-fold summary { cursor: pointer; }
 #gw-replay-bar { display: flex; align-items: center; gap: 8px; margin: 8px 0 2px; flex-wrap: wrap; }
 #gw-replay-bar[hidden] { display: none; }
 #gw-replay-play, .gw-replay-speed {

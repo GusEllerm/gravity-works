@@ -5,9 +5,11 @@
  * (`actionableKindsFor`), which it may CRITIQUE (`placedKindsFor`), which
  * were placed REVERSED (`flippedKindsFor`), which carry the drive-off tail
  * (`stockedKindsFor`), the goal-fixture NOUN the fell line ends on
- * (`goalNounFor`), plus the tray plumbing they stand on (`levelTray`,
- * `levelTrayParams`) and the player-piece tally the share card scores with
- * (`playerPieceCount`).
+ * (`goalNounFor`), the MOVE clause's misplaced-piece reading of the build
+ * (`moveHintFor` — the T2.1 voice wave: a piece stranded past the goal, or
+ * a booster not spent at the head of the line), plus the tray plumbing they
+ * stand on (`levelTray`, `levelTrayParams`) and the player-piece tally the
+ * share card scores with (`playerPieceCount`).
  *
  * Pure by law: nothing here touches a `World`, the physics, or the run hash
  * (the same UI-side law the sets were born under — playtests Q/W/AA/BB, see
@@ -16,7 +18,7 @@
  * ladder tests (`levelTrayParams`, `stockedKindsFor`). `src/boot.ts` imports
  * these at the call sites; behavior is the boot's own unchanged line.
  */
-import { fixtureQuota, type Build } from '../track/build.ts';
+import { fixtureQuota, type Build, type PlacedPiece } from '../track/build.ts';
 import { PIECES, pieceLabel, type PieceKind, type PieceParams } from '../track/pieces.ts';
 import { SNAP_ANGLE_TOL, SNAP_TRANSLATION_TOL } from '../track/snap.ts';
 import { socketGap, tangentAngle, transformSocket, type Socket } from '../track/socket.ts';
@@ -170,4 +172,154 @@ export function playerPieceCount(level: Level, build: Build): number {
   if (!fixtures) return build.pieces.length;
   const isFixture = fixtureQuota(fixtures);
   return build.pieces.filter((p) => !isFixture(p.def)).length;
+}
+
+// ---- the MOVE wave (program T2.1) -------------------------------------------
+
+/** What the drive-off note's MOVE clause can say about a build that has
+ *  nothing left to ADD (playtest-R/k04 truth: "the failure note only knows
+ *  how to say ADD when the tray is empty and the truth is MOVE"). Two
+ *  readings, both facts about the socket graph the walk below computes:
+ *
+ *  - `orphan` — a piece the PLAYER placed sits PAST the goal fixture (the
+ *    piece the registry gives a `captureVolume` — the same rule
+ *    `goalNounFor` speaks): seated on the goal's own open exit, on a line
+ *    the run can never travel (the builder's past-finish tell says it at
+ *    the seat; this says it at the failure). The kitchen03/kitchen04
+ *    residual (Home Deferred, Decision Log 2026-10-08): "fills the tray on
+ *    the far side gets the BARE head" — the head now names the piece and
+ *    the goal it sits past. A fixture chain-past the goal (kitchen02's
+ *    intentional run-out deck) is NOT an orphan — only a placed piece the
+ *    player paid tray pieces for names anything.
+ *  - `booster` — the booster is actionable (in the tray or on the track)
+ *    but is NOT spent at the head of the line: unplaced, seated off the
+ *    start-connected chain, or seated after another tray piece. The
+ *    kitchen05 sequencing truth (playtest Q round 2 + the 2026-10-09 player
+ *    evaluation #5): `speed saved for later overshoots` is the ratified
+ *    callout copy; this clause says WHERE and WHEN the failure happened to
+ *    be a booster story. `head` is the word for the first tray piece the
+ *    chain runs through ("before the first lip"), `startWord` the first
+ *    built piece's word ("off the ramp"), and `reachable` says whether
+ *    that head-of-line socket is OPEN right now — open means the `]` walk
+ *    can put the ring on it, occupied means the line must come back first.
+ *
+ *  Pure level+build data, like every derivation in this file — the physics
+ *  and the run hash never see it. `null` (and the `null` note argument that
+ *  carries it) leaves every shipped line byte-identical. */
+export type MoveHint = {
+  /** Which of the two readings fired (see this type's doc). */
+  move: 'orphan' | 'booster';
+  /** The sentence half, phrased from build data (see `moveHintFor`). */
+  clause: string;
+  /** Whether the line teaches the `]` walk (`AIM_WALK_COPY`) — the walk
+   *  doubled as aim-to-socket after the stage-6 Tab fix, and the program
+   *  T2.1 law is to teach it wherever ordering is the answer. */
+  teachWalk: boolean;
+};
+
+/** The start-connected chain of a build, in travel order: walk from the
+ *  FIRST-BUILT piece through joins within `SNAP_TRANSLATION_TOL`, exactly
+ *  the walk `chainHeadIndex` takes in `src/ui/builder.ts` (playtest N's
+ *  law: that chain IS the head of the par line). Deterministic in build
+ *  order — no scoring, no geometry beyond the join test. */
+function chainOrder(build: Build): PlacedPiece[] {
+  const pieceSockets = (p: PlacedPiece): [Socket, Socket] => {
+    const [a, b] = PIECES[p.def].sockets(p.params);
+    return [transformSocket(a, p.transform), transformSocket(b, p.transform)];
+  };
+  const order: PlacedPiece[] = [];
+  if (build.pieces.length === 0) return order;
+  const seen = new Set<PlacedPiece>();
+  let current = build.pieces[0]!;
+  order.push(current);
+  seen.add(current);
+  let cursor = pieceSockets(current)[1];
+  for (let guard = 0; guard < build.pieces.length; guard++) {
+    const next = build.pieces.find(
+      (p) => !seen.has(p) && socketGap(pieceSockets(p)[0], cursor) < SNAP_TRANSLATION_TOL,
+    );
+    if (!next) break;
+    seen.add(next);
+    order.push(next);
+    current = next;
+    cursor = pieceSockets(next)[1];
+  }
+  return order;
+}
+
+/** The MOVE clause's reading of a build (see `MoveHint`). `tray` is the
+ *  same map `stockedKindsFor` reads — needed only for the booster's
+ *  stock-side half. */
+export function moveHintFor(
+  level: Level,
+  build: Build,
+  tray: Partial<Record<PieceKind, number>> | undefined,
+): MoveHint | null {
+  const fixtures = (level as unknown as { fixtures?: Partial<Record<PieceKind, number>> }).fixtures;
+  // the SAME occurrence rule `playerPieceCount` applies: fixture quotas
+  // fill in build order, the rest of the pieces are the player's
+  const quota = fixtureQuota(fixtures ?? {});
+  const isFixture = new Map<PlacedPiece, boolean>();
+  for (const p of build.pieces) isFixture.set(p, quota(p.def));
+
+  const order = chainOrder(build);
+
+  // ORPHAN-PAST-GOAL: a piece seated on the goal's own open exit. Read
+  // off the GOAL, not the start-chain walk — the stranded piece is usually
+  // OFF the walked chain (the line let go short of the cup; that is why
+  // the run fell), so the scan starts at the goal fixture itself.
+  const goalAt = build.pieces.findIndex((p) => PIECES[p.def].captureVolume !== undefined);
+  if (goalAt >= 0) {
+    const goal = build.pieces[goalAt]!;
+    const goalExit = transformSocket(PIECES[goal.def].sockets(goal.params)[1], goal.transform);
+    const past = build.pieces.find(
+      (p, i) =>
+        i !== goalAt &&
+        socketGap(transformSocket(PIECES[p.def].sockets(p.params)[0], p.transform), goalExit) <
+          SNAP_TRANSLATION_TOL,
+    );
+    if (past && !isFixture.get(past)) {
+      return {
+        move: 'orphan',
+        clause: `the ${pieceLabel(past.def).toLowerCase()} sits past the ${pieceLabel(goal.def).toLowerCase()} — pull it back`,
+        teachWalk: true,
+      };
+    }
+    // a piece seated past the goal that is a FIXTURE (kitchen02's visible
+    // run-out curve sits on the cup's exit in EVERY kitchen02 line) is
+    // authored, not stranded: it names nothing. The reading continues to
+    // the booster half.
+  }
+
+  // BOOSTER SEQUENCING: actionable but not spent at the head of the line.
+  const placedBooster = build.pieces.some((p) => p.def === 'booster');
+  const boosterStock = tray ? (tray['booster'] ?? 0) - build.pieces.filter((p) => p.def === 'booster').length : 0;
+  if (!placedBooster && boosterStock <= 0) return null;
+  const firstTrayPiece = order.find((p) => !isFixture.get(p));
+  if (firstTrayPiece?.def === 'booster') return null; // spent EARLY already — nothing to say
+  if (order.length === 0)
+    return { move: 'booster', clause: 'place the booster FIRST, straight off the start', teachWalk: true };
+  // the head-of-line socket is open when the first built piece's exit has
+  // nothing seated on it — the same open-end law the `]` walk walks. When
+  // it is taken, the honest verb is REMOVE (back to the head of the line)
+  // before the placing the sentence asks for.
+  const start = order[0]!;
+  const startWord = pieceLabel(start.def).toLowerCase();
+  const startExit = transformSocket(PIECES[start.def].sockets(start.params)[1], start.transform);
+  const reachable = !build.pieces.some(
+    (p) =>
+      p !== start &&
+      socketGap(transformSocket(PIECES[p.def].sockets(p.params)[0], p.transform), startExit) <
+        SNAP_TRANSLATION_TOL,
+  );
+  const head = firstTrayPiece ? pieceLabel(firstTrayPiece.def).toLowerCase() : null;
+  return {
+    move: 'booster',
+    clause: head
+      ? reachable
+        ? `place the booster FIRST, before the first ${head}`
+        : `remove back to the ${startWord} and place the booster FIRST, before the first ${head}`
+      : `place the booster FIRST, straight off the ${startWord}`,
+    teachWalk: true,
+  };
 }

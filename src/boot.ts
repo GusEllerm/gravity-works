@@ -95,6 +95,7 @@ import {
   goalNounFor,
   levelTray,
   levelTrayParams,
+  moveHintFor,
   placedKindsFor,
   stockedKindsFor,
 } from './ui/advice.ts';
@@ -1234,6 +1235,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         // line from, read off the builder's socket graph (stage 6, kitchen03).
         // null with no builder (a shared/replay page) keeps the shipped line.
         builder.aimHint(),
+        // THE MOVE clause (program T2.1): the build graph's reading of a
+        // spent tray — a piece stranded past the goal, or a booster not
+        // spent at the head of the line (`moveHintFor`, `src/ui/advice.ts`;
+        // pure data like every gate above — the physics and the hash never
+        // see it).
+        moveHintFor(level, currentBuild, tray),
       );
       resultPanel.show(model);
       // the run's OUTCOME is an audio event exactly once per run: the

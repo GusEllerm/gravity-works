@@ -40,6 +40,7 @@
  */
 import { starsFor, starGlyphs, type Par, type RunResult } from '../world/stars.ts';
 import type { PieceKind } from '../track/pieces.ts';
+import type { MoveHint } from './advice.ts';
 import { AIM_WALK_COPY } from './callouts.ts';
 import type { AimHint } from './builder.ts';
 
@@ -326,6 +327,29 @@ export function createRunRecorder(): RunRecorder {
  * placed-and-straight landing keeps the plain `flatten the landing`; a
  * tray-only kind keeps its ADD wording; an unknown set (no builder
  * context) keeps the shipped wording like every other gate here.
+ *
+ * THE MOVE CLAUSE (program T2.1 — the 2026-10-09 player evaluation's truth
+ * #4: "the failure note only knows how to say ADD when the tray is empty
+ * and the truth is MOVE", and truth #5, the kitchen05 booster wall). The
+ * drive-off branch's BARE head — stock spent, nothing honest to add — was
+ * the mute-by-generic ending the evaluator walked into at rung 4; the
+ * `moveHint` argument (from `moveHintFor` in `src/ui/advice.ts`, the build
+ * graph's own reading) lets the line say MOVE when the build data can back
+ * it: a piece the player placed PAST the goal gets named where it sits
+ * ("the straight sits past the cup — pull it back · place at: …", the
+ * ORPHAN-PAST-GOAL clause the kitchen03 residual asked for), and a booster
+ * actionable but not spent at the head of the line gets the sequencing
+ * truth the ratified callout already carries ("the booster needs spending
+ * EARLY … · press ] to walk the open ends") — the tie-walk doubling as
+ * aim-to-socket (Tab stays the browser's focus walk; `]`/`[` are the
+ * walk, verified against the stage-6 a11y fix). Precedence inside the
+ * branch: the ORPHAN reading outranks the ADD list (naming kinds while a
+ * placed piece sits past the goal is the silence being fixed); the
+ * BOOSTER reading fires only where the ADD tail went silent (stock spent
+ * or tray-only-booster) — while the tray holds a kind to add, the shipped
+ * ADD+where line is the more actionable truth and stands untouched.
+ * Unknown (`null` — a shared/replay page, no builder) keeps every shipped
+ * line byte-identical, like every other gate here.
  */
 export function physicsNote(
   result: RunResult,
@@ -336,6 +360,10 @@ export function physicsNote(
   stockedKinds: ReadonlySet<PieceKind> | null = null,
   flippedKinds: ReadonlySet<PieceKind> | null = null,
   aimHint: AimHint | null = null,
+  /** What the drive-off branch may say when the ADD tail went silent (the
+   *  MOVE clause — see `moveHintFor` in `src/ui/advice.ts`); UI-side advice
+   *  only, the physics and the run hash never see it. */
+  moveHint: MoveHint | null = null,
 ): string {
   if (result.status === 'finished') return '';
   if (result.hazardsTouched > 0) return 'a hazard took the run — line up to miss it';
@@ -437,6 +465,19 @@ export function physicsNote(
     // as one undifferentiated line. Unknown stock keeps the head alone.
     const head = `fell off — the line let go before the ${goalNoun ?? 'cup'}`;
     if (stockedKinds === null) return head;
+    // THE MOVE CLAUSE FIRST READING (T2.1): a piece the PLAYER placed sits
+    // past the goal — the misplaced truth outranks the ADD list, because
+    // "add a drop" while a drop sits past the cup is the sentence the
+    // 2026-10-09 evaluation called a lie-by-silence (attempt A's note,
+    // kitchen04 at 2.258 s, named three kinds and never the piece already
+    // stranded on the far side). The pull-back sentence names the piece,
+    // the goal, and the end it returns to — the same WHERE tail the ADD
+    // list rides. Derivation: `moveHintFor`, `src/ui/advice.ts` — socket
+    // facts only, never a guess; `null` (a shared/replay page, no
+    // builder) keeps every shipped line byte-identical.
+    if (moveHint?.move === 'orphan') {
+      return `${head}; ${moveHint.clause}${moveHint.teachWalk ? whereTail : ''}`;
+    }
     const named = ([
       ['straight', 'a straight'],
       ['drop', 'a drop'],
@@ -445,7 +486,21 @@ export function physicsNote(
     ] as [PieceKind, string][])
       .filter(([k]) => stockedKinds.has(k))
       .map(([, w]) => w);
-    if (named.length === 0) return head; // tray spent or empty — nothing honest to add
+    if (named.length === 0) {
+      // Tray spent (or the only stock is the booster, which no ADD list
+      // names) — the OTHER MOVE reading: the booster's sequencing truth,
+      // gated on the booster being actionable at all (the playtest-Q law
+      // that a note never names a piece the player cannot act on). While
+      // the tray still holds a kind to ADD, the shipped ADD+where line
+      // stands untouched below — the booster sentence never overrides an
+      // actionable ADD, only silence.
+      if (moveHint?.move === 'booster' && canAct('booster')) {
+        return `${head}; the booster needs spending EARLY — ${moveHint.clause}${
+          moveHint.teachWalk ? ` · ${AIM_WALK_COPY}` : ''
+        }`;
+      }
+      return head; // nothing honest to add AND nothing honest to move
+    }
     const list =
       named.length === 1 ? named[0]! : `${named.slice(0, -1).join(', ')} or ${named[named.length - 1]!}`;
     // THE WHERE TAIL (stage 6, kitchen03's second wall — playtest DD: "the
@@ -534,12 +589,27 @@ export function resultModel(
    *  `src/boot.ts`, the far open end of the start-connected chain) — UI-side
    *  advice only, the physics and the run hash never see it. */
   aimHint: AimHint | null = null,
+  /** The MOVE clause's reading of the build (`moveHintFor` in
+   *  `src/ui/advice.ts`): a piece stranded past the goal, or a booster not
+   *  spent at the head of the line — UI-side advice only, never the
+   *  physics, never the hash. */
+  moveHint: MoveHint | null = null,
 ): ResultModel {
   return {
     stars: starsFor(result, par),
     time: result.time,
     piecesUsed: result.piecesUsed,
-    note: physicsNote(result, ev, actionableKinds, placedKinds, goalNoun, stockedKinds, flippedKinds, aimHint),
+    note: physicsNote(
+      result,
+      ev,
+      actionableKinds,
+      placedKinds,
+      goalNoun,
+      stockedKinds,
+      flippedKinds,
+      aimHint,
+      moveHint,
+    ),
     status: result.status,
     par,
     bestStarsBefore,

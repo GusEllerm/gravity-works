@@ -1,11 +1,22 @@
 /**
- * THE SHARED-RUN PAGE (program T0.2, extracted verbatim from `src/boot.ts`):
- * a `#s=` fragment opens this page — above the fold the cinematic replay
- * player (`startReplayPlayer`), below it the honest verification half
- * (`#gw-replay-status` and the two hashes the specs read). The seam surface
- * (`__gwReplay*`), the chunked-wind law, and the `verified`/`mismatch`
- * strings are the shared-run page's own, unchanged by the move; see
- * `Modules/replay`.
+ * THE SHARED-RUN PAGE (program T0.2, extracted verbatim from `src/boot.ts`;
+ * restacked by program T2.2):
+ * a `#s=` fragment opens this page PLAYING — the film IS the first thing:
+ * the stage mounts at the top of the page and paints its preview frame
+ * before the wasm await, the tape winds behind the bar, and the playhead
+ * rolls the instant the ready state allows (no click — autoplay is legal
+ * here because the page re-SIMS the run, it is not a media embed; the
+ * evaluation's own distinction). The one thing the visitor came for, the
+ * VERDICT, is ONE honest line under the player (`#gw-replay-verdict`),
+ * machine-local in its wording ("on this machine") — the badge-then-fold
+ * scavenger hunt is gone, and the hash essay lives under a `details`
+ * summary below the fold. The verification half below is unchanged and
+ * still honest — the tape IS the verification: the chunked wind
+ * (`TapeRecorder`, below) steps the deterministic sim in timer-sized
+ * slices and its terminal hash is the verdict — `parseShareUrl` → wind →
+ * compare → `verified`/`mismatch` in `#gw-replay-status` (the seam strings
+ * the specs pin — the human line carries the same words in prose, the
+ * seam keeps its exact text); see `Modules/replay`.
  */
 import * as THREE from 'three';
 import { FIXED_DT } from '../physics/sim.ts';
@@ -46,18 +57,16 @@ import type { RunCameraSolid } from '../camera/run-camera.ts';
 
 export async function bootSharedRun(root: HTMLElement): Promise<void> {
   root.innerHTML = '';
+  // T2.2 SHARE FIRST TWO SECONDS (the 2026-10-09 evaluation, 5/5: "the
+  // share link shows the game but the verdict is not the first thing, I
+  // wait and nothing moves"). The title is a CAPTION, not a hero — the
+  // stage is the first substantial node and paints its preview frame
+  // before the wasm await, so frame 0 of a share link is the RUN, not a
+  // heading and not a waiting room.
   const title = document.createElement('h1');
   title.id = 'gw-replay-title';
   title.textContent = 'Watch this run';
   root.appendChild(title);
-  const tagline = document.createElement('p');
-  tagline.id = 'gw-replay-tagline';
-  tagline.textContent = 'One build, one release — this page replays it exactly.';
-  root.appendChild(tagline);
-  const badge = document.createElement('p');
-  badge.id = 'gw-replay-badge';
-  badge.hidden = true;
-  root.appendChild(badge);
 
   const stage = document.createElement('div');
   stage.id = 'gw-stage';
@@ -67,6 +76,24 @@ export async function bootSharedRun(root: HTMLElement): Promise<void> {
   bar.id = 'gw-replay-bar';
   bar.hidden = true;
   root.appendChild(bar);
+
+  // THE ONE HONEST LINE (T2.2, replaces the badge-and-fold scavenger
+  // hunt): the verdict lives under the player, in words, machine-local by
+  // construction — "on this machine" is in the sentence because the hash
+  // is a re-sim verdict and determinism is proven only across the two
+  // measured machines (`Reference/Cross-platform determinism`). No symbol
+  // alone: the glyph rides the word. Before the settle it promises the
+  // verdict, never pre-empts it.
+  const verdict = document.createElement('p');
+  verdict.id = 'gw-replay-verdict';
+  verdict.setAttribute('role', 'status');
+  verdict.setAttribute('aria-live', 'polite');
+  verdict.textContent = 'replaying the run on this machine — the verdict lands when the tape is ready\u2026';
+  root.appendChild(verdict);
+  const tagline = document.createElement('p');
+  tagline.id = 'gw-replay-tagline';
+  tagline.textContent = 'One build, one release — this page replays it exactly.';
+  root.appendChild(tagline);
 
   // the honest half, BELOW the fold: the verdict and the two hashes, exactly
   // the strings the stage-2/3/4 specs read
@@ -78,14 +105,23 @@ export async function bootSharedRun(root: HTMLElement): Promise<void> {
   const status = paragraph('gw-replay-status', verify);
   const computed = paragraph('gw-replay-hash', verify, 'text');
   const embedded = paragraph('gw-replay-embedded', verify, 'text');
+  // THE HASH ESSAY GOES BEHIND A TOGGLE (T2.2): the paragraph was nine
+  // lines of mechanism at the top of the honest half; the mechanism is
+  // still on the page, one deliberate click down.
+  const fold = document.createElement('details');
+  fold.id = 'gw-replay-verify-fold';
+  const foldSummary = document.createElement('summary');
+  foldSummary.textContent = 'Why a hash is a promise';
+  fold.appendChild(foldSummary);
   const verifyNote = document.createElement('p');
   verifyNote.id = 'gw-replay-verify-note';
   verifyNote.textContent =
-    'The link carries the run’s final state hash. This page replays the level, build and seed on this machine and compares. Same machine, same engine — the same run. That identity has so far crossed machines intact: every reference-build hash in the game measures identical on Linux/x86-64 and Apple silicon (CI-measured) — other platforms remain unproven.';
-  verify.appendChild(verifyNote);
+    'The link carries the run\u2019s final state hash. This page replays the level, build and seed on this machine and compares. Same machine, same engine — the same run. That identity has so far crossed machines intact: every reference-build hash in the game measures identical on Linux/x86-64 and Apple silicon (CI-measured) — other platforms remain unproven.';
+  fold.appendChild(verifyNote);
+  verify.appendChild(fold);
   root.appendChild(verify);
 
-  status.textContent = 'replaying…';
+  status.textContent = 'replaying\u2026';
   let payload;
   let level: Level;
   try {
@@ -93,6 +129,7 @@ export async function bootSharedRun(root: HTMLElement): Promise<void> {
     level = getLevel(payload.levelId);
   } catch {
     status.textContent = 'invalid share link';
+    verdict.textContent = 'this link is not a run — nothing to replay';
     return;
   }
   embedded.textContent = `link hash ${payload.hash}`;
@@ -112,8 +149,10 @@ export async function bootSharedRun(root: HTMLElement): Promise<void> {
     verdictSettled = true;
     computed.textContent = `replay hash ${hash}`;
     status.textContent = run.verified ? 'verified' : 'mismatch';
-    badge.hidden = false;
-    badge.textContent = run.verified ? '✓ verified on this machine' : '⚠ differs on this machine';
+    verdict.textContent = run.verified
+      ? '\u2713 verified \u00b7 matches the link \u2014 re-simulated on this machine'
+      : '\u26a0 this machine disagrees \u00b7 the replay here differs from the link';
+    verdict.dataset['verdict'] = run.verified ? 'verified' : 'mismatch';
     return run.verified;
   };
   wireShareCard(verify, payload, level, run);
@@ -132,6 +171,8 @@ export async function bootSharedRun(root: HTMLElement): Promise<void> {
         settle(headless.hash, headless.time, headless.status);
       } catch {
         status.textContent = 'mismatch';
+        verdict.textContent = '\u26a0 this machine could not replay the run \u2014 the link cannot be checked here';
+        verdict.dataset['verdict'] = 'mismatch';
       }
     }
   }

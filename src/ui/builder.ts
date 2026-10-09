@@ -574,6 +574,19 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   root.appendChild(controls);
   const placeBtn = button('gw-place', 'Place', controls);
   const rotateBtn = button('gw-rotate', 'Rotate (R)', controls);
+  // THE REMOVE BUTTON NAMES WHAT IT TAKES (program T2.1, the kitchen03
+  // residual the 2026-10-09 player evaluation re-counted): Remove is
+  // last-in-first-out, and a stranded piece past the goal made that LIFO a
+  // mystery — "clear and rebuild" by guesswork. The label now carries the
+  // same socket-graph words the ring and the note speak: the piece word
+  // plus where it sits — `by the ramp` / `by the lip` (the anchor its
+  // entry is joined to), `past the cup` (seated on the finish's own exit —
+  // the orphan the MOVE clause names), `at the car's start point` (on the
+  // bare release socket), or `you placed last` for a piece the graph can
+  // locate by nothing else — so the button says WHICH piece this click
+  // takes, and the LIFO law is in the label (`title`/`aria-label` say it
+  // outright). The spoken `removed the X` line stays exactly as shipped:
+  // the button is where the naming lives, the specs' strings are untouched.
   const remove = button('gw-remove-piece', 'Remove piece', controls);
   // The permanent Retry (playtest N: a dismissed panel hid the way back).
   // Same as-built semantics the result panel's Retry carries — the shell
@@ -1009,6 +1022,18 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       ? `Place \u2014 ${list[Math.min(targetIndex, list.length - 1)]!.label}`
       : 'Place';
     placeBtn.setAttribute('aria-disabled', String(!canPlace));
+    // THE REMOVE BUTTON NAMES WHAT IT TAKES (T2.1): the same LIFO index
+    // the click will take, phrased in the socket-graph words the ring and
+    // the failure note already speak — the LIFO law stated in the label.
+    {
+      const ri = removeIndex();
+      remove.textContent = ri < 0 ? 'Remove piece' : `Remove the ${removePhrase(pieces[ri]!)}`;
+      remove.title = 'removes the last piece you placed';
+      remove.setAttribute(
+        'aria-label',
+        ri < 0 ? 'Remove the last piece you placed' : `Remove the ${removePhrase(pieces[ri]!)} — the last piece you placed`,
+      );
+    }
   }
 
   /** Once-per-session flip legibility: the reversed label carries the WHY
@@ -1172,6 +1197,38 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     return true;
   }
 
+  /** The index LIFO Remove takes — the last piece the TRAY owns (the
+   *  scan `removeLast` performs, factored so the BUTTON LABEL can name
+   *  the same piece the CLICK will take; one source, no drift). */
+  function removeIndex(): number {
+    let i = pieces.length - 1;
+    if (trayKinds) {
+      while (i >= 0 && !trayKinds.has(pieces[i]!.def)) i -= 1;
+    }
+    return i;
+  }
+
+  /** Where this piece sits, in the page's existing socket words (the
+   *  anchor its ENTRY is joined to — `by the ramp`, `past the cup` on the
+   *  finish's own exit, the release point by name). A piece the graph
+   *  cannot locate by anything else is honestly located by the LIFO law
+   *  itself: it IS the last one placed. */
+  function removePhrase(p: PlacedPiece): string {
+    const w = pieceLabel(p.def).toLowerCase();
+    const entry = transformSocket(PIECES[p.def].sockets(p.params)[0], p.transform);
+    const anchor = pieces.find(
+      (q) =>
+        q.seq !== p.seq &&
+        transformSocket(PIECES[q.def].sockets(q.params)[1], q.transform).pos.distanceTo(entry.pos) < JOIN_TOL,
+    );
+    if (anchor) {
+      if (anchor.def === 'finishCup') return `${w} past the ${pieceLabel(anchor.def).toLowerCase()}`;
+      return `${w} by the ${pieceLabel(anchor.def).toLowerCase()}`;
+    }
+    if (entry.pos.distanceTo(level.startSocket.pos) < JOIN_TOL) return `${w} at the car\u2019s start point`;
+    return `${w} you placed last`;
+  }
+
   function removeLast(): boolean {
     stuckNote = null;
     // REMOVE SAYS WHAT IT DID (playtest Z round7: two clicks "eaten" with
@@ -1182,14 +1239,11 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       ghostState.textContent = 'nothing to remove — the track is empty';
       return false;
     }
-    let i = pieces.length - 1;
-    if (trayKinds) {
-      while (i >= 0 && !trayKinds.has(pieces[i]!.def)) i -= 1;
-      if (i < 0) {
-        // only the level's own fixtures remain: nothing the button owns
-        ghostState.textContent = 'nothing to remove — only the level’s own pieces are on the track';
-        return false;
-      }
+    const i = removeIndex();
+    if (i < 0) {
+      // only the level's own fixtures remain: nothing the button owns
+      ghostState.textContent = 'nothing to remove — only the level’s own pieces are on the track';
+      return false;
     }
     const removed = pieceLabel(pieces[i]!.def).toLowerCase();
     pieces = pieces.filter((_, j) => j !== i).map((p, j) => ({ ...p, seq: j }));
