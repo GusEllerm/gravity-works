@@ -117,6 +117,9 @@ test('R9 race: a tab writing from a stale view merges — it cannot clobber the 
 test('R9 bursts: two tabs on different levels racing placements keep BOTH records', async ({
   browser,
 }) => {
+  // two full app boots + four debounce windows + the save-merge polls do
+  // not fit the default 30 s once the parallel suite shares the box
+  test.slow()
   const context = await browser.newContext()
   const tabA = await context.newPage()
   const tabB = await context.newPage()

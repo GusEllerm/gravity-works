@@ -141,7 +141,15 @@ test('a REAL background (app-switch, no pagehide) flushes the pending edit', asy
   for (let attempt = 0; attempt < 8 && !kill; attempt++) {
     await page.bringToFront()
     await page.click('#gw-remove-piece')
-    await other.bringToFront()
+    // The steal RPC only belongs on the REAL path. On the proxy path an
+    // extra `bringToFront` between the remove and the kill evaluate was a
+    // second page-task boundary the 300 ms debounce could (and under the
+    // parallel suite's load, did) slip through — the disk already showed
+    // the flush when the recorder read "pending", and every attempt lost
+    // the race the loop re-arms forever. The proxy's whole guarantee is
+    // that ONE task flips, dispatches and reads; keep the RPCs off its
+    // critical path (full-suite flake sweep, program T1.2 close).
+    if (realPath) await other.bringToFront()
     let killedBySteal = false
     if (realPath) {
       try {
