@@ -158,10 +158,13 @@ async function ensurePaused(page: Page): Promise<void> {
 
 test.describe('stage 5 share link opens into the cinematic replay', () => {
   test('the trace, the seek and the playhead are the deterministic sim', async ({ page }) => {
-    // CI's SwiftShader paces rAF frames at hundreds of ms; the pace-law clamp
-    // (honestly: never jump, at most 2 frames per tick) then covers the
-    // window slower than 4x wall. The law stays asserted exactly; only the
-    // patience grows (a bare 30 s budget flaked red under parallel load).
+    // CI's SwiftShader paces rAF frames at hundreds of ms, so the budget
+    // and the coverage poll stay generous (a bare 30 s budget flaked red
+    // under parallel load). The stage-6 autopsy retired the patience theory
+    // for the LAST red: the playhead never starved — the coverage BASELINE
+    // was a no-op seek (focus + seek-while-playing; see the seek-and-
+    // baseline law below the pace-proof block). The pace law itself stays
+    // asserted exactly as the stage-5 salvage wrote it.
     test.slow()
     test.setTimeout(180_000) // the 90 s coverage poll must sit inside the budget
     const build = FEELTRACK.placeholderBuild()
@@ -189,11 +192,30 @@ test.describe('stage 5 share link opens into the cinematic replay', () => {
     // means HELD across rendered frames (double-rAF, not a slept 350 ms),
     // advance is POLLED on the state seam, and the rate is proven by the
     // per-frame pace law above, never by a wall-clock snapshot ----
+    // THE SEEK-AND-BASELINE LAW (the stage-6 CI-red autopsy): PAUSE FIRST,
+    // then focus the timeline, then Home — and assert the seek LANDED. Two
+    // CI-only traps made the 4x coverage poll red at any patience (the CI
+    // Received values 0.4918 / 0.5917 / 0.1086 are each EXACTLY the ceiling
+    // `duration - t3`, the playhead having played the film out):
+    //  (a) `page.click` LEAVES FOCUS on the clicked button, so a bare
+    //      press('Home') after the play/speed clicks is a SILENT NO-OP —
+    //      the baseline `t3` silently kept the 1x session's position;
+    //  (b) seeking while still PLAYING lets the film run on during the
+    //      pause round-trips (0.25 s of sim per CI frame), so the baseline
+    //      is whatever the wall clock left behind — and whenever that spot
+    //      lands in the film's last 0.6 s, the 0.6-s coverage target is
+    //      BEYOND `duration - t3`: unreachable no matter how long we poll
+    //      (and a near-tail Play click legitimately REWINDS — the BB dead-
+    //      click law — so `t - t3` still caps at `duration - t3`). The
+    //      product never stalled: pause-then-seek makes both baselines
+    //      exactly 0, and a seek that fails to land now fails LOUDLY here
+    //      instead of resurfacing 90 s later as "never covered".
     const timeline = page.locator('#gw-replay-timeline')
+    await ensurePaused(page)
     await timeline.focus()
     await page.keyboard.press('Home')
-    await ensurePaused(page)
     const t1 = (await replayState(page)).t
+    expect(t1, 'the Home seek must LAND while paused (playhead at 0)').toBe(0)
     await page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => r())))))
     expect((await replayState(page)).t, 'PAUSED must hold the state across rendered frames').toBe(t1)
 
@@ -204,9 +226,16 @@ test.describe('stage 5 share link opens into the cinematic replay', () => {
     expect(await paceHeld(page, 1), 'the 1x frames did not honour the pace law').toBe(true)
     await ensurePaused(page)
 
-    await page.keyboard.press('Home')
+    // baseline 0 by the same law as above — paused FIRST, focus the
+    // TIMELINE (the previous clicks parked focus on the play button, where
+    // Home is a no-op), then seek, then PROVE the seek landed. From 0 the
+    // coverage target 0.6 s is inside the film and inside the pace law:
+    // every painted frame delivers min(gap, 0.25 s) x 4 of sim time.
     await ensurePaused(page)
+    await timeline.focus()
+    await page.keyboard.press('Home')
     const t3 = (await replayState(page)).t
+    expect(t3, 'the Home seek must LAND while paused (playhead at 0)').toBe(0)
     await page.click('.gw-replay-speed[data-speed="4"]')
     await page.click('#gw-replay-play')
     await expect
