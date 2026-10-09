@@ -73,7 +73,11 @@ import {
   registerAutosaveFlush,
 } from './ui/errors.ts';
 import { createBuildAutosave, loadSave, rememberBuild, recordStars, savedBuild } from './save/save.ts';
-import { createSound, upAxisYOfQuat } from './sound/sound.ts';
+import { createSound, surfaceForContact, surfaceForSet, upAxisYOfQuat } from './sound/sound.ts';
+import { createCarRig, CAR_GROUND_LIFT, CAR_SPIN_DAMP } from './render/car-rig.ts';
+import { JuiceFeed } from './juice/juice.ts';
+import { createJuiceLayer, zoneAt } from './juice/layer.ts';
+import { reducedMotionActive } from './ui/motion.ts';
 import { SET_TOKENS } from './render/tokens.ts';
 import type { PostStack } from './render/post/index.ts';
 import { parFor, type RunResult, type StarCount } from './world/stars.ts';
@@ -387,6 +391,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // the per-set ambience bed (kitchen clock, garden birds — sparse, all
   // synthesized; see src/sound/voices.ts)
   sound.setBed(setReg?.id ?? null);
+  // surface-honest roll (T1.1): ONE timbre scale per room at boot — the
+  // porcelain hisses brighter than the concrete, never per-frame
+  sound.setSurface(setReg?.id ?? null);
   // mute + volume, persisted under `settings.sound` (no schema bump — the
   // optional-key round-trip documented in src/save/save.ts)
   const soundWrap = document.createElement('div');
@@ -543,6 +550,53 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     min: [b.min.x, b.min.y, b.min.z],
     max: [b.max.x, b.max.y, b.max.z],
   }));
+
+  // ---- THE CAR AND THE JUICE (program T1.1) --------------------------------
+  // THE IN-GAME CAR: the ratified car-a rig (`src/render/car-rig.ts`, the
+  // SAME factory the `car-a` dev scene calls) replaces the World's fallback
+  // box on screen. RENDER LAYER ONLY: the rig hangs off the frame sink's
+  // pose, the box stays mounted (hidden) so every scene-graph probe and the
+  // headless path are untouched, `hashedBodies` never sees the rig, and
+  // `replay:all` stays byte-identical — the wheel SPIN is a render-side
+  // omega read off the on-screen motion, never a physics drive.
+  // The rig's squash pivot is the juice layer's car body; the pose wrapper
+  // owns position/quaternion, the rig hangs at the strut-rest lift so the
+  // wheels seat on the deck the physics says is 41 mm under the chassis
+  // centre (`CAR_GROUND_LIFT`).
+  const carRig = createCarRig(setReg?.tokens ?? SET_TOKENS.kitchen);
+  const carPoseGroup = new THREE.Group();
+  carPoseGroup.name = 'car-pose';
+  carPoseGroup.add(carRig.group);
+  carRig.group.position.y = -CAR_GROUND_LIFT;
+  // the game's own scene light is the world's directional key — declare it
+  // so the rig's toon shadow bands tint, not blacken (same contract the dev
+  // scenes' traverse honours)
+  carRig.setKeyLight('#ffffff', 1.1);
+  let wheelAngle = 0;
+  // THE JUICE LAYER consumes the `JuiceFeed` at shell hooks (the step-pair
+  // read from the frame sink, the builder's snap) and mounts squash/dust;
+  // reduced motion (`src/ui/motion.ts` law) snaps every animated effect to
+  // its still frame — the thud stays, a thud is not a motion.
+  const reduceMotion = reducedMotionActive(loadSave().settings.reducedMotion);
+  const setSurface = surfaceForSet(setReg?.id ?? null);
+  const juice = createJuiceLayer({
+    reducedMotion: reduceMotion,
+    onLanding: (e) => {
+      // the landed-on surface, cheaply: the zone the landing sits in if any
+      // (a splash landing is a splash in any room), else the room's floor.
+      // The probe is the WHEEL LINE (the zone band is a deck-space box —
+      // the chassis centre rides 41 mm above it), not the chassis centre.
+      const zone = zoneAt(world?.hazardZones ?? [], {
+        x: e.at.x,
+        y: e.at.y - CAR_GROUND_LIFT,
+        z: e.at.z,
+      });
+      sound.land(e.impulseNs, zone ? surfaceForContact(zone.id, setSurface) : setSurface);
+    },
+  });
+  juice.setCarBody(carRig.group);
+  let pendingPop = false;
+  let contactEdge = false;
 
   // Stage 3 post-stack hook: the game renders through the composer only when
   // the URL explicitly asks (?post=on); the module is imported dynamically
@@ -720,6 +774,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // first-time callout (§9.3): the first piece of a kind ever PLACED
       if (build.pieces.length > placedCount) {
         sound.voice('snap'); // the socket click — an EDIT event, not a sim one
+        // THE BUILDER'S SNAP reaches the juice (T1.1): the settle event
+        // fires now, the pop lands on the rebuilt group (see `rebuild`)
+        pendingPop = true;
+        const lastPiece = build.pieces[build.pieces.length - 1]!;
+        const at = new THREE.Vector3().setFromMatrixPosition(lastPiece.transform);
+        juice.snap(at, lastPiece.def);
         const line = firstSight(build.pieces[build.pieces.length - 1]!.def);
         if (line) calloutLine.textContent = line;
       } else if (build.pieces.length < placedCount) {
@@ -945,6 +1005,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       runCamActive = true;
     }
     recorder.reset(w.state()); // witnesses start at the release pose
+    juice.reset(); // squash/dust envelopes start clean too
     resultPanel.hide();
   }
 
@@ -958,8 +1019,16 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     // builder's, created once, and left in the scene they were being disposed
     // and re-uploaded on EVERY placement — a shader recompile hitch per piece
     builder.liftFromScene();
+    // THE SAME LAW FOR THE CAR AND THE JUICE (T1.1, R7's idiom): the rig
+    // and the puff pool are the shell's, created once per boot — lift them
+    // out before the dispose sweep, re-mount below (the leak gate counts
+    // the proof: geometries/textures do NOT drift across rebuilds)
+    carPoseGroup.removeFromParent();
+    juice.liftFromScene();
+    juice.reset();
     world?.dispose();
     world = next;
+    contactEdge = false;
     post?.dispose();
     post = null;
     if (next.scene) {
@@ -967,6 +1036,24 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         next.scene.add(setInstance.group);
         next.scene.background = new THREE.Color(setReg.tokens.background);
       }
+      // THE IN-GAME CAR mounts where the box stands; the World's fallback
+      // box stays in the graph (hidden) so every scene probe and the
+      // headless/`visuals:false` path are untouched, and `hashedBodies`
+      // never sees the rig (replay:all stays byte-identical)
+      if (next.carMesh) next.carMesh.visible = false;
+      next.scene.add(carPoseGroup);
+      juice.attachScene(next.scene);
+      // this world's feed: the level's hazard zones ride along for the
+      // tell; events flow one way — out of the snapshots, into the layer
+      juice.setFeed(new JuiceFeed([...next.hazardZones]));
+      // the snapped piece's pop target: the LAST `track` child is the
+      // newly placed piece (reify order is build order); the pop is a
+      // mesh-scale envelope, never a transform any hash can see
+      const track = next.scene.getObjectByName('track');
+      juice.popPlacedPiece(
+        pendingPop && track ? (track.children[build.pieces.length - 1] ?? null) : null,
+      );
+      pendingPop = false;
       if (wantPost) {
         const { createPostStack } = await import('./render/post/index.ts');
         post = createPostStack(renderer, camera, { tokens: setReg?.tokens ?? SET_TOKENS.kitchen });
@@ -1047,8 +1134,29 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       let steps = 0;
       while (acc >= FIXED_DT && steps < 24 && w.status === 'running') {
         w.step();
-        if (w.state().car.grip < 0.999) hazardsTouched = 1; // a dipped sample is a touch
-        recorder.sample(w.state());
+        const s0 = w.state();
+        const dipped = s0.car.grip < 0.999;
+        if (dipped) hazardsTouched = 1; // a dipped sample is a touch
+        // MID-RUN HAZARD CONTACT (T1.1): the dip this tally already
+        // counts IS the existing UI event — voice its RISING EDGE, one
+        // tick per crossing, classified from the zone's authored id
+        // (plain data; the voice module still pulls nothing).
+        if (dipped && !contactEdge) {
+          // wheel-line probe: the zone boxes are deck-space bands, the
+          // chassis centre rides 41 mm over them (CAR_GROUND_LIFT)
+          const zone = zoneAt(w.hazardZones, {
+            x: s0.car.pos.x,
+            y: s0.car.pos.y - CAR_GROUND_LIFT,
+            z: s0.car.pos.z,
+          });
+          if (zone) sound.contact(zone.id);
+        }
+        contactEdge = dipped;
+        // THE JUICE FEED (T1.1): the step pair straight off the frame
+        // sink — [prev, current] snapshots, poses only; the feed writes
+        // nothing and the layer presents the events on wall clocks.
+        juice.step(...w.states());
+        recorder.sample(s0);
         if (runCam && rig) {
           const s = w.state();
           runCam.update(FIXED_DT, rig.nearestArc(s.car.pos), s.car.speed, s.car.pos);
@@ -1164,6 +1272,11 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       w.carMesh.position.set(pose.pos.x, pose.pos.y, pose.pos.z);
       w.carMesh.quaternion.set(pose.quat.x, pose.quat.y, pose.quat.z, pose.quat.w);
     }
+    // THE IN-GAME CAR (T1.1): the rig rides the SAME interpolated pose the
+    // hidden box got — the ratified sedan replaces the red box on screen,
+    // and nothing below this line reaches the simulation.
+    carPoseGroup.position.set(pose.pos.x, pose.pos.y, pose.pos.z);
+    carPoseGroup.quaternion.set(pose.quat.x, pose.quat.y, pose.quat.z, pose.quat.w);
     // SOUND adapter (stage 5): READ-ONLY and OUTSIDE the stepping loop —
     // the two continuous sounds are driven by what the SCREEN shows: the
     // car mesh's own on-screen speed (position delta / wall dt, fed to the
@@ -1179,6 +1292,15 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         screenSpeed = Math.sqrt(dx * dx + dy * dy + dz * dz) / dt;
       }
       prevMeshPos = { x: here.x, y: here.y, z: here.z };
+      // WHEEL SPIN (T1.1): a render-side omega read off the SAME on-screen
+      // motion the roll voice already gets — `speed / (radius * damp)`,
+      // integrated on wall dt, divided down (`CAR_SPIN_DAMP`) so it reads
+      // as rotation instead of strobing. Nothing physical reads or is read
+      // by this; reduced motion parks the wheels.
+      if (w.status === 'running' && !reduceMotion) {
+        wheelAngle += (screenSpeed / (carRig.wheelRadius * CAR_SPIN_DAMP)) * dt;
+        for (const wheel of carRig.wheels) wheel.rotation.z = wheelAngle;
+      }
       sound.frame({
         dtMs: dt * 1000,
         running: w.status === 'running',
@@ -1187,6 +1309,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       });
     }
     statusLine.textContent = runStatusLine(w, builder.playerCount(), level.budget);
+    // the juice envelopes advance on WALL time, outside the stepping block
+    // (a squash is a render artifact; its clock must never be a sim step)
+    juice.frame(dt * 1000);
     if (w.status !== 'idle') hashValue.textContent = w.hashHex(); // live under the details
     if (runCamActive && runCam) {
       // §7.3: during a run the RUN CAMERA owns the transform — leading the

@@ -20,7 +20,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { SoundEngine, EVENT_VOICES, SOUND } from '../../src/sound/sound.ts';
+import { SoundEngine, EVENT_VOICES, SOUND, hazardContactVoice, surfaceForContact, surfaceForSet } from '../../src/sound/sound.ts';
 import { MASTER_CEILING, MASTER_TRIM, makeBus } from '../../src/sound/bus.ts';
 import { VOICES, VOICE_GAIN, VOICE_NAMES, startRoll } from '../../src/sound/voices.ts';
 import { SAVE_KEY, SAVE_VERSION, MIGRATIONS, freshSave, loadSave, saveSave, memoryStorage } from '../../src/save/save.ts';
@@ -460,5 +460,64 @@ describe('sound settings (save integration)', () => {
     vi.advanceTimersByTime(SOUND.VOLUME_PERSIST_MS);
     expect(envelopeWrites).toBe(1);
     expect(loadSave(store).settings.sound?.volume).toBeCloseTo(0.2 + 19 / 100, 10);
+  });
+});
+
+// ---- 7. the T1.1 voice map (landing thud + mid-run contact) ------------------
+
+describe('T1.1 feel voice map', () => {
+  it('classifies the shipped authored zone ids onto the contact ticks', () => {
+    // the kitchen/bathroom/garden splashes and films are the wet tick…
+    for (const id of ['sinkSplash', 'drainSplash', 'splashPatch', 'sprinklerSprawl', 'sprinklerFilm'])
+      expect(hazardContactVoice(id), id).toBe('splash');
+    // …the garage stains are the oil tick…
+    for (const id of ['oilFilm', 'shopStain', 'oilCrossing', 'shopFilm'])
+      expect(hazardContactVoice(id), id).toBe('oil');
+    // …and the magnet/whirlpool slots answer their own names (no shipped
+    // authored zone trips them — that is the point of the slots)
+    expect(hazardContactVoice('drainFilm')).toBe('splash');
+    expect(hazardContactVoice('whirlpoolDrain')).toBe('whirl');
+    expect(hazardContactVoice('magnetPad')).toBe('magnet');
+  });
+
+  it('the landing surface is the zone when the landing lands in one, else the room floor', () => {
+    expect(surfaceForSet('kitchen')).toBe('tile');
+    expect(surfaceForSet('bathroom')).toBe('porcelain');
+    expect(surfaceForSet('garage')).toBe('concrete');
+    expect(surfaceForSet('porch')).toBe('wood');
+    expect(surfaceForContact('oilFilm', 'tile')).toBe('oil');
+    expect(surfaceForContact('sinkSplash', 'porcelain')).toBe('wet');
+    expect(surfaceForContact('magnetPad', 'tile')).toBe('tile');
+  });
+
+  it('land() and contact() fire through the repetition guard and count', () => {
+    const e = new SoundEngine({
+      Ctor: MockCtx as unknown as new () => AudioContext,
+      now: () => clock,
+    });
+    e.unlock();
+    e.beginRun();
+    e.land(0.07, 'tile');
+    e.contact('sinkSplash');
+    e.contact('oilFilm');
+    const s = e.state();
+    expect(s.runCounts.land).toBe(1);
+    expect(s.runCounts.splash).toBe(1);
+    expect(s.runCounts.oil).toBe(1);
+    expect(s.rejected).toEqual({});
+    // the guard holds for the new voices too (a thud storm is a design bug)
+    for (let i = 0; i < 20; i++) e.land(0.07, 'wet');
+    expect(e.state().runCounts.land).toBe(SOUND.RUN_VOICE_CAP);
+    expect(e.state().rejected.land).toBe(20 - SOUND.RUN_VOICE_CAP + 1);
+  });
+
+  it('the new contact voices are event voices and deaf-callable (no context yet)', () => {
+    for (const name of ['land', 'splash', 'oil', 'magnet', 'whirl'] as const)
+      expect(EVENT_VOICES).toContain(name);
+    const e = new SoundEngine({ Ctor: undefined });
+    e.unlock(); // no constructor available: deaf, never crashed
+    expect(e.deaf).toBe(true);
+    e.land(0.05, 'tile');
+    e.contact('oilFilm'); // callable, does nothing
   });
 });

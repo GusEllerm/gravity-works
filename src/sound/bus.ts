@@ -13,7 +13,7 @@
  * millisecond cannot stack past the ceiling; the ceiling itself is the
  * number the mix quotes: -12 dBFS.
  */
-import { MEASURE_SECONDS, VOICES, VOICE_NAMES, startRoll, chime } from './voices.ts';
+import { LAND_SURFACES, MEASURE_SECONDS, VOICES, VOICE_NAMES, startRoll, chime, land } from './voices.ts';
 import type { VoiceName } from './voices.ts';
 
 /** -12.0 dBFS. Every loudness claim in the session log is measured against
@@ -168,21 +168,45 @@ export async function renderVoice(
   Ctor: typeof OfflineAudioContext,
   name: VoiceName,
 ): Promise<Loudness & { seconds: number }> {
+  if (name === 'land') {
+    // The surface-parameterised thud renders across EVERY surface at full
+    // impulse — the worst peak is the number the mix quotes (same
+    // worst-case doctrine as the chime's three-note render).
+    let worst: Loudness & { seconds: number } = { peak: 0, dc: 0, seconds: 0 };
+    for (const surface of LAND_SURFACES) {
+      land.surface = surface;
+      land.intensity = 1;
+      const r = await renderOnce(Ctor, (ctx, bus) => VOICES.land({ ctx, t: 0.02 }, bus));
+      if (r.peak > worst.peak) worst = r;
+    }
+    land.surface = 'tile';
+    land.intensity = 1;
+    return worst;
+  }
+  return renderOnce(Ctor, (ctx, bus) => {
+    if (name === 'roll') {
+      const handle = startRoll({ ctx, t: 0.02 }, bus);
+      handle.setSpeed(0.7); // fixed mid speed, stopped after 1.2 s
+      handle.stop(1.2);
+    } else if (name === 'chime') {
+      chime.notes = 3; // worst case: all three stars
+      VOICES.chime({ ctx, t: 0.02 }, bus);
+      chime.notes = 1;
+    } else {
+      VOICES[name]({ ctx, t: 0.02 }, bus);
+    }
+  });
+}
+
+async function renderOnce(
+  Ctor: typeof OfflineAudioContext,
+  schedule: (ctx: OfflineAudioContext, bus: AudioBus) => void,
+): Promise<Loudness & { seconds: number }> {
   const sr = 44100;
   const ctx = new Ctor(1, Math.floor(sr * MEASURE_SECONDS), sr);
   const master = makeMaster(ctx, ctx.destination);
   const bus = makeBus(ctx, master);
-  if (name === 'roll') {
-    const handle = startRoll({ ctx, t: 0.02 }, bus);
-    handle.setSpeed(0.7); // fixed mid speed, stopped after 1.2 s
-    handle.stop(1.2);
-  } else if (name === 'chime') {
-    chime.notes = 3; // worst case: all three stars
-    VOICES.chime({ ctx, t: 0.02 }, bus);
-    chime.notes = 1;
-  } else {
-    VOICES[name]({ ctx, t: 0.02 }, bus);
-  }
+  schedule(ctx, bus);
   const buf = await ctx.startRendering();
   const data = buf.getChannelData(0);
   let peak = 0;

@@ -49,13 +49,19 @@ export type VoiceName =
   | 'victory'
   | 'blipPlace'
   | 'blipUndo'
+  | 'land'
+  | 'splash'
+  | 'oil'
+  | 'magnet'
+  | 'whirl'
   | 'tick'
   | 'bird'
   | 'room'
   | 'roll';
 
 /** Every voice rendered by the loudness harness (roll at a fixed mid
- *  speed; chime with its maximum 3 notes). */
+ *  speed; chime with its maximum 3 notes; land at its full impulse across
+ *  every surface — the worst peak wins, see `bus.renderVoice`). */
 export const VOICE_NAMES: readonly VoiceName[] = [
   'launch',
   'snap',
@@ -68,6 +74,11 @@ export const VOICE_NAMES: readonly VoiceName[] = [
   'victory',
   'blipPlace',
   'blipUndo',
+  'land',
+  'splash',
+  'oil',
+  'magnet',
+  'whirl',
   'tick',
   'bird',
   'room',
@@ -89,6 +100,15 @@ export const VOICE_GAIN: Record<VoiceName, number> = {
   victory: 0.4,
   blipPlace: 0.28,
   blipUndo: 0.24,
+  // T1.1 feel package: the landing THUD rides just UNDER `cup` — the cup
+  // is one per run, the thud is many, and the mix must not fatigue. The
+  // four contact ticks are the quietest event class on purpose: they ride
+  // ALONGSIDE the wheel crossing the patch, they do not announce it.
+  land: 0.42,
+  splash: 0.28,
+  oil: 0.26,
+  magnet: 0.3,
+  whirl: 0.3,
   tick: 0.4,
   bird: 0.14,
   room: 0.05,
@@ -395,6 +415,131 @@ const blipUndo: VoiceFn = ({ ctx, t }, bus) => {
   start([o], [g], t, t + 0.08);
 };
 
+// ---- the T1.1 feel voices ---------------------------------------------------
+//
+// The design evaluation's §4 holes, closed on the existing voice map: the
+// LANDING was silent (the whole ladder's grammar is a hard catch) and the
+// mid-run hazard CONTACT was silent (the `hazard` crackle fires only at
+// the result edge, so rolling through the splash mutes exactly as the
+// visual goes wet). Both are EVENT voices fired from shell hooks — the
+// landing off the JuiceFeed's `landingSquash` (the impulse rides on the
+// event), the contact off the edge of the grip dip the HUD already counts
+// — so the firewall is untouched: the voices take plain numbers at an
+// event and never pull state.
+
+/** The surfaces a landing can be voiced on. Chosen CHEAPLY by the shell:
+ *  the mounted set's floor material if the car lands dry, the zone's own
+ *  material if it lands inside one (a splash landing is a SPLASH, whatever
+ *  room it is in). One word per surface; the numbers live in `LAND_SHAPE`. */
+export type LandSurface = 'tile' | 'porcelain' | 'wood' | 'concrete' | 'wet' | 'oil';
+
+/** Every surface the loudness harness sweeps `land` across. */
+export const LAND_SURFACES: readonly LandSurface[] = ['tile', 'porcelain', 'wood', 'concrete', 'wet', 'oil'];
+
+/** thud Hz / slap Hz / slap Q / decay s — the body of the landing per
+ *  surface. The `cup` thud (95 Hz) is the reference body sound; a tile is
+ *  the crisp cousin of the same event, porcelain brighter and tighter,
+ *  concrete lower and longer, wood drier, wet/oil the same body under a
+ *  blanket (the low-pass is the water). */
+const LAND_SHAPE: Record<LandSurface, { hz: number; slap: number; lp: number; decay: number }> = {
+  tile: { hz: 95, slap: 1500, lp: 2600, decay: 0.12 },
+  porcelain: { hz: 120, slap: 2200, lp: 3200, decay: 0.1 },
+  wood: { hz: 85, slap: 900, lp: 1800, decay: 0.13 },
+  concrete: { hz: 70, slap: 520, lp: 1400, decay: 0.16 },
+  wet: { hz: 90, slap: 700, lp: 900, decay: 0.1 },
+  oil: { hz: 66, slap: 420, lp: 700, decay: 0.14 },
+};
+
+/** Landing thud: falling sine body + filtered noise slap, the `cup` family
+ *  WITHOUT the settling bell (a landing is not a finish). The mutable
+ *  fields ride the way `chime.notes` does — set by the engine right before
+ *  scheduling; defaults are the loudest legal case (full impulse) so the
+ *  offline harness measures the worst peak by construction. */
+const land: VoiceFn & { surface: LandSurface; intensity: number } = Object.assign(
+  ({ ctx, t }: VoiceWhere, bus: AudioBus): void => {
+    const shape = LAND_SHAPE[land.surface];
+    const amp = VOICE_GAIN.land * (0.55 + 0.45 * land.intensity);
+    const thud = osc(ctx, 'sine', shape.hz, t);
+    thud.frequency.exponentialRampToValueAtTime(shape.hz * 0.6, t + shape.decay);
+    const tg = ctx.createGain();
+    env(tg, t, amp, 0.002, shape.decay);
+    thud.connect(tg).connect(bus.dry);
+    const slap = noise(ctx);
+    const lp = biquad(ctx, 'lowpass', shape.lp, 0.9, t);
+    const sg = ctx.createGain();
+    env(sg, t, amp * 0.5, 0.001, 0.04);
+    slap.connect(lp).connect(sg).connect(bus.dry);
+    sg.connect(bus.wet);
+    start([thud, slap], [tg, lp, sg], t, t + shape.decay + 0.06);
+  },
+  { surface: 'tile' as LandSurface, intensity: 1 },
+);
+
+/** Wet contact tick: one droplet sizzle — band-passed noise plus a tiny
+ *  falling pip. Fires on the RISING EDGE of the grip dip (one tick per
+ *  patch crossing, not a per-step hiss), so the repetition guard never
+ *  sees more than a handful per run. */
+const splash: VoiceFn = ({ ctx, t }, bus) => {
+  const s = noise(ctx);
+  const bp = biquad(ctx, 'bandpass', 2600, 3, t);
+  const g = ctx.createGain();
+  env(g, t, VOICE_GAIN.splash, 0.001, 0.05);
+  s.connect(bp).connect(g).connect(bus.dry);
+  const pip = osc(ctx, 'sine', 1200, t);
+  pip.frequency.exponentialRampToValueAtTime(700, t + 0.04);
+  const pg = ctx.createGain();
+  env(pg, t, VOICE_GAIN.splash * 0.35, 0.001, 0.04);
+  pip.connect(pg).connect(bus.dry);
+  start([s, pip], [bp, g, pg], t, t + 0.07);
+};
+
+/** Oil contact tick: the same event drier and lower — a tyre squelching
+ *  on a shop-stain film, not a droplet. */
+const oil: VoiceFn = ({ ctx, t }, bus) => {
+  const s = noise(ctx);
+  const lp = biquad(ctx, 'lowpass', 380, 0.8, t);
+  const g = ctx.createGain();
+  env(g, t, VOICE_GAIN.oil, 0.004, 0.07);
+  s.connect(lp).connect(g).connect(bus.dry);
+  const body = osc(ctx, 'triangle', 140, t);
+  body.frequency.exponentialRampToValueAtTime(90, t + 0.06);
+  const bg = ctx.createGain();
+  env(bg, t, VOICE_GAIN.oil * 0.4, 0.003, 0.06);
+  body.connect(bg).connect(bus.dry);
+  start([s, body], [lp, g, bg], t, t + 0.09);
+};
+
+/** Magnet contact tick (voice-map slot; no shipped authored zone fires it
+ *  yet — the classifier names it so the day a magnet rung lands, the
+ *  sound is already ratified loudness-wise). A short metallic thunk. */
+const magnet: VoiceFn = ({ ctx, t }, bus) => {
+  const a = osc(ctx, 'sine', 320, t);
+  const ag = ctx.createGain();
+  env(ag, t, VOICE_GAIN.magnet, 0.002, 0.08);
+  a.connect(ag).connect(bus.dry);
+  const b = osc(ctx, 'sine', 320 * 2.41, t);
+  const bg = ctx.createGain();
+  env(bg, t, VOICE_GAIN.magnet * 0.3, 0.002, 0.05);
+  b.connect(bg).connect(bus.dry);
+  start([a, b], [ag, bg], t, t + 0.1);
+};
+
+/** Whirlpool contact tick (voice-map slot, same standing as `magnet`):
+ *  the drain's short descending swallow — a bandpass sweep, quiet. */
+const whirl: VoiceFn = ({ ctx, t }, bus) => {
+  const s = noise(ctx, true);
+  const bp = biquad(ctx, 'bandpass', 900, 1.4, t);
+  bp.frequency.exponentialRampToValueAtTime(300, t + 0.22);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(VOICE_GAIN.whirl, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+  s.connect(bp).connect(g);
+  g.connect(bus.dry);
+  g.connect(bus.wet);
+  start([s], [bp, g], t, t + 0.26);
+};
+
 /** Kitchen ambience: a clock tick — 15 ms band-passed noise. The bed
  *  scheduler enforces >= 0.7 s spacing, and the voice is the quietest in
  *  the table: a bed must never compete with an event. */
@@ -465,6 +610,12 @@ const room: VoiceFn = (w, bus) => {
  *  opens it at launch and stops it at the terminal edge. */
 export interface RollHandle {
   setSpeed(norm: number): void;
+  /** The surface voicing (1 = the kitchen tile reference): multiplies the
+   *  two cutoffs, so porcelain hisses brighter than a concrete floor.
+   *  Set once per level by the engine (`SoundEngine.setSurface`), never
+   *  per frame — one timbre per room, the design evaluation's honest
+   *  minimum for "surface-honest roll". */
+  setTone(factor: number): void;
   stop(t: number): void;
 }
 
@@ -482,17 +633,28 @@ export function startRoll(w: VoiceWhere, bus: AudioBus): RollHandle {
   g.connect(wet).connect(bus.wet);
   const all: AudioNode[] = [src, lp, bp, g, wet];
   src.start(t);
+  let speed = 0;
+  let tone = 1;
+  const apply = (): void => {
+    const s = Math.max(0, Math.min(1, speed));
+    const now = ctx.currentTime;
+    // param ramps, not jumps: a 20 Hz update must never click
+    lp.frequency.linearRampToValueAtTime((180 + 900 * s) * tone, now + 0.05);
+    bp.frequency.linearRampToValueAtTime((300 + 500 * s) * tone, now + 0.05);
+    g.gain.linearRampToValueAtTime(
+      Math.max(0.0001, VOICE_GAIN.roll * (0.08 + 0.92 * s)),
+      now + 0.05,
+    );
+  };
+  apply();
   return {
     setSpeed(norm: number): void {
-      const s = Math.max(0, Math.min(1, norm));
-      const now = ctx.currentTime;
-      // param ramps, not jumps: a 20 Hz update must never click
-      lp.frequency.linearRampToValueAtTime(180 + 900 * s, now + 0.05);
-      bp.frequency.linearRampToValueAtTime(300 + 500 * s, now + 0.05);
-      g.gain.linearRampToValueAtTime(
-        Math.max(0.0001, VOICE_GAIN.roll * (0.08 + 0.92 * s)),
-        now + 0.05,
-      );
+      speed = norm;
+      apply();
+    },
+    setTone(factor: number): void {
+      tone = Math.max(0.2, Math.min(2.5, factor));
+      apply();
     },
     stop(at: number): void {
       g.gain.cancelScheduledValues(at);
@@ -520,6 +682,11 @@ export const VOICES: Record<VoiceName, VoiceFn> = {
   victory,
   blipPlace,
   blipUndo,
+  land,
+  splash,
+  oil,
+  magnet,
+  whirl,
   tick,
   bird,
   room,
@@ -528,4 +695,4 @@ export const VOICES: Record<VoiceName, VoiceFn> = {
   },
 };
 
-export { chime };
+export { chime, land };

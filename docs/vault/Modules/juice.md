@@ -67,14 +67,37 @@ not even branch on them. The test pins it the hard way: the same L04 par
 run driven WITH the feed attached hashes `7adc07a8` — identical to the
 juice-off run and to the shipped par hash.
 
-## Not yet here
+## The consumer landed (program T1.1, stage 7)
 
-The feed has no consumer in the shell yet — `boot.ts`'s render loop can
-hold one `JuiceFeed` beside `states()` and hand its events to
-[[render]] effects; that wiring is the stage-3 integration item, the same
-one that still gates the run camera ([[camera]]). Audio numbers (the
-chime's 400 ms) are placeholders until the audio designer tunes them —
-they ride on events, so the sim never has to change again.
+`src/juice/layer.ts` (`createJuiceLayer`) is the shell-side consumer: the
+boot render loop drives `layer.step(prev, next)` with the frame sink's own
+snapshot pair (`World.states()`) once per sim step, and `layer.snap(at,
+def)` is the builder's hook in `builder.onChange`. The layer PRESENTS and
+never writes physics: `landingSquash` animates the car rig's squash pivot
+on a 120 ms WALL envelope (and fires the `onLanding` hook the shell routes
+to the landing THUD in [[sound]]), `dustPuff` blooms a pooled film at the
+event position, `snapSettle` pops the just-placed piece group 6 % proud for
+250 ms — a mesh scale, never a transform any hash can see. `zoneAt` is the
+cheap surface read (point-in-box over the level's plain zone data) that
+picks the landing's wet/oil voice. The rig/pool/pose group follow the R7
+lift-before-`World.dispose` law, so the leak gate sees zero drift.
 
-Depends on `src/world` (types only — no runtime import beyond math). Guarded by `tests/unit/juice.test.ts`. See also
-[[hazards]] (zones feed the tell), [[feel]], [[render]].
+Reduced motion (`src/ui/motion.ts` law, `reducedMotionActive`): every
+ANIMATED presentation snaps to its still frame — no squash, no dust, no
+pop, no wheel spin. The feed itself runs UNreduced in the shell so the
+landing's SOUND hook keeps firing; the flag decides the pixels only — the
+same information-over-motion split as `durationMs: 0` above. Hash
+neutrality is re-proven through the layer, not just the feed
+(`tests/unit/juice-layer.test.ts`: the L04 par run driven THROUGH the
+layer hashes like the bare run; squash animates and eases to exactly 1;
+reduced motion stays still while the thud still fires).
+
+Still not here: no squeal voice (the 20 Hz re-trigger would slam
+`RUN_VOICE_CAP` — it needs a slower voice-map row first), no drip-tell
+visual, and no audio for the booster impulse. `squeal`/`hazardTell`/
+`chime` events reach the shell through `onEvent` unchanged when they are.
+
+Depends on `src/world` (types only — no runtime import beyond math; the
+layer adds `three` for the puff film). Guarded by
+`tests/unit/juice.test.ts` + `tests/unit/juice-layer.test.ts`. See also
+[[hazards]] (zones feed the tell), [[feel]], [[render]], [[sound]].

@@ -173,7 +173,7 @@ sig = "d01d2ba38efcad2e"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/boot.ts"
-sig = "dcbf01ddfa9f6323"
+sig = "e36dc2c58db92f64"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -213,7 +213,7 @@ sig = "d5b3f3ece12aa46f"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "tests/e2e/sound.spec.ts"
-sig = "8b6d99b6cea551bc"
+sig = "61498b11f0c86fe1"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -338,7 +338,7 @@ sig = "d0214f900a50cb6e"
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
 target = "src/dev/scenes/cars.ts"
-sig = "482eff61dd1440fc"
+sig = "d1ac077fa8a54887"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -384,6 +384,11 @@ sig = "dcf594af7c381b9d"
 doc = "docs/vault/Modules/dev.md"
 target = "src/main.ts"
 sig = "a38e01706f33daf6"
+
+[[bindings]]
+doc = "docs/vault/Modules/dev.md"
+target = "src/render/car-rig.ts"
+sig = "10c2228c13c0edbb"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -436,6 +441,31 @@ target = "tests/unit/hazards.test.ts"
 sig = "be1d9f07e84f7b87"
 
 [[bindings]]
+doc = "docs/vault/Modules/juice.md"
+target = "src/juice/juice.ts"
+sig = "bed52996239942a5"
+
+[[bindings]]
+doc = "docs/vault/Modules/juice.md"
+target = "src/juice/layer.ts"
+sig = "86753621e0cfc51b"
+
+[[bindings]]
+doc = "docs/vault/Modules/juice.md"
+target = "src/ui/motion.ts"
+sig = "e9d8f319019cbe3a"
+
+[[bindings]]
+doc = "docs/vault/Modules/juice.md"
+target = "tests/unit/juice-layer.test.ts"
+sig = "093483398c33f99d"
+
+[[bindings]]
+doc = "docs/vault/Modules/juice.md"
+target = "tests/unit/juice.test.ts"
+sig = "f560623ad3d27479"
+
+[[bindings]]
 doc = "docs/vault/Modules/physics.md"
 target = "src/feel/feeltrack.ts"
 sig = "cbba72af04a17c24"
@@ -467,8 +497,13 @@ sig = "4c45526e4182ba0a"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
+target = "src/boot.ts"
+sig = "e36dc2c58db92f64"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
 target = "src/dev/scenes/cars.ts"
-sig = "482eff61dd1440fc"
+sig = "d1ac077fa8a54887"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
@@ -489,6 +524,11 @@ sig = "6076250d77860d77"
 doc = "docs/vault/Modules/render.md"
 target = "src/dev/scenes/material-ramp.ts"
 sig = "0b8956e4fdc50db2"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
+target = "src/render/car-rig.ts"
+sig = "10c2228c13c0edbb"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
@@ -623,7 +663,7 @@ sig = "5032349490e77279"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "src/boot.ts"
-sig = "dcbf01ddfa9f6323"
+sig = "e36dc2c58db92f64"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
@@ -633,7 +673,7 @@ sig = "d5d710ea5de701ff"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "src/sound/sound.ts"
-sig = "50d67ce448abe66d"
+sig = "1c1608bfb5474b24"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
@@ -683,7 +723,7 @@ sig = "b6ef4e46f5ae7348"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "tests/unit/sound.test.ts"
-sig = "02e8bb3cbca0500c"
+sig = "fc98edbbe806f84d"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
@@ -853,7 +893,7 @@ sig = "68f378bf54ee5d36"
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
 target = "src/boot.ts"
-sig = "dcbf01ddfa9f6323"
+sig = "e36dc2c58db92f64"
 
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
@@ -893,7 +933,12 @@ sig = "1becf3bba294d4ef"
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
 target = "src/boot.ts"
-sig = "dcbf01ddfa9f6323"
+sig = "e36dc2c58db92f64"
+
+[[bindings]]
+doc = "docs/vault/Modules/sound.md"
+target = "src/juice/layer.ts"
+sig = "86753621e0cfc51b"
 
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
@@ -903,17 +948,17 @@ sig = "d5d710ea5de701ff"
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
 target = "src/sound/bus.ts"
-sig = "aba9ccc8061aa50c"
+sig = "6376e2a216661aa6"
 
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
 target = "src/sound/sound.ts"
-sig = "50d67ce448abe66d"
+sig = "1c1608bfb5474b24"
 
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
 target = "src/sound/voices.ts"
-sig = "c48e9f29af4e28e5"
+sig = "85931ec2ef7f2c4a"
 
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
@@ -923,12 +968,12 @@ sig = "be0b7c9f043f67a4"
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
 target = "tests/e2e/sound.spec.ts"
-sig = "8b6d99b6cea551bc"
+sig = "61498b11f0c86fe1"
 
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
 target = "tests/unit/sound.test.ts"
-sig = "02e8bb3cbca0500c"
+sig = "fc98edbbe806f84d"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -1063,7 +1108,7 @@ sig = "0363c75d8183d368"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "src/boot.ts"
-sig = "dcbf01ddfa9f6323"
+sig = "e36dc2c58db92f64"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -1133,7 +1178,7 @@ sig = "8fccf7ad9cd3d485"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/boot.ts"
-sig = "dcbf01ddfa9f6323"
+sig = "e36dc2c58db92f64"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"

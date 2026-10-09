@@ -44,6 +44,13 @@ const VOICE_NAMES = [
   'victory',
   'blipPlace',
   'blipUndo',
+  // T1.1 feel package: the landing thud (renderVoice sweeps every surface
+  // and reports the worst peak) and the four mid-run contact ticks
+  'land',
+  'splash',
+  'oil',
+  'magnet',
+  'whirl',
   'tick',
   'bird',
   'room',

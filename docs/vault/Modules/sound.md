@@ -46,6 +46,23 @@ car's visibly inverted pose (`upAxisYOfQuat` < `SOUND.INVERTED_UP_Y`, one `ring`
 `SOUND.RING_MIN_GAP_MS` apart). `engine.frame` is called from the render loop AFTER the stepping block and
 pulls nothing.
 
+THE T1.1 VOICE MAP (stage-7 feel package) extends the same doctrine to the two silence holes the design
+evaluation named: (a) the LANDING. `land` is a `cup`-family thud WITHOUT the bell, voiced per surface
+(`LAND_SHAPE` in `voices.ts`: tile / porcelain / wood / concrete, plus wet / oil when the car lands INSIDE
+a zone); the shell fires `SoundEngine.land(impulseNs, surface)` from the JuiceFeed's `landingSquash` hook
+in `src/juice/layer.ts` — the impulse rides the event, the surface comes cheaply from the set id
+(`surfaceForSet`) overridden by the zone the landing sits in (`surfaceForContact` + the wheel-line
+`zoneAt` probe, since the zone boxes are deck-space bands 41 mm under the chassis centre). (b) MID-RUN
+HAZARD CONTACT. The four contact ticks `splash` / `oil` / `magnet` / `whirl` fire on the RISING EDGE of
+the grip dip the HUD's `hazardsTouched` tally already counts — `hazardContactVoice(zoneId)` classifies
+the authored zone id in plain data (splash-patch-film-sprawl→splash, oil-stain-shop→oil, magnet→magnet,
+whirl→whirl; the magnet/whirlpool slots ship loudness-ratified for zones the Level Designer has not
+authored yet), so rolling through the splash no longer mutes exactly as the visual goes wet. The roll
+voice is finally SURFACE-HONEST at its cheapest: `SoundEngine.setSurface(setId)` (called at level boot
+beside `setBed`) scales the two roll cutoffs once per room (`ROLL_TONE` — porcelain hisses brighter than
+concrete), never per frame. All five voices are event voices under the same `RUN_VOICE_CAP` guard; the
+landing THUD survives reduced motion (a thud is not a motion).
+
 REPETITION is guarded, not hoped for: `RUN_VOICE_CAP` counts event voices per run and DROPS (and counts in
 `rejected`, and warns) any voice that fires more than 12 times in one run — voices attach to distinct
 events by design, so the guard stays silent in play and red in test. The ambience beds (kitchen clock
@@ -56,7 +73,9 @@ scheduler's minimum gaps (`TICK_MIN_MS`, `BIRD_MIN_MS`), stop on mute, and pause
 
 Every voice peaks under the -12 dBFS ceiling with DC under 2e-4: launch -26.6, snap -20.1, ring -21.5, cup
 -20.0, whoosh -22.0, hum -16.3, hazard -20.4, chime(3★) -15.5, victory -16.2, blips -25/-27, tick -36.9,
-bird -24.5, room bed -42.2, roll -29.6 dBFS. The loudness assertion lives in `tests/e2e/sound.spec.ts`
+bird -24.5, room bed -42.2, roll -29.6 dBFS; and since the stage-7 feel package, land -20.8 (the harness
+renders every surface and reports the WORST peak), splash -31.8, oil -33.6, magnet -22.7, whirl -31.8
+The loudness assertion lives in `tests/e2e/sound.spec.ts`
 because vitest's `node` environment has no WebAudio; `tests/unit/sound.test.ts` carries the in-process
 halves (design-gain table, autoplay gate, repetition guard, 20 Hz throttle, bed spacing, mute persistence,
 firewall).

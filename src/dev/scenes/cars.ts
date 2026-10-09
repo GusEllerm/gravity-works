@@ -12,6 +12,7 @@
 import * as THREE from 'three'
 import { dieCastPaint, fabric, glass, paintedWood, trackPlastic } from '../../render/materials.ts'
 import { toyBlock, trackChannel } from '../../render/geometry.ts'
+import { createCarRig } from '../../render/car-rig.ts'
 import { GLOBAL_TOKENS, SET_TOKENS, shiftHex } from '../../render/tokens.ts'
 import { ToonMaterial } from '../../render/toon-material.ts'
 import { registerScene, type SceneEntry, type SceneFactory } from '../registry.ts'
@@ -20,7 +21,6 @@ export type CarKey = 'a' | 'b' | 'c'
 
 // High-chroma bodies from colorblind-safe seeds, nudged through the tokens
 // hue/sat/light machinery so they read as toy paint, not data-viz swatches.
-const CAR_BLUE = shiftHex('#0072B2', 0.0, 0.12, 0.05) // sedan
 const CAR_GREEN = shiftHex('#009E73', 0.0, 0.1, 0.0) // streamliner
 const CAR_MAGENTA = shiftHex('#CC79A7', 0.03, 0.32, -0.02) // haulback
 const STRIPE = '#EFDCB8' // warm cream/putty, one per car
@@ -70,46 +70,12 @@ function addWheels(car: THREE.Group, radius: number, xs: readonly [number, numbe
 }
 
 // ---------------------------------------------------------------- car A —
-// chunky beveled wedge sedan: fat toyBlock body, raked cabin with a glass
-// band, a roof rack of cross bars, thick wheels riding outside the flanks.
+// chunky beveled wedge sedan — the RATIFIED reference, now built by the
+// shared factory in `src/render/car-rig.ts` so the GAME shell drives the
+// exact same meshes the stills render (T1.1: one car, one source).
 
 function buildSedan(): THREE.Group {
-  const car = new THREE.Group()
-  const body = new THREE.Mesh(
-    toyBlock(0.076, 0.024, 0.038, 0.009, 0.004),
-    dieCastPaint(tokens, CAR_BLUE),
-  )
-  body.position.y = 0.006
-  setProps(body, true, true)
-  car.add(body)
-  car.add(stripeBand(0.05, 0.0055, 0.039, 0.0165))
-
-  const cabin = new THREE.Group()
-  cabin.position.set(-0.010, 0.030, 0)
-  cabin.rotation.z = 0.12 // windshield raked back
-  const shell = new THREE.Mesh(
-    toyBlock(0.034, 0.016, 0.034, 0.011, 0.003),
-    dieCastPaint(tokens, shiftHex(CAR_BLUE, 0, 0, -0.06)),
-  )
-  setProps(shell, true, false)
-  cabin.add(shell)
-  const greenhouse = new THREE.Mesh(
-    toyBlock(0.027, 0.010, 0.036, 0.009, 0.002),
-    glass(tokens, '#CFEDE4', { rim: { strength: 0.4, size: 0.3 } }),
-  )
-  greenhouse.position.y = 0.004
-  cabin.add(greenhouse)
-  const barMat = dieCastPaint(tokens, STRIPE, { toy: 0.2 })
-  for (const bx of [-0.009, 0, 0.009]) {
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.0026, 0.0024, 0.030), barMat)
-    bar.position.set(bx, 0.0174, 0)
-    setProps(bar, false, false)
-    cabin.add(bar)
-  }
-  car.add(cabin)
-
-  addWheels(car, 0.0095, [-0.0245, 0.0245], 0.0165)
-  return car
+  return createCarRig(tokens).group
 }
 
 // ---------------------------------------------------------------- car B —

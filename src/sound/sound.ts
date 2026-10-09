@@ -32,8 +32,15 @@ import { loadSave, saveSave } from '../save/save.ts';
 import type { SoundSettings } from '../save/save.ts';
 import { makeBus, makeMaster, makeRoom, MASTER_CEILING, MASTER_TRIM } from './bus.ts';
 import type { AudioBus } from './bus.ts';
-import { startRoll, startRoomBed, VOICES, VOICE_NAMES, chime as chimeVoice } from './voices.ts';
-import type { BedHandle, RollHandle, VoiceName } from './voices.ts';
+import {
+  startRoll,
+  startRoomBed,
+  VOICES,
+  VOICE_NAMES,
+  chime as chimeVoice,
+  land as landVoice,
+} from './voices.ts';
+import type { BedHandle, LandSurface, RollHandle, VoiceName } from './voices.ts';
 
 export type { SoundSettings };
 
@@ -84,7 +91,69 @@ export const EVENT_VOICES: readonly VoiceName[] = [
   'victory',
   'blipPlace',
   'blipUndo',
+  'land',
+  'splash',
+  'oil',
+  'magnet',
+  'whirl',
 ];
+
+// ---- the T1.1 voice map (contact + landing) ---------------------------------
+
+/** Which contact voice a hazard zone earns, from its authored id alone —
+ *  plain-data classification at the SHELL edge, so the voice stays a pure
+ *  event with no world import (the firewall's shape). The shipped ladder
+ *  carries wet patches and oil films; `magnet` and `whirl` (whirlpool) are
+ *  voice-map slots for the zones the Level Designer has not authored yet —
+ *  loudness-ratified the day they land, not the day they panic. */
+export function hazardContactVoice(zoneId: string): VoiceName {
+  const id = zoneId.toLowerCase();
+  if (id.includes('magnet')) return 'magnet';
+  if (id.includes('whirl')) return 'whirl';
+  if (id.includes('oil') || id.includes('stain') || id.includes('shop')) return 'oil';
+  return 'splash';
+}
+
+/** The dry-landing surface per set (the floor the car lands ON when it
+ *  lands on nothing wet): the room's own floor material, one lookup the
+ *  shell already has (the set id). The garden's lawn reads concrete — the
+ *  paving is what the run lines actually land on. */
+export function surfaceForSet(setId: string | null): LandSurface {
+  switch (setId) {
+    case 'bathroom':
+      return 'porcelain';
+    case 'bedroom':
+    case 'porch':
+      return 'wood';
+    case 'garage':
+    case 'garden':
+      return 'concrete';
+    default:
+      return 'tile'; // kitchen (and any unlisted room) is the reference
+  }
+}
+
+/** The wet-surface override when the landing lands INSIDE a zone: the
+ *  zone's own material wins (a splash landing is a splash in any room). */
+export function surfaceForContact(zoneId: string, fallback: LandSurface): LandSurface {
+  const v = hazardContactVoice(zoneId);
+  if (v === 'oil') return 'oil';
+  if (v === 'splash') return 'wet';
+  return fallback;
+}
+
+/** The roll voice's per-set timbre (surface-honest roll at its cheapest:
+ *  ONE cutoff scale per room, set at level boot, never per frame —
+ *  porcelain hisses brighter than concrete; 1 = the kitchen-tile
+ *  reference the stage-5 mix measured). */
+const ROLL_TONE: Record<string, number> = {
+  kitchen: 1,
+  bathroom: 1.25,
+  bedroom: 0.85,
+  garage: 0.7,
+  garden: 0.6,
+  porch: 0.8,
+};
 
 /** The run outcome the engine hears at the terminal edge — exactly the
  *  fields the result panel prints (an OUTCOME, not a state stream). */
@@ -173,6 +242,8 @@ export class SoundEngine {
   private random: () => number;
   private lastRollAtMs = -1e9;
   private lastRingAtMs = -1e9;
+  /** the roll voice's per-set surface scale (`ROLL_TONE`) */
+  private rollTone = 1;
   private inverted = false;
   private running = false;
   /** R8: the trailing volume-persist window (the autosave's shape) */
@@ -247,7 +318,10 @@ export class SoundEngine {
       // un-mute mid-run brings the roll back (the run is still going)
       if (this.running && this.ctx && !this.roll) {
         const bus = this.buses.get('roll');
-        if (bus) this.roll = startRoll({ ctx: this.ctx, t: this.ctx.currentTime + 0.005 }, bus);
+        if (bus) {
+          this.roll = startRoll({ ctx: this.ctx, t: this.ctx.currentTime + 0.005 }, bus);
+          this.roll.setTone(this.rollTone);
+        }
       }
     }
   }
@@ -327,8 +401,37 @@ export class SoundEngine {
     this.inverted = false;
     if (this.ctx && !this.muted && !this.deaf && !this.roll) {
       const bus = this.buses.get('roll');
-      if (bus) this.roll = startRoll({ ctx: this.ctx, t: this.ctx.currentTime + 0.005 }, bus);
+      if (bus) {
+        this.roll = startRoll({ ctx: this.ctx, t: this.ctx.currentTime + 0.005 }, bus);
+        this.roll.setTone(this.rollTone);
+      }
     }
+  }
+
+  /** The landing THUD (T1.1): fired from the shell's juice hook at the
+   *  `landingSquash` edge — the impulse N·s that rides on the event maps
+   *  to loudness, the surface picks the voicing (tile/porcelain/wood/
+   *  concrete, or wet/oil when the car lands in a patch). One voice per
+   *  landing, guard-counted like any other event. */
+  land(impulseNs: number, surface: LandSurface): void {
+    // the feel harness's landing measures ~0.06 N·s; full voice by 0.08
+    landVoice.intensity = Math.max(0, Math.min(1, impulseNs / 0.08));
+    landVoice.surface = surface;
+    this.voice('land');
+  }
+
+  /** A mid-run hazard CONTACT (T1.1): fired on the RISING EDGE of the
+   *  grip dip the HUD already counts — one tick per patch crossing, the
+   *  voice chosen from the zone's authored id (see `hazardContactVoice`). */
+  contact(zoneId: string): void {
+    this.voice(hazardContactVoice(zoneId));
+  }
+
+  /** The set's floor timbre for the sustained roll (surface-honest roll:
+   *  ONE number per level at boot, never per frame). */
+  setSurface(setId: string | null): void {
+    this.rollTone = ROLL_TONE[setId ?? ''] ?? 1;
+    this.roll?.setTone(this.rollTone);
   }
 
   /** Per-frame sink — READ ONLY, throttled, after the stepping block. */
