@@ -521,3 +521,34 @@ Proof: `tests/unit/ghost.test.ts` (the law's truth table, the cache's hit/miss/e
 (unearned k02 build phase, unlock-on-first-finish remembered ON, toggle persistence, afterlife defaults, the O(1)
 flip), `tests/e2e/farewell.spec.ts` (the freeze). Ghost stays visuals-only: `replay:all` 30/30 byte-same at this
 HEAD. See [[ui]], [[replay]], [[save]], `Sessions/2026-10-11 Round2 ghosts.md`.
+
+## 2026-10-11 — THE DAILY LAW: a date picks a BOARD — hash(UTC date) addresses one of the thirty rungs `[agent decision]` `[feel engineer]`
+
+The round-1 daily was a date sticker on rung one, and the game's own physics law was the witness for the
+prosecution: the seed "is folded into the hash only", so every day's run was Monday's run — "race today"
+raced a track that was never today's. The fix had to make the date MATTER without teaching the sim to read
+it (the determinism law — the seed rides the build field into the hash and touches nothing else — is the
+one surface the program may not trade twice). Chosen: the SAME number decides a second fact. `dailySeed`
+(FNV-1a over the ISO day, unchanged) now also picks TODAY'S BOARD by a one-line fold —
+`dailyBoardId(seed)` = seed mod 30 over `CAMPAIGN_LADDER` (`src/world/campaign.ts`, nav data, pure, every
+machine agrees because the seed does) — and the daily page boots that rung unless an explicit `?level=`
+addresses one (addressing doctrine: the door you came through names the room you land in). The page says
+which board it is (`#gw-daily-board`, zero-flow corner: "today's board — <registry name> · <UTC day>"),
+the result chip LEADS with the name (`dailyChipLine(rec, today, boardName)`), the par ghost rides the rung
+by the ghost law (the daily is an afterlife surface — default ON, the Lane-B law doing today's board no
+special favor), and the streak record belongs to the ADDRESSED day. A `?date=YYYY-MM-DD` recorded debug
+param pins which UTC day the hash rides — `dailySeed` already took an injectable date; the URL is that
+seam, and it is also the midnight-race cure engineering N6 asked for (both sides of every test read ONE
+day key). A daily page is never a dev preview (the mint's own law: a finished run on a campaign board
+mints normally, rung-picked or date-picked alike). Rejected: rotating by weekday (a six-day calendar is a
+pattern, not a date — a Tuesday in October would race a Tuesday in March), a bespoke daily level set (30
+new boards the budget/tray/par laws must re-earn for a calendar the ladder already IS), and keeping the
+word "daily" for a sticker (the evaluation's own ultimatum: rotate it or retire it). Proofs:
+`tests/unit/campaign.test.ts` (the fold), `tests/unit/boot.test.ts` (`dailyAddress`/`resolveLevel`),
+`tests/e2e/daily.spec.ts` (two dates → two NAMED boards, stable within a date, the page hash IS the Node
+replay twice over, the chip reads the name, the record keys the addressed day) and the `ghosts.spec`
+afterlife defaults. THE ADJACENT ROUND-2 LAWS rode the same commit: the 20 px back (the compact chrome
+constant returns to 288 and the chip band rides the page's bottom slack — `--gw-chip-bottom`, stated in
+[[ui]]), and the sandbox doors made visible (every room row's sub-entry link + the farewell's first door
+naming all six — [[Levels]], [[ui]]). See [[ui]], [[save]], [[Levels]],
+`Sessions/2026-10-11 Round2 doors.md`.

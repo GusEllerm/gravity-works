@@ -4,9 +4,11 @@
  * tests/e2e/builder.spec.ts, which drive the real built page.
  */
 import { describe, expect, test } from 'vitest';
-import { boot, initialBuild, nextLevelId, runStatusLine, startBuildFor } from '../../src/boot.ts';
+import { boot, dailyAddress, initialBuild, nextLevelId, resolveLevel, runStatusLine, startBuildFor } from '../../src/boot.ts';
 import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts';
 import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts';
+import { dailyBoardId } from '../../src/world/campaign.ts';
+import { dailySeed } from '../../src/save/daily.ts';
 import type { World } from '../../src/world/world.ts';
 import type { Build } from '../../src/track/build.ts';
 
@@ -93,5 +95,34 @@ describe('boot shell', () => {
     expect(nextLevelId('porch05')).toBeNull(); // last rung of the WHOLE campaign: no Next button
     expect(nextLevelId('kitchen-sandbox')).toBeNull(); // off-ladder surfaces
     expect(nextLevelId('feeltrack')).toBeNull();
+  });
+
+  // THE DAILY ADDRESS (round 2, Lane C): the URL faces of today — intent,
+  // honest seed, debug date — and the board they boot. The fold itself is
+  // campaign law (`tests/unit/campaign.test.ts`); this is the door.
+  test('the daily address: ?daily=1, the numeric ?seed= face, and ?date=', () => {
+    const today = dailyAddress(new URLSearchParams('daily=1'));
+    expect(today?.seed).toBe(dailySeed());
+    const seeded = dailyAddress(new URLSearchParams('seed=7'));
+    expect(seeded?.seed).toBe(7);
+    expect(seeded!.now.getTime()).toBeLessThanOrEqual(Date.now());
+    expect(dailyAddress(new URLSearchParams('seed=notanumber'))).toBeNull();
+    expect(dailyAddress(new URLSearchParams(''))).toBeNull();
+    // a recorded debug date pins the day the hash rides (a 12Z anchor —
+    // the day is the address, the hour is not)
+    const pinned = dailyAddress(new URLSearchParams('daily=1&date=2026-10-11'))!;
+    expect(pinned.seed).toBe(dailySeed(new Date('2026-10-11T12:00:00Z')));
+    expect(dailyAddress(new URLSearchParams('daily=1&date=garbage'))!.seed).toBe(dailySeed());
+  });
+
+  test('a daily page boots TODAY’S BOARD; an explicit ?level= still wins', () => {
+    const params = new URLSearchParams('daily=1&date=2026-10-11');
+    expect(resolveLevel(params).id).toBe(dailyBoardId(dailySeed(new Date('2026-10-11T12:00:00Z'))));
+    expect(resolveLevel(new URLSearchParams('seed=7')).id).toBe(dailyBoardId(7));
+    // addressing doctrine stands: the door the farewell came through names
+    // its rung, the rung stays
+    expect(resolveLevel(new URLSearchParams('daily=1&level=kitchen03')).id).toBe('kitchen03');
+    // an ordinary page is unchanged — the default rung, no fold, no seed
+    expect(resolveLevel(new URLSearchParams('')).id).toBe(KITCHEN01.id);
   });
 });

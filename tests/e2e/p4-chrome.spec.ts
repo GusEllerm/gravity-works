@@ -22,6 +22,16 @@ import { goto } from './goto.ts'
  * at scroll 0 in page space — the chips' corner law there is documented
  * and unchanged); each height attaches a full-window screenshot.
  *
+ * ROUND 2 (Lane C, "the 20 px back") re-derived the compact arithmetic
+ * WITHOUT narrowing this law: the band never needed WORLD rows. The
+ * compact constant is back at 288 (the ledger's 613×345 stage at 633 —
+ * the height the P4 band-buy had spent, returned) and the chips lowered
+ * themselves to 4 px from the window edge (`--gw-chip-bottom`, shell.css)
+ * so the last flow line still ends ~3 px ABOVE the band at every compact
+ * height. Nothing rides on anything; the honesty the P4 fix bought is
+ * still bought, and the stage-height floor below keeps the 20 px from
+ * quietly spending itself again.
+ *
  * Known adjacency, documented in Modules/ui: OPENING the hash <details>
  * grows the document past the window at compact heights — the disclosure
  * has always traded its reserved line for a scroll at every height, and
@@ -100,6 +110,15 @@ for (const height of [633, 720, 900]) {
       expect(rects['gw-hash-details'].bottom, 'hash line above the chip strip').toBeLessThanOrEqual(
         rects['gw-ghost-bar'].top,
       )
+      if (height < 700) {
+        // THE 20 px BACK (round 2, Lane C): the compact stage serves the
+        // ledger's height again — a 633 window owes ≥ 340 px of world
+        // (the ledger number is 345; the floor leaves sub-pixel slack)
+        const stage = await page.evaluate(
+          () => document.querySelector('#gw-stage canvas')!.getBoundingClientRect().height,
+        )
+        expect(stage, 'the compact stage kept its height').toBeGreaterThanOrEqual(340)
+      }
     }
 
     expect(errors).toEqual([])

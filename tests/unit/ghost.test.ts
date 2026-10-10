@@ -307,4 +307,26 @@ describe('the daily rung (T3.4)', () => {
     );
     expect(utcDateKey(new Date('2026-10-09T23:59:59Z'))).toBe('2026-10-09');
   });
+
+  // ROUND 2 (Lane C): the chip LEADS with the board — "race today" with
+  // no name was the date-sticker lie. The name comes from the registry at
+  // the call site; the line only carries it, and the single-machine clause
+  // stays inside the sentence either way.
+  test('the chip line names TODAY’S BOARD when the caller supplies one', () => {
+    const line = dailyChipLine({ date: '2026-10-09', best: 3.21, streak: 1 }, '2026-10-09', 'Sunny Run');
+    expect(line).toContain('today’s board Sunny Run');
+    expect(line).toContain('best 3.21 s');
+    expect(line).toContain('this device only');
+    const stale = dailyChipLine({ date: '2026-10-08', best: 3.21, streak: 4 }, '2026-10-09', 'Sunny Run');
+    expect(stale).toContain('today’s board Sunny Run');
+    expect(stale).toContain('not yet today');
+    // no name supplied stays the honest old line (a non-board seed face)
+    expect(dailyChipLine({ date: '2026-10-09', best: 3.21, streak: 1 }, '2026-10-09')).not.toContain(
+      'today’s board',
+    );
+  });
+
+  // The board fold itself is CAMPAIGN data — see tests/unit/campaign.test.ts
+  // for the ladder law; the seed→board link lives there, the date→seed law
+  // above, and the page side in tests/e2e/daily.spec.ts.
 });

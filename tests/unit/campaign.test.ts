@@ -15,11 +15,14 @@
  */
 import { describe, expect, test } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { dailySeed } from '../../src/save/daily.ts';
+import { getLevel } from '../../src/world/levels/feeltrack.level.ts';
 import {
   CAMPAIGN,
   CAMPAIGN_LADDER,
   campaignIndex,
   campaignRoomOf,
+  dailyBoardId,
   levelUnlock,
   nextInCampaign,
   previousInCampaign,
@@ -296,5 +299,38 @@ describe('levelUnlock — the rule surfaces share', () => {
   test('off-campaign ids are outside the rule (debug addressing is recorded elsewhere)', () => {
     expect(levelUnlock(P(), 'feeltrack').unlocked).toBe(true);
     expect(levelUnlock(P(), 'feeltrack').requires).toBeNull();
+  });
+
+  // THE DAILY BOARD FOLD (round 2, Lane C): the date's number picks the
+  // board by a one-line rule — a pure fold of the seed onto the thirty
+  // rungs. Deterministic by construction (the same number, the same rung,
+  // on every machine and every hour), total over the ladder (every seed
+  // addresses a board, negatives included), and the board is always a
+  // RUNG — never a sandbox, never the feel rig, never nothing.
+  test('dailyBoardId folds any seed onto a ladder rung, deterministically', () => {
+    expect(dailyBoardId(0)).toBe(CAMPAIGN_LADDER[0]);
+    expect(dailyBoardId(30)).toBe(CAMPAIGN_LADDER[0]); // wraps — thirty boards
+    expect(dailyBoardId(-1)).toBe(CAMPAIGN_LADDER[29]); // negative seeds address too
+    for (const seed of [7, 42, 12345, 2 ** 31, -(2 ** 31)]) {
+      expect(CAMPAIGN_LADDER).toContain(dailyBoardId(seed));
+      expect(dailyBoardId(seed)).toBe(dailyBoardId(seed)); // pure
+    }
+    // two round-2 test dates fold to DIFFERENT boards (the e2e reads the
+    // names; the names live in the registry, so this only pins the ids)
+    expect(dailyBoardId(dailySeed(new Date('2026-10-11T12:00:00Z')))).not.toBe(
+      dailyBoardId(dailySeed(new Date('2026-10-12T12:00:00Z'))),
+    );
+  });
+
+  // The rooms' SANDBOX DOORS (the level-select sub-entries and the
+  // farewell's six names): each room declares its sandbox by the shipped
+  // registry id, and the id must actually REGISTER (importing the level
+  // file is what registers it — campaign.ts now imports them all).
+  test('every room declares its sandbox by a registered id', () => {
+    for (const room of CAMPAIGN) {
+      expect(room.sandboxId).toBe(`${room.id}-sandbox`);
+      expect(() => getLevel(room.sandboxId)).not.toThrow();
+      expect(CAMPAIGN_LADDER).not.toContain(room.sandboxId); // nobody's rung
+    }
   });
 });

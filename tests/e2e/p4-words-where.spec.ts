@@ -87,10 +87,16 @@ test('the shipped-but-never-stocked kinds say their line at the rung (P4 item 5)
   expect(KITCHEN03.fixtures?.bank).toBe(1)
 })
 
-test('the level select says the sandboxes exist and what they keep (P4 item 5)', async ({ page }) => {
+test('the level select LINKS the six sandboxes and says what they keep (round 2, Lane C)', async ({ page }) => {
+  // the P4 sentence has been promoted to six doors: one quiet sub-entry
+  // per room row, each carrying the kinds fact the old prose line carried
   await goto(page, '/?levels=1')
-  const line = page.locator('#gw-levelselect-sandboxes')
-  await expect(line).toBeVisible()
-  await expect(line).toContainText('sandboxes')
-  await expect(line).toContainText('loops and springs')
+  await expect(page.locator('#gw-levelselect-sandboxes')).toHaveCount(0) // prose retired
+  await expect(page.locator('a.gw-level-sandbox')).toHaveCount(6)
+  for (const room of ['kitchen', 'bedroom', 'bathroom', 'garden', 'garage', 'porch']) {
+    const link = page.locator(`a#gw-level-${room}-sandbox`)
+    await expect(link).toBeVisible()
+    await expect(link).toContainText('loops and springs')
+    await expect(link).toHaveAttribute('href', `?level=${room}-sandbox`)
+  }
 })

@@ -102,7 +102,7 @@ import { createSaveSettings } from './ui/settings.ts'; // T0.3/R1 — save expor
 import { firstLesson, firstSight, firstSetAppearance } from './ui/callouts.ts';
 import { downloadBlob, generateShareCard } from './share/card.ts';
 import { SETS, isRegisteredSet, type SetRegistration } from './sets/index.ts';
-import { CAMPAIGN_LADDER, levelUnlock, nextInCampaign } from './world/campaign.ts';
+import { CAMPAIGN_LADDER, dailyBoardId, levelUnlock, nextInCampaign } from './world/campaign.ts';
 export { setPlacementGuard, setCameraSolids } from './pages/mount.ts';
 import {
   actionableKindsFor,
@@ -130,15 +130,45 @@ void [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04, KITCHEN05, KITCHEN_SANDBOX, BE
 
 /** The level the game boots: ?level=<id> for anything registered, KITCHEN 01
  *  by default (the ladder's first rung; the feel track remains reachable as
- *  ?level=feeltrack for the stage-2 specs). */
+ *  ?level=feeltrack for the stage-2 specs). A DAILY-ADDRESSED page with no
+ *  explicit ?level= boots TODAY'S BOARD instead — `dailyAddress` reads the
+ *  day's seed and `dailyBoardId` folds that same number onto the thirty
+ *  rungs of the ladder (round 2, Lane C; the seed law below is unchanged —
+ *  the pick is the seed, not a second source of state). An explicit
+ *  ?level= still wins: addressing doctrine stands — the farewell door and
+ *  the specs land on a named rung and stay there. */
 export function resolveLevel(params: URLSearchParams): Level {
-  const id = params.get('level');
+  const daily = dailyAddress(params);
+  const id = params.get('level') ?? (daily ? dailyBoardId(daily.seed) : null);
   if (!id) return KITCHEN01;
   try {
     return getLevel(id);
   } catch {
     return KITCHEN01; // an unknown id is the default level, not a dead page
   }
+}
+
+/**
+ * THE DAILY ADDRESS (round 2, Lane C): the seed and the UTC day a daily
+ * page runs on, or null for an ordinary page. Three faces, one rule:
+ * `?daily=1` is the intent (`seed = dailySeed(now)`), a numeric `?seed=`
+ * is the same page spelled honestly, and `?date=YYYY-MM-DD` (the recorded
+ * debug-param family) pins WHICH UTC day the hash is taken over — the law
+ * `dailySeed` already takes an injectable date; this is that seam at the
+ * URL, what makes "two dates, two boards" checkable without racing the
+ * midnight clock (engineering round-2 N6). The date never touches the sim:
+ * like every seed here it folds into the state hash and nothing else.
+ */
+export function dailyAddress(params: URLSearchParams): { seed: number; now: Date } | null {
+  const dateParam = params.get('date');
+  const now =
+    dateParam !== null && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+      ? new Date(`${dateParam}T12:00:00Z`)
+      : new Date();
+  const seedParam = params.get('seed');
+  if (seedParam !== null && /^-?\d+$/.test(seedParam)) return { seed: Number(seedParam), now };
+  if (params.has('daily')) return { seed: dailySeed(now), now };
+  return null;
 }
 
 /** The ladder, in order — the order `Next level` walks and the level select
@@ -327,6 +357,15 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   levelsNav.appendChild(levelsLink);
   root.appendChild(levelsNav);
   const params = new URLSearchParams(window.location.search);
+  // THE DAILY ADDRESS (round 2, Lane C — made real): `?daily=1`, the honest
+  // numeric `?seed=` face, and the recorded `?date=` debug day all address
+  // TODAY'S BOARD — the same date-folded number that rides the build's
+  // `seed` field now also picks WHICH of the thirty boards the page runs
+  // (`dailyBoardId`, decided in `resolveLevel` before this page is built).
+  // Read once here; the seed line below, the ghost law and the chip all
+  // agree with it.
+  const daily = dailyAddress(params);
+  const dailySeedValue = daily?.seed ?? null;
   // DEV HARNESS ENTRY (stage 4): `?set=<id>` mounts a REGISTERED set in the
   // game shell in place of the level's own — the set-inspection entry point
   // (`?set=bedroom`). Without the param the level-driven behavior is exactly
@@ -359,12 +398,23 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // because the write is gated, not merely worded). Off-ladder rigs (the
   // sandbox, the feel track) report unlocked and wear no badge; the shared
   // replay page never builds this DOM at all (`src/pages/share.ts`).
-  const devPreview = !levelUnlock(loadSave().progress, level.id).unlocked;
+  const devPreview = daily === null && !levelUnlock(loadSave().progress, level.id).unlocked;
   if (devPreview) {
     const badge = document.createElement('p');
     badge.id = 'gw-dev-preview';
     badge.textContent = 'dev preview — progress from here won’t unlock anything';
     stage.appendChild(badge); // corner-pinned: zero layout flow over the canvas
+  }
+  // TODAY'S BOARD, NAMED (round 2, Lane C): the daily page wears its date
+  // fact as a corner tag — the board today's hash(UTC date) picked, by its
+  // registry name, plus the UTC day it belongs to. Zero layout flow like
+  // every corner chrome (the canvas rect law); the farewell door 2 lands
+  // HERE, and the result chip below repeats the name on every run line.
+  if (daily) {
+    const boardTag = document.createElement('p');
+    boardTag.id = 'gw-daily-board';
+    boardTag.textContent = `today’s board — ${level.name} · ${utcDateKey(daily.now)}`;
+    stage.appendChild(boardTag); // corner-pinned, zero flow
   }
   const statusLine = paragraph('gw-status', root);
   const calloutLine = paragraph('gw-callout', root, 'text');
@@ -666,8 +716,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // The daily page is the same address test `dailySeedValue` uses below
   // (`?daily=1`, or the honest `?seed=` face of it) — read off the URL here
   // so the rail's truth is decided before that line runs.
-  const ghostDaily =
-    params.has('daily') || /^-?\d+$/.test(params.get('seed') ?? '');
+  const ghostDaily = daily !== null;
   const ghostRule = parGhostRule({
     surface: parGhostSurface(level.id, ghostDaily),
     earned: parGhostEarned(loadSave().progress, level.id),
@@ -853,19 +902,13 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // M; the alt is ADDRESSED from the level module's existing export, never a
   // level-data edit).
   const playerBuild = startBuildFor(level, params, savedBuild(level.id));
-  // THE DAILY RUNG (program T3.4, riding the T3.2 rails): `?seed=<n>` is the
-  // one honest surface — `?daily=1` is the same page at `seed = hash(UTC
-  // date)` (`dailySeed`). The seed rides the build's OWN field, so it folds
-  // into the state hash exactly as every seed does and touches nothing else
-  // (the sim never reads it; zero shipped hashes move — the default page
-  // never passes either param). Single-machine honesty lives in the chip.
-  const seedParam = params.get('seed');
-  const dailySeedValue =
-    seedParam !== null && /^-?\d+$/.test(seedParam)
-      ? Number(seedParam)
-      : params.has('daily')
-        ? dailySeed()
-        : null;
+  // THE DAILY RUNG (program T3.4, made REAL in round 2 Lane C): the page's
+  // daily address (`dailyAddress`, read at the top of this boot) carries the
+  // day's seed; the seed rides the build's OWN field, so it folds into the
+  // state hash exactly as every seed does and touches nothing else (the sim
+  // never reads it; zero shipped hashes move — the default page never passes
+  // either param). The same number already picked TODAY'S BOARD in
+  // `resolveLevel`. Single-machine honesty lives in the chip.
   if (dailySeedValue !== null && Number.isInteger(dailySeedValue)) {
     playerBuild.seed = dailySeedValue;
   }
@@ -1676,23 +1719,24 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // the SHARE payload's run (see the share wiring): the hash, time and
       // stars of the run the panel is about, frozen at its terminal edge
       lastOutcome = { hash: h, time: result.time, stars: model.stars };
-      // THE DAILY CHIP (T3.4): on a daily-seeded page the result screen
-      // carries today's line — a FINISHED run records into it, a failure
-      // just reads it. The single-machine clause rides INSIDE the sentence
-      // (`dailyChipLine`), never a footnote, and nothing here touches the
-      // save envelope or a shipped hash.
+      // THE DAILY CHIP (T3.4, round 2: the board's NAME leads it): on a
+      // daily-seeded page the result screen carries today's line — a
+      // FINISHED run records into it, a failure just reads it. The
+      // single-machine clause rides INSIDE the sentence (`dailyChipLine`),
+      // never a footnote, and nothing here touches the save envelope or a
+      // shipped hash.
       if (dailySeedValue !== null) {
-        const today = utcDateKey();
+        const today = utcDateKey(daily?.now);
         if (result.status === 'finished') {
-          const rec = recordDailyBest(result.time);
+          const rec = recordDailyBest(result.time, daily?.now ?? new Date());
           resultPanel.daily.textContent = rec
-            ? dailyChipLine(rec, today)
-            : 'race today — this browser refused to keep the record';
+            ? dailyChipLine(rec, today, level.name)
+            : `today’s board ${level.name} — race today — this browser refused to keep the record`;
         } else {
           const prev = readDaily();
           resultPanel.daily.textContent = prev
-            ? dailyChipLine(prev, today)
-            : 'race today — not yet today · your own runs on this device only';
+            ? dailyChipLine(prev, today, level.name)
+            : `today’s board ${level.name} — race today — not yet today · your own runs on this device only`;
         }
         resultPanel.daily.hidden = false;
       }
@@ -1706,6 +1750,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         fparams.delete('launch'); // one-use rig params, the Next rule
         fparams.delete('build');
         fparams.delete('farewell');
+        fparams.delete('level'); // door 2 is TODAY'S board, not the rung we came from
         fparams.set('daily', '1');
         const farewellPage = startFarewell(root, stage, {
           reducedMotion: reduceMotion,

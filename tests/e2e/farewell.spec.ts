@@ -144,21 +144,33 @@ test('a key skips the crane and the doors land whole (still an honest seen)', as
   await expect(page.locator('#gw-farewell')).toHaveCount(0)
 })
 
-test('door one: the sandbox — one click, the porch sandbox page', async ({ page }) => {
+test('door one: the sandbox — one click, the porch sandbox page, and all six rooms named', async ({ page }) => {
   test.setTimeout(120_000)
   await toDoors(page)
+  // (round 2, Lane C) the door NAMES all six: "a room of your own, every
+  // room" — one small link per room sandbox, registry ids, and the door's
+  // own click still lands the porch sandbox in one click
+  await expect(page.locator('#gw-farewell-sandbox')).toContainText('a room of your own, every room')
+  await expect(page.locator('#gw-farewell-sandboxes a')).toHaveCount(6)
+  for (const room of ['kitchen', 'bedroom', 'bathroom', 'garden', 'garage', 'porch']) {
+    await expect(page.locator(`#gw-farewell-sandboxes a[href="?level=${room}-sandbox"]`))
+      .toHaveText(`${room} sandbox`)
+  }
   await page.click('#gw-farewell-sandbox')
   await expect(page).toHaveURL(/level=porch-sandbox/)
   await expect(page.locator('#gw-launch')).toBeVisible({ timeout: 60_000 })
 })
 
-test('door two: the daily — one click, today’s daily run', async ({ page }) => {
+test('door two: the daily — one click, TODAY’S BOARD (the date picks the rung, not the finale)', async ({ page }) => {
   test.setTimeout(120_000)
   await toDoors(page)
   await page.click('#gw-farewell-daily')
   await expect(page).toHaveURL(/daily=1/)
-  await expect(page).toHaveURL(/level=porch05/)
+  // round 2, Lane C: the daily door no longer drags porch05 behind it —
+  // the date's fold picks the board and the page says which one it is
+  await expect(page).not.toHaveURL(/level=/)
   await expect(page.locator('#gw-launch')).toBeVisible({ timeout: 60_000 })
+  await expect(page.locator('#gw-daily-board')).toBeVisible()
 })
 
 test('door three: the film — one click, the porch05 run replays and verifies', async ({ page }) => {

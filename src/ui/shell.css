@@ -18,6 +18,12 @@
  * is the tax without the personality. */
 :root {
   --gw-display: 'Futura', 'Avenir Next', 'Century Gothic', 'Trebuchet MS', system-ui, sans-serif;
+  /* THE CHIP BOTTOM (round 2, Lane C — the 20 px back): the two
+   * bottom-corner chips read their offset from here (their layout is
+   * INLINE per the zero-flow law; the value lives in the cascade). The
+   * compact block lowers it to 4 px so the chip band rides the page's own
+   * bottom slack instead of buying its room out of the canvas. */
+  --gw-chip-bottom: 8px;
 }
 body {
   margin: 0;
@@ -50,7 +56,8 @@ h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
 .gw-premiere #gw-status,
 .gw-premiere #gw-callout,
 .gw-premiere #gw-sound,
-.gw-premiere #gw-dev-preview {
+.gw-premiere #gw-dev-preview,
+.gw-premiere #gw-daily-board {
   display: none;
 }
 .gw-premiere h1 { letter-spacing: 0.3em; }
@@ -328,20 +335,31 @@ h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
     line-height: 13px; min-height: 13px;
   }
   /* canvas height = width × 540/960, and the width cap makes that height
-   * (100vh − 310 px) — 310 is the compact chrome re-MEASURED by the P4
-   * chrome pass at 1280×633: 270 px of measured FLOW (was ≈ 280 at 288 —
-   * the three lines below the canvas now state 13–15 px integer boxes)
-   * plus the 40 px CHIP BAND above — the strip's 21 px box, its 8 px
-   * offset and 11 px of honest air (304 was the first cut; CI's Linux
-   * fonts proved the extra 6). History: 380 at the round-7 pass, cut to
-   * 288 by the P4 shortlist pass's line-by-line measure, which counted
-   * every FLOW line and none of the corner chips. A WIDTH cap keeps the
-   * buffer aspect true; the page measures ≤ 100vh at every height the
-   * block fires (no scroll — the `tests/e2e/result.spec.ts` short-window
-   * law) AND no flow line reaches the chip band
-   * (`tests/e2e/p4-chrome.spec.ts`), and a 633 px window serves a
-   * ≈323 px stage. */
-  #gw-stage canvas { max-width: min(960px, calc((100vh - 310px) * 960 / 540)); }
+   * (100vh − 288 px) — ROUND 2 RE-MEASURE (Lane C, "the 20 px back"): the
+   * P4 chrome pass paid the whole 40 px chip band OUT OF THE WORLD (310 =
+   * 270 flow + 40 band), and the 2026-10-11 player evaluation did the
+   * subtraction — the flagship window got a 574×323 stage where the
+   * program's own ledger still said 613×345. The band never needed world
+   * rows; it needed the slack BELOW them. At 288 the flow lines (every one
+   * a stated integer box, the law above) end at 100vh − 28 px — the last
+   * flow row lands 3 px ABOVE the chips' band, which now floats in the
+   * page's own bottom slack (the chips drop to `--gw-chip-bottom: 4px`
+   * here, still fully on screen, fully tap-reachable, rects still pairwise
+   * DISJOINT — the honesty the band bought is kept, its world rows come
+   * back). History: 380 (round 7) → 288 (P4 shortlist, flow-only) → 304
+   * →310 (the band's first cuts) → 288 + a lowered band (this law). A
+   * WIDTH cap keeps the buffer aspect true; the page measures ≤ 100vh at
+   * every height the block fires (no scroll — `tests/e2e/result.spec.ts`)
+   * AND no flow line reaches the chip band (`tests/e2e/p4-chrome.spec.ts`,
+   * rects + screenshots re-derived at 633/720/900) — and a 633 px window
+   * serves the ledger's 613×345 stage again. */
+  #gw-stage canvas { max-width: min(960px, calc((100vh - 288px) * 960 / 540)); }
+  /* THE BAND MOVES INTO THE SLACK (see above): the two bottom-corner
+   * chips carry their layout INLINE (the zero-flow law), and the inline
+   * value reads this variable — 4 px from the window edge at compact
+   * heights, the usual 8 px everywhere else. Never add a bottom rule for
+   * the chips here; the variable IS the law. */
+  :root { --gw-chip-bottom: 4px; }
   #gw-result { padding: 5px 9px; font-size: 12px; }
   #gw-result-stars { font-size: 15px; }
   #gw-result-rules { font-size: 10px; }
@@ -349,6 +367,24 @@ h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
   #gw-result-buttons button { font-size: 11px; padding: 3px 8px; }
   #gw-result-share-row { margin-top: 4px; }
   #gw-result-share-url { font-size: 10px; }
+}
+/* TODAY'S BOARD TAG (round 2, Lane C — the daily, made real): the daily
+ * page's corner chip, top-left like the dev-preview it can never coexist
+ * with (a daily address is never a dev preview) — it names the board the
+ * date picked and the UTC day it belongs to. Zero layout flow, same law. */
+#gw-daily-board {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  z-index: 4;
+  margin: 0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(185, 145, 90, 0.7);
+  background: rgba(255, 248, 236, 0.85);
+  color: #6a5636;
+  font: 11px/1.4 system-ui, sans-serif;
+  font-style: italic;
 }
 /* THE DEV-PREVIEW BADGE (playtest BB item 5: "?level= loads a locked
  * level; the map shows it locked"). A locked CAMPAIGN rung addressed via
@@ -397,6 +433,17 @@ h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
 /* the per-rung star-rules line (playtest N: teaching precedes failure):
  * stars + this level's par, printed ON the open rung before its first run */
 .gw-level-rules { display: block; font-size: 11px; font-weight: 400; color: #6a5636; }
+/* THE SANDBOX SUB-ENTRY (round 2, Lane C — "the sandboxes are the toy, and
+ * the game hides the door"): one quiet link at the foot of each room's row,
+ * one calm step below the rung buttons — smaller, unbolded, no star or
+ * lock chrome, so it never reads as a rung the ladder forgot to score. */
+.gw-level-sandbox-item { margin-top: 2px; }
+.gw-level-sandbox {
+  font-size: 12px;
+  color: #6a5636;
+  font-style: italic;
+  text-decoration: underline;
+}
 /* the tray legend decrements (×N counts what is LEFT) — the label is set
  * from code; keep the spent buttons visually distinct without removing them
  * from the tab order (aria-disabled, not disabled) */
@@ -476,6 +523,17 @@ h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
 #gw-farewell-doors[hidden] { display: none; }
 #gw-farewell-hello { margin: 0; font-size: 13px; }
 #gw-farewell-doorrow { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+/* THE SIX NAMES (round 2, Lane C): door 1 says "a room of your own, every
+ * room" and the row below it names all six sandboxes — one small link per
+ * room, the same `?level=` door the level-select rows carry. */
+#gw-farewell-sandboxes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 10px;
+  margin-top: 4px;
+}
+.gw-farewell-sandbox-room { font-size: 11px; font-style: italic; color: #6a5636; }
 #gw-farewell-doorrow a,
 #gw-farewell-doorrow button {
   font: inherit;
