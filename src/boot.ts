@@ -94,7 +94,7 @@ import { parFor, type RunResult, type StarCount } from './world/stars.ts';
 import { createResultPanel, createRunRecorder, resultModel, starRulesLine } from './ui/result.ts';
 import { createHelpDrawer } from './ui/help.ts';
 import { createSaveSettings } from './ui/settings.ts'; // T0.3/R1 — save export/import row + quarantine line
-import { firstLesson, firstSight } from './ui/callouts.ts';
+import { firstLesson, firstSight, firstSetAppearance } from './ui/callouts.ts';
 import { downloadBlob, generateShareCard } from './share/card.ts';
 import { SETS, isRegisteredSet, type SetRegistration } from './sets/index.ts';
 import { CAMPAIGN_LADDER, levelUnlock, nextInCampaign } from './world/campaign.ts';
@@ -107,6 +107,7 @@ import {
   levelTrayParams,
   moveHintFor,
   placedKindsFor,
+  placedWhereFor,
   stockedKindsFor,
 } from './ui/advice.ts';
 import type { SetInstance } from './sets/index.ts';
@@ -1381,17 +1382,31 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // Program T1.2: when a premise beat is running the callout line is
   // hidden chrome, so the lesson DEFERS to the beat's end rather than
   // burning its once-per-level seen-flag on a line nobody could see.
-  const showRulesLesson = (): void => {
+  const showRulesLesson = (): boolean => {
     const rulesLesson = firstLesson(`rules:${level.id}`, starRulesLine(parFor(level.id, level.par)));
     if (rulesLesson) calloutLine.textContent = rulesLesson;
+    return rulesLesson !== null;
   };
-  if (!premiere) showRulesLesson();
-  else {
+  // THE SET-APPEARANCE MOMENT (P4 item 5, §9.3's set half): a rung that
+  // SHIPS a kit piece as geometry its tray never stocks — kitchen02/03's
+  // run-out `curve`, kitchen03's banked bowl rim — says that piece's quiet
+  // line once ever, on a boot the star-rules lesson did not need (the
+  // rules line owns the FIRST boot of every rung; the seen set does the
+  // rest). The tray half of §9.3 stays the placement line above.
+  const showSetAppearance = (): void => {
+    const appearance = firstSetAppearance(level as { fixtures?: Partial<Record<string, number>> });
+    if (appearance) calloutLine.textContent = appearance;
+  };
+  if (!premiere) {
+    if (!showRulesLesson()) showSetAppearance();
+  } else {
     // the beat's END (terminal edge, skip, or the safety timeout) lands the
     // player's own starting build back and lifts the chrome with it
     premiereEnd = (): void => {
       premiere.end();
-      void rebuild(playerBuild).then(showRulesLesson);
+      void rebuild(playerBuild).then(() => {
+        if (!showRulesLesson()) showSetAppearance();
+      });
     };
   }
 
@@ -1562,6 +1577,11 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         // pure data like every gate above — the physics and the hash never
         // see it).
         moveHintFor(level, currentBuild, tray),
+        // THE CRITIQUE WHERE (P4 item 4, the bedroom02 truth): the nose-first
+        // critique halves name the SITE of the placed piece in the Remove
+        // button's own join-graph words (`placedWhereFor`, `src/ui/advice.ts`;
+        // pure data like every gate above).
+        placedWhereFor(level, currentBuild),
       );
       // THE FAREWELL (program T3.3): the FIRST time the house's last word
       // is cleared, the result bar is REPLACED by one crane pass over the

@@ -61,8 +61,27 @@
  *     first pass);
  *   placing ALL FOUR tray pieces (the tray is still exactly the union —
  *     2 straights, 1 gapLip, 1 drop, par multiset = tray) finishes in EVERY
- *     order — 12/12, 1.01–1.16 s — the place-everything gate, and every
- *     order now also finishes FASTER than the old level ran.
+ *     order PHYSICALLY — 12/12, 1.01–1.16 s — the place-everything gate,
+ *     and every order now also finishes FASTER than the old level ran.
+ *   BUT THE UNION IS NO LONGER BUILDABLE (the 2026-10-10 shortlist pass —
+ *   the 2026-10-10 player evaluation item 3: "the level file never moved;
+ *   the union dump finishes every order; only a star-tax comments"). The
+ *   level declares `blockedGoalSeat` (the BLOCKED-RIM ASK, `goalGuardFor`
+ *   in `src/ui/builder.ts`): the cup's own body — mouth-forward, from its
+ *   mounted fixture transform — refuses any seat that overlaps it, and the
+ *   refusal names the cup. By the reach-sum law the union's 4th piece
+ *   ALWAYS seats into or past that body (measured: every 4th placement of
+ *   all 12 whole-tray orders lands its box across the cup body while every
+ *   legal 3-piece line's last deck ends 2 mm short of the mouth plane), so
+ *   the last ask of EVERY dump order is refused — "blocked — the cup is in
+ *   the way · press ] to walk the open ends" — and the two ways are now a
+ *   choice that must be MADE: leaving exactly one of the four pieces on the
+ *   tray is the game, and the three that DID seat can and do die (the
+ *   `straight → straight → gapLip` trio falls at ~1.14 s). The guard is
+ *   placement-layer only — no geometry, collider or physics read was added,
+ *   so this file's par replay hash `0b4dbab2` is UNCHANGED (the honest
+ *   check this pass was asked to run; `tests/unit/goal-guard.test.ts` pins
+ *   both directions and `npm run replay:all` stands on every rung).
  * Robustness re-measured across seeds 1–6 and launch speeds ×1.0–1.1.
  *
  * KNOWN MEASURED EDGE (kept honest, pinned in the test): the fail table IS
@@ -191,6 +210,10 @@ export const KITCHEN02: KitchenLevel = registerKitchen(
     // would seat at kit defaults and break the reach-sum law both lines and
     // the place-everything gate are measured on.
     trayParams: { gapLip: L02_LIP },
+    // THE BLOCKED-RIM ASK (see the header): the cup's body refuses the
+    // union's tail seat in every order — the choice cannot be faked by
+    // placing everything. Placement layer only; no hash moves.
+    blockedGoalSeat: true,
     fixtures: { ramp: 1, finishCup: 1, curve: 1 },
     parBuild,
   }),

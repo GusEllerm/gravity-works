@@ -92,6 +92,43 @@ export function firstSight(id: string, store: StorageLike | null = defaultStorag
 }
 
 /**
+ * THE SET-APPEARANCE MOMENT (P4 shortlist item 5 — the 2026-10-10 player
+ * evaluation: "the first hour never says the word … the campaign's own
+ * trays still use five kinds; loop/S-bend/spring/curve appear in ZERO
+ * campaign trays", and the farewell "is the ONLY mention"). §9.3's rule
+ * has two triggers — "the first time a piece appears IN THE TRAY OR ON THE
+ * SET" — and the shell only ever wired the tray half (`firstSight` fires
+ * at PLACEMENT, `src/boot.ts`). This is the set half, measured: the
+ * campaign never PLACES loop or spring (the tray census is the evidence,
+ * logged in the Decision Log 2026-10-10), so those two keep their honest
+ * hour-two moment — placing one in a sandbox; what the campaign does ship
+ * is a piece it BUILDS IN: the bowl's banked rim (`bank`) and the run-out
+ * (`curve`) sit in a rung's fixtures table, on the set from frame zero,
+ * never in a tray. A rung whose fixtures carry a kit kind the tray never
+ * stocks gets its callout on that rung's SECOND boot — the first boot's
+ * line belongs to the star-rules lesson (playtest N: teaching precedes
+ * failure), the seen set keeps the whole file once-ever, and the universal
+ * bookends (`SET_QUIET_FIXTURES`: every rung ships a ramp and a cup, so
+ * they have no appearance to mark) stay quiet by law. The sandbox's ×99
+ * tray needs no help: its kinds teach themselves the tray way.
+ */
+export const SET_QUIET_FIXTURES: ReadonlySet<string> = new Set(['ramp', 'finishCup']);
+
+export function firstSetAppearance(
+  level: { fixtures?: Partial<Record<PieceKind, number>> },
+  store: StorageLike | null = null,
+): string | null {
+  const fixtures = level.fixtures;
+  if (!fixtures) return null;
+  for (const k of PIECE_KINDS) {
+    if ((fixtures[k] ?? 0) <= 0 || SET_QUIET_FIXTURES.has(k)) continue;
+    const line = firstSight(k as string, store ?? defaultStorage());
+    if (line) return line;
+  }
+  return null;
+}
+
+/**
  * The same once-ever discipline for a NON-piece teaching line the caller
  * supplies (the level's star-rules one-liner, playtest N: "teaching
  * precedes failure"). The seen set is shared with the piece callouts under

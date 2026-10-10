@@ -10,6 +10,7 @@ import {
   calloutManifest,
   calloutText,
   firstSight,
+  firstSetAppearance,
   markCalloutSeen,
   seenCallouts,
 } from '../../src/ui/callouts.ts';
@@ -71,5 +72,44 @@ describe('seen tracking in the save', () => {
     expect(firstSight('ramp', store)).toBeNull();
     expect(firstSight('straight', store)).toBe(PIECE_CALLOUTS.straight);
     expect(loadSave(store).settings.muted).toBe(true);
+  });
+
+  describe('the set-appearance moment (P4 item 5)', () => {
+    test('a rung shipping a banked rim says its lines once, ever, in kit order', () => {
+      const store = memoryStorage();
+      const k03 = { fixtures: { ramp: 1, finishCup: 1, bank: 1, curve: 1 } };
+      // one line per boot, kit order: `curve` before `bank` (pieces.ts order)
+      expect(firstSetAppearance(k03, store)).toBe(PIECE_CALLOUTS.curve);
+      expect(firstSetAppearance(k03, store)).toBe(PIECE_CALLOUTS.bank);
+      expect(firstSetAppearance(k03, store)).toBeNull();
+      expect(seenCallouts(store).sort()).toEqual(['bank', 'curve']);
+    });
+
+    test('the universal bookends never speak — a plain rung stays quiet', () => {
+      const store = memoryStorage();
+      expect(firstSetAppearance({ fixtures: { ramp: 1, finishCup: 1 } }, store)).toBeNull();
+      // and a quiet walk spends nothing: the seen set stays empty
+      expect(seenCallouts(store)).toEqual([]);
+    });
+
+    test('the real rungs match the census: kitchen02 curve; kitchen03 bank; nothing else', async () => {
+      const store = memoryStorage();
+      const { KITCHEN02 } = await import('../../src/world/levels/kitchen02.level.ts');
+      const { KITCHEN03 } = await import('../../src/world/levels/kitchen03.level.ts');
+      expect(firstSetAppearance(KITCHEN02, store)).toBe(PIECE_CALLOUTS.curve);
+      expect(firstSetAppearance(KITCHEN02, store)).toBeNull(); // curve spent
+      expect(firstSetAppearance(KITCHEN03, store)).toBe(PIECE_CALLOUTS.bank); // curve already spent
+      expect(firstSetAppearance(KITCHEN03, store)).toBeNull();
+      // a rung with no shipped-but-unstocked kind says nothing at all
+      const { KITCHEN04 } = await import('../../src/world/levels/kitchen04.level.ts');
+      expect(firstSetAppearance(KITCHEN04, store)).toBeNull();
+    });
+
+    test('a placed kind and a shipped kind share ONE seen set (no double lesson)', () => {
+      const store = memoryStorage();
+      // a player who met the bank in a sandbox tray needs no second line
+      expect(firstSight('bank', store)).toBe(PIECE_CALLOUTS.bank);
+      expect(firstSetAppearance({ fixtures: { ramp: 1, bank: 1 } }, store)).toBeNull();
+    });
   });
 });

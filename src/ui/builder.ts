@@ -434,6 +434,52 @@ export function guardWord(name: string): string {
   return word === '' ? 'furniture' : word;
 }
 
+/**
+ * THE BLOCKED-RIM GUARD (P4 shortlist item 1 — kitchen02's unfakeable
+ * choice; see `Level.blockedGoalSeat`). For a level that declares the flag,
+ * read the GOAL fixture (the piece with a `captureVolume` — the same
+ * authority `goalNounFor` and world.ts speak) off the mounted pieces and
+ * derive its BODY as a named guard solid: the piece's own geometry AABB,
+ * clipped at its in-socket plane (the mouth) so a legal deck that butts up
+ * TO the goal never overlaps it, then carried into world space by the
+ * mounted transform. A seat whose (2 mm-shrunk, blockerOf) piece box
+ * overlaps the body is refused and the refusal NAMES the goal — the same
+ * one law the set props use. The guard adds no geometry, no collider and no
+ * physics read: it lives entirely in the placement layer, so every replay
+ * hash is byte-identical with it set (the honest check P4 item 1 asked for:
+ * kitchen02's par hash `0b4dbab2` survives untouched, while the whole-tray
+ * union — whose tail, by the reach-sum law, always seats INTO or PAST the
+ * goal in every one of its 12 orders — can no longer be built at all).
+ * `mouth` names the goal's mouth pose so the target sweep can flag open
+ * ends PAST it on guarded rungs (a piece seated beyond the goal is never
+ * travelled — the stage-6 K3 tell, here on every past-goal end, not just
+ * the goal's own). `null` on every unguarded level: nothing changes there.
+ */
+export function goalGuardFor(
+  level: Level,
+  pieces: readonly PlacedPiece[],
+): { solids: readonly SetGuard[]; word: string; mouth: Socket } | null {
+  if (!(level as { blockedGoalSeat?: boolean }).blockedGoalSeat) return null;
+  const goal = pieces.find((p) => PIECES[p.def].captureVolume !== undefined);
+  if (!goal) return null;
+  const [inSocket] = PIECES[goal.def].sockets(goal.params);
+  const box = new THREE.Box3();
+  for (const geo of pieceGeometries(goal.def, goal.params)) {
+    geo.computeBoundingBox();
+    if (geo.boundingBox) box.union(geo.boundingBox.clone());
+  }
+  if (box.isEmpty()) return null;
+  // clip at the mouth plane (piece-local: the in-socket's x) — the body is
+  // what starts AT the socket and extends past it.
+  box.min.x = Math.max(box.min.x, inSocket.pos.x);
+  const mouth: Socket = transformSocket(inSocket, goal.transform);
+  return {
+    solids: [{ name: pieceLabel(goal.def).toLowerCase(), box: box.applyMatrix4(goal.transform) }],
+    word: pieceLabel(goal.def).toLowerCase(),
+    mouth,
+  };
+}
+
 /** Where the failure note should send the player NEXT (stage 6, playtest DD:
  *  "the only snap is a curve exit the game itself says is blocked; building
  *  backwards from the cup runs off-table" — the advice named kinds, never a
@@ -479,7 +525,7 @@ function button(id: string, label: string, parent: HTMLElement): HTMLButtonEleme
 
 export function createBuilder(host: HTMLElement, options: BuilderOptions): Builder {
   const { level } = options;
-  const solids = options.solids ?? [];
+  const setSolids = options.solids ?? [];
   const traySpec = options.tray;
   const trayParams = options.trayParams;
   /** The parameters a held kind is GHOSTED AND PLACED with. */
@@ -503,6 +549,13 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   let pieces: PlacedPiece[] = canonicalBuild(
     (options.build ?? { levelId: level.id, pieces: [], seed: level.seed }).pieces,
   ).map((p, i) => ({ ...p, seq: i }));
+  // THE BLOCKED-RIM ASK (see `Level.blockedGoalSeat`): a guarded rung
+  // refuses seats that overlap the GOAL object's body — the guard joins the
+  // set's solids so ONE law (blockerOf) speaks every refusal, and the mouth
+  // flags open ends the run can never travel past. The goal piece is a
+  // fixture (its transform is mounted, never moved), so ONE box is exact.
+  const goalGuard = goalGuardFor(level, pieces);
+  const solids = [...setSolids, ...(goalGuard?.solids ?? [])];
   let kind: PieceKind | null = null;
   let flipped = false;
   let targetIndex = chainHeadIndex();
@@ -797,7 +850,19 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
           // goal object, so a line built past it is a line no car ever
           // travels — the trap two strangers fell into on kitchen03
           // (playtest DD: "building backwards from the cup runs off-table").
-          goal: piece.def === 'finishCup' ? pieceLabel(piece.def).toLowerCase() : undefined,
+          // On a GUARDED rung (blocked-rim ask) the tell widens to EVERY
+          // open end past the goal's mouth — the same truth, spoken at the
+          // fixture-run-out exit too, not just the goal's own open end.
+          goal:
+            piece.def === 'finishCup'
+              ? pieceLabel(piece.def).toLowerCase()
+              : goalGuard !== null &&
+                  exit.pos
+                    .clone()
+                    .sub(goalGuard.mouth.pos)
+                    .dot(goalGuard.mouth.tangent) > JOIN_TOL
+                ? goalGuard.word
+                : undefined,
         });
     }
     return out;

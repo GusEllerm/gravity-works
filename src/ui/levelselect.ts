@@ -73,6 +73,31 @@ export function createLevelSelect(root: HTMLElement, store: StorageLike | null =
   status.textContent = 'A level opens when the level before it earns at least one star.';
   root.appendChild(status);
 
+  // THE SANDBOX LINE (P4 shortlist item 5 — the 2026-10-10 player
+  // evaluation: "the level select still does not list the sandboxes — the
+  // campaign points at the afterlife only ONCE, from the finale", and the
+  // first hour "never says the word" for the kinds its five-kind kit never
+  // places). The census is the evidence (Decision Log 2026-10-10): the 30
+  // campaign trays stock FIVE kinds exactly (`straight, gapLip, drop,
+  // landing, booster`); `loop` and `springLauncher` (and bigCurve/sbend)
+  // appear in NO campaign tray and NO par build — the callout system
+  // teaches PLACED kinds, so those two lines can only ever speak where the
+  // tray stocks them: a sandbox. A rung tray cannot honestly stock a piece
+  // no authored line uses (the tray-parity and budget laws every rung is
+  // measured on, and an ADD tail naming a loop on a gap rung is the
+  // playtest-M lie this program killed). So the cure is ONE calm line on
+  // the first hour's own map — this page — naming the sandboxes and the
+  // pieces they keep, and saying the true way in (the farewell's first
+  // door; the `?level=` addressing doctrine is untouched, no new affordance,
+  // nothing here unlocks or navigates). The banked-rim and run-out kinds
+  // the campaign DOES ship get their own moment at the rung (`firstSetAppearance`).
+  const sandboxLine = document.createElement('p');
+  sandboxLine.id = 'gw-levelselect-sandboxes';
+  sandboxLine.textContent =
+    'And six sandboxes, one per room — every piece in the kit, loops and springs included. '
+    + 'The farewell\u2019s first door opens the porch one.';
+  root.appendChild(sandboxLine);
+
   for (const room of CAMPAIGN) {
     const section = document.createElement('section');
     section.dataset.room = room.id;

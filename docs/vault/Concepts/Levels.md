@@ -590,7 +590,21 @@ Playtest H + K wall) fixed WHICH builds finish — the tray is now the UNION
 of the two lines ({`straight`×2, `gapLip`, `drop`} = 4, none spare), one
 `straight` geometry EQUAL to the `gapLip`'s span (the reach-sum law: flat
 sockets ⇒ a chain's reach is the SUM of its spans), and EVERY order of the
-whole tray finishes. STAGE-4 FAIL-TIMING PASS (this pass) fixed what the
+whole tray finishes — **until the P4 shortlist pass (2026-10-10, item 1):
+"every order finishes" was also "place-everything is a line", so the rung
+asked for no CHOICE. The tray is unchanged (the union, none spare) but the
+rung now sets `blockedGoalSeat` (`src/world/level.ts`): the builder derives
+the goal piece's body as a named placement-guard solid (`goalGuardFor`,
+`src/ui/builder.ts` — AABB clipped at the mouth plane, placement layer
+only, no collider, no physics read) and the union dump's tail seat is
+REFUSED at the rim — `blocked — the cup is in the way`. The three legal
+lines clear the guard by ≥ 2 mm (measured); the twelve whole-tray orders
+all land their 4th piece in or past the cup body, so the dump must choose
+and the trio the refusal leaves seated FALLS (the union line can die).
+The par replay hash rides unchanged, byte-identical at `0b4dbab2` — the
+honest check `replayRun` makes with the flag set (`tests/unit/goal-guard.test.ts`;
+`replay:all` 30/30; `tests/e2e/goal-rung.spec.ts` proves refusal, death,
+and that BOTH authored lines still seat everything and finish).** STAGE-4 FAIL-TIMING PASS (this pass) fixed what the
 WRONG builds teach. Every later playtest died INVISIBLE and IDENTICAL: nine
 distinct wrong builds and first tries all ended at ~2.2–2.4 s, "car vanished
 out of sight" — because the shared `kitchenRamp(0.28)` (−12°, a 1.43 m

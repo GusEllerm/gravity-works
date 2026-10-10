@@ -328,6 +328,26 @@ export function createRunRecorder(): RunRecorder {
  * tray-only kind keeps its ADD wording; an unknown set (no builder
  * context) keeps the shipped wording like every other gate here.
  *
+ * THE CRITIQUE WHERE (P4 shortlist item 4 — the 2026-10-10 player
+ * evaluation, bedroom02: "the dump FELL 2.33 s, note 'flatten the landing'
+ * with NO socket tail and no verb to flatten with — I do not know how to
+ * clear this rung from its own advice"). The WHERE tail above rides ADD
+ * halves only ("place something" stacked on "re-place something" is one
+ * sentence too many) — which left the CRITIQUE halves locality-free: they
+ * name a kind the player placed but never the SITE the player must act at,
+ * while the Remove button, the orphan clause and the Place button all name
+ * their socket. This pass extends the clause law to the critique: the half
+ * also names where that kind sits, in the ONE wording the named-Removes
+ * machinery already speaks (`placedWhereFor` in `src/ui/advice.ts`, the
+ * same join-graph read `removePhrase` takes): "flatten the landing by the
+ * drop" says WHICH landing and points at the button that removes exactly
+ * that one; "lower the lip at the car's start point" names the seat the R
+ * key acts on. A critique half whose kind the build placed at NO anchored
+ * site, and every page with no builder (`null`), keeps the shipped line
+ * byte-identical — permissive like every other gate here. (The rotated
+ * landing keeps its ratified HOW recipe untouched — that line already
+ * names the verb.)
+ *
  * THE MOVE CLAUSE (program T2.1 — the 2026-10-09 player evaluation's truth
  * #4: "the failure note only knows how to say ADD when the tray is empty
  * and the truth is MOVE", and truth #5, the kitchen05 booster wall). The
@@ -364,6 +384,15 @@ export function physicsNote(
    *  MOVE clause — see `moveHintFor` in `src/ui/advice.ts`); UI-side advice
    *  only, the physics and the run hash never see it. */
   moveHint: MoveHint | null = null,
+  /** Where the PLACED pieces of the build that just ran sit, in the
+   *  socket-graph words the Remove button and the MOVE clause already
+   *  speak (`placedWhereFor` in `src/ui/advice.ts`; P4 item 4, the
+   *  bedroom02 truth: "'flatten the landing' with NO socket tail and no
+   *  verb to flatten with"). A CRITIQUE half that names a placed kind also
+   *  names its site — `flatten the landing by the drop`, `lower the lip
+   *  past the cup` — and a `null` map (a shared/replay page, or a kind the
+   *  build never placed) keeps the shipped sentence byte-identical. */
+  critiqueWhere: Readonly<Partial<Record<PieceKind, string>>> | null = null,
 ): string {
   if (result.status === 'finished') return '';
   if (result.hazardsTouched > 0) return 'a hazard took the run — line up to miss it';
@@ -429,10 +458,14 @@ export function physicsNote(
           ? isPlaced('landing')
             ? isRotated('landing')
               ? 're-place it flat (no R)'
-              : 'flatten the landing'
+              : `flatten the landing${critiqueWhere?.landing ? ` ${critiqueWhere.landing}` : ''}`
             : 'add a flat landing'
           : null,
-        canAct('gapLip') ? (isPlaced('gapLip') ? 'lower the lip' : 'add a lip') : null,
+        canAct('gapLip')
+          ? isPlaced('gapLip')
+            ? `lower the lip${critiqueWhere?.gapLip ? ` ${critiqueWhere.gapLip}` : ''}`
+            : 'add a lip'
+          : null,
       ].filter((s): s is string => s !== null);
       // THE WHERE TAIL rides this line when — and only when — a half of the
       // advice is an ADD ("add a flat landing", "add a lip"): playtest BB's
@@ -594,6 +627,10 @@ export function resultModel(
    *  spent at the head of the line — UI-side advice only, never the
    *  physics, never the hash. */
   moveHint: MoveHint | null = null,
+  /** Where the placed pieces sit, in the socket-graph words the Remove
+   *  button already speaks (`placedWhereFor` in `src/ui/advice.ts`); the
+   *  CRITIQUE WHERE of the nose-first halves (P4 item 4) — UI-side only. */
+  critiqueWhere: Readonly<Partial<Record<PieceKind, string>>> | null = null,
 ): ResultModel {
   return {
     stars: starsFor(result, par),
@@ -609,6 +646,7 @@ export function resultModel(
       flippedKinds,
       aimHint,
       moveHint,
+      critiqueWhere,
     ),
     status: result.status,
     par,

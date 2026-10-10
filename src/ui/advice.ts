@@ -21,6 +21,7 @@
 import { fixtureQuota, type Build, type PlacedPiece } from '../track/build.ts';
 import { PIECES, pieceLabel, type PieceKind, type PieceParams } from '../track/pieces.ts';
 import { SNAP_ANGLE_TOL, SNAP_TRANSLATION_TOL } from '../track/snap.ts';
+import { JOIN_TOL } from './builder.ts';
 import { socketGap, tangentAngle, transformSocket, type Socket } from '../track/socket.ts';
 import type { Level } from '../world/level.ts';
 
@@ -175,6 +176,56 @@ export function playerPieceCount(level: Level, build: Build): number {
 }
 
 // ---- the MOVE wave (program T2.1) -------------------------------------------
+
+/**
+ * THE CRITIQUE WHERE (P4 shortlist item 4 — the 2026-10-10 player
+ * evaluation, bedroom02: "the dump FELL 2.33 s, note 'flatten the landing'
+ * with NO socket tail and no verb to flatten with — I do not know how to
+ * clear this rung from its own advice"). The nose-first family's CRITIQUE
+ * halves ("flatten the landing", "lower the lip") name a kind the player
+ * placed but never say WHICH ONE or WHERE it sits — the law the MOVE
+ * clause already keeps (the orphan line says `past the cup`, the booster
+ * line says `before the first lip`, the Remove button names `the landing
+ * by the drop`). This is the same named-socket machinery read back off the
+ * build data: a placed piece is anchored where its in-socket JOINS —
+ * another piece's exit (`by the X`, the Remove button's own wording, one
+ * verb one wording), the goal's far side (`past the cup`), or the car's
+ * start socket (`at the car’s start point`) — and a kind with several
+ * placements names each site once, joined with `or`. Kinds the build did
+ * not place, and placements with no anchor at all (a stranded piece — the
+ * ORPHAN clause's own story), carry no site: the sentence then keeps the
+ * shipped head exactly, per the permissive law every gate in this file
+ * follows. UI-side copy like the kind-sets — the physics and the run hash
+ * never see it.
+ */
+export function placedWhereFor(level: Level, build: Build): Partial<Record<PieceKind, string>> {
+  const out: Partial<Record<PieceKind, string>> = {};
+  const exitOf = (p: PlacedPiece): Socket =>
+    transformSocket(PIECES[p.def].sockets(p.params)[1], p.transform);
+  // the same fixture-occurrence rule `playerPieceCount` applies: a CRITIQUE
+  // addresses a piece the player PLACED, never a fixture the level shipped
+  const fixtures = (level as unknown as { fixtures?: Partial<Record<PieceKind, number>> }).fixtures;
+  const isFixture = fixtureQuota(fixtures ?? {});
+  for (const p of build.pieces) {
+    if (isFixture(p.def)) continue;
+    const entry = transformSocket(PIECES[p.def].sockets(p.params)[0], p.transform);
+    let phrase: string | null = null;
+    const anchor = build.pieces.find((q) => q.seq !== p.seq && socketGap(exitOf(q), entry) < JOIN_TOL);
+    if (anchor) {
+      phrase =
+        anchor.def === 'finishCup'
+          ? `past the ${pieceLabel(anchor.def).toLowerCase()}`
+          : `by the ${pieceLabel(anchor.def).toLowerCase()}`;
+    } else if (entry.pos.distanceTo(level.startSocket.pos) < JOIN_TOL) {
+      phrase = 'at the car’s start point';
+    }
+    if (phrase === null) continue;
+    const had = out[p.def];
+    if (had === undefined) out[p.def] = phrase;
+    else if (!had.includes(phrase)) out[p.def] = `${had} or ${phrase}`;
+  }
+  return out;
+}
 
 /** What the drive-off note's MOVE clause can say about a build that has
  *  nothing left to ADD (playtest-R/k04 truth: "the failure note only knows

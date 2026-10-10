@@ -138,18 +138,23 @@ const same = (p, q) => p.c.join() === q.c.join() && p.a === q.a;
 const rows = [
   { label: 'body copy (h1, status, callout)', fg: 'body', px: 16, base: 'body' },
   { label: '#gw-hash-details (fingerprint)', fg: '#gw-hash-details', px: 11, base: 'body' },
-  { label: '#gw-piece-count / #gw-ghost-state / #gw-target-label', fg: ['#gw-piece-count', '#gw-ghost-state', '#gw-target-label'], px: 12, base: 'body' },
+  { label: '#gw-piece-count / #gw-ghost-state', fg: ['#gw-piece-count', '#gw-ghost-state'], px: 12, base: 'body' },
+  { label: '#gw-target-label', fg: '#gw-target-label', px: 13, base: 'body' },
   { label: '#gw-tray-reason', fg: '#gw-tray-reason', px: 12, base: 'body' },
   { label: '#gw-level-lockline / .gw-level-rules / #gw-replay-tagline / #gw-replay-time', fg: ['.gw-level-lockline', '.gw-level-rules', '#gw-replay-tagline', '#gw-replay-time', '#gw-replay-verify'], px: 11, base: 'body' },
   { label: '#gw-dev-preview badge', fg: '#gw-dev-preview', px: 11, base: 'body', over: ['#gw-dev-preview'] },
   { label: '#gw-sound-toggle (over canvas; paper worst-case)', fg: '#gw-sound-toggle', px: 12, base: 'body', over: ['#gw-sound-toggle'] },
-  { label: 'tray/control buttons', fg: '#gw-tray button', px: 13, base: '#gw-tray button' },
-  { label: 'tray button aria-pressed', fg: '#gw-tray button', px: 13, base: '#gw-tray button', over: ["#gw-tray button[aria-pressed='true']"] },
-  { label: 'tray button used-up (aria-disabled, EXEMPT)', fg: '#gw-tray button', dimSel: "#gw-tray button[aria-disabled='true']", px: 13, base: '#gw-tray button', exempt: true },
+  { label: 'tray/control buttons', fg: '#gw-tray button', px: 14, base: '#gw-tray button' },
+  { label: 'tray button aria-pressed', fg: '#gw-tray button', px: 14, base: '#gw-tray button', over: ["#gw-tray button[aria-pressed='true']"] },
+  { label: 'tray button used-up (aria-disabled, EXEMPT)', fg: '#gw-tray button', dimSel: "#gw-tray button[aria-disabled='true']", px: 14, base: '#gw-tray button', exempt: true },
   // the ?levels rungs wear no authored face of their own (UA button box on
   // the page); the nearest authored button face in the shell is the tray's,
   // and the row exists only to print the EXEMPT dim number.
   { label: 'level-select locked rung (aria-disabled, EXEMPT)', fg: 'body', dimSel: ".gw-levelselect button[aria-disabled='true']", px: 13, base: '#gw-tray button', exempt: true },
+  // the level-select prose lines (the unlock rule and the P4 sandbox line)
+  // wear no authored face of their own — plain body ink at body size, the
+  // same way the locked-rung row names the nearest authored face.
+  { label: 'level-select status + sandbox lines', fg: 'body', px: 16, base: 'body' },
   { label: 'result panel body', fg: '#gw-result', px: 14, base: 'body', over: ['#gw-result'] },
   { label: 'result panel body (worst bg: the canvas behind it)', fg: '#gw-result', px: 14, base: '#gw-stage canvas', over: ['#gw-result'] },
   { label: 'result panel #gw-result-rules (opacity)', fg: '#gw-result', dimSel: '#gw-result-rules', px: 11, base: 'body', over: ['#gw-result'] },
@@ -157,7 +162,12 @@ const rows = [
   { label: 'result panel buttons', fg: '#gw-result-buttons button', px: 13, base: 'body', over: ['#gw-result', '#gw-result-buttons button'] },
   { label: '#gw-hiccup', fg: '#gw-hiccup', px: 15, base: 'body', over: ['#gw-hiccup'] },
   { label: 'share URL field', fg: '#gw-result-share-url', px: 11, base: '#gw-result-share-url' },
-  { label: '#gw-replay-badge', fg: '#gw-replay-badge', px: 12, base: '#gw-replay-badge' },
+  // (THE REPLAY BADGE ROW RETIRED — P4 reconciliation: the element
+  // `#gw-replay-badge` was removed by program T2 ("the share page opens
+  // PLAYING" — the absent-badge law `tests/e2e/program-voice.spec.ts`
+  // asserts), and the gate's DRIFT on this table has been standing red
+  // ever since; the row is reconciled with the vanished declaration, the
+  // way the gate says to.)
   { label: 'replay play/speed buttons', fg: '#gw-replay-play', px: 13, base: '#gw-replay-play' },
   { label: 'replay head marker (non-text UI)', fg: '#gw-replay-head', fgProp: 'background', kind: 'ui', base: '#gw-replay-timeline' },
   { label: 'replay event tick (non-text UI)', fg: '.gw-replay-tick', fgProp: 'background', kind: 'ui', base: '#gw-replay-timeline' },
