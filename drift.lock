@@ -768,7 +768,7 @@ sig = "af3dda9ec71a2fd4"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "tests/e2e/cross-tab-save.spec.ts"
-sig = "47c933b7cf69f865"
+sig = "8c930ef3d31a46f0"
 
 [[bindings]]
 doc = "docs/vault/Modules/save.md"

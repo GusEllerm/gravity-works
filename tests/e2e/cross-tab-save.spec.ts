@@ -93,6 +93,12 @@ const saveWrites = (page: import('@playwright/test').Page) =>
 test('R9 race: a tab writing from a stale view merges — it cannot clobber the other tab\'s record', async ({
   browser,
 }) => {
+  // The same CI-starve budget its burst twin already carries: two full app
+  // boots + the autosave debounce windows + the save-merge polls + the
+  // cross-tab visibility settle are honest work that CI's software-GL box
+  // spends WALL-CLOCK on (the event waits below are untouched — this is
+  // pacing, not a new wait; cf. program 685461d).
+  test.slow()
   const context = await browser.newContext() // ONE storage origin — two tabs
   const tabA = await context.newPage()
   const tabB = await context.newPage()

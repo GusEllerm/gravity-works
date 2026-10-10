@@ -40,7 +40,12 @@ Two CI reds at `af9d18c` (run 2026-10-10T02:31Z, 226 passed / 2 failed):
   settles A's writer on the FACT (one+ writes past the placement, then
   silence) and then waits until B's OWN read carries A's record before the
   stale write — event/state-driven, no guessed window.
-- `winding` on `GhostState`; specs' budgets untouched.
+- **The race test's budget**: `test.slow()`, the burst twin's precedent
+  (program 685461d) — CI's first attempt at this lane stayed 29.8 s: not a
+  wedge (the visibility poll was live), just two software-GL boots + the
+  debounce windows + visibility settle not fitting 30 s of wall-clock.
+  The event waits were untouched.
+- `winding` on `GhostState`; specs' budgets otherwise untouched.
 
 ## Proofs
 
