@@ -196,3 +196,40 @@ test('reduced motion gets the STATIC SUMMARY PAGE instead of the crane', async (
   expect(state?.phase).toBe('static')
   await ctx.close()
 })
+
+/**
+ * THE BOUNDARY GUARD on the crane's frame loop (engineering N3, mirroring
+ * `share.ts`'s frame guard — the same T0.4 law the game and replay loops
+ * already honour): once the error boundary owns the page, the crane loop
+ * STOPS instead of re-throwing every frame. MUTATION TEETH: this is the
+ * red-on-break proof — without the `boundaryStopped()` line at the top of
+ * `startFarewell`'s `loop`, the crane keeps advancing its plan clock under
+ * the overlay (the R2 "silently stuttering world" shape) and the frozen
+ * assertion below goes red.
+ */
+test('a throwing frame freezes the crane honestly, not a stutter under the face', async ({ page }) => {
+  await unlockPorch05(page)
+  await goto(page, '/?level=porch05&build=par&launch=1&farewell=1')
+  await expect(page.locator('#gw-farewell')).toBeVisible({ timeout: 60_000 })
+  // wait for the CRANE phase (the loop is live and advancing the plan clock)
+  await page.waitForFunction(
+    () => (window as unknown as { __gwFarewellState?: () => { phase: string } }).__gwFarewellState?.()?.phase === 'crane',
+    undefined,
+    { timeout: 60_000 },
+  )
+  // the boundary-probe idiom (see error-boundary.spec): a deferred throw
+  // while the loop is mid-crane
+  await page.evaluate(() => {
+    window.setTimeout(() => {
+      throw new Error('injected farewell frame fault')
+    }, 100)
+  })
+  await expect(page.locator('#gw-error')).toBeVisible({ timeout: 15_000 })
+  // FROZEN, NOT STUTTERING: the plan clock stops under the face — two reads
+  // across a gap are the same number (an unguarded loop keeps advancing it)
+  const read = () =>
+    page.evaluate(() => (window as unknown as { __gwFarewellState: () => { t: number } }).__gwFarewellState().t)
+  const first = await read()
+  await page.waitForTimeout(700)
+  expect(await read()).toBe(first)
+})

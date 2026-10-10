@@ -13,7 +13,17 @@ import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts';
 import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts';
 import '../../src/world/levels/kitchen01.level.ts';
 import { replayRun } from '../../src/replay/replay.ts';
-import { deriveGhostTrace, ghostDefaultEnabled, GhostRace } from '../../src/pages/ghost.ts';
+import {
+  cachedGhostTrace,
+  clearGhostTraceCache,
+  deriveGhostTrace,
+  ghostDefaultEnabled,
+  ghostTraceCacheStats,
+  GhostRace,
+  parGhostEarned,
+  parGhostRule,
+  parGhostSurface,
+} from '../../src/pages/ghost.ts';
 import { vsParLine, type ResultModel } from '../../src/ui/result.ts';
 import { SET_TOKENS } from '../../src/render/tokens.ts';
 import {
@@ -131,6 +141,95 @@ describe('ghost presentation law (T3.2)', () => {
     race.setEnabled(false);
     expect(race.state().pos).toBeNull();
     race.dispose();
+  });
+});
+
+describe('THE GHOST LAW (round 2): afterlife affordance, earned on rungs', () => {
+  test("the rung's first-finish truth is the save as it stands", () => {
+    expect(parGhostEarned({ stars: {}, reached: {} }, 'kitchen01')).toBe(false);
+    expect(parGhostEarned({ stars: { kitchen01: 0 }, reached: {} }, 'kitchen01')).toBe(false);
+    expect(parGhostEarned({ stars: { kitchen01: 1 }, reached: {} }, 'kitchen01')).toBe(true);
+    // the legacy v1 carry counts: those rungs were walked before stars
+    expect(parGhostEarned({ stars: {}, reached: { kitchen01: true } }, 'kitchen01')).toBe(true);
+  });
+
+  test('the surface: ladder ids are rungs; the daily and everything else are afterlife', () => {
+    expect(parGhostSurface('kitchen01', false)).toBe('rung');
+    expect(parGhostSurface('porch05', false)).toBe('rung');
+    expect(parGhostSurface('kitchen01', true)).toBe('afterlife'); // daily rides a rung
+    expect(parGhostSurface('porch-sandbox', false)).toBe('afterlife');
+    expect(parGhostSurface('feeltrack', false)).toBe('afterlife');
+  });
+
+  test('the rule: unearned rung locked and OFF (a stored ON does not unlock it); earned remembered ON; afterlife never locked', () => {
+    // unearned rung: OFF + locked, whatever the setting or the motion law
+    expect(parGhostRule({ surface: 'rung', earned: false, reducedMotion: false })).toEqual({
+      enabled: false,
+      locked: true,
+    });
+    expect(parGhostRule({ surface: 'rung', earned: false, reducedMotion: false, stored: true })).toEqual({
+      enabled: false,
+      locked: true,
+    });
+    // earned rung: remembered ON, reduced motion still the law, explicit OFF respected
+    expect(parGhostRule({ surface: 'rung', earned: true, reducedMotion: false })).toEqual({
+      enabled: true,
+      locked: false,
+    });
+    expect(parGhostRule({ surface: 'rung', earned: true, reducedMotion: true })).toEqual({
+      enabled: false,
+      locked: false,
+    });
+    expect(parGhostRule({ surface: 'rung', earned: true, reducedMotion: false, stored: false })).toEqual({
+      enabled: false,
+      locked: false,
+    });
+    // afterlife: default ON unlocked, OFF only by choice or reduced motion
+    expect(parGhostRule({ surface: 'afterlife', earned: false, reducedMotion: false })).toEqual({
+      enabled: true,
+      locked: false,
+    });
+    expect(parGhostRule({ surface: 'afterlife', earned: false, reducedMotion: true })).toEqual({
+      enabled: false,
+      locked: false,
+    });
+  });
+});
+
+describe('the trace cache (engineering N4)', () => {
+  test('a (level, build) trace is wound once; repeat asks hit the same promise', async () => {
+    clearGhostTraceCache();
+    const before = ghostTraceCacheStats();
+    const build = FEELTRACK.placeholderBuild();
+    const a = await cachedGhostTrace(FEELTRACK, build);
+    const b = await cachedGhostTrace(FEELTRACK, { ...build, pieces: build.pieces.slice() });
+    expect(b).toBe(a); // same bytes — a hit, not a second wind
+    const after = ghostTraceCacheStats();
+    expect(after.misses).toBe(before.misses + 1);
+    expect(after.hits).toBe(before.hits + 1);
+  });
+
+  test('a different build is a different trace; a failed wind evicts its key', async () => {
+    clearGhostTraceCache();
+    const build = FEELTRACK.placeholderBuild();
+    const par = await cachedGhostTrace(KITCHEN01, KITCHEN01.parBuild!());
+    const other = { ...build, pieces: build.pieces.slice(1) };
+    const changed = await cachedGhostTrace(FEELTRACK, other);
+    expect(changed).not.toBe(par);
+    const broken = {
+      ...FEELTRACK.placeholderBuild(),
+      pieces: [
+        {
+          def: 'not-a-piece' as never,
+          params: {},
+          transform: FEELTRACK.placeholderBuild().pieces[0]!.transform,
+          seq: 0,
+        },
+      ],
+    };
+    await expect(cachedGhostTrace(FEELTRACK, broken)).rejects.toBeTruthy();
+    // the failed key is gone: the next ask re-winds for real (fresh reject)
+    await expect(cachedGhostTrace(FEELTRACK, broken)).rejects.toBeTruthy();
   });
 });
 

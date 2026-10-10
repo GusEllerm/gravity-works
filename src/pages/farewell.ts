@@ -45,6 +45,7 @@ import * as THREE from 'three';
 import { CAMPAIGN, CAMPAIGN_LADDER } from '../world/campaign.ts';
 import { SETS } from '../sets/index.ts';
 import { encodeShareUrl, type SharePayload } from '../share/share.ts';
+import { boundaryStopped } from '../ui/errors.ts';
 
 /** One-shot flag: the farewell fires exactly once per browser save — the
  *  premiere's idiom, deliberately OUTSIDE the save schema (no v3 bump). */
@@ -412,6 +413,11 @@ export function startFarewell(
   let last = 0;
 
   const loop = (now: number): void => {
+    // FROZEN BY THE BOUNDARY (T0.4, mirrored from `share.ts`'s frame loop):
+    // an uncaught error owns the page now — the crane STOPS instead of
+    // re-throwing every frame (the R2 "silently stuttering world" shape);
+    // the honest overlay already says so.
+    if (boundaryStopped()) return;
     if (phase !== 'crane') return; // the skip/finish owns the frame loop's death
     raf = requestAnimationFrame(loop);
     const dt = Math.min((now - last) / 1000, 0.25);

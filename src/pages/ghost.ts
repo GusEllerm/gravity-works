@@ -33,9 +33,27 @@
  * reduced-motion players get the ghost OFF by default — the toggle stays
  * available (the still-frame law binds the decoration, not the player's
  * choice), and the preference persists in `settings.ghosts.par`.
+ *
+ * THE GHOST LAW (round 2, Action Plan 2026-10-11 Lane B — the spoiler fix):
+ * the par ghost is an AFTERLIFE affordance. On a campaign rung the rail is
+ * DEFAULT OFF until the rung's FIRST finish — the save's per-rung truth
+ * (`parGhostEarned`: `progress.stars` ≥ 1, or the legacy `reached` carry),
+ * no new schema — and remembered ON after it (the reduced-motion law still
+ * decides the ON default). Before the first finish the rung's bar reads
+ * `ghost: par — finish first to race` (calm, no tease: the line is not on
+ * the table to be teased with) and no wind arms, so an unearned build phase
+ * shows NO par line. Sandboxes and the daily are afterlife surfaces: they
+ * default ON, unlocked — they ARE the afterlife. The friend ghost (a link
+ * the player pasted) is an explicit ask, never locked. See Decision Log
+ * 2026-10-11 and `parGhostRule` below.
+ *
+ * THE TRACE CACHE (engineering N4): a (level, build) trace is derived once
+ * per shell — `cachedGhostTrace` keys `deriveGhostTrace` on the canonical
+ * build bytes, so a toggle flip after the first wind is O(1).
  */
 import * as THREE from 'three';
-import type { Build } from '../track/build.ts';
+import { serialize, type Build } from '../track/build.ts';
+import { CAMPAIGN_LADDER } from '../world/campaign.ts';
 import type { Level } from '../world/level.ts';
 import { World } from '../world/world.ts';
 import { TapeRecorder } from '../replay/cinematic.ts';
@@ -120,6 +138,100 @@ export async function deriveGhostTrace(level: Level, build: Build): Promise<Ghos
  *  so reduced motion means OFF until the player asks otherwise. */
 export function ghostDefaultEnabled(reducedMotion: boolean): boolean {
   return !reducedMotion;
+}
+
+// ---- THE GHOST LAW (round 2): afterlife affordance, earned on rungs --------
+
+/** Which face of the game a page is for the ghost law: a CAMPAIGN RUNG (the
+ *  spoiler budget applies) or the AFTERLIFE (a sandbox, the daily — the
+ *  surfaces that ARE the afterlife, par line always on the table). */
+export type GhostSurface = 'rung' | 'afterlife';
+
+/** The rung's FIRST-finish truth, read off the save as it already stands
+ *  (no schema bump): a star ever earned is a finished run (`recordStars`
+ *  records nothing below one, and every finished run earns at least one —
+ *  `starsFor`); the legacy `reached` carry marks v1-era rungs the player
+ *  stood in before stars were counted, which the v1→v2 migrade documents
+ *  as walked. A rung with neither record is UNFINISHED, however many
+ *  launches it ate. */
+export function parGhostEarned(
+  progress: { stars: Record<string, number>; reached: Record<string, true> },
+  levelId: string,
+): boolean {
+  return (progress.stars[levelId] ?? 0) >= 1 || progress.reached[levelId] === true;
+}
+
+/** Classify the page: the daily (a `daily`/`seed` address — the T3.4 one
+ *  honest surface) is the afterlife no matter which rung it rides; a ladder
+ *  id is a rung; everything else addressable (the sandboxes, the rigs) is
+ *  afterlife too — only rung ids carry the spoiler budget. */
+export function parGhostSurface(levelId: string, daily: boolean): GhostSurface {
+  if (daily) return 'afterlife';
+  return CAMPAIGN_LADDER.includes(levelId) ? 'rung' : 'afterlife';
+}
+
+export interface ParGhostTruth {
+  /** Does the rail show (armed, remembered) right now? */
+  enabled: boolean;
+  /** Is the par line LOCKED behind the rung's first finish? The bar carries
+   *  the calm word; no wind arms while this is true. */
+  locked: boolean;
+}
+
+/** THE LAW, pure: locked on an unearned rung (the remembered setting does
+ *  NOT unlock it — the setting governs WHERE a line may show, not whether
+ *  it is spoiled); elsewhere the stored choice wins, else the
+ *  reduced-motion default. */
+export function parGhostRule(opts: {
+  surface: GhostSurface;
+  earned: boolean;
+  reducedMotion: boolean;
+  stored?: boolean;
+}): ParGhostTruth {
+  const locked = opts.surface === 'rung' && !opts.earned;
+  if (locked) return { enabled: false, locked: true };
+  return { enabled: opts.stored ?? ghostDefaultEnabled(opts.reducedMotion), locked: false };
+}
+
+// ---- THE TRACE CACHE (engineering N4) ----------------------------------------
+
+/** Shell-lifetime cache of derived traces keyed by (level, canonical build
+ *  bytes) — the wind is deterministic, so a flip that re-wants a trace it
+ *  already wound pays a Map hit, never a tape. Bounded FIFO (the friend
+ *  link is the only unbounded asker); an errored wind evicts its own key so
+ *  a retry can truly re-wind. */
+const TRACE_CACHE_MAX = 16;
+const traceCache = new Map<string, Promise<GhostTrace>>();
+let traceCacheHits = 0;
+let traceCacheMisses = 0;
+
+export function cachedGhostTrace(level: Level, build: Build): Promise<GhostTrace> {
+  const key = `${level.id}:${serialize(build)}`;
+  const wind0 = traceCache.get(key);
+  if (wind0) {
+    traceCacheHits += 1;
+    return wind0;
+  }
+  traceCacheMisses += 1;
+  const wind = deriveGhostTrace(level, build).catch((err: unknown) => {
+    traceCache.delete(key); // a failed wind is not a fact — let a retry wind for real
+    throw err;
+  });
+  traceCache.set(key, wind);
+  if (traceCache.size > TRACE_CACHE_MAX) traceCache.delete(traceCache.keys().next().value as string);
+  return wind;
+}
+
+/** The perf-probe seam: what the cache has seen (a flip that hits proves
+ *  the O(1) line; a flip that misses is the pre-cache cost). */
+export function ghostTraceCacheStats(): { size: number; hits: number; misses: number } {
+  return { size: traceCache.size, hits: traceCacheHits, misses: traceCacheMisses };
+}
+
+/** The perf-probe seam: forget everything (the measured MISS is the honest
+ *  stand-in for the pre-cache every-flip-winds world). */
+export function clearGhostTraceCache(): void {
+  traceCache.clear();
 }
 
 export type GhostMode = 'off' | 'par' | 'friend';
@@ -336,6 +448,10 @@ export interface GhostBar {
   note: HTMLElement;
   setNote(text: string): void;
   clearNote(): void;
+  /** THE GHOST LAW's face: locked, the toggle CARRIES the calm word
+   *  (`ghost: par — finish first to race`) and refuses the flip without
+   *  persisting anything; unlocked, the plain `ghost: par` label returns. */
+  setParLock(locked: boolean): void;
 }
 
 /**
@@ -367,6 +483,13 @@ export function createGhostBar(host: HTMLElement, handlers: GhostBarHandlers): G
   toggle.setAttribute('aria-label', 'Race the par line beside your car');
   toggle.style.cssText = chip;
   toggle.addEventListener('click', () => {
+    // THE GHOST LAW's face: while locked the button IS the sentence, and a
+    // press changes nothing — no wind, no persisted choice (the word on the
+    // button is the whole answer; there is nothing to tease toward).
+    if (toggle.getAttribute('aria-disabled') === 'true') {
+      if (document.activeElement === toggle) toggle.blur();
+      return;
+    }
     const on = toggle.getAttribute('aria-pressed') !== 'true';
     toggle.setAttribute('aria-pressed', String(on));
     if (document.activeElement === toggle) toggle.blur(); // playtests P+Q focus policy
@@ -413,6 +536,18 @@ export function createGhostBar(host: HTMLElement, handlers: GhostBarHandlers): G
     },
     clearNote: () => {
       note.textContent = '';
+    },
+    setParLock: (locked) => {
+      if (locked) {
+        toggle.textContent = 'ghost: par \u2014 finish first to race';
+        toggle.setAttribute('aria-disabled', 'true');
+        toggle.setAttribute('aria-pressed', 'false');
+        toggle.setAttribute('aria-label', 'Finish this rung once to race the par line');
+      } else {
+        toggle.textContent = 'ghost: par';
+        toggle.removeAttribute('aria-disabled');
+        toggle.setAttribute('aria-label', 'Race the par line beside your car');
+      }
     },
   };
 }

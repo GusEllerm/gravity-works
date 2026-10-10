@@ -490,3 +490,34 @@ mechanism can honour. Rejected: a second live World (coupling risk, cost, diverg
 (new chrome for what is one param plus one chip line), storing ghosts in the save envelope (a ghost is
 derivable data; the save carries choices, not caches). Proof: `tests/unit/ghost.test.ts`,
 `tests/e2e/ghosts.spec.ts`. See [[replay]], [[ui]], [[save]], `Sessions/2026-10-09 Program T3 ghosts`.
+## 2026-10-11 — THE GHOST LAW: the par line is an afterlife affordance, earned before it races `[agent decision]` `[feel engineer]`
+
+The round-1 ghost shipped a spoiler: a campaign rung's par line rode the rail from the FIRST build phase, so the
+surprise the rungs are built on ("does my line make it?") was answered before the question was asked — the player
+evaluation scored the regression straight into the drop 7 → 6.5, and the k02 scenario is the exhibit: a fresh
+build phase with a translucent car already knowing the way. The last lane left the law half-said ("default OFF
+until the rung is first finished, then remembered ON") without writing the machinery down — this is that entry.
+Chosen: the par ghost is an AFTERLIFE affordance. A campaign rung shows NO par line until its FIRST finish, and
+the truth is the save as it already stands — `progress.stars[levelId]` ≥ 1 (a finished run always earns at least
+one star; `starsFor` pays "finish at all" first) or the legacy `reached` carry (v1-era rungs the migrade
+documents as walked) — so no schema, no new record, no hash anywhere near it (`parGhostEarned`, `src/pages/ghost.ts`).
+Before the finish the bar reads the CALM word `ghost: par — finish first to race` and nothing arms, teases, or
+half-shows; a press on the locked toggle persists nothing. At the first finish the rung UNLOCKS: the plain toggle
+returns remembered ON — the reduced-motion law still decides that default, and an explicit stored OFF is honored,
+because the SETTING governs where a line may show while the LAW gates the spoiler (the stored choice never unlocks
+an unearned rung — that direction was on the table and refused, or the law would be a default the player who left
+the rail on in the sandbox would walk straight past). Sandboxes and the daily default ON unlocked — they ARE the
+afterlife surfaces the ghost was always for; a pasted friend link is an explicit ask and is never locked (the
+law gates the rung's own line, never a car the player summoned). Rejected: a per-level seen-flag (a second truth
+beside the save's — the drift the livedocs gate exists to punish), hiding the line only in the result delta
+(the spoiler is the BUILD PHASE), and gating the friend link (a refusal dressed as a law). THE TRACE CACHE came
+with it (engineering N4): the wind is deterministic, so `cachedGhostTrace` keys the tape by (level, canonical
+build bytes) for the shell's lifetime — measured on kitchen01: every flip cost 139–187 ms before, after it is
+182 ms once and 0–3 ms after (`scripts/probe-ghost-flip.mjs`; the fresh idle chrome re-baselines the shell
+capture by the locked word alone — 3 354 px, the chip band, stated in [[ui]]). The farewell crane loop's
+`boundaryStopped()` guard (engineering N3, mirroring `share.ts`) shipped in the same pass with mutation teeth:
+a throwing farewell frame lands the ERROR face with the crane's plan clock frozen, red if the guard line goes.
+Proof: `tests/unit/ghost.test.ts` (the law's truth table, the cache's hit/miss/evict), `tests/e2e/ghosts.spec.ts`
+(unearned k02 build phase, unlock-on-first-finish remembered ON, toggle persistence, afterlife defaults, the O(1)
+flip), `tests/e2e/farewell.spec.ts` (the freeze). Ghost stays visuals-only: `replay:all` 30/30 byte-same at this
+HEAD. See [[ui]], [[replay]], [[save]], `Sessions/2026-10-11 Round2 ghosts.md`.

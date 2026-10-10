@@ -77,10 +77,15 @@ import {
 import { createBuildAutosave, loadSave, rememberBuild, recordStars, saveSave, savedBuild } from './save/save.ts';
 import { dailyChipLine, dailySeed, readDaily, recordDailyBest, utcDateKey } from './save/daily.ts';
 import {
+  cachedGhostTrace,
+  clearGhostTraceCache,
   createGhostBar,
-  deriveGhostTrace,
   ghostDefaultEnabled,
   GhostRace,
+  ghostTraceCacheStats,
+  parGhostEarned,
+  parGhostRule,
+  parGhostSurface,
 } from './pages/ghost.ts';
 import { createSound, surfaceForContact, surfaceForSet, upAxisYOfQuat } from './sound/sound.ts';
 import { createCarRig, CAR_GROUND_LIFT, CAR_SPIN_DAMP } from './render/car-rig.ts';
@@ -643,7 +648,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // ---- THE GHOST RAIL (program T3.2) ---------------------------------------
   // A translucent second car beside yours, wound from the SAME deterministic
   // machinery the share page already proves step-for-step: the par build's
-  // trace is derived HERE at level-load (`deriveGhostTrace` — a
+  // trace is derived HERE (`cachedGhostTrace` → `deriveGhostTrace` — a
   // `TapeRecorder` on a `visuals: false` world, zero gameplay state), the
   // friend build's trace comes from a decoded share payload whose BUILD
   // mounts as the track through the shell's own `rebuild` line. VISUALS
@@ -652,11 +657,28 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // byte-identical with the ghost on (gated by `tests/e2e/ghosts.spec.ts`).
   // The player's `ghost: par` toggle lives on the bar beside the world;
   // reduced motion starts it OFF (the ghost is pure motion —
-  // `ghostDefaultEnabled`), persisted in `settings.ghosts.par`.
+  // `ghostDefaultEnabled`), persisted in `settings.ghosts.par`. And since
+  // round 2, THE GHOST LAW: on a campaign rung the rail is OFF (and LOCKED)
+  // until the rung's FIRST finish — the save's per-rung truth, no new schema
+  // (`parGhostEarned`) — remembered ON after it; sandboxes and the daily are
+  // afterlife surfaces and default ON unlocked (`parGhostRule`, Decision Log).
   const ghost = new GhostRace(setReg?.tokens ?? SET_TOKENS.kitchen);
-  let ghostOn = loadSave().settings.ghosts?.par ?? ghostDefaultEnabled(reduceMotion);
+  // The daily page is the same address test `dailySeedValue` uses below
+  // (`?daily=1`, or the honest `?seed=` face of it) — read off the URL here
+  // so the rail's truth is decided before that line runs.
+  const ghostDaily =
+    params.has('daily') || /^-?\d+$/.test(params.get('seed') ?? '');
+  const ghostRule = parGhostRule({
+    surface: parGhostSurface(level.id, ghostDaily),
+    earned: parGhostEarned(loadSave().progress, level.id),
+    reducedMotion: reduceMotion,
+    stored: loadSave().settings.ghosts?.par,
+  });
+  let ghostOn = ghostRule.enabled;
+  let parLocked = ghostRule.locked;
   const ghostBar = createGhostBar(root, {
     onToggle: (on) => {
+      if (parLocked) return; // the locked word is on the button itself
       ghostOn = on;
       const s = loadSave();
       s.settings.ghosts = { ...s.settings.ghosts, par: on };
@@ -670,6 +692,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     },
     onFriendLink: (url) => void raceFriendLink(url),
   });
+  ghostBar.setParLock(parLocked);
   ghost.setEnabled(ghostOn);
   ghostBar.toggle.setAttribute('aria-pressed', String(ghostOn));
   // THE WIND IS LAZY ON FIRST SHOW (P3 CI honesty, the a11y/cross-tab
@@ -704,7 +727,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     parWinding = true;
     ghost.setWinding(true);
     ghostBar.setNote('winding the par line…');
-    void deriveGhostTrace(level, parBuild()).then(
+    void cachedGhostTrace(level, parBuild()).then(
       (trace) => {
         parWinding = false;
         ghost.setWinding(false);
@@ -753,7 +776,11 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       return;
     }
     try {
-      const trace = await deriveGhostTrace(level, payload.build);
+      const trace = await cachedGhostTrace(level, payload.build);
+      // THE GHOST LAW does not lock a pasted link (round 2): an explicit ask
+      // shows THEIR car even on an unearned rung or with the rail off — the
+      // par spoiler is the only thing the law gates.
+      ghost.setEnabled(true);
       ghost.setTrace('friend', trace);
       if (world && world.status !== 'idle') ghost.resumeRace();
       ghostBar.setNote(
@@ -769,6 +796,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // the e2e seam for the ghost law (debug surface, not UI): the live ghost
   // state — mode, readiness, its clock, and where its car sits right now.
   (window as unknown as Record<string, unknown>).__gwGhostState = () => ghost.state();
+  // the perf-probe seams for the trace cache (N4): what the cache has seen,
+  // and the way to force an honest MISS (a cold flip is the pre-cache cost).
+  (window as unknown as Record<string, unknown>).__gwGhostTraceCache = () => ghostTraceCacheStats();
+  (window as unknown as Record<string, unknown>).__gwGhostTraceCacheClear = () => clearGhostTraceCache();
 
   // PROGRAM T1.2: the post stack is ON BY DEFAULT — the tilt-shift look the
   // art bible sells is what a first visitor must see (player evaluation
@@ -1617,6 +1648,22 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // the code path, not of copy. The gate reports 0 there, keeping the
       // panel's Next honest with the "unlocks nothing" claim.
       if (!devPreview) recordStars(level.id, model.stars);
+      // THE GHOST LAW UNLOCKS AT THE FIRST FINISH (round 2): the rung's
+      // par line goes from the calm locked word back to the plain toggle,
+      // remembered ON from here on (the reduced-motion law still decides;
+      // an explicit OFF the player left stays OFF). A dev-preview finish
+      // mints no star, so it mints no unlock either — the mint's own law.
+      if (parLocked && !devPreview && result.status === 'finished') {
+        parLocked = false;
+        ghostBar.setParLock(false);
+        ghostOn = loadSave().settings.ghosts?.par ?? ghostDefaultEnabled(reduceMotion);
+        ghostBar.toggle.setAttribute('aria-pressed', String(ghostOn));
+        ghost.setEnabled(ghostOn);
+        if (ghostOn) {
+          armParGhost();
+          ensureParGhost(); // wind now: the NEXT launch races the line it earned
+        }
+      }
       gateNext(devPreview ? 0 : Math.max(model.stars, bestStarsBefore));
       const h = w.hashHex();
       if (lastRun && lastRun.hash === h && lastRun.pieces !== result.piecesUsed) {
