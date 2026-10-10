@@ -63,6 +63,10 @@ async function tabTo(page: Page, selector: string, max = 45): Promise<string[]> 
 }
 
 test('the Tab walk visits every control exactly once and traps on none', async ({ page }) => {
+  // CI-honesty (the P4 chrome pass's PR CI): forty real Tab round-trips on
+  // a saturated SwiftShader box ride the edge of the bare 30 s budget —
+  // the same wall the keyboard flow below documents. Budget, not law.
+  test.slow()
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
   await goto(page, '/?level=kitchen01')
