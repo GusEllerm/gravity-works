@@ -1188,7 +1188,7 @@ sig = "4b5962fbc2cfe15b"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/ui/shell.css"
-sig = "4f2674f697dfc47d"
+sig = "9f224fb0dd4420ed"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -1443,7 +1443,7 @@ sig = "f83db9ef6b318b3f"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/shell.css"
-sig = "4f2674f697dfc47d"
+sig = "9f224fb0dd4420ed"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1519,6 +1519,11 @@ sig = "c3733190fd86fe7c"
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/loop.spec.ts"
 sig = "d4c50c7057aafa6c"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
+target = "tests/e2e/p4-chrome.spec.ts"
+sig = "04c8d5fc8c6e6235"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"

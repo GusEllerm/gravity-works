@@ -305,18 +305,34 @@ h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
   }
   #gw-controls { margin-top: 2px; }
   #gw-tray button, #gw-controls button { padding: 2px 8px; }
-  #gw-status, #gw-callout { font-size: 13px; margin: 2px 0; }
+  /* THE P4-CHROME RE-MEASURE (Evaluation 2026-10-10 player re-run, item 2's
+   * asterisk): at 633 the compact page measured ≤ 100vh and ended clean of
+   * the SCROLL, but not clean of the CHIP STRIP — the bottom-corner chips
+   * (`#gw-ghost-bar`, `#gw-save`) are zero-flow, viewport-pinned
+   * (bottom:8px), and the compact law never counted their band: the in-flow
+   * hash line ended INSIDE it (measured 599–611 riding under the strip's
+   * 604–625). The law gains the band's two missing conditions: the lines
+   * below the canvas wear STATED integer boxes (the AIM-LAYOUT rule the
+   * rows above already obey — these two were still at `line-height:
+   * normal`, 17 px boxes with 2 px margins), and the reserved constant
+   * leaves ≥ 36 px of window BELOW the last flow line — the strip's
+   * 21 px box + its 8 px offset + clearance — where a zero-flow chip can
+   * float without ever riding a flow row. */
+  #gw-status, #gw-callout { font-size: 13px; line-height: 15px; min-height: 15px; margin: 1px 0; }
   #gw-hash-details { font-size: 10px; margin: 0; }
   /* canvas height = width × 540/960, and the width cap makes that height
-   * (100vh − 288 px) — 288 is the compact chrome re-MEASURED for this
-   * pass at 1280×633 (above the canvas: title 17, nav 18, toolbar 21+21,
-   * the six reserved lines ≈ 88; below it: status/callout/hash ≈ 40;
-   * page padding ≈ 30 — was 380 when the lines were 16–21 px boxes with
-   * 8 px margins). A WIDTH cap keeps the buffer aspect true; the page
-   * measures ≤ 100vh at every height the block fires (no scroll — the
-   * `tests/e2e/result.spec.ts` short-window law), and a 633 px window
-   * now gets a ≈345 px stage where it used to get 253. */
-  #gw-stage canvas { max-width: min(960px, calc((100vh - 288px) * 960 / 540)); }
+   * (100vh − 304 px) — 304 is the compact chrome re-MEASURED by the P4
+   * chrome pass at 1280×633: 270 px of measured FLOW (was ≈ 280 at 288 —
+   * the two display-face lines below the canvas now state 15 px boxes)
+   * plus the 34 px CHIP BAND above — the re-run evaluation's overlap
+   * (history: 380 at the round-7 pass, cut to 288 by the P4 shortlist
+   * pass's line-by-line measure, which counted every FLOW line and none
+   * of the corner chips). A WIDTH cap keeps the buffer aspect true; the
+   * page measures ≤ 100vh at every height the block fires (no scroll —
+   * the `tests/e2e/result.spec.ts` short-window law) AND no flow line
+   * reaches the chip band (`tests/e2e/p4-chrome.spec.ts`), and a 633 px
+   * window serves a ≈329 px stage. */
+  #gw-stage canvas { max-width: min(960px, calc((100vh - 304px) * 960 / 540)); }
   #gw-result { padding: 5px 9px; font-size: 12px; }
   #gw-result-stars { font-size: 15px; }
   #gw-result-rules { font-size: 10px; }
