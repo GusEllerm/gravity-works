@@ -133,7 +133,7 @@ sig = "0ab919cfb7fa8035"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "tests/e2e/goal-rung.spec.ts"
-sig = "2706abc9c3520c34"
+sig = "455940c30c135bce"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -1478,7 +1478,7 @@ sig = "1e950221a3c04bfa"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/goal-rung.spec.ts"
-sig = "2706abc9c3520c34"
+sig = "455940c30c135bce"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1498,7 +1498,7 @@ sig = "d4c50c7057aafa6c"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/p4-words-where.spec.ts"
-sig = "ace78be30f9b0f94"
+sig = "61e9da4b0a0fec07"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"

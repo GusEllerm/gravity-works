@@ -20,6 +20,14 @@ import { goto } from './goto.ts'
 import { KITCHEN02 } from '../../src/world/levels/kitchen02.level.ts'
 import { KITCHEN03 } from '../../src/world/levels/kitchen03.level.ts'
 
+// Same CI-honesty budget as `goal-rung.spec.ts` / `campaign.spec.ts`: the 60_000
+// `ready`/`fell` waits document a 60 s intent the default 30 s TEST timeout cuts
+// mid-launch (the 2026-10-10 08:51Z CI red: this test died at 30.2 s inside a
+// healthy `#gw-place` click under software-GL saturation; the same tree passed
+// twice on a fast runner). `slow()` carries the promised budget; waits and
+// assertions unchanged.
+test.slow()
+
 const ready = async (page: import('@playwright/test').Page) => {
   await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
 }

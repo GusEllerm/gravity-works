@@ -14,6 +14,14 @@
 import { test, expect, type Page } from '@playwright/test'
 import { goto } from './goto.ts'
 
+// The `ready`/finish waits below document 60 s; the default 30 s TEST timeout
+// silently cuts that intent (the garage-era CI reds, `campaign.spec.ts` header).
+// Measured wall clocks under contention: 22–24 s for the two-boots/two-launches
+// test on a SwiftShader-saturated 18-core box (CPU-starved sweep) and 30.4 s
+// (test timeout) on a saturated CI runner — the 2026-10-10 08:51Z red. `slow()`
+// carries the budget the waits already promise; the event waits stay untouched.
+test.slow()
+
 const ready = (page: Page) =>
   expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
 
