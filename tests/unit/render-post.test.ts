@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { tiltShiftParams, DEFAULT_BAND_HEIGHT } from '../../src/render/post/tilt-shift.ts';
 import { applyQuality, buildPostStages } from '../../src/render/post/index.ts';
-import { BLOOM_SOFT_CEILING, SoftBloomPass } from '../../src/render/post/bloom.ts';
+import { BLOOM_SIZE_GATE_TAXELS, BLOOM_SOFT_CEILING, SoftBloomPass } from '../../src/render/post/bloom.ts';
 import { gradeFromTokens } from '../../src/render/post/grade.ts';
 import { SET_TOKENS } from '../../src/render/tokens.ts';
 import { isPostQuality, parseFocusParam } from '../../src/dev/post-params.ts';
@@ -83,6 +83,28 @@ describe('bloom soft ceiling (never-list)', () => {
     const b = new SoftBloomPass({ strength: 42 });
     expect(b.strength).toBe(BLOOM_SOFT_CEILING);
     expect(BLOOM_SOFT_CEILING).toBeLessThanOrEqual(0.25);
+    b.dispose();
+  });
+});
+
+describe('bloom size gate (round-2 Lane D)', () => {
+  it('gates on the neighbourhood mean, not the centre, at the default tier', () => {
+    const b = new SoftBloomPass();
+    expect(b.sizeGateTexels).toBe(BLOOM_SIZE_GATE_TAXELS);
+    // the gate is authored in QUARTER-RES texels, not screen px (§7 #2 law)
+    const gate = (b as unknown as { bright: { uniforms: { uGateTexel: { value: THREE.Vector2 } } } }).bright
+      .uniforms.uGateTexel.value;
+    expect(gate.x).toBe(BLOOM_SIZE_GATE_TAXELS);
+    expect(gate.y).toBe(BLOOM_SIZE_GATE_TAXELS);
+    b.dispose();
+  });
+  it('an explicit 0 collapses the gate to the round-1 threshold-only form', () => {
+    const b = new SoftBloomPass({ sizeGateTexels: 0 });
+    expect(b.sizeGateTexels).toBe(0);
+    const gate = (b as unknown as { bright: { uniforms: { uGateTexel: { value: THREE.Vector2 } } } }).bright
+      .uniforms.uGateTexel.value;
+    expect(gate.x).toBe(0);
+    expect(gate.y).toBe(0);
     b.dispose();
   });
 });
