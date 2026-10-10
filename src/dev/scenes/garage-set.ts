@@ -21,16 +21,14 @@
 // matrix fix), and the track runs C's dimmer twin (`stagingTrackPlastic`).
 
 import * as THREE from 'three'
-import { dieCastPaint, fabric } from '../../render/materials.ts'
-import { toyBlock, trackChannel } from '../../render/geometry.ts'
+import { trackChannel } from '../../render/geometry.ts'
+import { createCarRig } from '../../render/car-rig.ts'
 import { applyKeyLight, createLightingRig } from '../../render/lighting.ts'
-import type { ToonMaterial } from '../../render/toon-material.ts'
 import {
   buildGarageSet,
   GARAGE_TOKENS,
   KEYLIGHT,
   STAGING,
-  SURFACES,
   stagingTrackPlastic,
 } from '../../sets/garage/index.ts'
 import { registerScene, type SceneEntry, type SceneFactory } from '../registry.ts'
@@ -61,52 +59,14 @@ function props(mesh: THREE.Object3D, cast = true, receive = true): void {
   })
 }
 
-/** The dev C car — the ratified sedan-blocky silhouette at the studio's
- *  C hue, with the round-2 knee-off treatment applied at build. */
-function car(hex: string, kneeOff: boolean): THREE.Group {
-  const g = new THREE.Group()
-  const fill = {
-    fillHigh: rig.fillHigh,
-    fillLow: rig.fillLow,
-    shadowTint: rig.shadowTint,
-    fillStrength: rig.fillStrength,
-    fillShadeDepth: rig.fillShadeDepth,
-  }
-  const body = new THREE.Mesh(toyBlock(0.075, 0.028, 0.034, 0.01, 0.004), dieCastPaint(tokens, hex, { ...fill, toy: 0.4 }))
-  props(body)
-  g.add(body)
-  const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.062, 0.004, 0.011), dieCastPaint(tokens, SURFACES.carStripe, fill))
-  stripe.position.y = 0.027
-  props(stripe)
-  g.add(stripe)
-  const wheelGeo = new THREE.CylinderGeometry(0.009, 0.009, 0.006, 18)
-  wheelGeo.rotateX(Math.PI / 2)
-  const wheelMat = fabric(tokens, '#5A4130', { ...fill, rim: { strength: 0.25, size: 0.6 } })
-  for (const [x, z] of [
-    [0.024, 0.017],
-    [-0.024, 0.017],
-    [0.024, -0.017],
-    [-0.024, -0.017],
-  ] as const) {
-    const w = new THREE.Mesh(wheelGeo, wheelMat)
-    w.position.set(x, 0.009, z)
-    props(w, true, false)
-    g.add(w)
-  }
-  if (kneeOff) {
-    // dev round-2 note 3, verbatim: the toy gradient comes off the bloom
-    // knee and the cream stripe's diffuse drops to 0.55 (A/B keep theirs)
-    for (const sub of g.children) {
-      const m = (sub as THREE.Mesh).material as ToonMaterial
-      if (!m?.uniforms) continue
-      if ('uToy' in m.uniforms) m.uniforms.uToy.value = Math.min(m.uniforms.uToy.value as number, 0.25)
-      if (m.uniforms.uColor && (m.uniforms.uColor.value as THREE.Color).getHex() === 0xf6e9d2) {
-        m.uniforms.uDiffuseStrength.value = 0.55
-      }
-    }
-  }
-  g.scale.setScalar(0.62)
-  return g
+/** ROUND-2 LANE D — the canonical `car-a` sedan rig (design round-2 §3.3).
+ *  The bespoke 0.62-scale minis with the scene-local knee-off stripe patch
+ *  are gone: the rig mounts EXACTLY as `src/boot.ts` mounts it in the game
+ *  (the knee-off patch was a stand-in bloom-knee patch, and the round-2
+ *  bloom SIZE GATE is now the law — no isolated specular blooms, so the
+ *  still and the play frame agree by construction). */
+function car(): THREE.Group {
+  return createCarRig(tokens).group
 }
 
 function garageSetScene(): SceneFactory {
@@ -130,7 +90,7 @@ function garageSetScene(): SceneFactory {
     scene.add(run)
 
     // the hero on the straight at the ratified still pose (placeCar t)
-    const hero = car(SURFACES.carHero, true)
+    const hero = car()
     hero.position.lerpVectors(runA, runB, STAGING.car.t)
     hero.position.y = STAGING.car.y
     const dir = runB.clone().sub(runA).normalize()
@@ -141,7 +101,7 @@ function garageSetScene(): SceneFactory {
     // the witness, parked UNDER the bench (fix 2: one car per band — the
     // under-bench low ground, B's mezzanine port at data level, engine-
     // off, in shade behind a leg at >25 % separation from the hero)
-    const witness = car(SURFACES.carWitness, false)
+    const witness = car()
     witness.position.set(...STAGING.witness.position)
     witness.lookAt(...STAGING.witness.lookAt)
     witness.rotateY(-Math.PI / 2)

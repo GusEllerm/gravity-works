@@ -521,3 +521,31 @@ Proof: `tests/unit/ghost.test.ts` (the law's truth table, the cache's hit/miss/e
 (unearned k02 build phase, unlock-on-first-finish remembered ON, toggle persistence, afterlife defaults, the O(1)
 flip), `tests/e2e/farewell.spec.ts` (the freeze). Ghost stays visuals-only: `replay:all` 30/30 byte-same at this
 HEAD. See [[ui]], [[replay]], [[save]], `Sessions/2026-10-11 Round2 ghosts.md`.
+
+## 2026-10-11 — round-2 Lane D: bloom size gate, the stills' car, and the sprinkler read
+
+**Bloom's never-list ban becomes a SIZE gate, not just a threshold.** A small bright prop (bowl chip, mug rim,
+lamp-post flare, duck specular, goal pin, sprinkler dot) could still ignite a flare at DEFAULT by concentrating
+threshold-crossing luma into a few pixels — the ban was enforced only on magnitude. `SoftBloomPass` now gates
+the bright pass on `min(center, neighbourhood-mean)` over a plus of ±2 quarter-res texels
+(`BLOOM_SIZE_GATE_TAXELS`): only a bright AREA wider than the pin footprint passes, an isolated spot cannot
+bloom on its centre alone. Rejected: raising `BLOOM_THRESHOLD` (dims the sunlit decks too — histogram mean
+must not move), per-prop emissive lists (bypassable, not a law). The ban stays empirically enforced mid-run by
+a synthetic probe (`flare-probe` scene, `bloom-flare` spec: small-disc spread 5.5 px → 0 px, halo 217 px →
+0 px, area control still glows). See [[render]], `Sessions/2026-10-11 Round2 bloom`.
+
+**The stills' car is the driven sedan everywhere, so the stills stop lying.** All six `*-set.ts` still scenes
+carried a generic `car()` stand-in while the game and the film mounted `createCarRig` — the hero stills
+quietly starred a different car (filmcar precedent: the rig replaces stand-ins, baselines re-take with
+before/after pairs). Rejected: leaving the stand-in in stills (evidence keeps lying), a separate hero car model
+(a third thing to keep in sync). Kitchen `establishing`/`hero`/`floor` + `tests/visual/darwin/*` re-took with
+evidence; the visual suite is green at 0.0000 %. See [[render]], [[dev]] .
+
+**Garden sprinkler — DECISION: readable ARCS in the exploration; production is already the "out" option.**
+Round-2 §2: the spray "reads as scattered candy dots rather than water." The five frozen droplet spheres in the
+stage-1 exploration `garden.ts` are now two continuous ballistic ARC ribbons (`sprinkler-spray-arc`, one
+parabola per side, liquid material). Rejected: keep the dots (the finding), and any PRODUCTION spray geometry —
+the shipped garden set already ships the sprinkler as a DATA grip-zone + a `prop:sprinkler` text callout, no
+spray mesh, so the scored garden frames never carried the dots (confirmed on the measured garden03 mid-run and
+the garden hero); "out" was the shipped answer, this pass only makes the exploration quote honest. Materials /
+geometry in one dev scene; nothing sim. See [[sets]], [[dev]], `Sessions/2026-10-11 Round2 bloom`.
