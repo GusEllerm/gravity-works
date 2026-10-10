@@ -418,12 +418,12 @@ sig = "08ebfda14427ef24"
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
 target = "src/dev/scenes/bathroom-set.ts"
-sig = "1dc55f8a8ba64a39"
+sig = "b2c21595abbb2c44"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
 target = "src/dev/scenes/bedroom-set.ts"
-sig = "d0214f900a50cb6e"
+sig = "4d1f2cef3d55b0a4"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
@@ -453,7 +453,7 @@ sig = "6076250d77860d77"
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
 target = "src/dev/scenes/kitchen-set.ts"
-sig = "5233e3e617cc31ec"
+sig = "7481e0597920c61a"
 
 [[bindings]]
 doc = "docs/vault/Modules/dev.md"
