@@ -105,6 +105,15 @@ describe('seen tracking in the save', () => {
       expect(firstSetAppearance(KITCHEN04, store)).toBeNull();
     });
 
+    test('a kind the TRAY stocks is never double-taught by the set half', () => {
+      const store = memoryStorage();
+      // a future rung that ships a `straight` fixture AND sells straights:
+      // the placement line owns the straight lesson, the set half is silent
+      const rung = { fixtures: { ramp: 1, finishCup: 1, straight: 1 }, tray: { straight: 3 } };
+      expect(firstSetAppearance(rung, store)).toBeNull();
+      expect(seenCallouts(store)).toEqual([]); // and it spends nothing
+    });
+
     test('a placed kind and a shipped kind share ONE seen set (no double lesson)', () => {
       const store = memoryStorage();
       // a player who met the bank in a sandbox tray needs no second line

@@ -115,13 +115,18 @@ export function firstSight(id: string, store: StorageLike | null = defaultStorag
 export const SET_QUIET_FIXTURES: ReadonlySet<string> = new Set(['ramp', 'finishCup']);
 
 export function firstSetAppearance(
-  level: { fixtures?: Partial<Record<PieceKind, number>> },
+  level: { fixtures?: Partial<Record<PieceKind, number>>; tray?: Partial<Record<PieceKind, number>> },
   store: StorageLike | null = null,
 ): string | null {
   const fixtures = level.fixtures;
   if (!fixtures) return null;
+  // a kind the TRAY stocks belongs to the placement line (the tray half of
+  // §9.3, `firstSight` at place) - the set half speaks ONLY for kinds the
+  // rung builds in and never sells, so a rung that ships a fixture of a
+  // kind it also stocks teaches it exactly once
+  const tray = level.tray ?? {};
   for (const k of PIECE_KINDS) {
-    if ((fixtures[k] ?? 0) <= 0 || SET_QUIET_FIXTURES.has(k)) continue;
+    if ((fixtures[k] ?? 0) <= 0 || (tray[k] ?? 0) > 0 || SET_QUIET_FIXTURES.has(k)) continue;
     const line = firstSight(k as string, store ?? defaultStorage());
     if (line) return line;
   }

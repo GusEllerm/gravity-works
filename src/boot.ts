@@ -1394,7 +1394,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // rules line owns the FIRST boot of every rung; the seen set does the
   // rest). The tray half of §9.3 stays the placement line above.
   const showSetAppearance = (): void => {
-    const appearance = firstSetAppearance(level as { fixtures?: Partial<Record<string, number>> });
+    const appearance = firstSetAppearance(
+      level as { fixtures?: Partial<Record<string, number>>; tray?: Partial<Record<string, number>> },
+    );
     if (appearance) calloutLine.textContent = appearance;
   };
   if (!premiere) {
