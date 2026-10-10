@@ -72,6 +72,12 @@ export interface SetInstance {
   /** The set's floor bounds (kitchen `counter`, bedroom `floor`). */
   bounds: { shape: 'circle'; center: { x: number; z: number }; radius: number }
   staging: unknown
+  /** ROUND-2 LANE D — the set's optional PLAY-camera framing grammar (the
+   *  camera law: the set's hero grammar visible from the play cameras,
+   *  not just the stills). Consumed by the run camera's `eyeUp` option
+   *  (`src/camera/run-camera.ts`); absent = the ratified rail-plane eye,
+   *  byte-identical framing. Render-side only — never enters the sim. */
+  runFraming?: { eyeUp: number }
 }
 
 export interface SetRegistration {
@@ -163,7 +169,7 @@ export const SETS: Record<string, SetRegistration> = {
     async build(T, opts = {}) {
       const { buildBathroomSet } = await import('./bathroom/index.ts')
       const set = buildBathroomSet(T, opts)
-      return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.floor, staging: set.staging }
+      return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.floor, staging: set.staging, runFraming: set.runFraming }
     },
     // the bathroom rungs mount through the stage-4 bathroom table
     // (`bathroomSetPlacement`): the disc centres on the run, 25 cm behind
@@ -179,7 +185,7 @@ export const SETS: Record<string, SetRegistration> = {
     async build(T, opts = {}) {
       const { buildGarageSet } = await import('./garage/index.ts')
       const set = buildGarageSet(T, opts)
-      return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.floor, staging: set.staging }
+      return { group: set.group, sockets: set.sockets, hazardZones: set.hazardZones, bounds: set.floor, staging: set.staging, runFraming: set.runFraming }
     },
     // the garage rungs mount through the stage-4 garage table
     // (`garageSetPlacement`): the slab/ground disc centres on the run,

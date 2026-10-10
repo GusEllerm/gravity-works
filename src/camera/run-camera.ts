@@ -77,6 +77,19 @@ export interface RunCameraOptions {
    *  height ("the cup and death spot were NEVER visible"). The witness —
    *  not the rail terminus — is where the run actually ends. */
   finishArc?: number;
+  /** ROUND-2 LANE D — the SET-GRAMMAR framing nudge (design round-2 §5 #6,
+   *  the camera law: the set's hero grammar visible from the PLAY cameras,
+   *  not just the stills). A constant extra eye height (world m) above the
+   *  rail-plane eye, default 0 so every set that ships no framing row
+   *  frames EXACTLY as before (byte-identical; the watchability proofs ride
+   *  the same law). The eye lifts; the §7.3 pitch still passes through the
+   *  car, so more of the deck plane — the garage blade corridor + oil
+   *  stain, the bathroom tub base + tile grid — enters the lower frame
+   *  instead of sliding under it. The garage and bathroom rows live in
+   *  their set data (`RUN_FRAMING`); the kitchen needs none (its tall prop
+   *  solids already arc the eye over the counter grammar). Render-side
+   *  only — the eye is never fed to the sim. */
+  eyeUp?: number;
 }
 
 /** Optional per-step car truth (world metres). The arc alone cannot say
@@ -218,10 +231,13 @@ export class RunCamera {
   private readonly source: RunCameraSource;
   private readonly solids: readonly RunCameraSolid[];
   private readonly finishArc: number;
+  /** Set-grammar eye lift (round-2 Lane D); 0 = the ratified rail-plane eye. */
+  private readonly eyeUp: number;
 
   constructor(source: RunCameraSource, startArc = 0, options: RunCameraOptions = {}) {
     this.source = source;
     this.solids = options.solids ?? [];
+    this.eyeUp = Math.max(0, options.eyeUp ?? 0);
     this.finishArc = THREE.MathUtils.clamp(
       options.finishArc ?? source.length,
       0,
@@ -417,7 +433,7 @@ export class RunCamera {
     const f = this.source.frameAt(this.trailArc);
     this.eyeBase
       .copy(rail)
-      .addScaledVector(f.up, RUN_CAMERA.HEIGHT + RUN_CAMERA.EYE_UP)
+      .addScaledVector(f.up, RUN_CAMERA.HEIGHT + RUN_CAMERA.EYE_UP + this.eyeUp)
       .addScaledVector(
         this.vD.crossVectors(f.up, f.tangent).normalize(),
         RUN_CAMERA.FINISH_SIDE * this.finishWeight(carArc),

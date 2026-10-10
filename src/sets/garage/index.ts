@@ -61,6 +61,7 @@ import {
   LOOSE_DRIVER,
   MATERIAL_TUNES,
   PROPS,
+  RUN_FRAMING,
   SET_SCALE,
   SHELL,
   SOCKETS,
@@ -96,6 +97,8 @@ export interface GarageSet {
   hazardZones: Record<string, { id: string; kind: string; center: { x: number; y: number; z: number }; radius: number; gripFactor: number; source: string }>
   floor: typeof FLOOR
   staging: typeof STAGING
+  /** Round-2 Lane D play-camera framing row (see `RUN_FRAMING` in data). */
+  runFraming: typeof RUN_FRAMING
 }
 
 /** Deterministic pseudo-random (fixed seed — the clock never moves). */
@@ -710,7 +713,7 @@ export function buildGarageSet(T = THREE_NS, opts: GarageSetOptions = {}): Garag
   // declare the key to every ToonMaterial so dark bands tint, not blacken
   if (opts.rig) applyKeyLight(group, opts.rig)
 
-  return { group, sockets, hazardZones: { ...HAZARDS }, floor: FLOOR, staging: STAGING }
+  return { group, sockets, hazardZones: { ...HAZARDS }, floor: FLOOR, staging: STAGING, runFraming: RUN_FRAMING }
 }
 
 /** Re-export the staging-run track material factory the staging scene uses

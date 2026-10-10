@@ -132,6 +132,37 @@ describe('run camera (§7.3: leads ~0.4 s, 150 ms positional lag, slower rotatio
   });
 });
 
+describe('round-2 Lane D: the set-grammar framing nudge (`eyeUp`)', () => {
+  const rail = new Rail();
+
+  it('default 0 frames byte-identically to the ratified rail-plane eye', () => {
+    const a = new RunCamera(rail, 0);
+    const b = new RunCamera(rail, 0, { eyeUp: 0 });
+    drive(a, 300, (t) => Math.min(2 * t, L - 0.5), 2);
+    drive(b, 300, (t) => Math.min(2 * t, L - 0.5), 2);
+    expect(b.position.equals(a.position)).toBe(true);
+    expect(b.rotation.equals(a.rotation)).toBe(true);
+  });
+
+  it('eyeUp lifts the eye the constant height, the azimuth + pitch-to-car kept', () => {
+    const carArc = 5;
+    const base = new RunCamera(rail, 0);
+    const lift = new RunCamera(rail, 0, { eyeUp: 0.05 });
+    base.snap(carArc, 0);
+    lift.snap(carArc, 0);
+    expect(lift.position.y - base.position.y).toBeCloseTo(0.05, 6);
+    // the eye still rides the SAME rail trail point (azimuth law intact)
+    expect(lift.eyeArc).toBeCloseTo(base.eyeArc, 9);
+    // the §7.3 pitch still passes through the car: a HIGHER eye pitches DOWN
+    // to it, so the eye→car ray gets steeper, never flatter
+    const pitch = (c: RunCamera): number => {
+      const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(c.rotation);
+      return fwd.y;
+    };
+    expect(pitch(lift)).toBeLessThan(pitch(base));
+  });
+});
+
 describe('KitRig railPointAt (the straight-line camera drift regression)', () => {
   // RunCamera itself is pure filtering - the §7.3 "camera drifts sideways
   // on straights" bug lived in its SOURCE, KitRig.railPointAt: it snapped

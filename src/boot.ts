@@ -1346,6 +1346,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         ? new RunCamera(rig, 0, {
             solids: camSolids,
             finishArc: cup ? rig.nearestArcInfo(cup.center).arc : undefined,
+            // round-2 Lane D camera law: the mounted set's hero grammar in
+            // the RUN frame too (run-camera.ts `eyeUp`; 0 = ratified pose)
+            eyeUp: setInstance?.runFraming?.eyeUp ?? 0,
           })
         : null;
     runCamActive = false;

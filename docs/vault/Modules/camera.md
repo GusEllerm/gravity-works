@@ -26,7 +26,14 @@ as the speed-scaled look-ahead `speed · LEAD_TIME`, sweep-clamped by
 IS the anticipation beat (~0.2 s of "camera already turned, car arriving").
 `HEIGHT` 0.022 m + `EYE_UP` 0.05 m put the eye just above the rail line (the
 rail sits at wheel height, `RAIL_WHEEL_HEIGHT`); `TRAIL` 0.25 m is how far
-of TRACK behind the car the EYE rides (stage 3 — see below).
+of TRACK behind the car the EYE rides (stage 3 — see below). Round-2 Lane D added one optional constructor
+field, `eyeUp` (default 0 = byte-identical to every prior camera test): a per-set FRAMING lift riding on top
+of `EYE_UP`, supplied by a set's `runFraming` in the registry (`SetInstance`, `Modules/sets`; garage +
+bathroom carry `RUN_FRAMING.eyeUp = 0.028`). It is a constant added to the eye's up-axis term — it never reads
+rail speed or arc, so it cannot change azimuth or the law, only WHERE the fixed pitch looks: measured
+bathroom03 mid-run went from wall-blank to showing the tub, the duck and the tile grid, and garage02 mid-run
+came to carry the buckets/cardboard/toolbox (the yaw-0 composition law keeps the wheel/workbench BEHIND the
+camera at that corner — the fix buys the visible half, not the impossible half).
 
 ## Stage 3: the beige-wall fix (playtests E/F/G, measured)
 

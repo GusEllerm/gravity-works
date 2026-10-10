@@ -43,6 +43,7 @@ import {
   MATERIAL_TUNES,
   SOCKETS,
   HAZARDS,
+  RUN_FRAMING,
   SOAPDISH,
   SET_SCALE,
   STAGING,
@@ -84,6 +85,8 @@ export interface BathroomSet {
   hazardZones: Record<string, { id: string; kind: string; center: { x: number; y: number; z: number }; radius: number; gripFactor: number; source: string }>
   floor: typeof FLOOR
   staging: typeof STAGING
+  /** Round-2 Lane D play-camera framing row (see `RUN_FRAMING` in data). */
+  runFraming: typeof RUN_FRAMING
 }
 
 /** Deterministic pseudo-random (fixed seed — the clock never moves). */
@@ -529,5 +532,5 @@ export function buildBathroomSet(T = THREE_NS, opts: BathroomSetOptions = {}): B
   // declare the key to every ToonMaterial so dark bands tint, not blacken
   if (opts.rig) applyKeyLight(group, opts.rig)
 
-  return { group, sockets, hazardZones: { ...HAZARDS }, floor: FLOOR, staging: STAGING }
+  return { group, sockets, hazardZones: { ...HAZARDS }, floor: FLOOR, staging: STAGING, runFraming: RUN_FRAMING }
 }
