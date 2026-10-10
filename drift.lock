@@ -213,7 +213,7 @@ sig = "d01d2ba38efcad2e"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/boot.ts"
-sig = "d908a2e0338e321e"
+sig = "009b4f3c329370de"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -227,13 +227,23 @@ sig = "3871041c00d2f83b"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
+target = "src/ui/advice.ts"
+sig = "2833cd05625ea55b"
+
+[[bindings]]
+doc = "docs/vault/Home.md"
+target = "src/ui/builder.ts"
+sig = "d06b8e347831f95d"
+
+[[bindings]]
+doc = "docs/vault/Home.md"
 target = "src/ui/shell.css"
 sig = "61ab15f3184ad775"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/world/campaign.ts"
-sig = "7122eb3cbe17e954"
+sig = "af3dda9ec71a2fd4"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -248,17 +258,27 @@ sig = "5636ae9f5e71b390"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "tests/e2e/playtest-y-clickdiff.spec.ts"
-sig = "d5b3f3ece12aa46f"
+sig = "d46c82ea92f7d9d6"
+
+[[bindings]]
+doc = "docs/vault/Home.md"
+target = "tests/e2e/program-voice.spec.ts"
+sig = "912aba87fc30d6a6"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "tests/e2e/sound.spec.ts"
-sig = "8b6d99b6cea551bc"
+sig = "128d449ad91b6506"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "tests/e2e/stage5-ready.spec.ts"
 sig = "83df9f2b46efb33d"
+
+[[bindings]]
+doc = "docs/vault/Home.md"
+target = "tests/unit/result.test.ts"
+sig = "58f5fe859fa18a99"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
