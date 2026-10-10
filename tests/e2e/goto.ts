@@ -16,17 +16,25 @@
  * NON-visual rider and imports the door like everyone else.)
  *
  * The opt-out is PARAMETER, not mutation: `specUrl` appends only what the
- * address does not already carry (an explicit `post=`/`intro=` on the call
- * always wins), so a spec that opts back IN through the same helper keeps
+ * address does not already carry (an explicit `post=`/`intro=`/`farewell=`
+ * on the call always wins), so a spec that opts back IN through the same helper keeps
  * its own word. Absolute URLs (`about:blank`) pass through untouched.
  */
 import type { Page } from '@playwright/test'
 
 /** What every spec landing rides unless the address says otherwise:
- *  post off (raw `renderer.render`, the SwiftShader-honest baseline) and
+ *  post off (raw `renderer.render`, the SwiftShader-honest baseline),
  *  the premise beat explicitly off (`?intro=off`, the URL-affordance
- *  family — Decision Log 2026-10-07 "recorded, not stripped"). */
-export const SPEC_DEFAULT_PARAMS = { post: "off", intro: "off" } as const
+ *  family — Decision Log 2026-10-07 "recorded, not stripped"), and the
+ *  farewell explicitly off (`?farewell=off`, program T3.3) so a
+ *  ladder-walking spec that happens to clear porch05 lands on the
+ *  ordinary result bar. The specs that TEST a cinematic opt back IN
+ *  through the same door. */
+export const SPEC_DEFAULT_PARAMS = {
+  post: "off",
+  intro: "off",
+  farewell: "off",
+} as const
 
 /** Pure, unit-tested (`tests/unit/spec-url.test.ts`): append the spec
  *  defaults without ever overriding an explicit param or a hash route. */

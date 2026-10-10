@@ -367,3 +367,50 @@ h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
 #gw-replay-build { font-size: 13px; color: #2c2013; border: 1px solid #8a7040; border-radius: 6px; padding: 4px 10px; text-decoration: none; background: #fff8ec; }
 #gw-replay-verify { font-size: 12px; color: #6a5636; margin-top: 40px; }
 #gw-replay-verify p { margin: 4px 0; }
+/* THE FAREWELL (program T3.3, src/pages/farewell.ts): the crane pass and
+ * its three doors OVER the world — an ending, so it takes the stage the
+ * way the hiccup takes it (opaque, centred), one layer under the hiccup
+ * so a lost context still wears its honest face. The chrome around the
+ * stage is hidden by the `.gw-premiere` rule the premise beat shares:
+ * the farewell owns the screen, once per save. */
+#gw-farewell {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  background: #efe0c8;
+  color: #2c2013;
+  font: 14px/1.45 system-ui, sans-serif;
+  text-align: center;
+}
+#gw-farewell canvas { display: block; width: 100%; height: auto; max-height: 420px; max-width: 960px; border-radius: 6px; }
+#gw-farewell canvas[hidden] { display: none; }
+#gw-farewell-status { margin: 0; font-size: 12px; color: #6a5636; }
+#gw-farewell-line { margin: 0; font-family: var(--gw-display); letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
+#gw-farewell-summary { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+#gw-farewell-summary[hidden] { display: none; }
+#gw-farewell-title { margin: 0; font-family: var(--gw-display); letter-spacing: 0.12em; text-transform: uppercase; }
+#gw-farewell-rooms { border-collapse: collapse; font-size: 13px; }
+#gw-farewell-rooms td { padding: 2px 12px; text-align: left; font-variant-numeric: tabular-nums; }
+#gw-farewell-total { margin: 0; font-size: 12px; color: #6a5636; }
+#gw-farewell-doors { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+#gw-farewell-doors[hidden] { display: none; }
+#gw-farewell-hello { margin: 0; font-size: 13px; }
+#gw-farewell-doorrow { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+#gw-farewell-doorrow a,
+#gw-farewell-doorrow button {
+  font: inherit;
+  cursor: pointer;
+  color: #2c2013;
+  background: #fff8ec;
+  border: 1px solid #8a7040;
+  border-radius: 6px;
+  padding: 6px 12px;
+  text-decoration: none;
+}
+#gw-farewell-share-note { font-size: 11px; color: #6a5636; align-self: center; }

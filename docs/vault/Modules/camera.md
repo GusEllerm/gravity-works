@@ -435,3 +435,20 @@ asserts the recorded follow pose at a mid-shot time IS the follow state the
 same-step game driving would show (same source, same dt); the seek proofs in
 `tests/e2e/share-replay.spec.ts` keep the STATE (not the camera) exactly the
 sim's.
+
+## Program T3.3: the farewell crane — a camera that tours (2026-10-09)
+
+The farewell's crane pass (`src/pages/farewell.ts`, `cranePose`) is the fourth camera grammar in the
+house and the only one that FOLLOWS NOTHING: the subject is the ROW of rooms — the six registry sets
+mounted side by side at their canonical origins along x at `CRANE_STEP` — so there is no `KitRig`, no
+`RunCamera`, no rail, and no `World` anywhere under it. `cranePose(t)` is a PURE function of plan time
+(a recorded shot, the replay's seek law with nothing to seek): three grammars only — DWELL (a lateral
+drift across one room at the ratified table gaze ~1.45 m, eye z 3.1), MOVE (the crane lift proper — a
+smoothstep traverse with a `sin` lift bump in y and z, which is what makes it a crane and not a
+dolly), and PULL (the wide house, eye back to ~6.5 m, centred on the row, where the doors open). The
+reveal events fire off the same plan the pose is read from (`farewellPlan` — constants in, timed
+events out), so the camera and the room tallies can never disagree, machine to machine. Reduced motion
+does not slow the crane down, it removes it (the static summary page — `Modules/ui`); the pass is pure
+motion by the `ui/motion.ts` law. No `post` stack, no solids, no focus law rides it — a stills tour of
+the house, framed like the stills. `tests/unit/farewell.test.ts` pins the sweep: finite everywhere, ON
+each room at its reveal time, ending wide at the row's centre.

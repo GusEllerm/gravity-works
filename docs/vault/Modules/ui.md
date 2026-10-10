@@ -111,6 +111,52 @@ THE PLACE BUTTON LABEL CARRIES THE SOCKET IT WILL DROP INTO (playtest DD's kitch
 
 A GHOST is a trace, never a second simulation: `src/pages/ghost.ts` winds a build through the SAME `TapeRecorder` the share page winds, on a `visuals: false` world (`deriveGhostTrace` — slices ride `MessageChannel` tasks, the share page's clamp-proof idiom), and presents the per-step car list through a translucent rig whose pose is read at the LIVE sim's clock (`sync(world.time)`, step `floor(t/dt)` — the seek law, [[replay]]). The PAR ghost mounts at level-load from the rung's own `parBuild` (every campaign rung has one; a rig without one says so on the bar); a FRIEND ghost decodes an existing `#s=` payload (`parseShareUrl`), MOUNTS their build as the track through the ordinary `rebuild` line — a build that refuses to mount SAYS so in the bar, and the link stays their run, not a silent half-mount — and winds their car from it; a later EDIT replaces their track, so the edit lifts their ghost honestly and falls back to the rung's own par line. THE VISUALS-ONLY LAW: the rig is the shell's (R7 lift-before-dispose), never a body, never `hashedBodies`, never stepped — the entire coupling is one `sync` line in the frame loop, and with the ghost ON the run hashes byte-identical to the Node `replayRun` result (asserted live; `replay:all` stays 30/30). IT APPEARS WITH THE LAUNCH: on the grid (and the walked-home Retry pose, `park()`) the car is unpainted — one pose two cars is a double-exposure, and the idle table stays the frame the committed shell baseline recorded (no re-baseline shipped with this lane). THE MEASURED ORDER LAW (the prerequisite the plan demanded before any cross-player equality claim): `scripts/probe-piece-order.mjs` permuted the piece ARRAY of every registered level's reference build (4 deterministic Fisher–Yates seeds) and replayed headless — **148/148 permuted replays hashed identical with `seq` kept** (`reify` re-sorts by `seq` via `canonicalBuild`, so array order is noise) and **148/148 identical even renumbered** (array order becoming canonical order — hash and step count both); the claim ghost racing needs is therefore measured, not assumed — and the par ghost never leaned on it anyway, its build being the canonical array itself. THE REDUCED-MOTION LAW: a ghost is pure motion, so reduced motion defaults the toggle OFF (`ghostDefaultEnabled`) — persisted in `settings.ghosts.par` (`src/save`), the toggle stays available, the law binds the default not the choice. The bar itself (`#gw-ghost-bar`: `#gw-ghost-toggle` aria-pressed, the `#gw-ghost-link` field, the honest `#gw-ghost-note`) is a PAGE-corner chip (bottom-left, the `#gw-save` idiom) — never inside `#gw-stage`, whose canvas screenshot is a committed baseline and must not wear a control (measured: a stage-pinned bar moved the shell idle capture by 1.25 %). Finish beat: `#gw-result-vspar`, the stars' OWN two numbers as deltas (`vsParLine`, finished runs only). THE DAILY RUNG (T3.4, same rails): `?seed=<n>` is the whole page feature and `?daily=1` is that page at `seed = hash(UTC date)` (`dailySeed`, FNV-1a over the ISO day) — the seed rides the build's existing field into the hash and nothing else (the sim never reads it; zero shipped hashes move — the hash at the day's seed is node-asserted); the finish chip `#gw-result-daily` records today's best FINISHED time + streak in `gravity-works.daily` (localStorage, deliberately outside the save envelope like the premiere flag), and its line carries the SINGLE-MACHINE clause inside the sentence — "your own runs on this device only" — because there is no server and the claim must not imply one. Debug surface: `__gwGhostState()` (mode/enabled/ready/racing/time/steps/pos/at/finished). Proofs: `tests/unit/ghost.test.ts` (trace equals the `replayRun({record})` list exactly, permutation invariance, the translucent-rig law, the daily arithmetic on a memory store) and `tests/e2e/ghosts.spec.ts` (par ghost finishes inside `[parTime − 0.05, parTime]` of the shipped line — the gen-pars ceil IS the tolerance; hash-identity with the ghost on; reduced-motion default-off and toggle-on; a crafted link mounts as track + car; garbage links speak; the daily chip records with today's key and the seed-equal hash).
 
+## The farewell page — the crane pass and its three doors (program T3.3, 2026-10-09)
+
+THE FAREWELL (`src/pages/farewell.ts`, the fourth page beside `share`/`select`/`intro`) is the answer to
+the player evaluation's truth #7 — the campaign used to END on a two-star bar with Retry and Share, "no
+farewell, no summary of the thirty rungs, no view of the whole house". `src/boot.ts` decides at ONE
+place: the terminal edge of a FINISHED run on `PORCH05_ID` that is not a dev preview (a preview mints
+no star, so it mints no ending — `gateNext`'s own law) and that `farewellWanted` allows, in which case
+`resultPanel.show(model)` is SKIPPED and `startFarewell` owns the screen — everything else at that edge
+(`recordStars`, `sound.finishRun`, the hash note, the daily chip) runs exactly as it would behind a
+panel. THE ONCE-PER-SAVE LAW is the premise beat's, key for key: `FAREWELL_KEY`
+(`gravity-works.farewell.seen`) is a localStorage UI fact deliberately OUTSIDE the save schema (it
+never rides export/import and never touches a hash) and it is written at the FIRE, not at the doors —
+one clear, one farewell, and a crane skipped half-way is still an honest seen because the summary and
+the doors land whole the moment it is skipped (capture + swallow, the `.gw-premiere` chrome-hiding class
+shared with the beat). `farewellWanted` is the URL-affordance family again: `?farewell=off` wins
+outright (and `tests/e2e/goto.ts` now appends it beside `post`/`intro` — see `Modules/src` — so no
+ladder-walking spec is ever ambushed by an eleven-second film), `?farewell=1` forces past the flag for
+the farewell's own spec, and a page whose storage refuses to record says NO rather than nagging every
+later clear. THE CRANE IS BUILT FROM SHIPPED PARTS, zero new physics: `farewellPlan` turns the
+`CAMPAIGN` room list into a pure timed event list (a `reveal` as the eye arrives at each room, the
+`doors` at the pull-back's end — no clock, save or set consulted, so two calls are byte-identical and
+`cranePose(t)` is a pure sweep: DWELL drift at table height, a lifting MOVE between rooms, a PULL onto
+the wide house), the six rooms are the registry's own `SETS[*].build` mounts laid along x at
+`CRANE_STEP` (visuals only — no `World`, no bodies, no `hashedBodies`, `replay:all` untouched because
+this is post-run cinema, not sim), and the per-room tallies are `farewellTally` folding the save's
+`progress.stars` through `CAMPAIGN` — the one source of room membership, so an off-ladder star scores
+nowhere. THE THREE DOORS are three shipped surfaces, one click each, every one a navigation rather
+than a state swap: the room's sandbox (`?level=porch-sandbox`), today's daily run (`dailyUrl`, the
+current page with `launch`/`build`/`farewell` stripped and `daily=1` set — the Next-button one-use-rig-
+param rule), and the film of the run that just ended (the share button's own `encodeShareUrl` payload
+from the same frozen edge, which is a fragment so the static host reloads into the replay page). The
+surface is honest DOM over the canvas — `#gw-farewell` over `#gw-stage` at one layer under the hiccup
+overlay (`ui/shell.css`), the reveal line `#gw-farewell-line`, the six-row `#gw-farewell-rooms` table,
+`#gw-farewell-total`, and `#gw-farewell-doors` (`#gw-farewell-sandbox`, `#gw-farewell-daily`,
+`#gw-farewell-share` with its own `#gw-farewell-share-note`, which says "developing…" and then what
+went wrong). THE REDUCED-MOTION LAW: the crane is pure motion, so `reducedMotion` opens the STATIC
+SUMMARY PAGE (`phase: 'static'`) — the same tally and the same doors at a standstill, the set row never
+even built, which is this page's own honesty: nothing animates behind a still. While the page is up the
+shell's frame loop parks on `farewellHolds` (the `contextLost` idiom — no stepping, no rendering, no
+launch) and every door is a navigation, so there is no resumption path to get wrong. Debug surface:
+`__gwFarewellState()` (phase / plan `t` / `revealed` / `duration`). Proofs: `tests/unit/farewell.test.ts`
+(the param family, the tally fold, plan determinism and the camera sweep landing on each room then
+wide at the centre) and `tests/e2e/farewell.spec.ts` (the bar REPLACED not stacked, reveals in campaign
+order Kitchen-first Porch-last, each of the three doors landing, a key skipping to the whole truth with
+the next clear back at the ordinary bar, and the reduced-motion static page).
+
 ## Depends on / used by
 
 `src/track` only (snap/pieces/socket) — never `src/physics`; `src/ui/levelselect.ts` additionally reads `src/world/campaign` + `src/world/stars` + `src/save` (data and progress only, no `World`). Used by `src/boot.ts`.

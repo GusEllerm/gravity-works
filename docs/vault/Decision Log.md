@@ -6,6 +6,33 @@ livedocs: snapshot
 
 Dated entries tagged `[agent decision]`. Newest first.
 
+## 2026-10-09 — The FAREWELL law: porch05's first clear replaces the result bar with one crane pass and three doors `[agent decision]` `[level designer]`
+
+The player evaluation's truth #7 — "the campaign's final state is a two-star bar with Retry and Share —
+no farewell, no summary of the thirty rungs, no view of the whole house" — was the shapeless end of a
+shaped game. The law now shipped (program T3.3, PAIRED with the doors): clearing `porch05` for the
+FIRST time (a FINISHED run, not a dev preview — a preview mints no star, so it mints no ending) skips
+`resultPanel.show` and opens `src/pages/farewell.ts` instead: ONE crane pass over all six sets mounted
+side by side at their canonical origins (the registry's own visual-only builders — replay rigs, zero
+new physics, zero hash movement; `replay:all` untouched because this is post-run cinema, not sim), the
+eye DWELLING on each room in campaign order, lifting between rooms, settling on the wide house — and
+carrying the player's OWN star tally per room, folded through `CAMPAIGN` (the one source of room
+membership). The page is EVENT-DRIVEN like the replay (`farewellPlan`: constants in, timed reveals
+out, deterministic machine to machine). Then THREE DOORS, one click each, all three shipped surfaces:
+the room's sandbox (`?level=porch-sandbox`), today's daily run (`?daily=1`), and the SHARE film of the
+porch05 run that just ended (`#s=`, the payload frozen at the same edge the share button would have
+used). ONCE PER SAVE rides the premiere's idiom: `gravity-works.farewell.seen` in localStorage,
+deliberately OUTSIDE the save schema (a UI fact, no v3 bump), set at the FIRE not the finish — a crane
+skipped half-way was still stood in, and skipping shows the whole truth (summary + doors) at once.
+`?farewell=1` forces it for the farewell's own spec, `?farewell=off` is the URL-affordance family's
+opt-out and `tests/e2e/goto.ts` appends it so no ladder-walking spec is ever ambushed (the `?intro=`
+law again). THE REDUCED-MOTION LAW: the crane is pure motion, so reduced motion gets the STATIC
+SUMMARY PAGE — the same tally, the same doors, no camera, the set row never even built. Everything
+else at the terminal edge (stars, sound, hash note, daily chip) runs exactly as behind a panel; ONLY
+the bar is replaced. Proofs: `tests/e2e/farewell.spec.ts` (bar replaced, reveals in campaign order,
+each door lands, second clear = the ordinary bar, reduced-motion = static) and
+`tests/unit/farewell.test.ts` (param family, tally fold, the plan's determinism and sweep).
+
 ## 2026-10-09 — The campaign ladder is re-WOVEN flat: grammar rungs ≥3 apart, arcs and hashes frozen `[agent decision]` `[level designer]`
 
 The player evaluation's structural verdict — "a player at rung 8 (bedroom01)

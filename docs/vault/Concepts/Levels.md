@@ -1358,6 +1358,25 @@ lands near-but-not-exactly on its zone footprint at these mounts (the
 callout row and the film anchor are ask #8a/#8b). See
 [[Reference/Level Ladder]].
 
+## The ladder's last word — what clearing `porch05` means
+
+`PORCH05_ID` is the campaign's thirtieth rung and the only level whose completion does something the
+other twenty-nine do not: it ends the game. On the FIRST finished run of the rung (minted honestly, not
+a dev preview — the same `levelUnlock` gate that withholds the mint withholds the farewell) the shell
+swaps the result bar for `src/pages/farewell.ts`: one crane tour of the six rooms in campaign order
+carrying the player's OWN per-room star tally, then three doors. THE TALLY IS THE SAVE, NOT A LEDGER:
+`farewellTally` folds `progress.stars` through `CAMPAIGN`, so the summary is the same thirty rung-ids
+the ladder walks (30 rungs × 3 stars = 90 the maximum) and an off-ladder star — a sandbox, the feel rig
+— scores nowhere, because a sandbox was never a rung. THE DOORS are progression's honest afterlife: the
+room's sandbox (`PORCH_SANDBOX_ID`, the same registry-addressed page the sandbox census specs boot),
+today's daily rung (`?daily=1`, `src/save/daily.ts`), and the film of the run that just ended (a share
+payload frozen at the same terminal edge the Share button would have used, `src/share/share.ts`) — the
+three things the campaign has to offer once it is finished, and nothing else. THE ONCE-PER-SAVE FLAG is
+UI state, not level state (`gravity-works.farewell.seen`, outside the save schema), so no level data
+moved, no shipped hash moved, and `replay:all` stays 30/30 — the farewell is post-run cinema, never
+sim. A second clear of porch05 is an ordinary run behind an ordinary bar. Law, pages and proofs:
+[[ui]], [[camera]], `tests/e2e/farewell.spec.ts`, Decision Log 2026-10-09 ("the FAREWELL law").
+
 ## Guarded by
 
 `tests/unit/kitchen-levels.test.ts` — every kitchen parBuild finishes

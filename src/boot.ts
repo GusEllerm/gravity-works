@@ -52,7 +52,7 @@ import { PORCH01 } from './world/levels/porch01.level.ts';
 import { PORCH02 } from './world/levels/porch02.level.ts';
 import { PORCH03 } from './world/levels/porch03.level.ts';
 import { PORCH04 } from './world/levels/porch04.level.ts';
-import { PORCH05, PORCH_SANDBOX } from './world/levels/porch05.level.ts';
+import { PORCH05, PORCH_SANDBOX, PORCH05_ID, PORCH_SANDBOX_ID } from './world/levels/porch05.level.ts';
 import { World, type RunStatus } from './world/world.ts';
 import { fixtureQuota, serialize, type Build } from './track/build.ts';
 export { fixtureQuota };
@@ -65,6 +65,7 @@ import { encodeShareUrl, parseShareUrl, type SharePayload } from './share/share.
 import { bootSharedRun } from './pages/share.ts';
 import { bootLevelSelect } from './pages/select.ts';
 import { premiereWanted, startPremiereBeat, type PremiereBeat } from './pages/intro.ts';
+import { farewellWanted, startFarewell } from './pages/farewell.ts';
 import { buildGameSet, levelSet, setCameraSolids, setPlacementGuard } from './pages/mount.ts';
 import { paragraph } from './ui/dom.ts';
 import {
@@ -484,6 +485,11 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // three re-uploads its resources on restore; the next live frame paints
   // the full world again.
   let contextLost = false;
+  // THE FAREWELL HOLDS THE LOOP (program T3.3): the crane page owns the
+  // screen and renders on its own rAF; the game loop parks cleanly beside
+  // it (the `contextLost` idiom — no stepping, no rendering, no launch)
+  // until a door navigates the page away.
+  let farewellHolds = false;
   const hiccup = document.createElement('div');
   hiccup.id = 'gw-hiccup';
   hiccup.hidden = true;
@@ -1173,6 +1179,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   );
 
   function startRun(): void {
+    if (farewellHolds) return; // the farewell owns the screen (T3.3)
     acc = 0;
     hazardsTouched = 0;
     endHold = null; // a fresh release owns the framing again
@@ -1375,6 +1382,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     // world waits exactly where it was until the context returns (see the
     // `gw-hiccup` overlay above).
     if (contextLost) return;
+    // PAUSED FOR THE FAREWELL (T3.3): the crane page owns the screen;
+    // the world waits behind the overlay, and every door is a navigation.
+    if (farewellHolds) return;
     // THE AIM NEVER GOES STALE UNDER A STILL CURSOR (playtests V+W round5:
     // the ghost sat at a constant offset because layout above the canvas
     // moved the canvas rect between pointer events). One rect comparison;
@@ -1515,7 +1525,21 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         // see it).
         moveHintFor(level, currentBuild, tray),
       );
-      resultPanel.show(model);
+      // THE FAREWELL (program T3.3): the FIRST time the house's last word
+      // is cleared, the result bar is REPLACED by one crane pass over the
+      // whole house and three doors (`src/pages/farewell.ts`). The gate is
+      // the mint's own: a finished run on porch05, not a dev preview (a
+      // preview mints no star, so it mints no ending either — the badge's
+      // law), and the URL-affordance family's `farewellWanted` decides
+      // against the once-per-save flag. Everything else at this edge —
+      // the stars, the sound, the hash note, the daily chip — runs
+      // exactly as it does behind a panel; ONLY the panel is replaced.
+      const farewellRun =
+        result.status === 'finished' &&
+        level.id === PORCH05_ID &&
+        !devPreview &&
+        farewellWanted(params);
+      if (!farewellRun) resultPanel.show(model);
       // the run's OUTCOME is an audio event exactly once per run: the
       // engine hears the same fields the panel prints (status, stars,
       // new-best, hazard tally) and nothing else
@@ -1564,6 +1588,29 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
             : 'race today — not yet today · your own runs on this device only';
         }
         resultPanel.daily.hidden = false;
+      }
+      if (farewellRun) {
+        // the crane opens AFTER `recordStars` above, so the tally it
+        // carries includes this run's own mint; the film door encodes the
+        // run the edge just froze (build, seed, hash — the same bytes the
+        // share button would have made from this panel).
+        farewellHolds = true;
+        const fparams = new URLSearchParams(window.location.search);
+        fparams.delete('launch'); // one-use rig params, the Next rule
+        fparams.delete('build');
+        fparams.delete('farewell');
+        fparams.set('daily', '1');
+        const farewellPage = startFarewell(root, stage, {
+          reducedMotion: reduceMotion,
+          stars: loadSave().progress.stars,
+          sandboxUrl: `?level=${PORCH_SANDBOX_ID}`,
+          dailyUrl: `?${fparams.toString()}`,
+          run: { levelId: level.id, seed: currentBuild.seed, hash: h, build: currentBuild },
+        });
+        // the e2e seam for the farewell law (debug surface, not UI): the
+        // live phase / plan clock / reveal count of the crane page
+        (window as unknown as Record<string, unknown>).__gwFarewellState = () =>
+          farewellPage.state();
       }
     }
     lastStatus = w.status;
