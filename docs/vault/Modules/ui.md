@@ -129,7 +129,14 @@ panel. THE ONCE-PER-SAVE LAW is the premise beat's, key for key: `FAREWELL_KEY`
 never rides export/import and never touches a hash) and it is written at the FIRE, not at the doors —
 one clear, one farewell, and a crane skipped half-way is still an honest seen because the summary and
 the doors land whole the moment it is skipped (capture + swallow, the `.gw-premiere` chrome-hiding class
-shared with the beat). `farewellWanted` is the URL-affordance family again: `?farewell=off` wins
+shared with the beat). THE CHIP SWEEP (player final 2026-10-10 §7, program P4): the class alone never
+hid the PAGE-CORNER chips — `#gw-sound`, `#gw-save` and `#gw-ghost-bar` carry their layout INLINE (the
+zero-layout-flow law for the committed canvas baseline), and a normal rule loses to a normal inline
+style in the cascade, so chips LEAKED through the farewell. The mechanism for chips is now the `hidden`
+attribute: `startFarewell` sweeps every chip in the root once on show, the
+`#gw-...[hidden] { display: none !important }` rule in `ui/shell.css` wins the cascade over the inline
+display, and the farewell spec asserts the sound chip, the save row and the ghost strip are all `hidden`
+and unpainted at the crane. `farewellWanted` is the URL-affordance family again: `?farewell=off` wins
 outright (and `tests/e2e/goto.ts` now appends it beside `post`/`intro` — see `Modules/src` — so no
 ladder-walking spec is ever ambushed by an eleven-second film), `?farewell=1` forces past the flag for
 the farewell's own spec, and a page whose storage refuses to record says NO rather than nagging every
@@ -159,7 +166,9 @@ launch) and every door is a navigation, so there is no resumption path to get wr
 (the param family, the tally fold, plan determinism and the camera sweep landing on each room then
 wide at the centre) and `tests/e2e/farewell.spec.ts` (the bar REPLACED not stacked, reveals in campaign
 order Kitchen-first Porch-last, each of the three doors landing, a key skipping to the whole truth with
-the next clear back at the ordinary bar, and the reduced-motion static page).
+the next clear back at the ordinary bar, the reduced-motion static page, and — since program P4 — the
+cured chip leak: the sound chip, the save row and the ghost strip all wear the `hidden` attribute and
+render nothing at the crane).
 
 ## Depends on / used by
 

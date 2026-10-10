@@ -63,6 +63,15 @@ test('the first porch05 clear replaces the result bar with the crane pass', asyn
   await expect(page.locator('#gw-farewell')).toBeVisible({ timeout: 60_000 })
   await expect(page.locator('#gw-result')).toBeHidden()
   await expect(page.locator('#gw-builder-host')).toBeHidden()
+  // THE FAREWELL LEAK, CURED (player final 2026-10-10 §7, program P4):
+  // every page-corner chip — the sound chip, the save row, the ghost
+  // strip — wears the one honest `hidden` sweep (`src/pages/farewell.ts`
+  // + the chip `[hidden]` rule in `shell.css`); nothing chrome-like may
+  // render through the ending any more.
+  for (const id of ['gw-sound', 'gw-save', 'gw-ghost-bar']) {
+    await expect(page.locator(`#${id}`)).toHaveJSProperty('hidden', true)
+    await expect(page.locator(`#${id}`)).toBeHidden()
+  }
   // the pass is event-driven: the rooms are revealed IN CAMPAIGN ORDER,
   // Kitchen first and Porch last, as the eye arrives at each
   await expect(page.locator('#gw-farewell-line')).toContainText('Kitchen', { timeout: 30_000 })

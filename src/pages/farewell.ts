@@ -254,6 +254,21 @@ export function startFarewell(
   // `.gw-premiere` rule hides the builder, the status lines and the sound
   // corner; the farewell owns the screen (shell.css).
   root.classList.add('gw-premiere');
+  // THE CHIP SWEEP (player final 2026-10-10 §7, program P4): `.gw-premiere`
+  // hides the layout-flow chrome, but the page-corner chips (`#gw-sound`,
+  // `#gw-save`, `#gw-ghost-bar`, `#gw-dev-preview`) are absolute with
+  // INLINE layout styles, and a plain class rule loses to a (normal)
+  // inline `display:flex` in the cascade — that is why chips leaked
+  // through the farewell. One honest sweep: every chip in the root gets
+  // `hidden` when the farewell shows; the chip `[hidden]` rule in
+  // `src/ui/shell.css` wins the cascade, and
+  // `tests/e2e/farewell.spec.ts` asserts nothing chip-like survives the
+  // ending. The farewell owns the screen until a door navigates, so
+  // nothing un-hides them.
+  for (const id of ['gw-sound', 'gw-save', 'gw-ghost-bar', 'gw-dev-preview']) {
+    const chip = root.querySelector(`#${id}`);
+    if (chip instanceof HTMLElement) chip.hidden = true;
+  }
 
   const overlay = document.createElement('div');
   overlay.id = 'gw-farewell';

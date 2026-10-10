@@ -14,8 +14,12 @@
  *    window shows an empty ground frame", "if the cuts actually ENDED on
  *    the cup-dunk I'd forward it"): the last second of a real kitchen01
  *    replay is censused every 100 ms — every frame must carry car pixels
- *    (the red band: an empty-ground frame measured 0.00 %, honest frames
- *    ≥ 0.7 %), and the cup must be projected in-frame at the terminal
+ *    (since program P4 mounts `createCarRig` on the film path the census
+ *    is the RIG's body-blue band inside a 65 px box centred on the
+ *    projected car NDC: measured 3.9–51 % on every honest kitchen01
+ *    frame, ≈ 0 % on empty ground — the retired proxy-red census said
+ *    the same thing while the film still starred the box), and the cup
+ *    must be projected in-frame at the terminal
  *    beats. The cuts carry the subject through their blends and the
  *    finish shot owns the last 0.4 s before capture (REPLAY_FINISH_LEAD).
  * 3. AIM HAS A SNAP RANGE (BB bug 4, the round-3 recurrence: "click at
@@ -94,14 +98,37 @@ async function seek(page: Page, t: number): Promise<void> {
   }, t)
 }
 
-function redShare(png: PNG): number {
-  let red = 0
-  for (let i = 0; i < png.width * png.height; i++) {
-    const p = i * 4
-    const r = png.data[p]!
-    if (r > 90 && r - png.data[p + 1]! > 60 && r - png.data[p + 2]! > 50) red++
+/** THE CAR CENSUS (program P4 re-baseline): the ratified sedan's body
+ *  blue (B clear of R by 60, B above 90 under the world lights and the
+ *  post chain) inside a 65 px box centred on the projected car NDC —
+ *  `__gwReplayCarNdc`, the very pose the rig rides. A frame with the car
+ *  in it measures 3.9–51 % here (kitchen01 par, every honest framing
+ *  from the wide opening to the finish hold); a box on empty ground reads
+ *  ≈ 0 %, because nothing else in the kitchen set sits in this band. The
+ *  box census replaces the retired full-frame proxy-red census (the film
+ *  now stars the sedan — the proxy's colour survives only in track
+ *  orange); a frame whose car projects off-frame counts 0. The floor
+ *  (0.015) is the wide-opening measurement, 3.9 %, over ≈ 2.5. */
+const CAR_BOX_HALF = 32
+function carShare(png: PNG, carNdc: number[] | null): number {
+  if (!carNdc || Math.abs(carNdc[0]!) > 1.4 || Math.abs(carNdc[1]!) > 1.4) return 0
+  const cx = Math.round(((carNdc[0]! + 1) / 2) * png.width)
+  const cy = Math.round(((1 - carNdc[1]!) / 2) * png.height)
+  let car = 0
+  let n = 0
+  for (let y = cy - CAR_BOX_HALF; y <= cy + CAR_BOX_HALF; y++) {
+    if (y < 0 || y >= png.height) continue
+    for (let x = cx - CAR_BOX_HALF; x <= cx + CAR_BOX_HALF; x++) {
+      if (x < 0 || x >= png.width) continue
+      const p = (y * png.width + x) * 4
+      const r = png.data[p]!
+      const g = png.data[p + 1]!
+      const b = png.data[p + 2]!
+      if (b > 90 && b - r > 60 && b - g > 20) car++
+      n++
+    }
   }
-  return red / (png.width * png.height)
+  return n ? car / n : 0
 }
 
 test.describe('stage 5 playtest-BB feel fixes', () => {
@@ -153,9 +180,8 @@ test.describe('stage 5 playtest-BB feel fixes', () => {
         cup: (window as never as { __gwReplayGoalNdc: () => number[] | null }).__gwReplayGoalNdc(),
       }))
       const png = PNG.sync.read(Buffer.from(await page.locator('#gw-canvas').screenshot()))
-      const share = redShare(png)
-      expect(share, `empty-stage frame (no car in frame) at t=${t.toFixed(2)}`).toBeGreaterThanOrEqual(0.003)
-      void ndc
+      const share = carShare(png, ndc.car)
+      expect(share, `empty-stage frame (no car in frame) at t=${t.toFixed(2)} — car-band ${(share * 100).toFixed(3)}%`).toBeGreaterThanOrEqual(0.015)
     }
     // the cup on screen at the terminal beat and at the end of the tail
     for (const t of [tr.time, tr.duration]) {
