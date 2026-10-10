@@ -128,7 +128,7 @@ sig = "ec632ace702f8f1d"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "tests/e2e/farewell.spec.ts"
-sig = "5df6459d5d035f49"
+sig = "daf7aea7b2891c4f"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -1493,7 +1493,7 @@ sig = "ddbe32d0124dd69d"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/farewell.spec.ts"
-sig = "5df6459d5d035f49"
+sig = "daf7aea7b2891c4f"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"

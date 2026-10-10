@@ -38,6 +38,34 @@ function seedStars(stars: Record<string, number>): string {
 const unlockPorch05 = (page: import('@playwright/test').Page) =>
   page.addInitScript(seedStars({ porch04: 3 }))
 
+/** LINE LATCH (the CI-red fix, program P4 filmcar): a crane reveal line
+ *  lives ~0.6 s of PLAN time, and a starved CI can land the whole crane
+ *  between two DOM polls — so the reveal-order law cannot be read off a
+ *  textContent snapshot. This init script latches EVERY mutation of
+ *  `#gw-farewell-line` into `__gwFarewellLineLog`; the spec asserts on
+ *  that ledger, which cannot miss a frame the page really showed. */
+const latchFarewellLine = (page: import('@playwright/test').Page) =>
+  page.addInitScript(() => {
+    const w = window as unknown as { __gwFarewellLineLog?: string[] }
+    w.__gwFarewellLineLog = []
+    const log = (el: Element) => w.__gwFarewellLineLog!.push(el.textContent ?? '')
+    let target: Element | null = null
+    const observer = new MutationObserver(() => {
+      if (target) log(target)
+    })
+    const timer = window.setInterval(() => {
+      const el = document.querySelector('#gw-farewell-line')
+      if (!el) return
+      clearInterval(timer)
+      target = el
+      observer.observe(el, { childList: true, characterData: true, subtree: true })
+      log(el)
+    }, 25)
+  })
+
+const lineLog = (page: import('@playwright/test').Page) =>
+  page.evaluate(() => (window as unknown as { __gwFarewellLineLog?: string[] }).__gwFarewellLineLog ?? [])
+
 /** Clear porch05 on its par line with the farewell FORCED (the cinematic
  *  family's own-spec door) and wait until the page owns the stage. */
 const clearPorch05 = async (page: import('@playwright/test').Page): Promise<void> => {
@@ -57,6 +85,7 @@ const toDoors = async (page: import('@playwright/test').Page): Promise<void> => 
 test('the first porch05 clear replaces the result bar with the crane pass', async ({ page }) => {
   test.setTimeout(180_000)
   await unlockPorch05(page)
+  await latchFarewellLine(page)
   await goto(page, '/?level=porch05&build=par&launch=1&farewell=1')
   // the page owns the stage INSTEAD of the bar: the result panel never
   // renders at this edge, and the builder chrome is hidden with it
@@ -73,11 +102,21 @@ test('the first porch05 clear replaces the result bar with the crane pass', asyn
     await expect(page.locator(`#${id}`)).toBeHidden()
   }
   // the pass is event-driven: the rooms are revealed IN CAMPAIGN ORDER,
-  // Kitchen first and Porch last, as the eye arrives at each
-  await expect(page.locator('#gw-farewell-line')).toContainText('Kitchen', { timeout: 30_000 })
-  await expect(page.locator('#gw-farewell-line')).toContainText('Porch', { timeout: 30_000 })
-  const line = await page.locator('#gw-farewell-line').textContent()
-  expect(line).toMatch(/Porch — \d+ \/ 15 stars/)
+  // Kitchen first and Porch last, as the eye arrives at each — read from
+  // the mutation latch, not a live snapshot (a reveal line is ~0.6 s of
+  // plan time and a starved CI can end the crane between two polls; the
+  // ledger cannot miss a line the page actually showed)
+  await expect
+    .poll(
+      async () => {
+        const ls = await lineLog(page)
+        const k = ls.findIndex((l) => /^Kitchen — \d+ \/ 15 stars$/.test(l))
+        const p = ls.findIndex((l) => /^Porch — \d+ \/ 15 stars$/.test(l))
+        return k >= 0 && p >= 0 && k < p
+      },
+      { timeout: 30_000, message: 'the reveal ledger never showed Kitchen before Porch' },
+    )
+    .toBe(true)
   // the whole-house tally lands with the pull-back, and the doors open
   await expect(page.locator('#gw-farewell-doors')).toBeVisible({ timeout: 30_000 })
   await expect(page.locator('#gw-farewell-summary')).toBeVisible()

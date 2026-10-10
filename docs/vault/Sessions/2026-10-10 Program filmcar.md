@@ -37,6 +37,11 @@ asserts all three always-mounted chips wear the attribute and paint nothing at t
 typecheck clean, 883 unit, full e2e 235 passed (3 parallel-load starve flakes on this box —
 two a11y timeouts and the pre-existing farewell reveal-vs-finish read — all green re-run in
 isolation; the filmstrip dense-window gap reproduces at HEAD on this machine too), the replay/share/
-farewell/ghost/determinism set green by name. Laws live where they bind: [[Modules/replay]]
+farewell/ghost/determinism set green by name. **CI taught one lesson honestly:** the first main run
+red at `farewell.spec.ts` on the crane's transient reveal line — `Porch — N / 15 stars` lives ~0.6 s
+of PLAN time and a starved runner can end the crane between two DOM polls (the race pre-dates this
+lane; my chip asserts merely moved the timing). The read is now a MUTATION LATCH (`latchFarewellLine`
+in the spec: every `#gw-farewell-line` change is ledgered in-page, Kitchen-before-Porch asserted from
+the ledger) — proven under `E2E_STARVE_RAF_MS=250`, no code law changed. Laws live where they bind: [[Modules/replay]]
 (the film's star, the census), [[Modules/ui]] (the chip sweep), [[Modules/render]] (who calls the
 factory).
