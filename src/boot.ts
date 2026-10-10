@@ -61,7 +61,7 @@ import { fitSocket } from './track/snap.ts';
 import { transformSocket } from './track/socket.ts';
 import type { Level } from './world/level.ts';
 import { createBuilder, type Builder } from './ui/builder.ts';
-import { encodeShareUrl, type SharePayload } from './share/share.ts';
+import { encodeShareUrl, parseShareUrl, type SharePayload } from './share/share.ts';
 import { bootSharedRun } from './pages/share.ts';
 import { bootLevelSelect } from './pages/select.ts';
 import { premiereWanted, startPremiereBeat, type PremiereBeat } from './pages/intro.ts';
@@ -73,7 +73,14 @@ import {
   installErrorBoundary,
   registerAutosaveFlush,
 } from './ui/errors.ts';
-import { createBuildAutosave, loadSave, rememberBuild, recordStars, savedBuild } from './save/save.ts';
+import { createBuildAutosave, loadSave, rememberBuild, recordStars, saveSave, savedBuild } from './save/save.ts';
+import { dailyChipLine, dailySeed, readDaily, recordDailyBest, utcDateKey } from './save/daily.ts';
+import {
+  createGhostBar,
+  deriveGhostTrace,
+  ghostDefaultEnabled,
+  GhostRace,
+} from './pages/ghost.ts';
 import { createSound, surfaceForContact, surfaceForSet, upAxisYOfQuat } from './sound/sound.ts';
 import { createCarRig, CAR_GROUND_LIFT, CAR_SPIN_DAMP } from './render/car-rig.ts';
 import { JuiceFeed } from './juice/juice.ts';
@@ -626,6 +633,105 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   let pendingPop = false;
   let contactEdge = false;
 
+  // ---- THE GHOST RAIL (program T3.2) ---------------------------------------
+  // A translucent second car beside yours, wound from the SAME deterministic
+  // machinery the share page already proves step-for-step: the par build's
+  // trace is derived HERE at level-load (`deriveGhostTrace` — a
+  // `TapeRecorder` on a `visuals: false` world, zero gameplay state), the
+  // friend build's trace comes from a decoded share payload whose BUILD
+  // mounts as the track through the shell's own `rebuild` line. VISUALS
+  // ONLY: the rig is the shell's (R7 law — lifted before every dispose),
+  // never a body, never in `hashedBodies`, and `replay:all` stays
+  // byte-identical with the ghost on (gated by `tests/e2e/ghosts.spec.ts`).
+  // The player's `ghost: par` toggle lives on the bar beside the world;
+  // reduced motion starts it OFF (the ghost is pure motion —
+  // `ghostDefaultEnabled`), persisted in `settings.ghosts.par`.
+  const ghost = new GhostRace(setReg?.tokens ?? SET_TOKENS.kitchen);
+  let ghostOn = loadSave().settings.ghosts?.par ?? ghostDefaultEnabled(reduceMotion);
+  const ghostBar = createGhostBar(root, {
+    onToggle: (on) => {
+      ghostOn = on;
+      const s = loadSave();
+      s.settings.ghosts = { ...s.settings.ghosts, par: on };
+      saveSave(s);
+      ghost.setEnabled(on);
+      if (on && ghost.ghostMode !== 'friend') attachParGhost();
+      else if (!on) ghost.setTrace('off', null);
+      ghostBar.clearNote();
+    },
+    onFriendLink: (url) => void raceFriendLink(url),
+  });
+  ghost.setEnabled(ghostOn);
+  ghostBar.toggle.setAttribute('aria-pressed', String(ghostOn));
+  /** Wind THIS rung's par line and mount it as the ghost (no-arg re-attach
+   *  after a friend ghost is lifted). A rung with no `parBuild` (a bespoke
+   *  rig) says so on the bar rather than silently showing nothing. */
+  function attachParGhost(): void {
+    if (!ghostOn) return;
+    const parBuild = (level as unknown as { parBuild?: () => Build }).parBuild;
+    if (!parBuild) {
+      ghostBar.setNote('this rig has no par line to race');
+      return;
+    }
+    void deriveGhostTrace(level, parBuild()).then(
+      (trace) => {
+        // a friend ghost that won the race to mount keeps the grid — the
+        // par wind must not silently evict the link the player asked for
+        if (ghost.ghostMode === 'friend') return;
+        ghost.setTrace('par', trace);
+        ghostBar.clearNote();
+        if (world) {
+          if (world.status !== 'idle') ghost.resumeRace(); // wound mid-run
+          ghost.sync(world.time);
+        }
+      },
+      () => ghostBar.setNote('the par line could not be wound on this machine'),
+    );
+  }
+  /** THE SHARE LINK IS A GHOST (G2): decode with the shipped parser, mount
+   *  their build as the track through the ordinary `rebuild` line, and wind
+   *  THEIR car from it. Every refusal lands a sentence on the bar, never a
+   *  silent no-op — a link that is not a run, and a build that will not
+   *  mount, say different true things. */
+  async function raceFriendLink(url: string): Promise<void> {
+    if (!url) {
+      ghostBar.setNote('paste a share link first');
+      return;
+    }
+    let payload: SharePayload;
+    try {
+      payload = await parseShareUrl(url);
+    } catch {
+      ghost.setTrace('off', null);
+      ghostBar.setNote('that link is not a run — nothing to race');
+      return;
+    }
+    ghostBar.setNote('mounting their track…');
+    try {
+      await rebuild(payload.build);
+    } catch {
+      ghost.setTrace('off', null);
+      ghostBar.setNote("their build refuses to mount on this rung — it stays their run, not your track");
+      return;
+    }
+    try {
+      const trace = await deriveGhostTrace(level, payload.build);
+      ghost.setTrace('friend', trace);
+      if (world && world.status !== 'idle') ghost.resumeRace();
+      ghostBar.setNote(
+        payload.levelId === level.id
+          ? 'their car is on the grid — launch to race it'
+          : `their link is from ${payload.levelId} — their car ghosts HERE`,
+      );
+    } catch {
+      ghost.setTrace('off', null);
+      ghostBar.setNote('their track mounted, but their car would not wind — launch it yourself');
+    }
+  }
+  // the e2e seam for the ghost law (debug surface, not UI): the live ghost
+  // state — mode, readiness, its clock, and where its car sits right now.
+  (window as unknown as Record<string, unknown>).__gwGhostState = () => ghost.state();
+
   // PROGRAM T1.2: the post stack is ON BY DEFAULT — the tilt-shift look the
   // art bible sells is what a first visitor must see (player evaluation
   // t+0: “the tilt-shift post is OFF by default, so the signature look … is
@@ -678,6 +784,22 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // M; the alt is ADDRESSED from the level module's existing export, never a
   // level-data edit).
   const playerBuild = startBuildFor(level, params, savedBuild(level.id));
+  // THE DAILY RUNG (program T3.4, riding the T3.2 rails): `?seed=<n>` is the
+  // one honest surface — `?daily=1` is the same page at `seed = hash(UTC
+  // date)` (`dailySeed`). The seed rides the build's OWN field, so it folds
+  // into the state hash exactly as every seed does and touches nothing else
+  // (the sim never reads it; zero shipped hashes move — the default page
+  // never passes either param). Single-machine honesty lives in the chip.
+  const seedParam = params.get('seed');
+  const dailySeedValue =
+    seedParam !== null && /^-?\d+$/.test(seedParam)
+      ? Number(seedParam)
+      : params.has('daily')
+        ? dailySeed()
+        : null;
+  if (dailySeedValue !== null && Number.isInteger(dailySeedValue)) {
+    playerBuild.seed = dailySeedValue;
+  }
   // The beat plays on the level's PAR reference line — the same build the
   // `?build=par` test rig mounts, so the premise film is the rung's own
   // authored line, not a bespoke animation. The builder is built with the
@@ -822,6 +944,15 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     onPlaceIntent: () => dismissOverlay(),
     onChange: (build) => {
       autosave.edit(build);
+      // AN EDIT LIFTS A FRIEND GHOST (T3.2): their track WAS the world; the
+      // edit replaced it, so racing their car would be a comparison against
+      // a track nobody is on — say so, and fall back to the rung's own par
+      // line (valid on any build).
+      if (ghost.ghostMode === 'friend') {
+        ghost.setTrace('off', null);
+        ghostBar.setNote('your edits replaced their track — their ghost lifted');
+        attachParGhost();
+      }
       // first-time callout (§9.3): the first piece of a kind ever PLACED
       if (build.pieces.length > placedCount) {
         sound.voice('snap'); // the socket click — an EDIT event, not a sim one
@@ -1002,6 +1133,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     runCamActive = false;
     endHold = null;
     buildView.reset();
+    ghost.park(); // the raced ghost returns to the unpainted grid with the car
     if (w.scene) frameCamera(camera, w.scene, framingFocus, null, buildView, framingSetCenter);
     resultPanel.hide();
   }
@@ -1057,6 +1189,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     }
     recorder.reset(w.state()); // witnesses start at the release pose
     juice.reset(); // squash/dust envelopes start clean too
+    // THE GHOST RACES FROM LAUNCH (T3.2): the shared clock restarts it at
+    // its start pose — `sync(world.time)` owns the rest of the race.
+    ghost.beginRace();
     resultPanel.hide();
   }
 
@@ -1075,6 +1210,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     // out before the dispose sweep, re-mount below (the leak gate counts
     // the proof: geometries/textures do NOT drift across rebuilds)
     carPoseGroup.removeFromParent();
+    // THE SAME LAW FOR THE GHOST (T3.2, R7's idiom): the translucent rig is
+    // the shell's, created once per boot — out before the sweep, back in
+    // below. Its TRACE survives untouched: it is data, not a body.
+    ghost.liftFromScene();
     juice.liftFromScene();
     juice.reset();
     world?.dispose();
@@ -1117,6 +1256,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // never sees the rig (replay:all stays byte-identical)
       if (next.carMesh) next.carMesh.visible = false;
       next.scene.add(carPoseGroup);
+      ghost.attachScene(next.scene);
       juice.attachScene(next.scene);
       // this world's feed: the level's hazard zones ride along for the
       // tell; events flow one way — out of the snapshots, into the layer
@@ -1186,6 +1326,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   let premiereOwned = premiere !== null;
 
   await rebuild(startBuild);
+  // THE PAR GHOST winds at level-load (T3.2): the deterministic derivation
+  // starts the moment the first world exists; when the tape is ready the
+  // car is already at the grid (`setTrace` places it at step 0).
+  attachParGhost();
 
   // STAR RULES BEFORE THE FIRST RUN (playtest N: "the star rules only
   // appear after a run — teaching precedes failure"): a quiet one-liner
@@ -1401,6 +1545,26 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // the SHARE payload's run (see the share wiring): the hash, time and
       // stars of the run the panel is about, frozen at its terminal edge
       lastOutcome = { hash: h, time: result.time, stars: model.stars };
+      // THE DAILY CHIP (T3.4): on a daily-seeded page the result screen
+      // carries today's line — a FINISHED run records into it, a failure
+      // just reads it. The single-machine clause rides INSIDE the sentence
+      // (`dailyChipLine`), never a footnote, and nothing here touches the
+      // save envelope or a shipped hash.
+      if (dailySeedValue !== null) {
+        const today = utcDateKey();
+        if (result.status === 'finished') {
+          const rec = recordDailyBest(result.time);
+          resultPanel.daily.textContent = rec
+            ? dailyChipLine(rec, today)
+            : 'race today — this browser refused to keep the record';
+        } else {
+          const prev = readDaily();
+          resultPanel.daily.textContent = prev
+            ? dailyChipLine(prev, today)
+            : 'race today — not yet today · your own runs on this device only';
+        }
+        resultPanel.daily.hidden = false;
+      }
     }
     lastStatus = w.status;
     const pose = w.carPose(w.status === 'running' ? acc / FIXED_DT : 0);
@@ -1445,6 +1609,13 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       });
     }
     statusLine.textContent = runStatusLine(w, builder.playerCount(), level.budget);
+    // THE GHOST RIDES THE SIM CLOCK (T3.2): visuals-only, per-step, clamped
+    // at its finish — one `sync` line is the entire coupling between the
+    // race and the physics, and the physics never feels it. It APPEARS WITH
+    // THE LAUNCH (hidden on the grid and the walked-home pose — see
+    // `GhostRace.sync`), and rides HIDDEN through the premise beat, where
+    // the film already IS the par line.
+    ghost.sync(w.status === 'idle' ? 0 : w.time, premiereOwned);
     // the juice envelopes advance on WALL time, outside the stepping block
     // (a squash is a render artifact; its clock must never be a sim step)
     juice.frame(dt * 1000);

@@ -72,6 +72,19 @@ export interface SaveSettings {
    * still take v3 without colliding with this key).
    */
   sound?: SoundSettings;
+  /**
+   * Ghost racing (program T3.2): the player's `ghost: par` toggle. Same
+   * optional-field technique as `sound` — absent means the DEFAULT, which
+   * the reduced-motion law decides (`ghostDefaultEnabled`), so no schema
+   * bump and no migration. `src/pages/ghost.ts` owns the read/write.
+   */
+  ghosts?: GhostSettings;
+}
+
+/** The `settings.ghosts` payload owned by `src/pages/ghost.ts`. */
+export interface GhostSettings {
+  /** Race the par line beside your car (undefined = reduced-motion law). */
+  par?: boolean;
 }
 
 /** The `settings.sound` payload owned by `src/sound/sound.ts`. */

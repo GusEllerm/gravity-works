@@ -71,11 +71,13 @@ wears a face.
   visuals-only, excluded from `hashedBodies`, reduced-motion = ghost off; a friend's build IS a ghost via the
   share payload (no server). Prerequisite check first: the canonical piece-ORDER question gets one measured
   probe (does `reify` order-sensitivity ever bite shipped builds?) before any cross-player equality claim.
+  *SHIPPED — the probe measured 148/148 order-insensitive; see `Sessions/2026-10-09 Program T3 ghosts`.*
 - **T3.3 The farewell (PAIRED with the doors):** porch05 cleared replaces the result bar with one crane pass
   over all six sets carrying the player's own star count, then three doors: sandbox, daily, share.
 - **T3.4 Daily challenge (only after T3.2 proves the ghost cheap):** `seed = hash(UTC date)`, one rung/day
   board from the shipped kit, localStorage best-time personal best, no server, honest about being
-  single-machine-comparable.
+  single-machine-comparable. *SHIPPED in the ghost lane at the smallest honest shape (the same level at
+  the day's seed + a result-screen chip) — `Sessions/2026-10-09 Program T3 ghosts`.*
 
 ## Ordering traps (why THIS order)
 
