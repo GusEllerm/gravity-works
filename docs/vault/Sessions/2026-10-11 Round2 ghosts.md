@@ -56,3 +56,9 @@ and 4790. Nothing on the default 4173.
   p4-chrome disjointness passed here because the word grows the bar rightward, away from `#gw-save`).
 - If a future rung ever ships finishable-but-0-star, `parGhostEarned` must gain that truth; today
   `starsFor` pays "finish at all" first, so stars ≥ 1 IS the first-finish record.
+
+## CI (branch proof)
+
+PR #9 (draft, `r2-ghosts` → main): run 38089651756 — check SUCCESS (typecheck, `replay:all`,
+`npm test`, full `playwright test`, `livedocs verify`), determinism-atlas ubuntu+macos success.
+`git ls-remote origin r2-ghosts` → `0e4a9fb` before the CI pass. main untouched.
