@@ -302,6 +302,16 @@ test.describe('stage 5 share link opens into the cinematic replay', () => {
     expect(tr.hash).toBe(node.hash)
     expect(tr.verified).toBe(true)
 
+    // THE FILM'S STAR (program P4, player final §8): the film stars the
+    // car the game drives — the ratified `createCarRig` sedan is mounted
+    // in the replay scene and the World's fallback proxy stays hidden
+    // (visuals-only: it is still there, still transformed, never shown).
+    const rig = await page.evaluate(() =>
+      (window as unknown as { __gwReplayCarRig: () => { mounted: boolean; boxVisible: boolean } }).__gwReplayCarRig(),
+    )
+    expect(rig.mounted, 'the replay scene must mount the ratified car rig').toBe(true)
+    expect(rig.boxVisible, 'the replay page must not show the fallback box').toBe(false)
+
     // shot-grammar artifacts for the session note: wide at the launch, the
     // tracked follow mid-run (paused, seeking is exact so these are honest)
     await page.locator('#gw-replay-timeline').focus()

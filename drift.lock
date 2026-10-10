@@ -18,7 +18,7 @@ sig = "0dfeaf8ad6e0eb41"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "src/pages/farewell.ts"
-sig = "13895d12d8fb8830"
+sig = "59b8cd4568121fa1"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -128,7 +128,7 @@ sig = "ec632ace702f8f1d"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "tests/e2e/farewell.spec.ts"
-sig = "0ab919cfb7fa8035"
+sig = "5df6459d5d035f49"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -313,7 +313,7 @@ sig = "23d6349a19a9619e"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/pages/farewell.ts"
-sig = "13895d12d8fb8830"
+sig = "59b8cd4568121fa1"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -373,7 +373,7 @@ sig = "d46c82ea92f7d9d6"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/share-replay.spec.ts"
-sig = "2cfac64c23934506"
+sig = "a77b5955bd72232c"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -592,6 +592,11 @@ sig = "0b8956e4fdc50db2"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
+target = "src/pages/share.ts"
+sig = "a7a31f4c0548b22f"
+
+[[bindings]]
+doc = "docs/vault/Modules/render.md"
 target = "src/render/car-rig.ts"
 sig = "10c2228c13c0edbb"
 
@@ -668,7 +673,7 @@ sig = "5ca3945d8f739e09"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "src/pages/share.ts"
-sig = "c0c40a2802de1777"
+sig = "a7a31f4c0548b22f"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -718,12 +723,12 @@ sig = "3d3537c9c8b3f35a"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "tests/e2e/share-replay.spec.ts"
-sig = "2cfac64c23934506"
+sig = "a77b5955bd72232c"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "tests/e2e/stage5-bb-feel.spec.ts"
-sig = "544766549764a6c1"
+sig = "a9aff0cd8b8519be"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -1108,7 +1113,7 @@ sig = "a38e01706f33daf6"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/pages/farewell.ts"
-sig = "13895d12d8fb8830"
+sig = "59b8cd4568121fa1"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -1128,7 +1133,7 @@ sig = "86ad7571be6c9101"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/pages/share.ts"
-sig = "c0c40a2802de1777"
+sig = "a7a31f4c0548b22f"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -1183,7 +1188,7 @@ sig = "4b5962fbc2cfe15b"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "src/ui/shell.css"
-sig = "ae8fa4d71696b96f"
+sig = "4f2674f697dfc47d"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -1363,7 +1368,7 @@ sig = "a38e01706f33daf6"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/pages/farewell.ts"
-sig = "13895d12d8fb8830"
+sig = "59b8cd4568121fa1"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1438,7 +1443,7 @@ sig = "f83db9ef6b318b3f"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/shell.css"
-sig = "ae8fa4d71696b96f"
+sig = "4f2674f697dfc47d"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1488,7 +1493,7 @@ sig = "ddbe32d0124dd69d"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/farewell.spec.ts"
-sig = "0ab919cfb7fa8035"
+sig = "5df6459d5d035f49"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1663,7 +1668,7 @@ sig = "60f975ea6fcc355d"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "docs/vault/Modules/replay.md"
-sig = "1d82e331bb0341a9"
+sig = "c09512ed878f2ba4"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1808,7 +1813,7 @@ sig = "009b4f3c329370de"
 [[bindings]]
 doc = "docs/vault/Reference/Action Plan 2026-10-09.md"
 target = "src/pages/farewell.ts"
-sig = "13895d12d8fb8830"
+sig = "59b8cd4568121fa1"
 
 [[bindings]]
 doc = "docs/vault/Reference/Action Plan 2026-10-09.md"
@@ -1818,7 +1823,7 @@ sig = "86ad7571be6c9101"
 [[bindings]]
 doc = "docs/vault/Reference/Action Plan 2026-10-09.md"
 target = "src/pages/share.ts"
-sig = "c0c40a2802de1777"
+sig = "a7a31f4c0548b22f"
 
 [[bindings]]
 doc = "docs/vault/Reference/Action Plan 2026-10-09.md"

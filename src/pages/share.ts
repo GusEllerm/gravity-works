@@ -30,6 +30,7 @@ import { replayRun } from '../replay/replay.ts';
 import { TapeRecorder, ReplayDirector, cupView, REPLAY_FOV } from '../replay/cinematic.ts';
 import { loadSave } from '../save/save.ts';
 import { SET_TOKENS } from '../render/tokens.ts';
+import { createCarRig, CAR_GROUND_LIFT, CAR_SPIN_DAMP } from '../render/car-rig.ts';
 import { parFor, starsFor, type RunOutcome, type RunResult } from '../world/stars.ts';
 import { downloadBlob, generateShareCard } from '../share/card.ts';
 import { SETS } from '../sets/index.ts';
@@ -336,6 +337,36 @@ async function startReplayPlayer(
   wind.marks.mount = Math.round(performance.now() - wind.t0);
   const scene = world.scene;
   if (!scene) throw new Error('replay player: world has no scene');
+  // THE FILM'S STAR (program P4, player final §8): the ratified car-a rig
+  // mounts on the film path exactly where the game shell mounts it
+  // (`src/boot.ts` T1.1) — the friend's film shows the car the game
+  // drives, not the World's `#d7263d` fallback proxy. RENDER-SIDE LAW,
+  // unchanged: the rig hangs off the RECORDED pose, `world.carMesh` stays
+  // mounted (hidden) with its transforms still written, `hashedBodies`
+  // never sees a rig mesh, and the chunked wind hashed no visuals —
+  // `replay:all` stays byte-identical. Wheel spin is the same render-side
+  // omega the shell integrates, but read off the TAPE (arc length over
+  // `radius × CAR_SPIN_DAMP`), so it is a pure function of playhead step
+  // — seek- and rate-proof, and every capture frame reproducible.
+  // SQUASH stays out: it is the driver's contact voice on wall time;
+  // these are cinema frames, and a wall-clock squash would make the
+  // capture PNGs frame-order-dependent (the juice layer stays
+  // game-shell-only by decision — see the P4 filmcar session note).
+  const carRig = createCarRig(setReg?.tokens ?? SET_TOKENS.kitchen);
+  carRig.setKeyLight('#ffffff', 1.1);
+  const carPoseGroup = new THREE.Group();
+  carPoseGroup.name = 'car-pose';
+  carPoseGroup.add(carRig.group);
+  carRig.group.position.y = -CAR_GROUND_LIFT;
+  scene.add(carPoseGroup);
+  if (world.carMesh) world.carMesh.visible = false;
+  {
+    // the rig stands on the grid for the pre-wind preview frame, exactly
+    // where the recorded tape will start it
+    const s0 = world.state().car;
+    carPoseGroup.position.set(s0.pos.x, s0.pos.y, s0.pos.z);
+    carPoseGroup.quaternion.set(s0.quat.x, s0.quat.y, s0.quat.z, s0.quat.w);
+  }
   if (setInstance && setReg) {
     scene.add(setInstance.group);
     scene.background = new THREE.Color(setReg.tokens.background);
@@ -469,6 +500,22 @@ async function startReplayPlayer(
   const duration = Math.max(trace.duration, 0.1);
   const stepAt = (t: number): number =>
     Math.min(trace.steps - 1, Math.max(0, Math.floor(t / trace.dt + 1e-6)));
+  // THE WHEEL SPIN OF THE FILM: the shell's cosmetic omega integrated over
+  // the TAPE's own arc length instead of wall dt — the same render-side
+  // law (`speed / (radius × CAR_SPIN_DAMP)`, nothing physical), expressed
+  // as a pure function of step so a seek, a 4× pass and a capture frame
+  // all agree on where the wheels stand.
+  const wheelAngleAt = new Float64Array(trace.steps);
+  {
+    let cum = 0;
+    for (let k = 1; k < trace.steps; k++) {
+      const dx = trace.pos[k * 3]! - trace.pos[(k - 1) * 3]!;
+      const dy = trace.pos[k * 3 + 1]! - trace.pos[(k - 1) * 3 + 1]!;
+      const dz = trace.pos[k * 3 + 2]! - trace.pos[(k - 1) * 3 + 2]!;
+      cum += Math.sqrt(dx * dx + dy * dy + dz * dz);
+      wheelAngleAt[k] = cum / (carRig.wheelRadius * CAR_SPIN_DAMP);
+    }
+  }
   let time = 0;
   // A click made while the tape was winding is HONOURED here, not lost: the
   // queued click wins over the reduced-motion pause default, and the
@@ -509,6 +556,16 @@ async function startReplayPlayer(
         trace.quat[k * 4 + 3]!,
       );
     }
+    // the rig rides the SAME recorded pose the hidden proxy got — the
+    // film's star is the sedan, and nothing below this line is physics
+    carPoseGroup.position.set(px, py, pz);
+    carPoseGroup.quaternion.set(
+      trace.quat[k * 4]!,
+      trace.quat[k * 4 + 1]!,
+      trace.quat[k * 4 + 2]!,
+      trace.quat[k * 4 + 3]!,
+    );
+    for (const wheel of carRig.wheels) wheel.rotation.z = wheelAngleAt[k]!;
     director.poseAt(t);
     camera.position.copy(director.position);
     camera.quaternion.copy(director.quaternion);
@@ -671,6 +728,13 @@ async function startReplayPlayer(
       trace.quat[i * 4 + 2]!,
       trace.quat[i * 4 + 3]!,
     ]),
+  });
+  // the film-star seam (debug surface, not UI): the rig is mounted, the
+  // fallback proxy is hidden — the two facts the P4 player-final claim
+  // (`the film stars the car the game drives`) is asserted from
+  w.__gwReplayCarRig = (): { mounted: boolean; boxVisible: boolean } => ({
+    mounted: scene.getObjectByName('car-pose') === carPoseGroup,
+    boxVisible: world.carMesh ? world.carMesh.visible : false,
   });
   w.__gwReplayState = () => {
     const k = stepAt(time);

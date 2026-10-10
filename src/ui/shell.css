@@ -54,6 +54,19 @@ h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
   display: none;
 }
 .gw-premiere h1 { letter-spacing: 0.3em; }
+/* THE CHIP LAW (player final 2026-10-10 §7, program P4): the page-corner
+ * chips (#gw-sound, #gw-save, #gw-ghost-bar, #gw-dev-preview) carry their
+ * layout INLINE (the zero-layout-flow law for the committed canvas
+ * baseline), and a normal rule — class or id — loses to a normal inline
+ * style in the cascade. That is why the `.gw-premiere` list above never
+ * actually hid the sound chip and never listed the others: the farewell
+ * leaked chips. The hiding mechanism for chips is the `hidden` attribute
+ * (swept once on farewell show, `src/pages/farewell.ts`); this rule makes
+ * the attribute WIN the cascade over the inline display, and nothing
+ * else. Never add inline display back to a chip and forget this line. */
+#gw-sound[hidden], #gw-save[hidden], #gw-ghost-bar[hidden], #gw-dev-preview[hidden] {
+  display: none !important;
+}
 #gw-stage { background: #efe0c8; border-radius: 6px; overflow: hidden; }
 #gw-stage canvas { display: block; width: 100%; height: auto; max-height: 540px; max-width: 960px; margin-inline: auto; background: #efe0c8; }
 #gw-status, #gw-callout { font-family: var(--gw-display); font-size: 15px; margin: 8px 0; }
