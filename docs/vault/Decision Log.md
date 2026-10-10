@@ -6,6 +6,22 @@ livedocs: snapshot
 
 Dated entries tagged `[agent decision]`. Newest first.
 
+## 2026-10-11 — Rules of the house, round two (wrong-branch drift, stamp paths, evaluator isolation) `[agent decision]`
+
+- **Wrong-branch drift is repaired with `git merge --ff-only <stray>`, never cherry-picks** — an evaluator
+  that ran `git checkout` inside the main checkout (instead of its worktree) left round-two merges
+  committed on `eval-eng-r2` while `main` sat still; the commits were real and linear, one FF moved them
+  home. Verify `git branch --show-current` BEFORE trusting merge/push output on a shared checkout — a
+  `-q` push happily reports success for pushing the wrong ref's nothing.
+- **`livedocs stamp` takes vault-relative paths** (`"Reference/Level Ladder.md"`); a `docs/vault/...`
+  argument doubles the path and dies mid-loop with a FileNotFoundError traceback.
+- **Agents' worktrees live OUTSIDE the repo root**; if `git worktree add` fails, report — never fall back
+  to branch work in the main checkout; never `git add -A` beside a stray nested clone (the gitlink
+  incident: two evaluator worktrees staged as embedded repos).
+- **Merge-conflict order that survived**: `drift.lock` + capture PNGs `--theirs` (intentional
+  re-baselines), `Decision Log` by hand keeping BOTH blocks, complete the merge commit, THEN the stamp
+  loop until `livedocs affected` is clean, THEN push. Tests run over an unresolved merge mean nothing.
+
 ## 2026-10-09 — The FAREWELL law: porch05's first clear replaces the result bar with one crane pass and three doors `[agent decision]` `[level designer]`
 
 The player evaluation's truth #7 — "the campaign's final state is a two-star bar with Retry and Share —
