@@ -45,7 +45,12 @@ import type { SetTokens } from '../render/tokens.ts';
 
 /** Steps wound per pump slice — the share page's idiom (`Modules/replay`):
  *  the wind rides message tasks (never rAF, never a clampable timer), so a
- *  backgrounded tab still finishes the tape. */
+ *  backgrounded tab still finishes the tape. THE WIND IS LAZY ON FIRST SHOW
+ *  (P3 CI honesty): a slice yields to a message task, but on a saturated
+ *  CI box the back-to-back slices still starve input/actionability — so the
+ *  shell arms the wind at level-load and only WINDS when the car is first
+ *  about to be SEEN (the first launch with the rail on, an explicit toggle,
+ *  the film beat's edge). Pages that never launch never pay for the tape. */
 const WIND_SLICE_STEPS = 32;
 
 /** One message-task yield between wind slices (`MessageChannel` first,
@@ -123,6 +128,8 @@ export interface GhostState {
   mode: GhostMode;
   enabled: boolean;
   ready: boolean;
+  /** A tape is turning RIGHT NOW (the honest bar state while winding). */
+  winding: boolean;
   racing: boolean;
   /** The ghost's recorded finish time (0 before a trace). */
   time: number;
@@ -148,6 +155,7 @@ export class GhostRace {
   private mode: GhostMode = 'off';
   private enabled = true;
   private racing = false;
+  private winding = false;
   private mounted: THREE.Scene | null = null;
   private readonly scratchPos = new THREE.Vector3();
   private readonly scratchQuat = new THREE.Quaternion();
@@ -183,11 +191,18 @@ export class GhostRace {
     else if (this.trace) this.sync(this._at);
   }
 
+  /** The shell marks a wind in flight (the seam carries the truth; the bar
+   *  carries the WORD) — visuals never change on a winding edge. */
+  setWinding(on: boolean): void {
+    this.winding = on;
+  }
+
   /** Mount (or clear, with `null`) the trace the ghost races. */
   setTrace(mode: GhostMode, trace: GhostTrace | null): void {
     this.mode = trace ? mode : 'off';
     this.trace = trace;
     this.racing = false;
+    this.winding = false;
     this._at = 0;
     if (!trace) this.group.visible = false;
     else this.sync(0);
@@ -282,6 +297,7 @@ export class GhostRace {
       mode: this.mode,
       enabled: this.enabled,
       ready: this.trace !== null,
+      winding: this.winding,
       racing: this.racing,
       time: this.trace?.time ?? 0,
       steps: this.trace?.steps ?? 0,

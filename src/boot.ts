@@ -661,37 +661,68 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       s.settings.ghosts = { ...s.settings.ghosts, par: on };
       saveSave(s);
       ghost.setEnabled(on);
-      if (on && ghost.ghostMode !== 'friend') attachParGhost();
-      else if (!on) ghost.setTrace('off', null);
-      ghostBar.clearNote();
+      if (on && ghost.ghostMode !== 'friend') ensureParGhost();
+      else if (!on) {
+        ghost.setTrace('off', null);
+        ghostBar.clearNote();
+      }
     },
     onFriendLink: (url) => void raceFriendLink(url),
   });
   ghost.setEnabled(ghostOn);
   ghostBar.toggle.setAttribute('aria-pressed', String(ghostOn));
-  /** Wind THIS rung's par line and mount it as the ghost (no-arg re-attach
-   *  after a friend ghost is lifted). A rung with no `parBuild` (a bespoke
-   *  rig) says so on the bar rather than silently showing nothing. */
-  function attachParGhost(): void {
+  // THE WIND IS LAZY ON FIRST SHOW (P3 CI honesty, the a11y/cross-tab
+  // starve): the par trace is NOT derived per page-boot anymore — a boot's
+  // headless tape storm rides message tasks and, on CI's saturated CPU,
+  // starves the very actionability waits the specs that never even LOOK at
+  // the ghost are built on. Level-load ARMS the wind; it runs when the car
+  // is first about to be seen: the first launch with the rail on, an
+  // explicit toggle flip, the film beat's terminal edge. While a tape is
+  // turning the bar says so (an honest winding word, never a silent
+  // maybe), and the finish lands a `gw-ghost-ready` event for anything
+  // that would rather wait on a fact than a timeout.
+  let parArmed = false;
+  let parWinding = false;
+  /** The rung's par trace is WANTED (armed at level-load and when a friend
+   *  ghost is lifted) — nothing winds while nobody could see the car. */
+  function armParGhost(): void {
     if (!ghostOn) return;
+    parArmed = true;
+  }
+  /** Wind the par line NOW (the ghost is about to show). A rung with no
+   *  `parBuild` (a bespoke rig) says so on the bar rather than silently
+   *  showing nothing. */
+  function ensureParGhost(): void {
+    if (!ghostOn || parWinding || ghost.ghostMode === 'friend') return;
+    parArmed = false;
     const parBuild = (level as unknown as { parBuild?: () => Build }).parBuild;
     if (!parBuild) {
       ghostBar.setNote('this rig has no par line to race');
       return;
     }
+    parWinding = true;
+    ghost.setWinding(true);
+    ghostBar.setNote('winding the par line…');
     void deriveGhostTrace(level, parBuild()).then(
       (trace) => {
+        parWinding = false;
+        ghost.setWinding(false);
         // a friend ghost that won the race to mount keeps the grid — the
         // par wind must not silently evict the link the player asked for
         if (ghost.ghostMode === 'friend') return;
         ghost.setTrace('par', trace);
         ghostBar.clearNote();
+        window.dispatchEvent(new CustomEvent('gw-ghost-ready', { detail: { mode: 'par' } }));
         if (world) {
           if (world.status !== 'idle') ghost.resumeRace(); // wound mid-run
           ghost.sync(world.time);
         }
       },
-      () => ghostBar.setNote('the par line could not be wound on this machine'),
+      () => {
+        parWinding = false;
+        ghost.setWinding(false);
+        ghostBar.setNote('the par line could not be wound on this machine');
+      },
     );
   }
   /** THE SHARE LINK IS A GHOST (G2): decode with the shipped parser, mount
@@ -957,7 +988,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       if (ghost.ghostMode === 'friend') {
         ghost.setTrace('off', null);
         ghostBar.setNote('your edits replaced their track — their ghost lifted');
-        attachParGhost();
+        armParGhost(); // the par line returns at the next launch (lazy wind)
       }
       // first-time callout (§9.3): the first piece of a kind ever PLACED
       if (build.pieces.length > placedCount) {
@@ -1197,8 +1228,12 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     recorder.reset(w.state()); // witnesses start at the release pose
     juice.reset(); // squash/dust envelopes start clean too
     // THE GHOST RACES FROM LAUNCH (T3.2): the shared clock restarts it at
-    // its start pose — `sync(world.time)` owns the rest of the race.
+    // its start pose — `sync(world.time)` owns the rest of the race. The
+    // launch is also where the LAZY par wind finally runs (P3): this is the
+    // first moment the ghost could be seen, and a mid-run wind lands on the
+    // live clock via `resumeRace` — the race never waits on the tape.
     ghost.beginRace();
+    if (parArmed && !premiereOwned) ensureParGhost();
     resultPanel.hide();
   }
 
@@ -1333,10 +1368,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   let premiereOwned = premiere !== null;
 
   await rebuild(startBuild);
-  // THE PAR GHOST winds at level-load (T3.2): the deterministic derivation
-  // starts the moment the first world exists; when the tape is ready the
-  // car is already at the grid (`setTrace` places it at step 0).
-  attachParGhost();
+  // THE PAR GHOST IS ARMED at level-load, not wound (P3 lazy wind): the
+  // tape turns at the first launch that could show it, never as a boot tax
+  // on pages that never race (CI's CPU is the budget this buys back).
+  armParGhost();
 
   // STAR RULES BEFORE THE FIRST RUN (playtest N: "the star rules only
   // appear after a run — teaching precedes failure"): a quiet one-liner
@@ -1448,6 +1483,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       premiere?.end();
       lastStatus = 'idle'; // the film's terminal edge is spent, not the run's
       premiereEnd?.();
+      // the film suppressed the ghost; the player's view of the game starts
+      // here, so the armed lazy wind finally runs.
+      if (parArmed) ensureParGhost();
       return;
     }
     if (w.status !== 'running' && w.status !== 'idle' && lastStatus === 'running') {

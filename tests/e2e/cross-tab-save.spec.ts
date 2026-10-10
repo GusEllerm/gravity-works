@@ -72,6 +72,24 @@ const place = async (page: import('@playwright/test').Page, kind: string) => {
 const rawSave = (page: import('@playwright/test').Page) =>
   page.evaluate(() => JSON.parse(localStorage.getItem('gravity-works.save') ?? 'null'))
 
+/** The save-write seam `saveSave` stamps at every install (see
+ *  `src/save/save.ts`): a per-document counter + last-write stamp, fed by
+ *  the `gw-save-written` event. The race spec waits on the FACT of a
+ *  settled writer — one write past `after` and then nothing for `quietMs`
+ *  (longer than the 350 ms autosave window) — never on a guessed timeout. */
+const settleSaves = async (page: import('@playwright/test').Page, after: number) => {
+  await page.waitForFunction(
+    (n) => {
+      const w = window as unknown as { __gwSaveWrites?: number; __gwSaveWriteAt?: number };
+      return (w.__gwSaveWrites ?? 0) > n && performance.now() - (w.__gwSaveWriteAt ?? 0) > 600;
+    },
+    after,
+    { timeout: 30_000 },
+  )
+}
+const saveWrites = (page: import('@playwright/test').Page) =>
+  page.evaluate(() => (window as unknown as { __gwSaveWrites?: number }).__gwSaveWrites ?? 0)
+
 test('R9 race: a tab writing from a stale view merges — it cannot clobber the other tab\'s record', async ({
   browser,
 }) => {
@@ -90,14 +108,27 @@ test('R9 race: a tab writing from a stale view merges — it cannot clobber the 
   const stale = await tabB.evaluate(() => (window as unknown as SaveWindow).__gwSave!.loadSave())
 
   // tab A's write: a REAL placement through the shell (the real code path)
+  const writesBeforeA = await saveWrites(tabA)
   await place(tabA, 'gapLip')
   await expect
     .poll(() => rawSave(tabA), { timeout: 10_000 })
     .toHaveProperty(['builds', 'kitchen01'])
   // let any trailing write of A's burst land FIRST (callout marks, the
   // last debounce window) — the STALE WRITE below must be the only writer
-  // in flight, or the spec races A's late MERGE instead of proving B's
-  await tabA.waitForTimeout(800)
+  // in flight, or the spec races A's late MERGE instead of proving B's.
+  // Event-driven: A's seam shows one+ writes past the placement and then
+  // true silence, which is the settled state the fixed 800 ms was guessing
+  // at (and under CI's CPU, undershooting — the wedge this spec reds into).
+  await settleSaves(tabA, writesBeforeA)
+  // …and tab B's OWN renderer must SEE A's record: the key is shared per
+  // context but localStorage's cross-process read-after-write is only
+  // eventually consistent (per-tab caches), and a merge whose DISK read is
+  // blind is a different experiment than one whose INCOMING DATA is stale
+  // (measured red ~1 run in 8 under contention without this wait). The
+  // premise stays exactly as honest: `stale` is still B's pre-A envelope.
+  await expect
+    .poll(() => rawSave(tabB), { timeout: 30_000 })
+    .toHaveProperty(['builds', 'kitchen01'])
 
   // tab B's DELAYED WRITE: the envelope from its stale read, plus its own
   // change — the save-side of a load-merge-write racing another tab

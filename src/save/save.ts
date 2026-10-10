@@ -497,6 +497,7 @@ export function saveSave(data: SaveData, store: StorageLike | null = defaultStor
       if (current === raw) {
         store.setItem(SAVE_KEY, envelope);
         rememberInstalled(envelope, store);
+        noteSaveWrite();
         return;
       }
       raw = current;
@@ -509,8 +510,28 @@ export function saveSave(data: SaveData, store: StorageLike | null = defaultStor
     const envelope = mergeEnvelope(raw, data, journal);
     store.setItem(SAVE_KEY, envelope);
     rememberInstalled(envelope, store);
+    noteSaveWrite();
   } catch {
     // quota or private mode: losing the save is survivable, crashing is not
+  }
+}
+
+/**
+ * The e2e/debug seam for "a merged write LANDED" — R9's race specs wait on
+ * this (event-driven) instead of guessing a debounce window: a per-document
+ * counter, a stamp, and a `gw-save-written` event, set at every install of
+ * `saveSave`. Debug surface, not UI (the `__gwSave` idiom); absent outside
+ * a browser, where the write itself is still the whole product.
+ */
+function noteSaveWrite(): void {
+  try {
+    if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return;
+    const w = window as unknown as Record<string, unknown>;
+    w.__gwSaveWrites = ((w.__gwSaveWrites as number | undefined) ?? 0) + 1;
+    w.__gwSaveWriteAt = typeof performance === 'undefined' ? Date.now() : performance.now();
+    window.dispatchEvent(new Event('gw-save-written'));
+  } catch {
+    // the seam is optional; the write already happened
   }
 }
 
