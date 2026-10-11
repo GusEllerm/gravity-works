@@ -175,7 +175,24 @@ async function ensurePaused(page: Page): Promise<void> {
     if ((await face()) !== 'playing') return
     await page.click('.gw-replay-speed[data-speed="1"]')
     await page.click('#gw-replay-play')
-    await page.waitForTimeout(30)
+    // WAIT the face, do not poll it blind (round 2, Lane C's CI red): the
+    // old 30 ms fixed poll burned all eight attempts while a contended
+    // compositor was still between frames and a click's phase flip had not
+    // even reached the DOM — the same lesson `waitToSettle` learned in
+    // ui/replay.ts, applied to its older sibling. A pause click is
+    // instant-by-construction (no rewind rule runs on it), so a settled
+    // face arrives on the next committed frame; the timeout only covers
+    // the film having ENDED in flight, and the reset keeps the runway
+    // argument exactly as the stage-6 autopsy wrote it.
+    await page
+      .waitForFunction(
+        () => (document.querySelector('#gw-replay-play') as HTMLButtonElement | null)?.dataset['phase'] !== 'playing',
+        undefined,
+        { timeout: 4_000 },
+      )
+      .catch(() => {
+        /* the film ended/ended-in-flight: the next iteration converges */
+      })
   }
   expect(await face(), 'Play never settled to a paused/ended face').not.toBe('playing')
 }

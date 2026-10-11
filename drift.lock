@@ -373,7 +373,7 @@ sig = "d46c82ea92f7d9d6"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/share-replay.spec.ts"
-sig = "a77b5955bd72232c"
+sig = "93ef9b1b637505d3"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
