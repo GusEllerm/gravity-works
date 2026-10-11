@@ -18,7 +18,7 @@ tags: [reference, evaluation, player]
 |---|---|---|---|
 | 1 | k02 pays the dump (orders 2/3) | **CLOSED** | headless 24-order table + 5 shipped-browser orders; no order seats 4, no ★3 without choosing |
 | 2 | Par ghost reads the answer aloud | **CLOSED** | locked on unearned rungs, unlocks at first minted finish, afterlife default ON |
-| 3 | 633px stage shrank to 574×323 | pending | |
+| 3 | 633px stage shrank to 574×323 | **CLOSED (one residue)** | canvas measured 613×345 at 1280×633, idle rects disjoint; fail band still crosses the chips |
 | 4 | Daily = date sticker on rung one | pending | |
 | 5 | Sandbox door hidden | pending | |
 | 6 | Encore rail one rung in four paints | pending | |
@@ -70,6 +70,21 @@ surface):
   tested where stars actually mint (rung 1) — done.
 - unlock is by minted STAR (≥ 1): my accidental k01 launch with 0 of 3 pieces seated scored ☆☆☆ (result
   strip showed a clock — 2.04 s vs par 2.25 — but paid no star) and the toggle stayed locked. CLOSED.
+
+## Item 3 — the 633 px window, measured
+
+`set viewport 1280 633`, `?level=kitchen01` idle state, rects via `getBoundingClientRect`:
+
+- canvas: **613×345 at (333,202)** — the ledger's number, back verbatim (`#gw-stage canvas` cap at
+  `100vh − 288px` after the "20 px back" in shell.css; history 380→288→304→310→288 in the CSS comment).
+- page height 633 = `100vh`, no scroll; status/callout/hash lines at y 548/564/580, chips at y 608
+  (`--gw-chip-bottom: 4px`): **every idle pair disjoint** (ghost×status, ghost×hash, save×status,
+  save×hash, ghost×save, chips×canvas all false).
+- RESIDUE (honest): a FAIL result still expands to a full-width band — measured x=12 w=1256 y=590 h=33 —
+  and it INTERSECTS the ghost bar and Save chip (band bottom 623 > chip top 608). The round-2 sentence
+  "the fail band overlays what it found" is still true at this tree; it is the failure-note row riding
+  the chip band, not the idle chrome. The world itself is no longer paying for the chrome. CLOSED with
+  that asterisk.
 
 ## Fresh verdict
 
