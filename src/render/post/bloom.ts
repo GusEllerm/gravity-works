@@ -3,11 +3,21 @@
 // convention: any requested strength above `BLOOM_SOFT_CEILING` is clamped,
 // and the clamp is unit-tested.
 //
+// Round-2 Lane D made the ban a SIZE gate too: a small bright prop (bowl
+// chip, mug rim, lamp-post flare, duck specular, goal pin, sprinkler dot —
+// the ≤5 mm class) could ignite a flare by CONCENTRATION alone, a few pixels
+// crossing threshold on their own centre. The bright pass therefore gates on
+// `min(centre, neighbourhood-mean)` over a plus of ±`BLOOM_SIZE_GATE_TAXELS`
+// quarter-res texels — an isolated spot cannot bloom on its centre alone;
+// only a bright AREA wider than the pin footprint passes. The gate is one
+// tunable; `sizeGateTexels: 0` collapses it to the round-1 threshold form.
+//
 // Deliberately not UnrealBloomPass: its mip pyramid is far more machine than
 // a set of soft highlights needs, and the frame budget says post before
 // pixels. This is the cheap honest version — a threshold downsample to a
 // quarter-res buffer, one separable blur pair at that tiny size, one
-// full-frame additive composite. Four draws, two of them at 1/16 the pixels.
+// full-frame additive composite. Four draws, two of them at 1/16 the pixels
+// (the bright pass spends four extra fetches in its own tiny buffer).
 
 import * as THREE from 'three'
 import { Pass, FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass.js'
@@ -15,12 +25,23 @@ import { Pass, FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass.js'
 /** The never-list ceiling: bloom stays soft. Enforced, not advised. */
 export const BLOOM_SOFT_CEILING = 0.22
 
+/**
+ * The SIZE half of the never-list, in QUARTER-RES texels (the §7 #2 law —
+ * bloom costs are stated in the buffer they run in, never in screen px): a
+ * bright pixel contributes only in proportion to how wide the brightness is
+ * around it, measured over a plus at ± this many texels (2 texels = 8 screen
+ * px — above the goal-pin/bowl-chip footprint, below the sunlit-deal class).
+ */
+export const BLOOM_SIZE_GATE_TAXELS = 2
+
 export interface SoftBloomOptions {
   /** Requested bloom strength — clamped to BLOOM_SOFT_CEILING. */
   strength?: number
   /** Linear-space luma where the glow starts. */
   threshold?: number
   knee?: number
+  /** Size-gate radius in quarter-res texels; 0 = threshold-only (round-1). */
+  sizeGateTexels?: number
 }
 
 const quadVertex = /* glsl */ `
@@ -35,13 +56,28 @@ const brightShader = /* glsl */ `
 uniform sampler2D tDiffuse;
 uniform float uThreshold;
 uniform float uKnee;
+uniform vec2 uGateTexel; // gate radius in QUARTER-RES texels (0 = off)
+uniform vec2 uTexel;    // one texel of the quarter-res buffer, in uv
 
 varying vec2 vUv;
 
+const vec3 LUMA = vec3( 0.2126, 0.7152, 0.0722 );
+
 void main() {
 	vec3 c = texture2D( tDiffuse, vUv ).rgb;
-	float l = dot( c, vec3( 0.2126, 0.7152, 0.0722 ) );
-	float w = smoothstep( uThreshold, uThreshold + uKnee, l );
+	float l = dot( c, LUMA );
+	// the SIZE gate: mean luma of a plus at ±uGateTexel texels (centre
+	// included). An isolated spot's neighbourhood sits near zero, so the
+	// gate value min(centre, neighbourhood) stays under threshold and NO
+	// flare is born; a wide bright area passes unchanged.
+	vec2 o = uGateTexel * uTexel;
+	float n = l;
+	n += dot( texture2D( tDiffuse, vUv + vec2( o.x, 0.0 ) ).rgb, LUMA );
+	n += dot( texture2D( tDiffuse, vUv - vec2( o.x, 0.0 ) ).rgb, LUMA );
+	n += dot( texture2D( tDiffuse, vUv + vec2( 0.0, o.y ) ).rgb, LUMA );
+	n += dot( texture2D( tDiffuse, vUv - vec2( 0.0, o.y ) ).rgb, LUMA );
+	float area = n * 0.2;
+	float w = smoothstep( uThreshold, uThreshold + uKnee, min( l, area ) );
 	gl_FragColor = vec4( c * w, 1.0 );
 }
 `
@@ -88,10 +124,13 @@ export class SoftBloomPass extends Pass {
   private readonly composite: THREE.ShaderMaterial
   private readonly quad: FullScreenQuad
   readonly strength: number
+  /** Gate radius in quarter-res texels (0 = threshold-only). */
+  readonly sizeGateTexels: number
 
   constructor(opts: SoftBloomOptions = {}) {
     super()
     this.strength = Math.min(opts.strength ?? 0.18, BLOOM_SOFT_CEILING)
+    this.sizeGateTexels = Math.max(0, opts.sizeGateTexels ?? BLOOM_SIZE_GATE_TAXELS)
     // plain byte internals: software rasterisers fetch/filter half-float
     // targets several times slower, and a soft glow has no dynamic-range
     // need — the highlights above 1.0 clip to white here, which is exactly
@@ -109,6 +148,8 @@ export class SoftBloomPass extends Pass {
         tDiffuse: { value: null },
         uThreshold: { value: opts.threshold ?? 0.72 },
         uKnee: { value: opts.knee ?? 0.25 },
+        uGateTexel: { value: new THREE.Vector2(this.sizeGateTexels, this.sizeGateTexels) },
+        uTexel: { value: new THREE.Vector2(1 / 400, 1 / 225) },
       },
       vertexShader: quadVertex,
       fragmentShader: brightShader,
@@ -152,6 +193,7 @@ export class SoftBloomPass extends Pass {
 
     this.quad.material = this.bright
     this.bright.uniforms.tDiffuse!.value = src
+    this.bright.uniforms.uTexel!.value.set(texelX, texelY)
     renderer.setRenderTarget(this.rtA)
     this.quad.render(renderer)
 

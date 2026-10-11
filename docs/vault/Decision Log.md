@@ -6,6 +6,22 @@ livedocs: snapshot
 
 Dated entries tagged `[agent decision]`. Newest first.
 
+## 2026-10-11 — Rules of the house, round two (wrong-branch drift, stamp paths, evaluator isolation) `[agent decision]`
+
+- **Wrong-branch drift is repaired with `git merge --ff-only <stray>`, never cherry-picks** — an evaluator
+  that ran `git checkout` inside the main checkout (instead of its worktree) left round-two merges
+  committed on `eval-eng-r2` while `main` sat still; the commits were real and linear, one FF moved them
+  home. Verify `git branch --show-current` BEFORE trusting merge/push output on a shared checkout — a
+  `-q` push happily reports success for pushing the wrong ref's nothing.
+- **`livedocs stamp` takes vault-relative paths** (`"Reference/Level Ladder.md"`); a `docs/vault/...`
+  argument doubles the path and dies mid-loop with a FileNotFoundError traceback.
+- **Agents' worktrees live OUTSIDE the repo root**; if `git worktree add` fails, report — never fall back
+  to branch work in the main checkout; never `git add -A` beside a stray nested clone (the gitlink
+  incident: two evaluator worktrees staged as embedded repos).
+- **Merge-conflict order that survived**: `drift.lock` + capture PNGs `--theirs` (intentional
+  re-baselines), `Decision Log` by hand keeping BOTH blocks, complete the merge commit, THEN the stamp
+  loop until `livedocs affected` is clean, THEN push. Tests run over an unresolved merge mean nothing.
+
 ## 2026-10-09 — The FAREWELL law: porch05's first clear replaces the result bar with one crane pass and three doors `[agent decision]` `[level designer]`
 
 The player evaluation's truth #7 — "the campaign's final state is a two-star bar with Retry and Share —
@@ -552,3 +568,31 @@ constant returns to 288 and the chip band rides the page's bottom slack — `--g
 [[ui]]), and the sandbox doors made visible (every room row's sub-entry link + the farewell's first door
 naming all six — [[Levels]], [[ui]]). See [[ui]], [[save]], [[Levels]],
 `Sessions/2026-10-11 Round2 doors.md`.
+
+## 2026-10-11 — round-2 Lane D: bloom size gate, the stills' car, and the sprinkler read
+
+**Bloom's never-list ban becomes a SIZE gate, not just a threshold.** A small bright prop (bowl chip, mug rim,
+lamp-post flare, duck specular, goal pin, sprinkler dot) could still ignite a flare at DEFAULT by concentrating
+threshold-crossing luma into a few pixels — the ban was enforced only on magnitude. `SoftBloomPass` now gates
+the bright pass on `min(center, neighbourhood-mean)` over a plus of ±2 quarter-res texels
+(`BLOOM_SIZE_GATE_TAXELS`): only a bright AREA wider than the pin footprint passes, an isolated spot cannot
+bloom on its centre alone. Rejected: raising `BLOOM_THRESHOLD` (dims the sunlit decks too — histogram mean
+must not move), per-prop emissive lists (bypassable, not a law). The ban stays empirically enforced mid-run by
+a synthetic probe (`flare-probe` scene, `bloom-flare` spec: small-disc spread 5.5 px → 0 px, halo 217 px →
+0 px, area control still glows). See [[render]], `Sessions/2026-10-11 Round2 bloom`.
+
+**The stills' car is the driven sedan everywhere, so the stills stop lying.** All six `*-set.ts` still scenes
+carried a generic `car()` stand-in while the game and the film mounted `createCarRig` — the hero stills
+quietly starred a different car (filmcar precedent: the rig replaces stand-ins, baselines re-take with
+before/after pairs). Rejected: leaving the stand-in in stills (evidence keeps lying), a separate hero car model
+(a third thing to keep in sync). Kitchen `establishing`/`hero`/`floor` + `tests/visual/darwin/*` re-took with
+evidence; the visual suite is green at 0.0000 %. See [[render]], [[dev]] .
+
+**Garden sprinkler — DECISION: readable ARCS in the exploration; production is already the "out" option.**
+Round-2 §2: the spray "reads as scattered candy dots rather than water." The five frozen droplet spheres in the
+stage-1 exploration `garden.ts` are now two continuous ballistic ARC ribbons (`sprinkler-spray-arc`, one
+parabola per side, liquid material). Rejected: keep the dots (the finding), and any PRODUCTION spray geometry —
+the shipped garden set already ships the sprinkler as a DATA grip-zone + a `prop:sprinkler` text callout, no
+spray mesh, so the scored garden frames never carried the dots (confirmed on the measured garden03 mid-run and
+the garden hero); "out" was the shipped answer, this pass only makes the exploration quote honest. Materials /
+geometry in one dev scene; nothing sim. See [[sets]], [[dev]], `Sessions/2026-10-11 Round2 bloom`.

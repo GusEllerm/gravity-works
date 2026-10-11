@@ -24,9 +24,10 @@
 // garden's `fillShadeDepth` precedent is what carries the floor camera.
 
 import * as THREE from 'three'
-import { dieCastPaint, fabric, trackPlastic } from '../../render/materials.ts'
-import { toyBlock, trackChannel } from '../../render/geometry.ts'
-import { GLOBAL_TOKENS, SET_TOKENS, clampLightness } from '../../render/tokens.ts'
+import { trackPlastic } from '../../render/materials.ts'
+import { trackChannel } from '../../render/geometry.ts'
+import { createCarRig } from '../../render/car-rig.ts'
+import { GLOBAL_TOKENS, SET_TOKENS } from '../../render/tokens.ts'
 import { applyKeyLight, createLightingRig } from '../../render/lighting.ts'
 import { registerScene, type SceneEntry, type SceneFactory } from '../registry.ts'
 import {
@@ -78,36 +79,11 @@ function props(mesh: THREE.Object3D, cast = true, receive = true): void {
   })
 }
 
-// Tyres ride the warm-brown lightness floor (stage-1 send-back).
-const TYRE_BROWN = clampLightness('#4A3527')
-
-/** The ratified variant-A cars (Okabe-Ito blue hero, green witness — the
- *  exploration's palette call, nothing in the orange family). */
-function car(hex: string): THREE.Group {
-  const g = new THREE.Group()
-  const body = new THREE.Mesh(toyBlock(0.075, 0.028, 0.034, 0.01, 0.004), dieCastPaint(tokens, hex, { ...fill, toy: 0.4 }))
-  props(body)
-  g.add(body)
-  const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.062, 0.004, 0.011), dieCastPaint(tokens, '#F6E9D2', fill))
-  stripe.position.y = 0.027
-  props(stripe)
-  g.add(stripe)
-  const wheelGeo = new THREE.CylinderGeometry(0.009, 0.009, 0.006, 18)
-  wheelGeo.rotateX(Math.PI / 2)
-  const wheelMat = fabric(tokens, TYRE_BROWN, { ...fill, rim: { strength: 0.25, size: 0.6 } })
-  for (const [x, z] of [
-    [0.024, 0.017],
-    [-0.024, 0.017],
-    [0.024, -0.017],
-    [-0.024, -0.017],
-  ] as const) {
-    const w = new THREE.Mesh(wheelGeo, wheelMat)
-    w.position.set(x, 0.009, z)
-    props(w, true, false)
-    g.add(w)
-  }
-  g.scale.setScalar(0.62)
-  return g
+/** ROUND-2 LANE D — the canonical `car-a` sedan rig in every porch still
+ *  (design round-2 §3.3): the bespoke 0.62-scale minis are out, the ratified
+ *  sedan through the ratified porch grade is in. */
+function car(): THREE.Group {
+  return createCarRig(tokens).group
 }
 
 /** The staging run as a vector pair (data is world-space, run 0). */
@@ -135,7 +111,7 @@ function porchSetScene(): SceneFactory {
     props(run)
     scene.add(run)
 
-    const hero = car('#0072BD')
+    const hero = car()
     const p = RUN_A.clone().lerp(RUN_B, STAGING.car.t)
     hero.position.copy(p)
     hero.lookAt(p.x + RUN_DIR.x, p.y + RUN_DIR.y, p.z + RUN_DIR.z)
@@ -143,7 +119,7 @@ function porchSetScene(): SceneFactory {
     scene.add(hero)
 
     // the witness, kicked off beside the mat (the other kid is late)
-    const witness = car('#009E73')
+    const witness = car()
     witness.position.set(...STAGING.witness.position)
     witness.rotation.y = STAGING.witness.yaw
     scene.add(witness)

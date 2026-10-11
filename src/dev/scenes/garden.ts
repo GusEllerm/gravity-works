@@ -668,8 +668,8 @@ function drainPipe(v: VariantSpec, fill: FillBag, len: number, at: [number, numb
   return g
 }
 
-/** Pop-up sprinkler with five droplets frozen across the deck — A's hazard,
- *  and the answer to "what does a track WANT outdoors". */
+/** Pop-up sprinkler with readable ballistic spray ARCS across the deck —
+ *  A's hazard (round-2: readable arcs, not candy dots). */
 function sprinkler(v: VariantSpec, fill: FillBag, yaw: number): THREE.Group {
   const t = v.tokens
   const g = new THREE.Group()
@@ -681,13 +681,28 @@ function sprinkler(v: VariantSpec, fill: FillBag, yaw: number): THREE.Group {
   cap.position.y = 0.034
   props(cap)
   g.add(cap)
-  for (let i = 0; i < 4; i++) {
-    const s = i / 3
-    const drop = new THREE.Mesh(new THREE.SphereGeometry(0.0022, 8, 7), liquid(t, mixHex(v.sky, '#FFFFFF', 0.7), { ...fill, opacity: 0.45, specular: { size: 0.16, strength: 0.7 } }))
-    drop.position.set(0.01 + s * 0.095, 0.038 + 0.046 * Math.sin(s * 2.2), 0)
-    drop.scale.set(1, 1.5, 1)
-    props(drop, false, false)
-    g.add(drop)
+  // ROUND-2 LANE D — the sprinkler READ: readable ARCS, not candy dots.
+  // The four scattered spheres read as white dots (and, pre size-gate, each
+  // bloomed) — the design round-2 §2 garden finding: "the sprinkler spray
+  // reads as scattered candy dots rather than water". One continuous
+  // ballistic ARC per side (a thin liquid ribbon on a parabola) is the
+  // water read. DECISION = "arcs" (kept, made readable), logged in
+  // `Sessions/2026-10-11 Round2 bloom.md`; PRODUCTION already ships the
+  // sprinkler as a data grip-zone + text callout (no spray geometry), so
+  // this pass is the exploration scene only — materials/geometry here,
+  // nothing sim.
+  const sprayMat = liquid(t, mixHex(v.sky, '#FFFFFF', 0.7), { ...fill, opacity: 0.4, specular: { size: 0.16, strength: 0.6 } })
+  for (const side of [-1, 1] as const) {
+    const pts: THREE.Vector3[] = []
+    for (let k = 0; k <= 14; k++) {
+      const u = k / 14 // 0..1 along the arc
+      pts.push(new THREE.Vector3(side * (0.012 + u * 0.085), 0.037 + 0.052 * u - 0.062 * u * u, 0))
+    }
+    const curve = new THREE.CatmullRomCurve3(pts)
+    const stream = new THREE.Mesh(new THREE.TubeGeometry(curve, 20, 0.0016, 6, false), sprayMat)
+    stream.name = 'sprinkler-spray-arc'
+    props(stream, false, false)
+    g.add(stream)
   }
   g.rotation.y = yaw
   return g

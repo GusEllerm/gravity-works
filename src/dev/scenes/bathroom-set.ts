@@ -15,8 +15,9 @@
 // shot's car (floor shot) or the tub waterline (the money affordance).
 
 import * as THREE from 'three'
-import { dieCastPaint, fabric, trackPlastic } from '../../render/materials.ts'
-import { toyBlock, trackChannel } from '../../render/geometry.ts'
+import { trackPlastic } from '../../render/materials.ts'
+import { trackChannel } from '../../render/geometry.ts'
+import { createCarRig } from '../../render/car-rig.ts'
 import { GLOBAL_TOKENS } from '../../render/tokens.ts'
 import { applyKeyLight, createLightingRig } from '../../render/lighting.ts'
 import { buildBathroomSet, BATHROOM_TOKENS, CAMERAS, KEYLIGHT, STAGING, TUB } from '../../sets/bathroom/index.ts'
@@ -48,38 +49,10 @@ function props(mesh: THREE.Object3D, cast = true, receive = true): void {
   })
 }
 
-/** The variant-A car — the blue sedan the 14/15 cathedral tile carried. */
+/** ROUND-2 LANE D — the canonical `car-a` sedan rig (design round-2 §3.3:
+ *  the red block stand-in in the canonical stills was the evidence lying). */
 function car(): THREE.Group {
-  const g = new THREE.Group()
-  const fill = {
-    fillHigh: rig.fillHigh,
-    fillLow: rig.fillLow,
-    shadowTint: rig.shadowTint,
-    fillStrength: rig.fillStrength,
-    fillShadeDepth: rig.fillShadeDepth,
-  }
-  const body = new THREE.Mesh(toyBlock(0.075, 0.028, 0.034, 0.01, 0.004), dieCastPaint(tokens, '#0072BD', { ...fill, toy: 0.4 }))
-  props(body)
-  g.add(body)
-  const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.062, 0.004, 0.011), dieCastPaint(tokens, '#F6E9D2', fill))
-  stripe.position.y = 0.027
-  props(stripe)
-  g.add(stripe)
-  const wheelGeo = new THREE.CylinderGeometry(0.009, 0.009, 0.006, 18)
-  wheelGeo.rotateX(Math.PI / 2)
-  const wheelMat = fabric(tokens, '#4A3527', { ...fill, rim: { strength: 0.25, size: 0.6 } })
-  for (const [x, z] of [
-    [0.024, 0.017],
-    [-0.024, 0.017],
-    [0.024, -0.017],
-    [-0.024, -0.017],
-  ] as const) {
-    const w = new THREE.Mesh(wheelGeo, wheelMat)
-    w.position.set(x, 0.009, z)
-    props(w, true, false)
-    g.add(w)
-  }
-  return g
+  return createCarRig(tokens).group
 }
 
 function bathroomSetScene(): SceneFactory {

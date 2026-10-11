@@ -73,7 +73,15 @@ export function insideFloor(x: number, z: number, margin = 0): boolean {
  *  against these). */
 export const SURFACES = {
   tile: '#DCEAE6',
-  grout: '#9DBDBA',
+  /** ROUND-2 LANE D — the grout reads as PORCELAIN, not graph paper. The old
+   *  '#9DBDBA' at diffuse 0.5 was a cool grey-cyan line at a hard contrast
+   *  step against the tile — crisp thin grid rules, the design round-2's
+   *  "graph paper" read (worst at run-camera distance where the aliasing
+   *  turned the lines into the whole floor). Warmed toward the porcelain
+   *  base and softened one step of contrast (line-vs-tile luma gap
+   *  halved); the drain keeps the room's earned darks (fix 2 unchanged).
+   *  Materials only — no geometry, no sockets, no sim. */
+  grout: '#B6C2B6',
   wall: '#C8DBD8',
   porcelain: '#E3E8DF',
   /** The checker accent: a NEAR-TILE tint (fix 3 — the saturated cyan
@@ -82,8 +90,10 @@ export const SURFACES = {
   /** Sunlit window pane: the brightest region, not blown (fix 1). */
   pane: '#D8EAF4',
   paneDiffuse: 1.15,
-  /** Grout carries its own diffuse (fix 2: earn darks in the tile lines). */
-  groutDiffuse: 0.5,
+  /** Grout carries its own diffuse (fix 2: earn darks in the tile lines —
+   *  round-2 softened the lift: 0.5 → 0.62, the lines shade, they do not
+   *  ink). */
+  groutDiffuse: 0.62,
   /** The drain shaft/depth: tinted darks, never warm near-black (fix 2). */
   drainShaft: '#1F3E44',
   drainDepth: '#16303A',
@@ -245,3 +255,14 @@ export const CAMERAS = {
   hero: { position: [0.28, 0.18, 0.34], target: [-0.03, 0.05, -0.08], fov: 35, near: 0.01, far: 12 },
   floor: { position: [0.05, 0.038, 0.2], target: [0.01, 0.028, -0.08], fov: 35, near: 0.005, far: 12 },
 } as const
+
+/** ROUND-2 LANE D — the PLAY-camera framing row (the camera law: the
+ *  cathedral in every camera, not just the stills — the design round-2's
+ *  §2 bathroom finding was "mid-run is a mint void with a flat cyan tile
+ *  island; the room is two different games 60 frames apart"). The run
+ *  camera lifts its rail-plane eye by this constant so the tub base, the
+ *  duck's waterline and a DEEPER field of the porcelain tile grid hold in
+ *  the run frame; the §7.3 pitch still passes through the car (the toy
+ *  framing law). Measured against the design note's bathroom03 mid-run
+ *  frame (see the round-2 session); render-side only — never the sim. */
+export const RUN_FRAMING = { eyeUp: 0.028 } as const

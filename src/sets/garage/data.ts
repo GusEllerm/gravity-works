@@ -316,7 +316,17 @@ export const WHEEL = {
  *  Fresnel STREAK over the 240 bar — never the bathroom's white×2.2 pair,
  *  which the round-2 probe saw as pure-white puddle fill. */
 export const STAIN = {
-  filmTone: mixHex(SURFACES.concrete, '#2A2418', 0.28),
+  /** ROUND-2 LANE D: the film tone comes OFF the moss-green slab. The old
+   *  value was `mixHex(SURFACES.concrete, '#2A2418', 0.28)` = #5B5E36 — a
+   *  slab-green with 28 % brown in it, G≥R, which under the warm key read
+   *  as flat moss-green SLIME in every frame (design round-2 §2 garage).
+   *  A weathered oil film over concrete is graphite with a warm edge — a
+   *  neutral-to-warm #3E382C (R>G), the stain's own tone instead of the
+   *  slab's. MATERIALS ONLY: opacity, size, drips, sheen and the fill-lift
+   *  streak law (AD carry-forward 3 take two) are untouched, and the film
+   *  was never a solid — the sim and the guard are untouched by
+   *  construction. */
+  filmTone: '#3E382C',
   position: [-0.09, -0.14] as const,
   size: 0.062,
   opacity: 0.45,
@@ -376,3 +386,14 @@ export const STAGING = {
    *  corridor itself, not on the hero car). */
   focus: [0.02, 0.02, -0.3] as const,
 } as const
+
+/** ROUND-2 LANE D — the PLAY-camera framing row (the camera law: the set's
+ *  hero grammar in every camera, not just the stills). The run camera lifts
+ *  its rail-plane eye by this constant so the blade corridor + oil stain
+ *  (both floor features BEHIND the set-origin line) enter the lower third
+ *  of the run frame instead of sliding under it; the §7.3 pitch still passes
+ *  through the car, so the toy framing and the watchability law are
+ *  untouched. Measured against the design note's garage02-mid900 frame (the
+ *  run-camera blade/stain floor-coverage census in the round-2 session);
+ *  render-side only — never read by the sim. */
+export const RUN_FRAMING = { eyeUp: 0.028 } as const
