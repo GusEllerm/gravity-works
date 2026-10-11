@@ -23,7 +23,7 @@ tags: [reference, evaluation, player]
 | 5 | Sandbox door hidden | **CLOSED** | six named sandbox links on the board; cold save → kitchen-sandbox "ready" in 426 ms |
 | 6 | Encore rail one rung in four paints | **CLOSED (clocks)** | b05 dies 2.35 s vs bed05 2.63 s at the same ask; dumps finish 2.86/3.12 vs par 2.9/3.15 |
 | 7 | Bloom / post mid-run honesty | **CLOSED** | flare probe re-run on this tree: small-disc spread 0.0 px (pre-gate 5.5), area control still glows; mid-run shots read clean |
-| 8 | Garage/bathroom run-camera hero grammar | pending | |
+| 8 | Garage/bathroom run-camera hero grammar | **CLOSED** | `RUN_FRAMING.eyeUp: 0.028` rows shipped; mid-run shots frame deck grammar |
 
 ## Item 1 — kitchen02, all 24 orders (the round-2 flagship failure)
 
@@ -121,6 +121,19 @@ Lane D note: `npx playwright test bloom-flare.spec.ts` →
 as lit dots with tight halos, no lightbulb flares; the sun-disc class still glows where it should. (My
 first crude pixel probe tried to measure a guessed pin coordinate and lied — 59 px of "spread" that was
 really the sunlit lawn; I threw the number away and ran the real probe instead.) CLOSED.
+
+## Item 8 — garage and bathroom run cameras frame the hero grammar
+
+The law (round-2 Lane D): the set's HERO grammar must read from the PLAY cameras, not only stills — a
+per-set `eyeUp` row lifts the rail-plane eye while §7.3's pitch still passes through the car
+(`eyeUp` in `src/camera/run-camera.ts`; `RUN_FRAMING = { eyeUp: 0.028 }` shipped in BOTH
+`src/sets/garage/data.ts` and `src/sets/bathroom/data.ts`). Verified in mid-run frames at 1280×633
+(`garage02-midrun.png`, `bathroom02-midrun.png`): the garage run puts the blade corridor + mottled oil
+floor + shop props into the lower-left frame with the car centered; the bathroom run frames the tub base,
+the rubber duck and the tile GRID across the lower third, car hero-center on the rail. Neither frame
+reads as the round-2 complaint (flat deck void under a floating car). CLOSED — though the two shots also
+show the fail-band/dev-badge chrome unchanged, and the bathroom frame's white tub still holds its AREA
+glow honestly (it is a wide bright region; the size gate keeps it soft, not flared). CLOSED.
 
 ## Fresh verdict
 
