@@ -22,6 +22,23 @@
  * whole — 4 placed, faster than the ride, the pinned hidden line; spent
  * LAST it is decoration at the par's own clock. The card's sentence stays
  * the room's: the water is a tell, the tray is the test.
+ *
+ * THE DEATH-CLOCK STAGGER (round 2, P4 item 6): all four encores rode ONE
+ * rail, so the same failing build died at the SAME millisecond in sibling
+ * rooms (player round 2: "same tray, same death"). This room takes the
+ * SHELF-PAIR anchor slot of the stagger and moves its grade two ticks
+ * shallower, −12.4° at the same 0.26 m shelf (`BATH05_GRADE`, a stated
+ * rung-local deviation like `L04_GEOM` before it; `bedroom05` takes the
+ * pair's other slot at −11.35°). The canonical death — `drop → straight →
+ * landing`, sink two uncrossed — lands at 2.792 s here: 0.784 s clear of
+ * garage05's 2.008 s and 0.308 s short of bedroom05's 3.100 s, every pair
+ * of encore deaths ≥0.3 s apart (full table: session note 2026-10-11).
+ * Measured, every law's STATUS survives: the deck route still falls, the
+ * 11 omissions still fall, the hidden line and the gluttony build stay
+ * themselves; TWO clocks are re-stated in the porch-pair's established
+ * idiom — the mid two-plank bridge now FINISHES, 0.017 s late (its kill
+ * died with the crawl), and the run-out drag reads +0.26 s where the old
+ * rail gave +0.39. Par moves 3.017 → 2.858 s.
  */
 import type { Build } from '../../track/build.ts';
 import { PIECE_KINDS, type PieceKind } from '../../track/pieces.ts';
@@ -47,10 +64,16 @@ export const BATHROOM05_ID = 'bathroom05';
  *  ladder's step on the porch threshold's long lead, span 0.3566 m). */
 export const ENCORE_DIP = { height: 0.12, angle: 45, radius: 0.02, lead: 0.11 };
 
+/** THE STAGGER GRADE (round 2 P4 item 6): this room's own shelf pitch —
+ *  see the header. Two ticks shallower than the ladder's −12° convention
+ *  moves the whole death band ~0.12 s earlier without letting the deck
+ *  route or the hidden line change what they do. */
+const BATH05_GRADE = -12.4;
+
 function parBuild(): Build {
   return lay(
     [
-      { def: 'ramp', params: kitchenRamp(0.26) }, // the finale's shelf (fixture)
+      { def: 'ramp', params: kitchenRamp(0.26, BATH05_GRADE) }, // the finale's shelf at the stagger grade (fixture)
       { def: 'drop', params: ENCORE_DIP }, // tray: sink ONE — ridden
       { def: 'straight', params: { length: BATH_STRAIGHT } }, // tray: the tile between
       { def: 'drop', params: ENCORE_DIP }, // tray: sink TWO — ridden, the film lives in its mouth
@@ -70,7 +93,7 @@ function parBuild(): Build {
 export function bathroom05ProbeBuild(): Build {
   return lay(
     [
-      { def: 'ramp', params: kitchenRamp(0.26) },
+      { def: 'ramp', params: kitchenRamp(0.26, BATH05_GRADE) },
       { def: 'drop', params: ENCORE_DIP },
       { def: 'straight', params: { length: 0.3 } },
       { def: 'straight', params: { length: 0.3 } },
@@ -88,7 +111,7 @@ export function bathroom05ProbeBuild(): Build {
 export function bathroom05BoosterBuild(): Build {
   return lay(
     [
-      { def: 'ramp', params: kitchenRamp(0.26) },
+      { def: 'ramp', params: kitchenRamp(0.26, BATH05_GRADE) },
       { def: 'booster' },
       { def: 'drop', params: ENCORE_DIP },
       { def: 'straight', params: { length: BATH_STRAIGHT } },
@@ -126,7 +149,7 @@ export const BATHROOM05: BathroomLevel = registerBathroom(
     seed: 1,
     startSocket: startSocketFromBuild(parBuild(), BATH_GEOM.release * BATH_GEOM.rampBlend),
     // measured on the par build (regenerate via `npm run pars`)
-    par: { pieces: 4, time: 3.05 },
+    par: { pieces: 4, time: 2.9 },
     maxTime: 12,
     tray: { drop: 2, straight: 2, landing: 1, booster: 1 },
     trayParams: { booster: {} },

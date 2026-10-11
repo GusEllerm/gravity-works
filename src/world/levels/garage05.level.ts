@@ -42,6 +42,20 @@
  * bridge finishes slow, never fast. The promise law (every omission
  * falls), the decoy's tail law, the booster law and the flown film all
  * survive the trim untouched.
+ *
+ * THE DEATH-CLOCK STAGGER (round 2, P4 item 6): all four encores rode ONE
+ * chute, so garden05 and this rung died at the SAME millisecond (player
+ * round 2: "same tray, same death"). The room takes the PORCH-PAIR slot
+ * of the stagger: its own grade, −17° at the same 0.24 m drop, with the
+ * catch face stood up from 0.18 m to 0.24 m so the six-piece over-earn
+ * still falls against the taller wall at the gentler arrival. The rail,
+ * the dips and the plank are untouched; the clock moves 1.342 → 1.925 s
+ * and the canonical death — `drop → straight → landing`, crossing two
+ * uncrossed — lands at 2.033 s: 0.558 s clear of garden05's 1.475 s and
+ * 0.875 s short of bathroom05's 2.908 s (full table: session note
+ * 2026-10-11). EVERY law survives at the new grade; the stage-6 brevity
+ * claim narrows to garden05 — this rung's clock is now the room's own,
+ * between the porch clock and the shelf pair's.
  */
 import type { Build } from '../../track/build.ts';
 import { PIECE_KINDS, type PieceKind } from '../../track/pieces.ts';
@@ -66,26 +80,28 @@ export const GARAGE05_ID = 'garage05';
 /** THE PINNED ENCORE DIP — see `bedroom05.level.ts` for the lineage (the
  *  ladder's step on the porch threshold's long lead, span 0.3566 m). The
  *  stage-6 brevity trim keeps the dip EXACTLY (same span law) and moves
- *  only the release; the run-out catch moves to a sink-SOFTER 21° face at
- *  the ladder's 0.18 m level — the face the chute's faster arrival holds
- *  (measured: the old 12° face lets the trimmed par overshoot the cup, and
- *  a 0.20/0.24 deck moves the anchored cup out of the booster line's
- *  reach — the 0.18 level keeps the booster law's chain geometry). */
+ *  only the release; the run-out catch has its own history in
+ *  `ENCORE_CATCH` (the round-2 stagger stands it up for the −17° grade). */
 export const ENCORE_DIP = { height: 0.12, angle: 45, radius: 0.02, lead: 0.11 };
 
-/** The rung's PINNED chute (stage-6 brevity trim): −29° at the 0.24 m drop
- *  — the ladder's fail-timing tool (kitchen02/03, the porch chutes), tuned
- *  so the ridden double crossing still finishes (0.16 m `fell`, 0.26 m
- *  finished but bought no extra law). Par 1.342 s; the 0.12 blend is the
- *  fail-timing convention, so the release seam rides 0.9 of THAT blend. */
+/** The rung's OWN chute (stage-6 brevity trim, then the round-2 stagger):
+ *  −17° at the 0.24 m drop — the ladder's fail-timing tool SHALLOWED for
+ *  the death-clock stagger (see the header; the −29° of kitchen02/03 and
+ *  the porch chutes made this rung's deaths bit-identical to garden05's).
+ *  Par 1.925 s; the 0.12 blend is the fail-timing convention, so the
+ *  release seam rides 0.9 of THAT blend. */
 const GAR05_CHUTE_BLEND = 0.12;
 function garage05Chute() {
-  return { angle: -29, blend: GAR05_CHUTE_BLEND, level: rampLevelForDrop(0.24, -29, GAR05_CHUTE_BLEND, 0.9 * GAR05_CHUTE_BLEND) };
+  return { angle: -17, blend: GAR05_CHUTE_BLEND, level: rampLevelForDrop(0.24, -17, GAR05_CHUTE_BLEND, 0.9 * GAR05_CHUTE_BLEND) };
 }
 
 /** The trim's catch face: the sink-softer 21° landing at the ladder's
  *  0.18 m level (see `ENCORE_DIP`'s note) — ONE geometry, par, omissions
- *  and all. */
+ *  and all. The round-2 stagger tried standing this wall up to 0.24 m
+ *  (measured: it held the over-earn but moved the anchored cup out of
+ *  the hidden line's reach — rejected); the stagger lives in the grade
+ *  and `GAR05_PLANK` instead. */
+const GAR05_PLANK = 0.22;
 const ENCORE_CATCH = { level: 0.18, angle: 21, blend: 0.06 };
 
 function parBuild(): Build {
@@ -93,7 +109,7 @@ function parBuild(): Build {
     [
       { def: 'ramp', params: garage05Chute() }, // the fail-timing shelf (fixture) — the brevity trim
       { def: 'drop', params: ENCORE_DIP }, // tray: floor cut ONE — ridden
-      { def: 'straight', params: { length: GAR_STRAIGHT } }, // tray: the plate between
+      { def: 'straight', params: { length: GAR05_PLANK } }, // tray: the plate between (stagger length)
       { def: 'drop', params: ENCORE_DIP }, // tray: floor cut TWO — ridden, the film lies in its mouth
       { def: 'landing', params: ENCORE_CATCH }, // tray: the run-out catch
       { def: 'finishCup' }, // fixture
@@ -132,7 +148,7 @@ export function garage05BoosterBuild(): Build {
       { def: 'ramp', params: garage05Chute() },
       { def: 'booster' },
       { def: 'drop', params: ENCORE_DIP },
-      { def: 'straight', params: { length: GAR_STRAIGHT } },
+      { def: 'straight', params: { length: GAR05_PLANK } },
       { def: 'landing', params: ENCORE_CATCH },
       { def: 'finishCup' },
     ],
@@ -168,7 +184,7 @@ export const GARAGE05: GarageLevel = registerGarage(
     startSocket: startSocketFromBuild(parBuild(), GAR_GEOM.release * GAR05_CHUTE_BLEND),
     // measured on the par build (regenerate via `npm run pars`); the
     // stage-6 brevity trim moves the clock 3.05 → 1.35 (measured 1.342)
-    par: { pieces: 4, time: 1.4 },
+    par: { pieces: 4, time: 2 },
     maxTime: 12,
     tray: { drop: 2, straight: 2, landing: 1, booster: 1 },
     trayParams: { booster: {} },

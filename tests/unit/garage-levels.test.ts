@@ -348,30 +348,29 @@ describe('garage05 — the ENCORE: the double crossing at speed, the film flown 
     const deckFirst = await replayRun(GARAGE05, placed(GARAGE05, spec(['st', 'dr', 'dr', 'la'])));
     // The stage-6 brevity trim moved the release to the fail-timing chute
     // and the two adjacent cuts now CARRY at chute speed — the −12° law's
-    // measured fall (2.808 s) died with the crawl it rode. Re-stated as
+    // measured fall (2.808 s) died with the crawl it rode — at the
+    // round-2 stagger grade (−17°) it still finishes, still late. Re-stated as
     // measured, porch05's own exception idiom: an order that finishes is
     // only honest if it is LATE.
-    expect(deckFirst.status).toBe('finished'); // measured 1.367 vs the 1.342 par
+    expect(deckFirst.status).toBe('finished'); // measured 2.008 vs the 1.958 par
     expect(deckFirst.time).toBeGreaterThan(par.time); // pieces star, never the time star
     const beat = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'la', 'dr', 'st'])));
     expect(beat.status).toBe('finished');
     expect(beat.time).toBeLessThan(par.time); // measured 1.225 vs 1.342 — the par order stays beatable
   }, 90_000);
 
-  test('the spare plate is a decoy: TAIL-placed it finishes at the par’s OWN hash, mid-line it finishes SLOW (the trim’s re-stated law), after the catcher it drags', async () => {
+  test('the spare plate is a decoy: TAIL-placed it finishes at the par’s OWN hash; mid-line and before the catcher it KILLS (round-2 stagger: both trim-era carries died with the −29° speed they rode)', async () => {
     const par = await replayRun(GARAGE05, GARAGE05.parBuild());
     const tail = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'st', 'dr', 'la', 'st'])));
     expect(tail.status).toBe('finished');
     expect(tail.hash).toBe(par.hash);
     const mid = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'st', 'st', 'dr', 'la'])));
-    // the two-plank bridge ROLLS at chute speed (the −12° kill died with
-    // the crawl) — but the decoy law's teeth survive on the clock: the
-    // double plate is never the fast line.
-    expect(mid.status).toBe('finished'); // measured 1.425 vs the 1.342 par
-    expect(mid.time).toBeGreaterThan(par.time);
+    // the stage-6 trim's "carries at chute speed" exception needed −29°;
+    // at the stagger's −17° grade the two-plank bridge falls again — the
+    // ORIGINAL −12° kill law, measured true once more (measured 2.542).
+    expect(mid.status).not.toBe('finished');
     const runout = await replayRun(GARAGE05, placed(GARAGE05, spec(['dr', 'st', 'dr', 'st', 'la'])));
-    expect(runout.status).toBe('finished');
-    expect(runout.time).toBeGreaterThan(par.time); // measured 1.433 — the porch clock compresses the old +0.3 s drag
+    expect(runout.status).not.toBe('finished'); // the same carry-death, run-out side — measured 2.583
   }, 120_000);
 
   test('the shop sells the booster BOTH ways: EARLY buys the second cut whole (exported hidden line, garage03’s speed idiom); LAST is trim at the par’s hash', async () => {
@@ -387,7 +386,8 @@ describe('garage05 — the ENCORE: the double crossing at speed, the film flown 
     // stage-6 brevity trim: at chute speed the booster SPENT and the cuts
     // RIDDEN is the over-earned line — the extra Δv arrives with both
     // crossings already flown and overshoots the catch (measured `fell`
-    // 1.492). The buy stays a SUBSTITUTION for the far crossing, never an
+    // 1.492 on the −29° trim; at the stagger's −17° grade it falls again,
+    // measured 2.042). The buy stays a SUBSTITUTION for the far crossing, never an
     // addition to the ride — kitchen05's rule, sharpened by the faster
     // release (it finished at 2.417 on the −12° crawl).
     expect(full.status).not.toBe('finished');

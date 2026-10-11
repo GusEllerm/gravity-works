@@ -73,7 +73,7 @@ const PINNED: Record<string, string> = {
   // 0.10 m drop step — see `2026-10-09 Stage 4 - L02 second pass`).
   // `kitchen01`/`04`/`05` are untouched controls. See the session log
   // `2026-10-08 Stage 4 - L02 discoverability`.
-  kitchen02: '0b4dbab2',
+  kitchen02: '8008b9aa',
   // kitchen03 re-pinned at the stage-5 K3 RE-SWEEP pass (playtests AA+BB):
   // the rung moved to the fail-timing geometry (−29°/0.34 m chute with a
   // 0.16 m camera-tuned blend, 0.22 m equality-law straights, the 0.11 m

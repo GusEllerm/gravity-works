@@ -42,6 +42,11 @@ export interface Level {
    * the goal's rim (reach-sum invariance: union = par + one piece, always
    * PAST the cup), so the guard is what makes "place everything" an
    * un-buildable line — the union dump must CHOOSE, and can die choosing.
+   * Since the 2026-10-11 round-2 pass the ask is ORDER-INDEPENDENT at the
+   * ring too: on a guarded rung every seat whose open end carries the goal
+   * tell (the goal's own exit, or any end past its mouth plane — the
+   * stage-6 K3 tell) is REFUSED, not just warned, so the run-out seat the
+   * shipped ring aimed a dump's 4th ask at cannot be built in ANY order.
    * Placement-layer only: it adds no geometry, no collider and no physics
    * read, so every par replay hash is byte-identical with the flag set
    * (proved in `tests/unit/goal-guard.test.ts` + `replay:all`).

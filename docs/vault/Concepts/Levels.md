@@ -604,7 +604,33 @@ and the trio the refusal leaves seated FALLS (the union line can die).
 The par replay hash rides unchanged, byte-identical at `0b4dbab2` — the
 honest check `replayRun` makes with the flag set (`tests/unit/goal-guard.test.ts`;
 `replay:all` 30/30; `tests/e2e/goal-rung.spec.ts` proves refusal, death,
-and that BOTH authored lines still seat everything and finish).** STAGE-4 FAIL-TIMING PASS (this pass) fixed what the
+and that BOTH authored lines still seat everything and finish).** **ROUND-2
+CHOICE REDESIGN (2026-10-11, the player evaluation's headline 1/2 wall —
+`goal-rung.spec.ts`/`goal-guard.test.ts` rewritten):** two holes stayed.
+(1) The guard was body-only: the ring's auto-follow could seat a dump's 4th
+ask on a GOAL-TELL seat (the cup's own exit, or any open end past the mouth
+plane) with no overlap at all — the evaluation's order `s, s, drop, lip`
+seated all four that way. On guarded rungs a goal-tell seat is now REFUSED,
+not just told (`builder.ts` `place()`/`updateGhost()`: `blocked — the run
+ends at the cup, so nothing past it is ever built`). (2) The claim that
+"the twelve whole-tray orders all land their 4th piece in or past the cup
+BODY" was measured wrong — the lip-last seatings land PAST the mouth, which
+is what made refusal-by-body alone fakeable — and worse, a seated off-list
+trio (`drop, gapLip, straight`, 1.033 s) earned 3 stars under the 1.05 par,
+so CHOOSING paid nothing. The par is RE-ANCHORED to the beater the
+fail-timing pass already named: `drop → straight → straight`, hash
+`8008b9aa` (moved — `0b4dbab2` retires), parTime 1.00 = the measured 1.00.
+Two laws, swept over ALL 24 permutations (`scripts/k02-order-table.mjs`
+regenerates the table; `tests/unit/goal-guard.test.ts` asserts the
+invariant, the e2e samples the evaluation's own orders): LAW 1 — no click
+order seats all four pieces (the union dump dies at the placement layer
+every time); LAW 2 — no permutation earns 3 stars without seating the
+authored reference line (the lazy line's other seatings and the arc's pay
+2 at 1.008–1.083, mis-seated trios FALL, 12 distinct outcomes total). The
+arc line still finishes, slower than the new bar: `gapLip → drop →
+straight` measures 1.06 on the fixed-fixture mount — 2 stars, honest by
+the star law. The 1.05-par clause in the fail-timing note below is
+history: what once BEAT that par IS the par.** STAGE-4 FAIL-TIMING PASS (this pass) fixed what the
 WRONG builds teach. Every later playtest died INVISIBLE and IDENTICAL: nine
 distinct wrong builds and first tries all ended at ~2.2–2.4 s, "car vanished
 out of sight" — because the shared `kitchenRamp(0.28)` (−12°, a 1.43 m
@@ -638,9 +664,11 @@ ABOVE the rail deck plane (the old x-check sampled cars already sliding on
 the floor, whose x drifts ~0.5 m, and could not see flyovers). Both lines
 still finish and still order their lesson: lazy `straight → drop →
 straight` 1.01 s vs arc `gapLip → drop → straight` 1.07 s (the pop costs
-the hop — honest, measured, the bedroom03 precedent), par 1.05, BEATABLE by
-`drop → straight → straight` at 1.00, and all 12 whole-tray orders finish
-1.00–1.13 s. NO WRONG BUILD FINISHES: both former pinned exceptions are
+the hop — honest, measured, the bedroom03 precedent), par 1.05 at the
+time, BEATABLE by `drop → straight → straight` at 1.00 — SINCE THE ROUND-2
+RE-ANCHOR that beater IS the par (hash `8008b9aa`, parTime 1.00; the
+whole-tray-order clause here is history, see the ROUND-2 CHOICE REDESIGN
+above — the four-piece dump no longer finishes at all). NO WRONG BUILD FINISHES: both former pinned exceptions are
 dead at this geometry — the `straight → straight → gapLip` catapult (once a
 2.20 s finisher) falls in the void at ~1.15 s, and the `gapLip → drop`
 wedge-capture falls at ~1.27 s. Robust across seeds 1–6 and launch speeds
@@ -999,16 +1027,31 @@ one-, two- and three-piece omissions FALL** — the promise law of
 `kitchen01`, asserted more strongly here than anywhere in the house.
 Tray = the par's four + ONE DECOY `straight` + ONE TEMPTATION `booster`
 (6 = budget, `tray ⊇ par` + 2 VERBATIM): the spare straight finishes
-TAIL-placed at the par's own hash, dies MID-LINE (the deck-first law in
-disguise), drags +0.39 s after the catcher; the booster is kitchen05's
+TAIL-placed at the par's own hash; MID-LINE and before-the-catcher are
+where the round-2 stagger rewrote the law room by room (measured): the
+BEDROOM still DIES mid-line (3.108, the deck-first law in disguise) and
+drags +0.14 s with the extra plate before the catch; the GARAGE now dies
+in BOTH spots (2.542/2.583 — the trim's chute-speed "carries" died with
+the −29° release; the original −12° kill law is measured true again); the
+BATHROOM's mid bridge FINISHES LATE at its new grade (2.875 against the
+2.858 par — porch's "late, never fast" idiom) and the run-out drags +0.26;
+the GARDEN, unmoved, keeps the trim's law verbatim (mid finishes slow
+1.425, run-out 1.433). The booster is kitchen05's
 law turned into a CHOICE — spent EARLY it buys the second crossing whole
-(4 placed, 2.44 — the exported `X05BoosterBuild` hidden line, porch03's
-bounce precedent), spent LAST it is trim at the par's own hash. The deck
-is a long line on a short leash: par pieces 4 at 3.017 (parTime 3.05 on
-the BEDROOM and BATHROOM clocks — the garden/garage pair was brevity-trimmed
-to the fail-timing chute in the same stage-6 pass, §The encore brevity trim
-below), the par multiset ORDER beatable at 2.783 (kitchen04's law), deck-first
-FALLS, and the whole tray finishes tail-first (the 2★ consolation —
+(4 placed — the exported `X05BoosterBuild` hidden line, porch03's
+bounce precedent; the clocks are the rails' own since the stagger: 2.617
+bedroom, 2.333 bathroom, 1.108 garden, 1.625 garage, each faster than its
+ride), spent LAST it is trim at the par's own hash. The deck
+is a long line on a short leash: par pieces 4 — and since the ROUND-2
+DEATH-CLOCK STAGGER the four clocks are the rooms' OWN (§The encore
+death-clock stagger below): bedroom 3.117 / parTime 3.15, bathroom 2.858 /
+2.9, garage 1.958 / 2.0, garden 1.342 / 1.35, the garden/garage pair having
+left the shelf rail at the stage-6 brevity trim — with each room's par
+order still beatable within its tray (kitchen04's law, measured: bedroom
+3.000, bathroom 2.650, garage 1.817, garden 1.225) and deck-first FALLING
+on the shelf pair (bedroom 2.925, bathroom 2.567) while FINISHING LATE on
+the porch pair (both rooms' porch-clocked idiom survives the grade change
+unchanged in kind; at garage's −17° it finishes 0.05 s late), and the whole tray finishes tail-first (the 2★ consolation —
 Playtest-G's wall PRICED, not walled) and falls booster-first.
 
 **The campaign-order call (the design call the table had to make):** ids
@@ -1025,9 +1068,11 @@ line, not the whole vocabulary). Kitchen and porch have no encore:
 `porch05` is the campaign's last word.
 
 The room's voice is what differs rung to rung, geometry-economy verbatim
-(the four rungs share one authored rail, one hash `1b37dfed`, one
-placement x 1.3602 and one finish-deck plane 12.6 cm under the finale
-rows): the BEDROOM rides the law clean (no live zone — the room's law);
+(the four rungs ONCE shared one authored rail, one hash `1b37dfed` and one
+placement x 1.3602 — the brevity trim split the family into two rails and
+the round-2 stagger into four authored ones: hashes `5bfb2380` bedroom /
+`b986542f` bathroom / `2e3aa2df` garage / `1f99683a` garden — while every
+rung's finish deck stayed on the family plane): the BEDROOM rides the law clean (no live zone — the room's law);
 the BATHROOM's film lies IN sink two's mouth at the waterline a bridged
 deck would roll and the ridden dip FLIES it (bit-identical par; the
 unbuyable 0.3-span bridge probe rolls the film and runs wet-FASTER,
@@ -1071,6 +1116,41 @@ the far crossing, never an addition). Proof: `tests/unit/garden-levels.test.ts`,
 `tests/unit/garage-levels.test.ts`, `tests/e2e/stage6-encore-brevity.spec.ts`
 (fresh session, no instructions, four blind Places, one launch, finished),
 and the Decision Log 2026-10-08 (sandbox + encores) entry.
+
+## The encore death-clock stagger (round 2 — P4 item 6)
+
+The player round-2 evaluation: "the same build dies at the same 2.63 s in
+both rooms" — the encore family's shared rails made sibling rungs' deaths
+bit-identical (bedroom05 == bathroom05, garden05 == garage05; the plan's
+"all four at 2.25 s" folklore measured wrong, but the pair-collapse was
+real). THE LAW (`tests/unit/encore-stagger.test.ts`, pinned to the
+millisecond): the canonical fail — `drop → straight → landing`, crossing
+two uncrossed, the promise wall the rung family shares — dies ≥ 0.3 s apart
+in every pair of encores: garden05 1.475, garage05 2.008, bathroom05 2.792,
+bedroom05 3.100. Measured before moving anything: the death clock is
+arrival + fall and largely SELF-CANCELS under height/lead/catch/release
+moves (hundreds of headless sweeps per pair), so the lever that works is
+the GRADE, room by room, and each room's own law set fixed its cell:
+garage05 eased its chute to −17° with a 0.22 m stagger plate (every law's
+status survived; the trim's two "carries" exceptions flipped BACK to the
+original −12° kill — the mid bridge and the run-out plate fall again,
+2.542/2.583); bathroom05 took −12.4° on the same 0.26 m shelf (deck-first
+still falls at 2.567, all 11 omissions still fall; the mid bridge FINISHES
+LATE and the run-out drag compresses, the porch pair's re-statement idiom);
+bedroom05 eased to −11.35° with a 0.18 m crossing plate — the grade is what
+moves the clock and the shortened plate is what keeps the longer crawl
+inside the set's 1.4 m floor-disc law (chain 1.397 m < 1.4 m — measured:
+the rug is a law, `bedroomSetPlacement`); garden05 stays UNMOVED as the
+porch-pair anchor (its −29°/0.24 m chute is the rung's own fail-timing law,
+and every measured move — grade, release ratio — spent the hidden booster
+line). The pars moved honestly with the rails (bathroom 3.05 → 2.9, bedroom
+3.05 → 3.15, garage 1.35 → 2.0; garden stays 1.35), the three moved rungs'
+hashes moved (atlas regenerated), their setPlacement rows re-derived
+(bedroom05 x 1.38598, bathroom05 x 1.33977 with its deck line, garage05
+1.14409 with the −17° deck line), and the encore tests' measured comments
+were re-anchored with the new numbers, flips called out where a law changed
+direction. Proof: `tests/unit/encore-stagger.test.ts` + the four room
+ladder tests; table in session note `Sessions/2026-10-11 Round2 choice.md`.
 
 ## Sandbox (per set)
 

@@ -2,7 +2,8 @@
  * Stage 6 — the ENCORE BREVITY TRIM, blind-cleared (playtest DD: "trim
  * garden05/garage05 toward porch-level brevity").
  *
- * The rung moved to the fail-timing chute (3.05 → 1.35 par; the Decision
+ * The rung moved to the fail-timing chute (3.05 → 1.35 par — garage05 clocked to 2.0
+at the round-2 death-clock stagger; the Decision
  * Log names the hashes). The floor this pins is the k3-discoverability
  * one, applied to the trimmed double crossing: a FRESH session, NO
  * instructions, no hover, no build params — the boot ring plus the tray

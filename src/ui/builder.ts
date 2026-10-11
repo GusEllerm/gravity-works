@@ -447,7 +447,7 @@ export function guardWord(name: string): string {
  * one law the set props use. The guard adds no geometry, no collider and no
  * physics read: it lives entirely in the placement layer, so every replay
  * hash is byte-identical with it set (the honest check P4 item 1 asked for:
- * kitchen02's par hash `0b4dbab2` survives untouched, while the whole-tray
+ * kitchen02's par hash survives the flag untouched, while the whole-tray
  * union — whose tail, by the reach-sum law, always seats INTO or PAST the
  * goal in every one of its 12 orders — can no longer be built at all).
  * `mouth` names the goal's mouth pose so the target sweep can flag open
@@ -937,6 +937,17 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     goal: string | null = aimGoal,
   ): string {
     if (state === 'blocked') {
+      // THE GUARDED RUN-OUT REFUSAL (round-2 Lane A — the 2026-10-11 player
+      // evaluation's kitchen02 order 2): on a guarded rung the goal tell is
+      // no longer only a GREEN-seat warning, it is a REFUSAL — a seat whose
+      // open end lies at or past the goal's mouth cannot be built at all,
+      // and the line says so in the same truth-words the green tell uses
+      // (the run ENDS at the goal; a line past it is never travelled), plus
+      // the walk key for the ends that ARE buildable. An unguarded rung
+      // keeps the stage-6 green tell untouched.
+      if (blocker === null && goal !== null && goalGuard !== null) {
+        return `blocked — the run ends at the ${goal}, so nothing past it is ever built · ${AIM_WALK_COPY}`;
+      }
       const head =
         blocker === null || blocker === 'furniture'
           ? GHOST_LABEL.blocked
@@ -1023,7 +1034,11 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
         // not, so the snap gate reports it honestly (amber).
         aimBlocker = blockerOf(m, kind);
         aimGoal = list[targetIndex]!.goal ?? null;
-        state = aimBlocker !== null
+        // on a GUARDED rung the goal tell turns the ghost RED (round-2
+        // Lane A): what Place will refuse, the ghost must not paint green
+        // (the ghost is never quieter than the click, playtest DD's law
+        // pointed at its own exception — the k02 run-out seat).
+        state = aimBlocker !== null || (goalGuard !== null && aimGoal !== null)
           ? 'blocked'
           : snapSocket(target, seated) !== null
             ? 'snapped'
@@ -1223,13 +1238,20 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
     const target = list[targetIndex]!.socket;
     const transform = placement(target, kind);
     const blocker = blockerOf(transform, kind);
-    if (blocker !== null) {
+    // THE GUARDED RUN-OUT REFUSAL (round-2 Lane A, `Level.blockedGoalSeat`):
+    // on a guarded rung a seat AT or PAST the goal's mouth is refused too,
+    // wherever the ring aims it — the order-independent structural block the
+    // 2026-10-11 action plan asks of the dump. Body overlap still refuses by
+    // NAME; the mouth-crossing seat refuses with the run-ends truth. Both
+    // stay placement-layer: no geometry, no collider, no physics read.
+    const aimGoalSeat = list[targetIndex]!.goal ?? null;
+    if (blocker !== null || (goalGuard !== null && aimGoalSeat !== null)) {
       // the REFUSAL says who refused it and where the walk is (the same line
       // the red ghost already wears — a click that changes nothing is never
       // quieter than the ghost that warned about it)
       state = 'blocked';
       aimBlocker = blocker;
-      aimGoal = list[targetIndex]!.goal ?? null;
+      aimGoal = aimGoalSeat;
       ghostState.textContent = ghostCopy(false);
       return false;
     }
