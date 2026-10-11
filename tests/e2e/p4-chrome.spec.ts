@@ -110,6 +110,14 @@ for (const height of [633, 720, 900]) {
       expect(rects['gw-hash-details'].bottom, 'hash line above the chip strip').toBeLessThanOrEqual(
         rects['gw-ghost-bar'].top,
       )
+      // THE TRAY IS ONE ROW (round 2): the Linux-Fonts incident — thirteen
+      // tray labels at the desktop voice wrapped the row on the CI box and
+      // rode the page 25 px into the chip band; the compact block states
+      // the button boxes, and this law keeps the row single on every OS
+      expect(
+        rects['gw-tray'].bottom - rects['gw-tray'].top,
+        'the tray is one row at compact heights',
+      ).toBeLessThan(30)
       if (height < 700) {
         // THE 20 px BACK (round 2, Lane C): the compact stage serves the
         // ledger's height again — a 633 window owes ≥ 340 px of world

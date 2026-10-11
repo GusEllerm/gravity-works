@@ -311,7 +311,18 @@ h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
     font-size: 11px; line-height: 14px; min-height: 14px; margin: 1px 0;
   }
   #gw-controls { margin-top: 2px; }
-  #gw-tray button, #gw-controls button { padding: 2px 8px; }
+  /* THE TRAY ROW IS ONE ROW ON EVERY OS (round 2, Lane C — the first
+   * CI run at the 288 constant went RED at 633 on Linux: thirteen tray
+   * labels at the 14 px display voice fit mac's Futura within the 980 px
+   * column by ~18 px of margin and NOTHING on Linux's fallback grotesque,
+   * so the row WRAPPED and the whole page rode 25 px taller into the chip
+   * band — the old 310 was quietly paying for that wrap in world pixels.
+   * The cure is the studio's own oldest law, not a taller reservation: a
+   * STATED compact box. 11 px/13 px with the tightened padding keeps the
+   * thirteen labels on one row on both font families with real margin,
+   * and `tests/e2e/p4-chrome.spec.ts` asserts the single row at the
+   * compact heights so the wrap can never come back unannounced. */
+  #gw-tray button, #gw-controls button { padding: 2px 6px; font-size: 11px; line-height: 13px; }
   /* THE P4-CHROME RE-MEASURE (Evaluation 2026-10-10 player re-run, item 2's
    * asterisk): at 633 the compact page measured ≤ 100vh and ended clean of
    * the SCROLL, but not clean of the CHIP STRIP — the bottom-corner chips
@@ -341,12 +352,13 @@ h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
    * subtraction — the flagship window got a 574×323 stage where the
    * program's own ledger still said 613×345. The band never needed world
    * rows; it needed the slack BELOW them. At 288 the flow lines (every one
-   * a stated integer box, the law above) end at 100vh − 28 px — the last
-   * flow row lands 3 px ABOVE the chips' band, which now floats in the
-   * page's own bottom slack (the chips drop to `--gw-chip-bottom: 4px`
-   * here, still fully on screen, fully tap-reachable, rects still pairwise
-   * DISJOINT — the honesty the band bought is kept, its world rows come
-   * back). History: 380 (round 7) → 288 (P4 shortlist, flow-only) → 304
+   * a stated integer box, the law above — and since the Linux tray-wrap
+   * incident, so do the compact TRAY/CONTROL buttons: one row on both font
+   * families, the one-row law asserted in p4-chrome) leave ~15 px of air
+   * above the chips' band, which now floats in the page's own bottom slack
+   * (the chips drop to `--gw-chip-bottom: 4px` here, still fully on
+   * screen, fully tap-reachable, rects still pairwise DISJOINT — the
+   * honesty the band bought is kept, its world rows come back). History: 380 (round 7) → 288 (P4 shortlist, flow-only) → 304
    * →310 (the band's first cuts) → 288 + a lowered band (this law). A
    * WIDTH cap keeps the buffer aspect true; the page measures ≤ 100vh at
    * every height the block fires (no scroll — `tests/e2e/result.spec.ts`)

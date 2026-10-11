@@ -15,11 +15,17 @@ residue, N5).
    `tests/e2e/p4-chrome.spec.ts`): the compact canvas constant returns 310 → 288 and the chip band
    moves INTO the page's bottom slack — the two bottom chips read their offset from
    `--gw-chip-bottom` (8 px; 4 px in the compact block; their layout stays INLINE, the value lives
-   in the cascade). Re-measured, not hoped: at 633 the flow lines end at 604.98 / 671.98 at 700 and
-   the chips START at 608 / 675 — a ~3 px gap, every rect pairwise-disjoint, both chips on screen
-   and tap-reachable, no scroll, and the stage serves the ledger's 613×345 again (`≥ 340` floor
-   asserted at 633 so the pixels cannot be quietly re-spent). Screenshots attached at 633/720/900
-   by the spec; `docs/explorations/round2-doors/chrome-633.png` is the human frame. The honesty the
+   in the cascade). Re-measured, not hoped — and the CI proof line earned its keep: the FIRST run
+   at 288 went RED at 633 on Linux, `gw-callout vs gw-ghost-bar` riding 716 px² into the band —
+   thirteen tray labels at the 14 px display voice fit mac's Futura in the 980 px column and
+   WRAPPED on Linux's fallback grotesque, a +25 px flow the old 310 had silently absorbed as
+   world pixels (the Linux-Fonts lesson, one row higher). The compact block now STATES the
+   button boxes (11 px/13 px) and the spec asserts the tray stays ONE ROW at compact heights;
+   re-measured after: the last flow line ends 592.98 against the chips' 608 — ~15 px of slack,
+   every rect pairwise-disjoint, both chips on screen and tap-reachable, no scroll, and the
+   stage serves the ledger's 613×345 again (`≥ 340` floor asserted at 633, itself proved
+   RED-when-mutated back to 310). Screenshots attached at 633/720/900 by the spec;
+   `docs/explorations/round2-doors/chrome-633.png` is the human frame. The honesty the
    P4 band bought (stated integer boxes, pairwise rects, stack order) is kept whole — the band just
    stopped buying its room out of the WORLD.
 2. **SANDBOX DOORS, VISIBLE** (`src/ui/levelselect.ts`, `src/world/campaign.ts`
@@ -64,10 +70,11 @@ residue, N5).
 
 The board fold maps 2026-10-11 → porch02 ("The Open Door") and 2026-10-12 → garage05 ("Spill
 Course") — two dates, two boards, proved with those exact days; a date whose fold repeats a
-neighbour's rung is arithmetic, not a bug to hide. The chip band's 3 px slack replaces the old
-11 px of paid-in-world air — it is bought back with STATED boxes on every line that could move,
-which is what the Linux-Fonts incident actually taught; if a future font metric moves a row, the
-p4-chrome spec goes RED at 633, not quietly overlapped. The `?date=` face changes which day the
+neighbour's rung is arithmetic, not a bug to hide. The compact chrome's ~15 px of slack replaces
+the old 11 px of paid-in-world air — bought with STATED boxes on every row that could move, which
+is what the two Linux-Fonts incidents (summary line, tray row) actually taught; if a future metric
+moves a row, the p4-chrome spec goes RED at 633 (rects + one-row tray + the ≥340 floor), not
+quietly overlapped. The `?date=` face changes which day the
 record belongs to — a device that travels back in debug dates re-plays a past board; recorded-param
 doctrine, stated in `daily.ts`.
 
