@@ -143,8 +143,20 @@ the farewell's own spec, and a page whose storage refuses to record says NO rath
 later clear. THE CRANE IS BUILT FROM SHIPPED PARTS, zero new physics: `farewellPlan` turns the
 `CAMPAIGN` room list into a pure timed event list (a `reveal` as the eye arrives at each room, the
 `doors` at the pull-back's end — no clock, save or set consulted, so two calls are byte-identical and
-`cranePose(t)` is a pure sweep: DWELL drift at table height, a lifting MOVE between rooms, a PULL onto
-the wide house), the six rooms are the registry's own `SETS[*].build` mounts laid along x at
+(`cranePose(t)` is a pure sweep: DWELL drift at table height, a lifting MOVE between rooms, a PULL onto
+the wide house), **the LEGS ARE PAINTED (round 3, item 3: "between the rooms the farewell flies over
+void; the sets read only when docked") with the same two facts the build view already knows — a long
+`MeshLambertMaterial('#e6d3b3')` board 8 cm under the room bottoms (`world.ts`'s ground re-surfaced, and
+deliberately NOT coplanar with the sets' own 20 m sheets, whose coplanarity z-fights into stripes) and a
+warm `THREE.FogExp2` the colour of the scene's wall. Both ride ONE pure predicate, `craneInMove(t)`:
+mid-MOVE the board shows and the haze density rides the lift's own sine (`craneAtmosphere`); in every
+DWELL and PULL frame the board is hidden and the density is `CRANE_CLEAR` = 0, so the docked and wide
+frames ship the exact pixels this note predates. The fog is SWAPPED as a fresh object each frame because
+three refreshes a program's fog uniforms on fog REFERENCE change, not value — an in-place near/far ride
+would silently ship the compile-time distances (measured: `USE_FOG`-defined programs held their first
+distances exactly that way). Still visuals only: the plan, poses, reveals and the whole `replay:all`
+law are untouched, and `craneAtmosphere`/`CRANE_HAZE`/`CRANE_CLEAR` are as clock-free as the poses they
+ride.** the six rooms are the registry's own `SETS[*].build` mounts laid along x at
 `CRANE_STEP` (visuals only — no `World`, no bodies, no `hashedBodies`, `replay:all` untouched because
 this is post-run cinema, not sim), and the per-room tallies are `farewellTally` folding the save's
 `progress.stars` through `CAMPAIGN` — the one source of room membership, so an off-ladder star scores
