@@ -20,8 +20,8 @@ tags: [reference, evaluation, player]
 | 2 | Par ghost reads the answer aloud | **CLOSED** | locked on unearned rungs, unlocks at first minted finish, afterlife default ON |
 | 3 | 633px stage shrank to 574×323 | **CLOSED (one residue)** | canvas measured 613×345 at 1280×633, idle rects disjoint; fail band still crosses the chips |
 | 4 | Daily = date sticker on rung one | **CLOSED** | `dailyBoardId` folds `dailySeed(date)` onto the 30-rung ladder; 3 dates → 3 named boards in the browser |
-| 5 | Sandbox door hidden | pending | |
-| 6 | Encore rail one rung in four paints | pending | |
+| 5 | Sandbox door hidden | **CLOSED** | six named sandbox links on the board; cold save → kitchen-sandbox "ready" in 426 ms |
+| 6 | Encore rail one rung in four paints | **CLOSED (clocks)** | b05 dies 2.35 s vs bed05 2.63 s at the same ask; dumps finish 2.86/3.12 vs par 2.9/3.15 |
 | 7 | Bloom / post mid-run honesty | pending | |
 | 8 | Garage/bathroom run-camera hero grammar | pending | |
 
@@ -95,6 +95,20 @@ show named boards (`#gw-daily-board`): **"today’s board — The Open Door · 2
 round-2 "race against rung one, forever" sentence is false now, and `?date=` makes it checkable without
 racing midnight. The seed still rides the build hash only (physics law unchanged); what the date decides
 is the BOARD. CLOSED.
+
+## Items 5–6 — the sandbox door and the staggered encores
+
+**Door:** `?levels=1` on a FRESH save lists all six rooms, each row carrying a real `<a>` to its sandbox
+(`#gw-level-<room>-sandbox`, labelled "every piece in the kit, loops and springs included") — zero lock,
+zero stars. Fresh save → board → click Kitchen sandbox → `ready`: **426 ms** wall (the < 60 s law by
+three orders of magnitude). The round-2 "names the six sandboxes and links none" sentence is dead.
+
+**Encore clocks:** the death-clock stagger is real at the shipped button. Same single-drop ask, launched:
+bathroom05 **fell off — 2.35 s**, bedroom05 **fell off — 2.63 s** (round 2: both 2.63 s to the
+centisecond). Full dumps finish at distinct clocks too: b05 2.86 s vs bed05 3.12 s against pars 2.9 / 3.15
+(`pars.json`). Substance note carried to the fresh-stranger score: the 4-piece dump still COMPLETES both
+encores at par-adjacent clocks — the rails stagger their deaths but the union line still asks no CHOICE
+in any of the four paints.
 
 ## Fresh verdict
 
