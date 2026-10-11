@@ -22,7 +22,7 @@ tags: [reference, evaluation, player]
 | 4 | Daily = date sticker on rung one | **CLOSED** | `dailyBoardId` folds `dailySeed(date)` onto the 30-rung ladder; 3 dates → 3 named boards in the browser |
 | 5 | Sandbox door hidden | **CLOSED** | six named sandbox links on the board; cold save → kitchen-sandbox "ready" in 426 ms |
 | 6 | Encore rail one rung in four paints | **CLOSED (clocks)** | b05 dies 2.35 s vs bed05 2.63 s at the same ask; dumps finish 2.86/3.12 vs par 2.9/3.15 |
-| 7 | Bloom / post mid-run honesty | pending | |
+| 7 | Bloom / post mid-run honesty | **CLOSED** | flare probe re-run on this tree: small-disc spread 0.0 px (pre-gate 5.5), area control still glows; mid-run shots read clean |
 | 8 | Garage/bathroom run-camera hero grammar | pending | |
 
 ## Item 1 — kitchen02, all 24 orders (the round-2 flagship failure)
@@ -109,6 +109,18 @@ centisecond). Full dumps finish at distinct clocks too: b05 2.86 s vs bed05 3.12
 (`pars.json`). Substance note carried to the fresh-stranger score: the 4-piece dump still COMPLETES both
 encores at par-adjacent clocks — the rails stagger their deaths but the union line still asks no CHOICE
 in any of the four paints.
+
+## Item 7 — the bloom size gate at DEFAULT tier, mid-run
+
+The ban is now a shader term (`min(centre, neighbourhood-mean)` over ±2 quarter-res texels in
+`src/render/post/bloom.ts`, `BLOOM_SOFT_CEILING = 0.22`). Re-measured on THIS tree, not trusted from the
+Lane D note: `npx playwright test bloom-flare.spec.ts` →
+`small r=6.1px halo=0px spread=0.0px | large spread=12.0px` — the ≤5 mm class is at zero spread (pre-gate
+5.5 px / 217 halo px) while the area control keeps its glow. My own mid-run screenshots at the default
+(high) tier — kitchen01 (bowl/mug/sponge class), porch01 and garden01 (goal pin) — show the small whites
+as lit dots with tight halos, no lightbulb flares; the sun-disc class still glows where it should. (My
+first crude pixel probe tried to measure a guessed pin coordinate and lied — 59 px of "spread" that was
+really the sunlit lawn; I threw the number away and ran the real probe instead.) CLOSED.
 
 ## Fresh verdict
 
