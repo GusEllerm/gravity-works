@@ -3,10 +3,13 @@
  *
  * Item 4 (bedroom02 "flatten the landing" named no WHERE): the whole-tray
  * dump in BUTTON ORDER (straight ×3, drop, landing) is the evaluator's own
- * build — it FELL at ~2.3 s nose-first — and the note must now locate the
- * landing with the Remove button's own socket words, `by the drop`. The
- * unit twin (`tests/unit/critique-where.test.ts`) proves the map; this
- * proves the live board mounts the dump the same way the graph reads it.
+ * build — it FELL at ~2.3 s nose-first. The round-5 pass gave the critique
+ * a socket tail ("past the cup"); the round-3 verdict then scored it again
+ * — a WHERE on a verbless verb is still a sentence nobody can say. The
+ * ACTIONABLE-VERB PRIORITY (`src/ui/result.ts`) now reads the SAME join
+ * graph the tail used: a piece the player placed sits PAST the goal, so
+ * the line speaks the MOVE clause's verb — `pull it back`, the Remove
+ * button — instead of the critique.
  *
  * Item 5 (the first hour never says the magic words): the bank/curve lines
  * the tray could never teach now speak at the rung that SHIPS them as
@@ -51,13 +54,17 @@ test('bedroom02: the whole-tray dump names WHERE the landing sits (P4 item 4)', 
   await expect(status).toContainText('fell', { timeout: 60_000 })
   const note = page.locator('#gw-result-note')
   // The live aim places the fifth press at the OPEN END the walk offers —
-  // the cup's far exit on this board — so the site this build earns is
-  // `past the cup`; the unit twin's straight chain-fit walk lands the same
-  // piece `by the drop`. Both are the join graph's truth about ITS build;
-  // what may never happen is a tail-less critique.
-  await expect(note).toContainText('flatten the landing past the cup')
-  // and it is the CRITIQUE line, not an ADD line wearing a tail by accident
-  expect(await note.textContent()).not.toMatch(/add a flat landing/)
+  // the cup's far exit on this board — and the round-3 verb law reads that
+  // graph position as what it is: a piece the player paid for that the run
+  // can never travel. The line speaks the MOVE clause's verb (`pull it
+  // back`, the Remove button's word) and its site — no verbless critique.
+  // (The unit twin's straight chain-fit walk seats the same piece `by the
+  // drop` and keeps the critique: unused stock and no orphan there.)
+  await expect(note).toContainText('the landing sits past the cup')
+  await expect(note).toContainText('pull it back')
+  // and the verbless critique is GONE from this build's line, not merely
+  // tailless — round 3 measured that no `flatten` keystroke exists
+  expect(await note.textContent()).not.toMatch(/flatten|lower/i)
 })
 
 test('the shipped-but-never-stocked kinds say their line at the rung (P4 item 5)', async ({ page }) => {

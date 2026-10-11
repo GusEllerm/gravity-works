@@ -371,6 +371,40 @@ export function createRunRecorder(): RunRecorder {
  * Unknown (`null` — a shared/replay page, no builder) keeps every shipped
  * line byte-identical, like every other gate here.
  */
+/** The ADD-TAIL word list (round-3 verb law): the player words an ADD may
+ *  name, in the ORDER the drive-off tail shipped — the same four kinds, the
+ *  same one-list joiner, now shared by the nose-first branch's ACTIONABLE
+ *  VERB priority so one verb keeps one wording (round-3 item 2). */
+const ADD_WORDS: [PieceKind, string][] = [
+  ['straight', 'a straight'],
+  ['drop', 'a drop'],
+  ['gapLip', 'a lip'],
+  ['landing', 'a landing'],
+];
+function addWordsFor(kinds: ReadonlySet<PieceKind>): string[] {
+  return ADD_WORDS.filter(([k]) => kinds.has(k)).map(([, w]) => w);
+}
+function addList(words: string[]): string {
+  return words.length === 1 ? words[0]! : `${words.slice(0, -1).join(', ')} or ${words[words.length - 1]!}`;
+}
+
+/**
+ * THE ACTIONABLE-VERB PRIORITY (round-3 verdict item 2 — "'flatten' still
+ * has no verb": k04 at 2.66 s and bedroom02 at 2.33 s printed fix sentences
+ * the builder cannot execute, four evaluations running). The nose-first
+ * branch now ranks its advice by whether a KEYSTROKE executes it — recipe
+ * (`re-place it flat (no R)`) > ADD half > ORPHAN move clause (`pull it
+ * back`, the Remove button) > ADD naming stock the build never placed
+ * (`add a straight · place at: end of landing`, tray button + Place) >
+ * verbless critique, as shipped — and speaks the highest rank the build
+ * data backs. The recon sweep (`scripts/k04-flatten-sweep.mjs`) is why the
+ * critique loses: NO angle/height flattening of any seated piece finishes
+ * k04's death build (the line is SHORT, not steep), while seating the one
+ * piece the tray still holds finishes it at 2.59 s. Same data, same
+ * precedence law, same branch discipline as the MOVE clause above — a
+ * `null` stock set and `null` moveHint (shared/replay pages, no builder)
+ * leave every shipped line byte-identical.
+ */
 export function physicsNote(
   result: RunResult,
   ev: RunEvidence,
@@ -474,6 +508,48 @@ export function physicsNote(
       // ("flatten…", "lower…", "re-place…") is about a piece already on the
       // track, and it stands exactly as shipped.
       const adding = advice.some((a) => a.startsWith('add '));
+      // THE ACTIONABLE-VERB PRIORITY (round-3 item 2 — "flatten still has
+      // no verb": k04 died at 2.66 s and bedroom02 at 2.33 s under fix
+      // sentences the builder cannot execute; four evaluations, the same
+      // two rungs). A CRITIQUE half ("flatten the landing", "lower the
+      // lip") names a change the kit has NO keystroke for — Rotate only
+      // flips, and the tray seats ONE geometry per kind, so re-placing a
+      // forward-mounted piece flat re-seats the SAME angle (the round-3
+      // recon sweep, `scripts/k04-flatten-sweep.mjs`, proved no angle/
+      // height flattening of any seated piece finishes k04's death build:
+      // the line is SHORT, not steep — it is healed by the `straight` the
+      // tray still holds, which finishes the chain at 2.59 s). The law
+      // therefore ranks verbs by whether a keystroke executes them, and
+      // the sentence may only speak the highest-ranked one the build data
+      // backs, mirroring the DRIVE-OFF branch's precedence exactly:
+      //   1. the rotated-landing RECIPE ("re-place it flat (no R)") — the
+      //      only critique with a key (Remove + Place, R untouched);
+      //   2. an ADD half ("add a flat landing", "add a lip") — tray
+      //      button + Place; already in the shipped halves below;
+      //   3. NEW — the ORPHAN MOVE clause ("the landing sits past the cup
+      //      — pull it back"), the Remove button's verb, ranked over the
+      //      ADD list by the same T2.1 law the drive-off branch follows;
+      //   4. NEW — an ADD naming stock the build NEVER PLACED ("add a
+      //      straight · place at: end of landing") — the tray button is
+      //      the verb and `aimHint` the place; unused stock, because a
+      //      kind already seated somewhere is exactly the ambiguity the
+      //      WHERE clause exists to kill;
+      //   5. the verbless critique halves, as shipped, when the data can
+      //      name no keystroke at all (evidence with nothing better to
+      //      say) — every such line byte-identical, shared/replay pages
+      //      (`null` stock and moveHint) unchanged by the same permissive
+      //      law every gate in this branch follows.
+      if (!adding && !advice.includes('re-place it flat (no R)')) {
+        if (moveHint?.move === 'orphan') {
+          return `fell off nose-first — ${moveHint.clause}${moveHint.teachWalk ? whereTail : ''}`;
+        }
+        if (stockedKinds !== null && placedKinds !== null) {
+          const unused = addWordsFor(
+            new Set([...stockedKinds].filter((k) => !placedKinds.has(k) && k !== 'booster')),
+          );
+          if (unused.length > 0) return `fell off nose-first — add ${addList(unused)}${whereTail}`;
+        }
+      }
       return advice.length > 0
         ? `fell off nose-first — ${advice.join(' or ')}${adding ? whereTail : ''}`
         : 'fell off nose-first';
@@ -511,14 +587,7 @@ export function physicsNote(
     if (moveHint?.move === 'orphan') {
       return `${head}; ${moveHint.clause}${moveHint.teachWalk ? whereTail : ''}`;
     }
-    const named = ([
-      ['straight', 'a straight'],
-      ['drop', 'a drop'],
-      ['gapLip', 'a lip'],
-      ['landing', 'a landing'],
-    ] as [PieceKind, string][])
-      .filter(([k]) => stockedKinds.has(k))
-      .map(([, w]) => w);
+    const named = addWordsFor(stockedKinds);
     if (named.length === 0) {
       // Tray spent (or the only stock is the booster, which no ADD list
       // names) — the OTHER MOVE reading: the booster's sequencing truth,
@@ -534,8 +603,7 @@ export function physicsNote(
       }
       return head; // nothing honest to add AND nothing honest to move
     }
-    const list =
-      named.length === 1 ? named[0]! : `${named.slice(0, -1).join(', ')} or ${named[named.length - 1]!}`;
+    const list = addList(named);
     // THE WHERE TAIL (stage 6, kitchen03's second wall — playtest DD: "the
     // only snap is a curve exit the game itself says is blocked — furniture is
     // in the way… building backwards from the cup runs off-table… ] swaps to

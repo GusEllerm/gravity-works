@@ -1382,6 +1382,11 @@ sig = "87cba624518bd54f"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
+target = "scripts/k04-flatten-sweep.mjs"
+sig = "28d55d69395234bb"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
 target = "scripts/probe-ghost-flip.mjs"
 sig = "637433c5f0504d86"
 
@@ -1473,7 +1478,7 @@ sig = "e9d8f319019cbe3a"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/result.ts"
-sig = "4b5962fbc2cfe15b"
+sig = "b1fb776888ecde9c"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1573,7 +1578,7 @@ sig = "b4f87b9763dcb3bb"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/p4-words-where.spec.ts"
-sig = "b12d0b22d67003dd"
+sig = "a9142d1c195bf51a"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1627,6 +1632,11 @@ sig = "a93edd89aaa69e87"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
+target = "tests/e2e/round3-verb.spec.ts"
+sig = "b16f92b50b9eb126"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/save-quarantine.spec.ts"
 sig = "17684f9bc1d1a69e"
 
@@ -1654,6 +1664,11 @@ sig = "4227ab4424a058d4"
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/viewport-aim.spec.ts"
 sig = "bdb97b5d8f764945"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
+target = "tests/unit/actionable-verb.test.ts"
+sig = "8e5f93d6aab56365"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
