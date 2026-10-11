@@ -372,6 +372,32 @@ h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
    * heights, the usual 8 px everywhere else. Never add a bottom rule for
    * the chips here; the variable IS the law. */
   :root { --gw-chip-bottom: 4px; }
+  /* THE FAILURE BAND'S OWN PIXELS (round 3, item 4's chrome debt): the
+   * band steps the bottom chrome aside (`src/ui/result.ts`
+   * `stepBandChrome`) — the chips, the hash line, the callout row — and
+   * the band's rect must also never climb into the one flow row that
+   * stays (the status line, ending at `100vh − 70px` whenever the tray
+   * above is lawfully one row). A stated cap does that arithmetic: the
+   * band's top is `100vh − 4 − min(content, 65)` ≥ `100vh − 69` > the
+   * status line's bottom, on every font. The overflow is the panel's own
+   * backstop, never a scroll the player needs (pointer-transparent).
+   * `tests/e2e/p4-chrome.spec.ts` asserts the FAIL-state rects. */
+  #gw-result.gw-result-strip {
+    bottom: 4px;
+    max-height: 65px;
+    overflow-y: auto;
+  }
+  /* THE SANDBOX TRAY IS A TWO-ROW TRAY (round 3, item 4 again): its
+   * labels carry ×99 counts, so at compact heights the row wraps — 25 px
+   * of honest extra flow the one-row law cannot promise here (six
+   * sandboxes, thirteen counted labels, two font families). The wrap is
+   * paid by the canvas, not by the chip band: this page's canvas cap
+   * reserves the 25 px (`data-gw-sandbox` mark, `src/boot.ts`), the last
+   * flow line ends above the chips exactly as on a rung, and
+   * `tests/e2e/p4-chrome.spec.ts` re-measures the sandbox rects at 633. */
+  body[data-gw-sandbox] #gw-stage canvas {
+    max-width: min(960px, calc((100vh - 313px) * 960 / 540));
+  }
   #gw-result { padding: 5px 9px; font-size: 12px; }
   #gw-result-stars { font-size: 15px; }
   #gw-result-rules { font-size: 10px; }

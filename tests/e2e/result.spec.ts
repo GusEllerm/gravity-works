@@ -180,13 +180,19 @@ test.describe('the panel at 1280x633 (playtest Z round7: stars/Retry/Next and th
 
     // the fixture-only launch falls off (Z’s line: "fell off — the line let
     // go before the cup"); the note lives IN the panel, and the status and
-    // callout caption lines ride right under the shrunken canvas
+    // callout caption lines ride right under the shrunken canvas — EXCEPT
+    // the callout row, which the FAILURE BAND steps aside with the rest of
+    // the chrome that used to sit in its rect (round 3, item 4: the band's
+    // `567–623` rode the ghost bar, the Save chip, the hash line and this
+    // row; `stepBandChrome`, `src/ui/result.ts`, and
+    // `tests/e2e/p4-chrome.spec.ts` asserts the FAIL-state rects disjoint)
     await goto(page, '/?level=kitchen01&launch=1')
     await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
     await expect(page.locator('#gw-result-note')).toBeVisible()
     await expect(page.locator('#gw-result-note')).toContainText('fell off')
     expect(await page.evaluate(() => window.scrollY)).toBe(0)
-    for (const sel of ['#gw-result', '#gw-result-note', '#gw-status', '#gw-callout']) {
+    await expect(page.locator('#gw-callout')).toBeHidden()
+    for (const sel of ['#gw-result', '#gw-result-note', '#gw-status']) {
       const box = await page.locator(sel).boundingBox()
       expect(box).not.toBeNull()
       expect(box!.y, sel).toBeGreaterThanOrEqual(0)

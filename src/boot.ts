@@ -102,7 +102,7 @@ import { createSaveSettings } from './ui/settings.ts'; // T0.3/R1 — save expor
 import { firstLesson, firstSight, firstSetAppearance } from './ui/callouts.ts';
 import { downloadBlob, generateShareCard } from './share/card.ts';
 import { SETS, isRegisteredSet, type SetRegistration } from './sets/index.ts';
-import { CAMPAIGN_LADDER, dailyBoardId, levelUnlock, nextInCampaign } from './world/campaign.ts';
+import { CAMPAIGN, CAMPAIGN_LADDER, dailyBoardId, levelUnlock, nextInCampaign } from './world/campaign.ts';
 export { setPlacementGuard, setCameraSolids } from './pages/mount.ts';
 import {
   actionableKindsFor,
@@ -399,6 +399,14 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // sandbox, the feel track) report unlocked and wear no badge; the shared
   // replay page never builds this DOM at all (`src/pages/share.ts`).
   const devPreview = daily === null && !levelUnlock(loadSave().progress, level.id).unlocked;
+  // THE SANDBOX TRAY MARK (round 3, item 4's chrome debt): a sandbox tray
+  // carries its ×99 counts on every label, so at compact heights its row
+  // is honestly TWO rows (twenty-five px of extra flow) — `src/ui/shell.css`
+  // buys those pixels back from the canvas cap on this page alone, which
+  // is what keeps the last flow line (the hash disclosure) out of the chip
+  // band. The mark is a page fact for CSS, not a game fact: it rides no
+  // hash and no save. Zero-flow, like the badges beside it.
+  if (CAMPAIGN.some((room) => room.sandboxId === level.id)) document.body.dataset.gwSandbox = '1';
   if (devPreview) {
     const badge = document.createElement('p');
     badge.id = 'gw-dev-preview';

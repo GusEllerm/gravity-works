@@ -764,7 +764,16 @@ export interface ResultPanel {
   daily: HTMLElement;
   show(model: ResultModel): void;
   hide(): void;
+  /** Hide/restore the chrome that shares the FAILURE BAND's rect (the
+   *  round-3 step-aside law; see `BAND_CHROME_IDS`). */
+  stepBandChrome(aside: boolean): void;
 }
+
+/** The chrome that lives in the FAILURE BAND's rect (see the step-aside
+ *  law in `createResultPanel.show`): the two corner chips, the hash
+ *  disclosure line and the callout row. Asserted disjoint with the band
+ *  in `tests/e2e/p4-chrome.spec.ts` (the round-3 chrome debt). */
+const BAND_CHROME_IDS = ['gw-save', 'gw-ghost-bar', 'gw-hash-details', 'gw-callout'] as const;
 
 function panelButton(id: string, label: string, parent: HTMLElement): HTMLButtonElement {
   const b = document.createElement('button');
@@ -903,6 +912,16 @@ export function createResultPanel(host: HTMLElement): ResultPanel {
       shareCard.hidden = true;
       shareNote.hidden = true;
     },
+    /** The failure band's step-aside: hide/restore the chrome that lives
+     *  in the band's own rect (`#gw-save`, `#gw-ghost-bar`, the hash line,
+     *  the callout row — `BAND_CHROME_IDS`). Idempotent; a row is only
+     *  ever un-hidden by the panel when the panel hid it. */
+    stepBandChrome(aside: boolean): void {
+      for (const id of BAND_CHROME_IDS) {
+        const el = document.getElementById(id);
+        if (el) el.hidden = aside;
+      }
+    },
     show(model) {
       stars.textContent = starGlyphs(model.stars);
       // role=img + label so a screen reader says "2 of 3 stars", not "star star star"
@@ -928,6 +947,21 @@ export function createResultPanel(host: HTMLElement): ResultPanel {
       // the cup dunk, where the panel rides the moment, not over it.
       const strip = model.status !== 'finished';
       root.classList.toggle('gw-result-strip', strip);
+      // THE BAND'S CHROME STEPS ASIDE (Evaluation 2026-10-11 round 3,
+      // item 4's chrome debt: at 633 the failure band's rect crossed the
+      // ghost bar, the Save chip, the hash line and the callout row — the
+      // idle layout was disjoint, the FAIL state was not). While the band
+      // speaks, the bottom band it occupies belongs to it: the two
+      // corner chips, the hash disclosure and the callout row go the way
+      // the farewell's chip sweep took them (the farewell's own idiom,
+      // `src/pages/farewell.ts`) — all four say things the band already
+      // says (stars, time, pieces, note) or that wait quietly for the
+      // next run (save autosaves; the hash rides the panel's share row);
+      // the status line STAYS, and the compact CSS caps the band's height
+      // so it never climbs into it (`src/ui/shell.css`). `hide` returns
+      // every row. Pairwise-disjoint FAIL-state rects are asserted in
+      // `tests/e2e/p4-chrome.spec.ts`.
+      this.stepBandChrome(strip);
       // a fresh panel never keeps the last run's link (the hash would be stale)
       this.resetShare();
       // visibility on BOTH channels (the help drawer's lesson: `hidden`
@@ -972,6 +1006,7 @@ export function createResultPanel(host: HTMLElement): ResultPanel {
       root.style.top = '';
       root.style.bottom = '';
       root.classList.remove('gw-result-strip');
+      this.stepBandChrome(false);
       if (window.scrollY !== anchor) window.scrollTo(0, anchor);
     },
   };
