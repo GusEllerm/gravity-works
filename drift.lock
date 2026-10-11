@@ -206,6 +206,11 @@ target = "tests/e2e/perf-stage3.spec.ts"
 sig = "2648b709ac3796c8"
 
 [[bindings]]
+doc = "docs/vault/Concepts/Performance.md"
+target = "tests/e2e/perf.spec.ts"
+sig = "98fc5e4c1f3556f1"
+
+[[bindings]]
 doc = "docs/vault/Home.md"
 target = "docs/vault/Reference/hash-atlas.json"
 sig = "d01d2ba38efcad2e"

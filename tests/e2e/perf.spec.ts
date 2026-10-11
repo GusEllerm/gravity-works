@@ -25,7 +25,7 @@
  * The measured numbers are written to `docs/vault/Performance/stage-2.md`
  * by QA from these tests' console output; the tests print them.
  */
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { World } from '../../src/world/world.ts'
 import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts'
 
@@ -42,6 +42,40 @@ const VSYNC_EPS_MS = 0.15
 const MIN_SIM_SECONDS = 5
 /** Wall-clock guard for the rendered loop (software GL can be slow). */
 const RENDERED_WALL_CLOCK_CAP_MS = 120_000
+
+/** Who is drawing — the SAME convention stage 3's post-ON gate established
+ * (perf-stage3.spec.ts): ask WebGL's unmasked renderer, SwiftShader/llvmpipe
+ * means software. Stage 2's test A predates that convention and gated its
+ * keep-up ratio on both rasters alike, which the round-2 CI proved a
+ * coin-toss on SwiftShader (sim advances at most 24 × 1/120 s = 200 ms per
+ * frame — boot.ts's catch-up clamp — so the ratio's OWN ceiling at the
+ * raster's median frame time is 200/Δ, and CI medians of 200–217 ms put
+ * `> 0.8` exactly on the coin's edge: main itself recorded 0.81/0.83). On
+ * software GL the ratio RECORDS (annotation + console, as everywhere); the
+ * frame-production stall ceiling (median ≤ 250 ms) and measurement B stay
+ * HARD on every raster; on hardware GL the ratio gate is fully live. */
+const SOFTWARE_RENDERER_RE = /swiftshader|llvmpipe/i
+
+// The same per-file launch convention stage 3 established (perf-stage3.spec.ts):
+// darwin asks ANGLE for the real GPU so the hardware branch of the keep-up gate
+// is actually EXERCISED on the reference machine, not deferred into silence.
+test.use({
+  launchOptions: { args: process.platform === 'darwin' ? ['--use-angle=metal'] : [] },
+})
+
+async function detectGl(page: Page): Promise<{ software: boolean; renderer: string }> {
+  const renderer = await page.evaluate(() => {
+    try {
+      const c = document.createElement('canvas')
+      const gl = (c.getContext('webgl2') ?? c.getContext('webgl')) as WebGLRenderingContext | null
+      const ext = gl?.getExtension('WEBGL_debug_renderer_info') as { UNMASKED_RENDERER_WEBGL: number } | null
+      return ext && gl ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : 'unknown'
+    } catch {
+      return 'unknown'
+    }
+  })
+  return { renderer, software: process.env.GQA_FORCE_SOFTWARE_GL === '1' || SOFTWARE_RENDERER_RE.test(renderer) }
+}
 
 function stats(values: number[]): {
   count: number
@@ -131,9 +165,20 @@ test.describe('stage 2 frame-time gate (60 fps, post stack off)', () => {
     )
 
     // keep-up evidence: physics+render stayed live with the clock
+    const gl = await detectGl(page)
     const keepUp = result.simTotal / (result.wall / 1000)
-    console.log(`[perf:rendered] keep-up ratio sim/wall = ${keepUp.toFixed(2)}`)
-    expect(keepUp, 'the stepped+rendered loop fell behind the clock').toBeGreaterThan(0.8)
+    console.log(`[perf:rendered] keep-up ratio sim/wall = ${keepUp.toFixed(2)} renderer=${gl.renderer}`)
+    if (gl.software) {
+      test.info().annotations.push({
+        type: 'note',
+        description:
+          `software GL (${gl.renderer}): keep-up=${keepUp.toFixed(2)} RECORDS, not gates — the ratio's ` +
+          'ceiling IS the rasteriser\'s frame time (200 ms of catch-up per frame / median delta), and a ' +
+          'software miss is a statement about the rasteriser; the stall ceiling below and measurement B are the hard claims.',
+      })
+    } else {
+      expect(keepUp, 'the stepped+rendered loop fell behind the clock').toBeGreaterThan(0.8)
+    }
 
     const meets60 = st.median <= GATE_MEDIAN_MS + VSYNC_EPS_MS && st.p95 <= GATE_P95_MS
     if (meets60) {

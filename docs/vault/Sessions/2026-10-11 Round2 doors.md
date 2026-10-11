@@ -54,7 +54,8 @@ residue, N5).
 
 ## Proofs (all local, mac; CI below)
 
-* Unit: 894 passed (44 files) — the +11: the fold (`campaign`), the three daily URL faces + the
+* Unit: 894 passed (44 files) at the pre-merge tree, 898 after the merge of main's Lane D —
+  the +11: the fold (`campaign`), the three daily URL faces + the
   `?level=` override (`boot`), the board-named chip (`ghost`), the production-merge table (`save`).
 * E2E FULL: 252 passed / 1 skipped (the pre-existing conditional) — incl. the new `daily.spec.ts`
   (two dates → two NAMED boards, stable within a date; the date-seeded page hashes the Node
@@ -65,6 +66,31 @@ residue, N5).
 * `npm run replay:all`: 30/30 verified, every hash byte-identical to the committed table — the
   daily's pick is nav + the existing seed field; zero shipped hashes moved, atlas untouched.
 * Typecheck green; build green; hash-atlas untouched (no level data changed).
+
+## The CI line (PR #10) — three reds, three lessons the mac could not teach
+
+1. **The tray-wrap red** (run 38097244150, `p4-chrome` at 633, `gw-callout vs gw-ghost-bar`
+   riding 716 px²): thirteen tray labels at the 14 px display voice fit mac's Futura in the
+   980 px column and WRAPPED on Linux's fallback grotesque — the old 310 had been absorbing
+   that +25 px as world pixels. Cure: stated compact button boxes (11/13 px) + the one-row tray
+   law asserted; details in item 1 above.
+2. **The blind-poll red** (run 38098598539, `share-replay` "Play never settled to a paused/ended
+   face"): `ensurePaused` polled the replay face every 30 ms — under a starved CI compositor two
+   Play clicks land inside one frame (pause+resume = still playing) and eight attempts burn in a
+   second. Cure: wait the committed face (`waitForFunction` on the phase), the same lesson
+   `waitToSettle` already carries in `src/ui/replay.ts`. HONESTY: `E2E_STARVE_RAF_MS=300` on mac
+   did NOT reproduce the red (old and new code both green there) — this is the mechanism plus a
+   patience fix, not a reproduced-then-cured bug; CI green is the proof.
+3. **The coin-toss red** (run 38100855908, `perf` test A keep-up 0.80 ≯ 0.8): the ratio is
+   arithmetically the rasteriser's frame-time gate in disguise — the sim advances ≤ 200 ms per
+   frame (boot.ts's 24-step catch-up clamp), so the ceiling IS 200/median-Δ, and CI medians of
+   200–217 ms straddle the gate by single frames (main itself recorded 0.81/0.83 — it only looked
+   green by luck of load). NOT a canvas-pixel regression: the 288 rule sits inside the ≤ 700 px
+   media block and the gate's viewport is 720, verified identical to main. Cure: stage 3's own
+   `detectGl` branch (record the ratio on software GL, gate it hard on hardware), plus the
+   `--use-angle=metal` launch convention so the mac actually EXERCISES the hardware branch
+   (measured there: keep-up 1.00 on ANGLE Metal). Notes: `Concepts/Performance.md`,
+   `Performance/stage-2.md`.
 
 ## Known limits
 
