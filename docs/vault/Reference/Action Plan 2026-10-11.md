@@ -9,6 +9,11 @@ livedocs: living
 > regressed it), [[Evaluation 2026-10-11 engineering round2]] **8** (all claimed fixes REAL; four new debts),
 > [[Evaluation 2026-10-11 design round2]] (set mean 6.4→6.9; played frame = 7/10 of judged). Bar: player
 > evaluator back to ≥7 with the flagged regressions CLOSED, verified by replay-table proofs (not asserts).
+>
+> **Status (2026-10-11): all four lanes merged to main, CI green, 902 unit / replay:all 30/30.** A merged by
+> salvage sha (`74f8ed7` — the lane died post-push; k02 re-anchored `0b4dbab2 → 8008b9aa` with the permutation
+> table in `Sessions/2026-10-11 Round2 choice.md`); B `5ac115d`; C `13ee3c56`; D `24f1956`. One hash moved
+> (k02, ledgered with its 24-order table); encore deaths now 1.475/2.008/2.792/3.100 s. Verdict lane running.
 
 ## Diagnosis
 
