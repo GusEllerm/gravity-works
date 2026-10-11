@@ -1003,7 +1003,7 @@ sig = "d80fcdaccddc7908"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/ui/builder.ts"
-sig = "d06b8e347831f95d"
+sig = "abe8c8eec71e7b32"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -1013,7 +1013,7 @@ sig = "dd4082020e29d4bb"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/world/setPlacement.ts"
-sig = "6143c0d8b5dcd826"
+sig = "1e9d20acc5da789a"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -1028,7 +1028,7 @@ sig = "2b24068cdedb9162"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "tests/unit/bathroom-levels.test.ts"
-sig = "ba659c879db5645d"
+sig = "fb8de097120a8c96"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -1038,7 +1038,7 @@ sig = "05ccd6489c396eaa"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "tests/unit/set-wiring.test.ts"
-sig = "68f378bf54ee5d36"
+sig = "1c20018312f789f9"
 
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
