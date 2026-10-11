@@ -18,14 +18,31 @@
  * hard and runs out soft over the stoam (~1.39 s, the same pop the ladder
  * opened with, spent on the last threshold). Same multiset, same end
  * plane — the dy bookkeeping is additive and the spans are equal, so both
- * routes deck-to-deck under the one anchored cup BY CONSTRUCTION. Every
- * whole-tray order finishes (the identical-span sum again — the campaign's
- * last kindness, stated as what it is); the omissions die in the porch's
- * families — the two-piece ones at <1.1 s off the chute's clock, the
- * three-piece `gapLip → drop → landing` shortcut the ONE exception: it
- * finishes, but ~0.07 s over the par TIME line it must beat to matter, so
- * it takes the pieces star and misses the time star. The crossing cannot
- * be shortcut; it can only be late.
+ * routes deck-to-deck under the one anchored cup BY CONSTRUCTION.
+ *
+ * ROUND 3 — THE THRESHOLDS GET A RIM (the 2026-10-11 round-3 verdict,
+ * cheapest point 1: "give the finale a blocked-rim moment — the k02
+ * machinery already exists, point it at porch05's last gap"). The physics
+ * is UNTOUCHED (the par replay hash `1e367c94` survives the change
+ * BYTE-IDENTICAL — `tests/unit/porch-guard.test.ts` pins it, `replay:all`
+ * 30/30); what changed is the BUILD TABLE: the rung declares two
+ * `blockedRims` (`src/world/level.ts`, the same blocked-rim LAW as
+ * kitchen02's `blockedGoalSeat`, pointed at the thresholds instead of the
+ * cup) — the DOOR MOUTH's void column and the STOAM's mouth lip — so a
+ * seat whose deck would bridge a threshold FLAT is refused at the ring and
+ * the refusal NAMES the obstacle ("blocked — the stoam is in the way",
+ * "blocked — the door mouth is in the way"). porch03's doctrine, enforced
+ * as placement law: the sink must never become a universal bridge, and
+ * every tray order that crossed a threshold on one piece's flat deck now
+ * cannot be built at all. Re-measured over ALL 24 click orders / 12
+ * distinct seatings (`scripts/porch05-order-table.mjs`): the whole-tray
+ * dump seats NOTHING past three pieces in any order — every naive seating
+ * meets at least one honest rim refusal (usually the final ask over the
+ * stoam) and the partial line it leaves FALLS; the only seatings that
+ * cross are the two AUTHORED orders — sink-first pays ★★★ (`1e367c94`,
+ * 1.192 s) and catch-first pays ★★☆ — and no naive order earns any star
+ * at all. The crossing can no longer be placed around; it must be
+ * CROSSING: pop the threshold, catch it, choose the catcher.
  *
  * Beyond this rung `nextInCampaign('porch05') === null`: the campaign ends
  * where the house ends — outside, in the morning, the chime still swinging
@@ -95,6 +112,34 @@ export const PORCH05: PorchLevel = registerPorch(
     // the same parameters, laid as two instances — the coherence rule).
     tray: { gapLip: 2, drop: 1, landing: 1 },
     fixtures: { ramp: 1, finishCup: 1 },
+    /** THE THRESHOLD RIMS (round 3 — see the header): named placement
+     *  guards, boxes only, no collider, no physics read. Both numbers are
+     *  literals (the `setPlacement` precedent) measured off the AUTHORED
+     *  seatings with the k02 margin law (every authored seating clears
+     *  every rim by ≥ 2 mm; every refused dump seating overlaps by
+     *  ≥ 2 mm — re-measured from the live builds and pinned by
+     *  `tests/unit/porch-guard.test.ts`):
+     *
+     *  - `door mouth` — the void column of the FIRST threshold: x spans
+     *    the 6 mm of clear air between the chute's deck end (0.455) and
+     *    the authored catcher's entry (0.565) with 4 mm pulled off each
+     *    deck, y from the porch deck's surface (−0.19) down through the
+     *    step to just under the catch deck (−0.28). The authored pop lip
+     *    clears it by 4 mm in y (its lowest point sits above the column
+     *    top); a `drop`/`landing` seated flat at the chute's end overlaps
+     *    by more than 100 mm and is refused.
+     *  - `stoam` — the LAST GAP's mouth lip: the final 5 mm of the step
+     *    (x 1.016 → the yard deck's start 1.021), y from 5 mm above the
+     *    yard deck (−0.376) to 5 mm above the porch deck a bridging deck
+     *    floats at (−0.266). The sink's tail deck reaching across the
+     *    threshold (max 1.019) overlaps the lip by 3 mm and is refused;
+     *    a pop lip's deck END stops 4 mm short of the lip and seats
+     *    (catch-first keeps its pop), and the authored catchers start
+     *    2 mm past it (2 mm is exactly kitchen02's ratified clearance). */
+    blockedRims: [
+      { name: 'door mouth', min: [0.459, -0.28, -0.1], max: [0.561, -0.192, 0.1] },
+      { name: 'stoam', min: [1.016, -0.376, -0.1], max: [1.021, -0.266, 0.1] },
+    ],
     parBuild,
   }),
 );

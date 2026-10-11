@@ -524,11 +524,38 @@ SINKS the mouth (`PORCH_SINK`, the soft catch that keeps the speed) and
 belly-steps the stoam run-out; the catch-first alternative
 (`porch05CatchFirstBuild`, 1.392) pops onto the step HARD at both
 thresholds. Both finish chained AND anchored at the same single cup
-(equal reach sums, the sink's span == the step's), ALL 12 orders finish
-(1.117–1.475), the par order is beatable within the tray (1.117 — the
-campaign lets you leave fast), and every subset FALLS by 1.525 except
-the one-threshold shortcut, 0.07 s over the line. `porch05.next ===
-null` — the campaign ends in the yard light.
+(equal reach sums, the sink's span == the step's), every subset of the
+tray FALLS by 1.525 except the one-threshold shortcut, 0.07 s over the
+line, and `porch05.next === null` — the campaign ends in the yard light.
+**ROUND-3 BLOCKED RIMS (2026-10-11, the round-3 verdict's cheapest point
+1 — "the k02 machinery already exists, point it at porch05's last gap"):**
+the physics is UNTOUCHED (every whole-tray order's DATA build still
+finishes 1.117–1.475 by the identical-span sum, and the par replay hash
+rides BYTE-IDENTICAL at `1e367c94` — proven, not promised:
+`tests/unit/porch-guard.test.ts`), but the rung now declares two
+`blockedRims` (`src/world/level.ts`, the sibling field of
+`blockedGoalSeat`; `blockedRimGuards` in `src/ui/builder.ts` reads them
+exactly like kitchen02's goal-body solid — named boxes, placement layer
+only, no collider, no physics read): the **door mouth**'s void column
+(`[0.459,−0.280]→[0.561,−0.192]`) and the **stoam**'s mouth lip — the last
+5 mm of the step (`[1.016,−0.376]→[1.021,−0.266]`). A seat whose deck
+bridges either threshold FLAT is refused and the refusal NAMES the
+obstacle ("blocked — the stoam is in the way"), porch03's "the sink can
+never become a universal bridge" doctrine enforced as placement law.
+Re-measured over ALL 24 click orders / 12 distinct seatings
+(`scripts/porch05-order-table.mjs`, asserted by
+`tests/unit/porch-guard.test.ts`, sampled with real clicks by
+`tests/e2e/porch-finale.spec.ts`): the tray dump seats NOTHING past three
+pieces — every non-authored order meets ≥ 1 honest rim refusal (the final
+ask at the stoam, an earlier ask for a flat bridge) and the partial line
+it leaves FALLS; the ONLY seatings that cross are the two AUTHORED
+orders, sink-first ★★★ (`1e367c94`) and catch-first ★★☆ — the 1.117
+beater and the shortcut seatings are now un-buildable claims, history at
+this tree. Margins are kitchen02's: authored seatings clear every rim by
+≥ 2 mm beyond the guard's own 2 mm shrink and every refusal overlaps by
+≥ 2 mm (pinned) — no refusal is a box artifact. The crossing cannot be
+placed around; it must be CROSSING: pop the threshold, catch it, choose
+the catcher.
 
 ## Pars are counted on the tray basis
 
@@ -1550,7 +1577,11 @@ module, test-pinned), 01's exact fit + the EARLY-family omission table,
 check, 03's whole-tray-is-par anti-cheat (every subset FALLS) + the 22/24
 order sweep + the bounce's par-beat, 04's 24/24 with the pinned-step
 belly death + the late shortcut, 05's both-threshold dual-route on both
-mountings + the beatable par) PLUS the flush-plank placement derivation
+mountings + the beatable par — the latter porch05 claims are DATA sweeps,
+and since the round-3 rims pass the bench law on that rung is the
+stricter one: the beatable and shortcut SEATINGS are refused at the rim
+(`tests/unit/porch-guard.test.ts`, `scripts/porch05-order-table.mjs`,
+`tests/e2e/porch-finale.spec.ts`) —) PLUS the flush-plank placement derivation
 (the deck's `DECK_Y` carried explicitly under the lowest authored
 finish deck) and a DERIVED dress sweep (the roof corner POSTS set the
 53 cm offset) — and extends the cross-ladder describe to SIX ladders
