@@ -472,7 +472,7 @@ export function createGhostBar(host: HTMLElement, handlers: GhostBarHandlers): G
   // control absolutely positioned OVER the world is a double citizen in
   // every canvas capture.
   bar.style.cssText =
-    'position:absolute;bottom:8px;left:12px;z-index:4;display:flex;gap:6px;align-items:center;font:12px system-ui,sans-serif';
+    'position:absolute;bottom:var(--gw-chip-bottom,8px);left:12px;z-index:4;display:flex;gap:6px;align-items:center;font:12px system-ui,sans-serif';
   const chip =
     'pointer-events:auto;font:12px system-ui,sans-serif;padding:2px 8px;border-radius:4px;border:1px solid rgba(185,163,124,0.7);background:rgba(255,248,236,0.78);color:#6a5636;cursor:pointer';
 

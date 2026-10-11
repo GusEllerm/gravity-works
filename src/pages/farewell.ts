@@ -339,7 +339,22 @@ export function startFarewell(
   const sandbox = document.createElement('a');
   sandbox.id = 'gw-farewell-sandbox';
   sandbox.href = opts.sandboxUrl;
-  sandbox.textContent = 'keep building — the porch sandbox';
+  sandbox.textContent = 'keep building — a room of your own, every room:';
+  // THE SIX SANDBOXES, NAMED (round 2, Lane C — the player evaluation: "the
+  // sandboxes are the toy, and the game hides the door"; the farewell's first
+  // door is the door the program ships, so it now NAMES all six rooms, one
+  // small link each — registry truth again, the same `?level=` addressing the
+  // level select row links use. The door's own click stays the porch sandbox:
+  // one click, one landing, the law this page has always kept.
+  const sandboxRow = document.createElement('div');
+  sandboxRow.id = 'gw-farewell-sandboxes';
+  for (const room of CAMPAIGN) {
+    const roomLink = document.createElement('a');
+    roomLink.className = 'gw-farewell-sandbox-room';
+    roomLink.href = `?level=${room.sandboxId}`;
+    roomLink.textContent = `${room.label.toLowerCase()} sandbox`;
+    sandboxRow.appendChild(roomLink);
+  }
   const daily = document.createElement('a');
   daily.id = 'gw-farewell-daily';
   daily.href = opts.dailyUrl;
@@ -353,6 +368,10 @@ export function startFarewell(
   shareNote.hidden = true;
   doorRow.append(sandbox, daily, share, shareNote);
   doors.appendChild(doorRow);
+  // the six names sit as one quiet sub-row under the doors' row, naming
+  // the room each sandbox belongs to (the door's own click lands on the
+  // porch one — one click, one landing, unchanged)
+  doors.appendChild(sandboxRow);
   overlay.appendChild(doors);
   share.addEventListener('click', () => {
     shareNote.hidden = false;

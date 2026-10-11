@@ -41,32 +41,32 @@ import { KITCHEN01_ID } from './levels/kitchen01.level.ts';
 import { KITCHEN02_ID } from './levels/kitchen02.level.ts';
 import { KITCHEN03_ID } from './levels/kitchen03.level.ts';
 import { KITCHEN04_ID } from './levels/kitchen04.level.ts';
-import { KITCHEN05_ID } from './levels/kitchen05.level.ts';
+import { KITCHEN05_ID, KITCHEN_SANDBOX_ID } from './levels/kitchen05.level.ts';
 import { BEDROOM01_ID } from './levels/bedroom01.level.ts';
 import { BEDROOM02_ID } from './levels/bedroom02.level.ts';
 import { BEDROOM03_ID } from './levels/bedroom03.level.ts';
 import { BEDROOM04_ID } from './levels/bedroom04.level.ts';
-import { BEDROOM05_ID } from './levels/bedroom05.level.ts';
+import { BEDROOM05_ID, BEDROOM_SANDBOX_ID } from './levels/bedroom05.level.ts';
 import { BATHROOM01_ID } from './levels/bathroom01.level.ts';
 import { BATHROOM02_ID } from './levels/bathroom02.level.ts';
 import { BATHROOM03_ID } from './levels/bathroom03.level.ts';
 import { BATHROOM04_ID } from './levels/bathroom04.level.ts';
-import { BATHROOM05_ID } from './levels/bathroom05.level.ts';
+import { BATHROOM05_ID, BATHROOM_SANDBOX_ID } from './levels/bathroom05.level.ts';
 import { GARDEN01_ID } from './levels/garden01.level.ts';
 import { GARDEN02_ID } from './levels/garden02.level.ts';
 import { GARDEN03_ID } from './levels/garden03.level.ts';
 import { GARDEN04_ID } from './levels/garden04.level.ts';
-import { GARDEN05_ID } from './levels/garden05.level.ts';
+import { GARDEN05_ID, GARDEN_SANDBOX_ID } from './levels/garden05.level.ts';
 import { GARAGE01_ID } from './levels/garage01.level.ts';
 import { GARAGE02_ID } from './levels/garage02.level.ts';
 import { GARAGE03_ID } from './levels/garage03.level.ts';
 import { GARAGE04_ID } from './levels/garage04.level.ts';
-import { GARAGE05_ID } from './levels/garage05.level.ts';
+import { GARAGE05_ID, GARAGE_SANDBOX_ID } from './levels/garage05.level.ts';
 import { PORCH01_ID } from './levels/porch01.level.ts';
 import { PORCH02_ID } from './levels/porch02.level.ts';
 import { PORCH03_ID } from './levels/porch03.level.ts';
 import { PORCH04_ID } from './levels/porch04.level.ts';
-import { PORCH05_ID } from './levels/porch05.level.ts';
+import { PORCH05_ID, PORCH_SANDBOX_ID } from './levels/porch05.level.ts';
 
 /**
  * THE FLAT LADDER, in play order (stage-6 T3.1 re-weave). Nav data only:
@@ -97,6 +97,13 @@ export interface CampaignRoom {
   /** The heading the level select prints. */
   label: string;
   levelIds: readonly string[];
+  /** The room's sandbox — the toy door that rides the room's row on the
+   *  level select and the room's name on the farewell's first door
+   *  (round 2, Lane C: "a room of your own, every room"). Like the rungs
+   *  it is nav data: the id is the shipped registry's, no level file moved,
+   *  and the sandbox stays OFF the ladder — it is nobody's rung and nobody's
+   *  `next`. */
+  sandboxId: string;
 }
 
 /** The campaign, grouped by ROOM for the level select — a PROJECTION of the
@@ -105,14 +112,31 @@ export interface CampaignRoom {
  *  the feel rig) are addressable by `?level=` but are nobody's rung. */
 export const CAMPAIGN: readonly CampaignRoom[] = (
   [
-    { id: 'kitchen', label: 'Kitchen' },
-    { id: 'bedroom', label: 'Bedroom' },
-    { id: 'bathroom', label: 'Bathroom' },
-    { id: 'garden', label: 'Garden' },
-    { id: 'garage', label: 'Garage' },
-    { id: 'porch', label: 'Porch' },
+    { id: 'kitchen', label: 'Kitchen', sandboxId: KITCHEN_SANDBOX_ID },
+    { id: 'bedroom', label: 'Bedroom', sandboxId: BEDROOM_SANDBOX_ID },
+    { id: 'bathroom', label: 'Bathroom', sandboxId: BATHROOM_SANDBOX_ID },
+    { id: 'garden', label: 'Garden', sandboxId: GARDEN_SANDBOX_ID },
+    { id: 'garage', label: 'Garage', sandboxId: GARAGE_SANDBOX_ID },
+    { id: 'porch', label: 'Porch', sandboxId: PORCH_SANDBOX_ID },
   ] as const
 ).map((room) => ({ ...room, levelIds: CAMPAIGN_LADDER.filter((id) => id.startsWith(room.id)) }));
+
+/**
+ * TODAY'S BOARD (round 2, Lane C — the daily, made real). The daily is no
+ * longer one rung wearing a date sticker: `hash(UTC date)` (the shipped
+ * `dailySeed`) picks WHICH of the thirty campaign boards today's run rides,
+ * by the same one-line rule the seed itself is — a pure fold of the day's
+ * number onto the ladder. The seed keeps riding the build's own `seed`
+ * field exactly as before (it folds into the state hash and touches nothing
+ * else — the sim never reads it); what the date now ALSO decides, honestly,
+ * is the board. Determinism law: the same seed picks the same board on
+ * every machine, and a date-seeded RUN is bit-stable the way every seeded
+ * run is (`daily` e2e replays the board twice and against the Node hash).
+ */
+export function dailyBoardId(seed: number): string {
+  const n = CAMPAIGN_LADDER.length;
+  return CAMPAIGN_LADDER[((Math.trunc(seed) % n) + n) % n]!;
+}
 
 /** Position of `id` on the ladder, or -1 (off-campaign). */
 export function campaignIndex(id: string): number {

@@ -27,6 +27,14 @@ hardware 60 fps line, and a ceiling inflated until it passes there (high-tier me
   per-tier medians against the ceiling table below.
 - **Everywhere, hard:** the post-OFF stage-2 gates — measurement C (GPU-free `World` stepping keep-up
   ≥ 1.00 + 60 Hz chunk budgets) never enters a browser and never relaxes.
+- **Since round 2 the same branch covers stage 2's rendered test A** (`tests/e2e/perf.spec.ts`, its own
+  `detectGl` copy): its keep-up ratio gate (`> 0.8`) turns out to be arithmetically the rasteriser's own
+  frame-time gate in disguise — the sim advances at most 24 × 1/120 s = 200 ms per frame (boot.ts's
+  catch-up clamp), so the ratio's ceiling IS 200 ms / median-Δ, and CI SwiftShader medians of 200–217 ms
+  put `> 0.8` on a coin edge (main recorded 0.81/0.83; a busy runner landed 0.79 and the gate died by one
+  frame on a claim about the rasteriser, not the game — round-2 PR #10 CI). On software GL the ratio now
+  RECORDS as an annotation; the frame-production stall ceiling (median ≤ 250 ms) and measurement B stay
+  hard on every raster; on hardware GL the ratio gate is fully live, exactly as stage 3 already did.
 
 On darwin the spec launches Chromium with `--use-angle=metal` (per-file `test.use`), so the local box
 reports `ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, …)` and gates the HARDWARE path; the default

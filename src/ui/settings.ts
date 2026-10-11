@@ -40,7 +40,7 @@ export function createSaveSettings(root: HTMLElement, win: Window & typeof globa
   const wrap = document.createElement('div');
   wrap.id = 'gw-save';
   wrap.style.cssText =
-    'position:absolute;bottom:8px;right:12px;z-index:4;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font:12px system-ui,sans-serif';
+    'position:absolute;bottom:var(--gw-chip-bottom,8px);right:12px;z-index:4;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font:12px system-ui,sans-serif';
 
   const toggle = document.createElement('button');
   toggle.id = 'gw-save-toggle';

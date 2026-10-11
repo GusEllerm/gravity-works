@@ -14,8 +14,15 @@ tags: [concept, levels]
 
 `CAMPAIGN_LADDER` in `campaign.ts` is authored FLAT and the rooms are a
 projection of it (`CAMPAIGN` groups its rungs under room headings for the
-select; `nextInCampaign`/`previousInCampaign`/`levelUnlock` read the flat
-order and nothing else). The weave answers the player evaluation's déjà vu
+select; each room also carries its `sandboxId` — nav data for the level
+select's sandbox sub-entries and the farewell's six names, round 2 Lane C;
+`nextInCampaign`/`previousInCampaign`/`levelUnlock` read the flat
+order and nothing else). The flat ladder has a second, DATE-facing
+consumer: `dailyBoardId(seed)` folds the day's `dailySeed` number onto the
+thirty rungs — TODAY'S BOARD, the daily's rotation, deterministic and
+pure, the pick being the SAME seed that rides the build (Decision Log
+2026-10-11; nothing about the weave below changes — the fold is a
+selector, not an order). The weave answers the player evaluation's déjà vu
 ("rung 8 is rung 1 with different wallpaper" — the five rooms' 01-style gap
 rungs and every room's identical grammar cluster) by interleaving the rooms.
 **The honest line the plan insists on: nav-only interleaving TREATS THE
@@ -1159,10 +1166,14 @@ kitchen's was the pattern). Every one is the SAME shape: `sandbox: true`,
 budget 999 ("no budget" with the number the contract demands), the FULL
 stocked tray — every kind at 99 copies — fixtures `ramp`+`finishCup`,
 `maxTime` 20, and a reference lap that finishes like every parBuild here.
-Discoverability is the kitchen row's verbatim: NOT a campaign rung (absent
-from `CAMPAIGN`, `campaignIndex` −1, nobody's `nextInCampaign`, absent from
-the level select), `?level=`-addressable, and the off-ladder unlock read
-means no dev-preview badge and a normal mint if a visitor finishes one.
+Discoverability CHANGED in round 2 (Lane C — "the sandboxes are the toy,
+and the game hides the door"): still NOT a campaign rung (absent from
+`CAMPAIGN_LADDER`, `campaignIndex` −1, nobody's `nextInCampaign`, no stars,
+no lock, nobody's `next`), but no longer absent from the level select —
+every room's row carries its sandbox as a visible LINK sub-entry, and the
+farewell's first door names all six; `?level=` stays the addressing both
+doors ride, and the off-ladder unlock read still means no dev-preview
+badge and a normal mint if a visitor finishes one.
 The rooms differ only in the LAP's geometry, which is each ladder's own
 seating: the kitchen's counter lap (one 0.175 m straight geometry —
 `SB_STRAIGHT`) measures 2.667 s (par 2.70, 5 tray pieces); the four gap

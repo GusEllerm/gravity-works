@@ -11,8 +11,10 @@ import {
   listQuarantined,
   loadSave,
   memoryStorage,
+  mergeEnvelope,
   mergeEnvelopes,
   migrateBlob,
+  migrateDetailed,
   recordStars,
   rememberBuild,
   replaceSave,
@@ -490,5 +492,87 @@ describe('save', () => {
     expect(merged.progress.stars.kitchen01.n).toBe(2); // star tie broken by content, once
     expect(merged.progress.stars.kitchen03.n).toBe(3);
     expect(Object.keys(merged.progress.reached).sort()).toEqual(['kitchen01', 'kitchen02', 'kitchen03']);
+  });
+
+  // N5 (engineering round 2): the table above binds the EXPORTED disk-to-
+  // disk merge; the shipped writes go through the PRODUCTION three-input
+  // merge (`mergeEnvelope`, the body of `saveSave`). This is the same
+  // algebra table run through THAT function: the pair meets as the two
+  // racing tabs do — each tab's incoming save is its own envelope read
+  // back UNCHANGED (so every key keeps its on-disk stamp and the pure
+  // stamp law is what decides, with no wall-clock `now` in the room) and
+  // each tab's JOURNAL is its own last install — and the law proved is
+  // the one the table proves: the same winners, the same bytes, whichever
+  // tab's view is the disk. Dropping EITHER the disk view or the journal
+  // from the production merge (the evaluator's mutation (b)) reddens
+  // claims 1 and 2: a seen key vanishes, and the orders stop agreeing.
+  test('R9/N5: the PRODUCTION merge (`mergeEnvelope`) obeys the commutativity table', () => {
+    const env = (
+      builds: Record<string, string | { t: number; s: string }>,
+      stars: Record<string, number | { t: number; n: number }>,
+      reached: Record<string, true> = {},
+    ) => JSON.stringify({ v: 2, builds, settings: {}, progress: { stars, reached } });
+    const build = (levelId: string, seed: number) => serialize({ levelId, seed, pieces: [] });
+    // the SAME hostile pair the commutativity test proves with
+    const a = env(
+      {
+        kitchen01: { t: 5, s: build('kitchen01', 1) },
+        kitchen02: { t: 9, s: build('kitchen02', 1) },
+        kitchen03: build('kitchen03', 0),
+      },
+      { kitchen01: { t: 7, n: 2 }, kitchen02: { t: 1, n: 1 } },
+      { kitchen01: true, kitchen02: true },
+    );
+    const b = env(
+      {
+        kitchen01: { t: 5, s: build('kitchen01', 2) },
+        kitchen02: { t: 3, s: build('kitchen02', 1) },
+        kitchen04: { t: 8, s: build('kitchen04', 1) },
+      },
+      { kitchen01: { t: 7, n: 1 }, kitchen03: { t: 2, n: 3 } },
+      { kitchen02: true, kitchen03: true },
+    );
+    // a tab's JOURNAL is the stamped view of what it last installed — the
+    // same extraction `saveSave` performs on its own installs
+    const journalOf = (raw: string) => {
+      const out = migrateDetailed(raw);
+      const builds: Record<string, { t: number; v: string }> = {};
+      const stars: Record<string, { t: number; v: number }> = {};
+      for (const [k, v] of Object.entries(out.data.builds)) builds[k] = { t: out.buildStamps[k] ?? 0, v };
+      for (const [k, v] of Object.entries(out.data.progress.stars))
+        stars[k] = { t: out.starStamps[k] ?? 0, v };
+      return { builds, stars, reached: { ...out.data.progress.reached }, settings: out.data.settings };
+    };
+    // The pure-algebra shape of the race, with no wall clock in the room:
+    // each tab writes over ITS OWN envelope (every key unchanged keeps
+    // its on-disk stamp — the byte-stability law above) while its JOURNAL
+    // still remembers the record the OTHER tab installed. Disk + journal
+    // are then exactly the table's two envelopes, met in production code.
+    const outB = mergeEnvelope(a, migrateBlob(a), journalOf(b));
+    const outA = mergeEnvelope(b, migrateBlob(b), journalOf(a));
+    // 1. the UNION law, both orders: every key any of the three inputs
+    //    saw is in the installed envelope — disk-only, journal-only and
+    //    reached-only keys all survive the production merge
+    for (const out of [outA, outB]) {
+      const merged = JSON.parse(out);
+      expect(Object.keys(merged.builds).sort()).toEqual(['kitchen01', 'kitchen02', 'kitchen03', 'kitchen04']);
+      expect(Object.keys(merged.progress.stars).sort()).toEqual(['kitchen01', 'kitchen02', 'kitchen03']);
+      expect(Object.keys(merged.progress.reached).sort()).toEqual(['kitchen01', 'kitchen02', 'kitchen03']);
+      // 2. the same per-key WINNERS the table proves: the equal-value
+      //    pair keeps the newer stamp, the stamp-tie breaks by CONTENT,
+      //    the one-sided keys land from whichever input owns them, and a
+      //    stamp-0 record keeps the plain shape
+      expect(merged.builds.kitchen02.t ?? 0).toBe(9);
+      expect(merged.builds.kitchen03).toBe(build('kitchen03', 0));
+      expect(merged.builds.kitchen04.s ?? merged.builds.kitchen04).toBe(build('kitchen04', 1));
+      expect((merged.progress.stars.kitchen01.n ?? merged.progress.stars.kitchen01)).toBe(2);
+    }
+    // 3. ORDER INDEPENDENCE, byte for byte — the disk and the journal are
+    //    commutative inputs of the same `chooseStamped` law, so whichever
+    //    tab's view was read as the disk, the install is the SAME bytes
+    //    (this is the sentence mutation (b) breaks and the exported merge
+    //    alone could not prove about the shipped write path). The settings
+    //    field is the one LAST-WRITER exception by law — identical here.
+    expect(outA).toBe(outB);
   });
 });

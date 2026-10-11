@@ -5,6 +5,7 @@ import { replayRun } from '../../src/replay/replay.ts'
 import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts'
 import { encodeShareUrl, type ShareCodec } from '../../src/share/share.ts'
 import type { Build } from '../../src/track/build.ts'
+import { goto } from './goto.ts'
 
 const zlibCodec: ShareCodec = {
   deflate: async (b) => new Uint8Array(zlib.deflateRawSync(Buffer.from(b))),
@@ -45,7 +46,7 @@ test('census: last 1.3 s of the kitchen01 par replay per 100 ms', async ({ page 
   const build = KITCHEN01.parBuild()
   const node = await replayRun(KITCHEN01, build)
   const url = await shareUrl('kitchen01', build.seed, node.hash, build)
-  await page.goto(`/${url}`)
+  await goto(page, `/${url}`)
   await expect(page.locator('#gw-replay-status')).toHaveText('verified', { timeout: 90_000 })
   await page.waitForFunction(
     () => typeof (window as never as { __gwReplayTrace?: unknown }).__gwReplayTrace === 'function',

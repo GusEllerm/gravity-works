@@ -47,12 +47,20 @@ for (const set of ['bedroom', 'bathroom', 'garden', 'garage', 'porch'] as const)
     expect(errors).toEqual([])
   })
 
-  test(`the ${set} sandbox is campaign-invisible on the level select, like the kitchen one`, async ({ page }) => {
+  test(`the ${set} sandbox rides its room's row on the level select — a visible sub-entry`, async ({ page }) => {
+    // ROUND 2, Lane C reversed this law on purpose ("the level board
+    // names the six sandboxes and links none" — the toy's door is now a
+    // DOOR): each room's row carries its sandbox as one quiet LINK below
+    // the rungs. It stays OFF the ladder in every other sense — not a
+    // rung button, no stars, no lock line, nobody's `next` — the rung
+    // chrome belongs to the campaign alone.
     await goto(page, '/?levels=1')
-    // the ladder shows its 30 rungs and NO sandbox button anywhere — the
-    // kitchen sandbox's discoverability (exactly) is the reference
-    await expect(page.locator(`#gw-level-${set}-sandbox`)).toHaveCount(0)
-    await expect(page.locator('#gw-level-kitchen-sandbox')).toHaveCount(0)
+    await expect(page.locator(`a#gw-level-${set}-sandbox`)).toHaveCount(1)
+    await expect(page.locator(`a#gw-level-${set}-sandbox`)).toBeVisible()
+    await expect(page.locator('a.gw-level-sandbox')).toHaveCount(6)
+    // a sandbox is not scored by the ladder: no rung-styled BUTTON exists
+    // for any of the six, and the rung readout is untouched
+    await expect(page.locator(`button#gw-level-${set}-sandbox`)).toHaveCount(0)
     await expect(page.locator('#gw-level-porch05')).toBeVisible()
   })
 }

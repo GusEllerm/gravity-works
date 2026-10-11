@@ -19,6 +19,15 @@
  * is a PERSONAL best on THIS browser — there is no server and no leaderboard,
  * the determinism only promises that the same seed runs the same HERE. That
  * sentence is UI copy the player sees next to the number, not a footnote.
+ *
+ * ROUND 2 (Lane C): the seed stopped being a sticker. `hash(UTC date)` now
+ * picks TWO facts of the day — the seed that rides the build, and TODAY'S
+ * BOARD (`dailyBoardId` in `src/world/campaign.ts`: the same number folded
+ * onto the thirty rungs of the ladder). A `?date=YYYY-MM-DD` debug address
+ * may pin the UTC day the seed is computed from (the recorded-debug-param
+ * family, Decision Log 2026-10-07 — a date, like every param here, changes
+ * addressing and the board, never physics), which is also what makes the
+ * two-dates law e2e-testable without a wall-clock race across UTC midnight.
  */
 
 /** The one localStorage key the daily layer owns (deliberately OUTSIDE the
@@ -132,10 +141,15 @@ export function recordDailyBest(
 }
 
 /** The chip's line, ONE sentence with the honesty clause inside it, so the
- *  claim and the caveat are never separated by a fold. */
-export function dailyChipLine(rec: DailyRecord, today: string): string {
+ *  claim and the caveat are never separated by a fold. Since round 2 the
+ *  line LEADS with the board (`boardName`, the rung today's date picked —
+ *  registry truth from the caller) — "race today" without a board name was
+ *  the date-sticker lie this closes: the number below is TODAY'S board's
+ *  best, not one rung's forever-line. */
+export function dailyChipLine(rec: DailyRecord, today: string, boardName?: string): string {
+  const board = boardName ? `today’s board ${boardName} · ` : '';
   if (rec.date === today) {
-    return `race today — best ${rec.best.toFixed(2)} s · streak ${rec.streak} day${rec.streak === 1 ? '' : 's'} · your own runs on this device only`;
+    return `${board}race today — best ${rec.best.toFixed(2)} s · streak ${rec.streak} day${rec.streak === 1 ? '' : 's'} · your own runs on this device only`;
   }
-  return `race today — not yet today (last: ${rec.best.toFixed(2)} s on ${rec.date}) · your own runs on this device only`;
+  return `${board}race today — not yet today (last: ${rec.best.toFixed(2)} s on ${rec.date}) · your own runs on this device only`;
 }

@@ -216,6 +216,11 @@ target = "tests/e2e/perf-stage3.spec.ts"
 sig = "2648b709ac3796c8"
 
 [[bindings]]
+doc = "docs/vault/Concepts/Performance.md"
+target = "tests/e2e/perf.spec.ts"
+sig = "98fc5e4c1f3556f1"
+
+[[bindings]]
 doc = "docs/vault/Home.md"
 target = "docs/vault/Reference/hash-atlas.json"
 sig = "e1069741d35da695"
@@ -223,7 +228,7 @@ sig = "e1069741d35da695"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/boot.ts"
-sig = "5f0eb119d057e585"
+sig = "6083228cffeb97ed"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -253,7 +258,7 @@ sig = "61ab15f3184ad775"
 [[bindings]]
 doc = "docs/vault/Home.md"
 target = "src/world/campaign.ts"
-sig = "af3dda9ec71a2fd4"
+sig = "8cce90d8ad95a55e"
 
 [[bindings]]
 doc = "docs/vault/Home.md"
@@ -303,7 +308,7 @@ sig = "cb7dd5d5414784c4"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/boot.ts"
-sig = "5f0eb119d057e585"
+sig = "6083228cffeb97ed"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -323,7 +328,7 @@ sig = "23d6349a19a9619e"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "src/pages/farewell.ts"
-sig = "0d7923e75ad672d1"
+sig = "80ffd592cf33f9ee"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -383,7 +388,7 @@ sig = "d46c82ea92f7d9d6"
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
 target = "tests/e2e/share-replay.spec.ts"
-sig = "a77b5955bd72232c"
+sig = "93ef9b1b637505d3"
 
 [[bindings]]
 doc = "docs/vault/Modules/camera.md"
@@ -583,7 +588,7 @@ sig = "4c45526e4182ba0a"
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
 target = "src/boot.ts"
-sig = "5f0eb119d057e585"
+sig = "6083228cffeb97ed"
 
 [[bindings]]
 doc = "docs/vault/Modules/render.md"
@@ -923,7 +928,7 @@ sig = "30af55b32a0f0f22"
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
 target = "src/boot.ts"
-sig = "5f0eb119d057e585"
+sig = "6083228cffeb97ed"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets.md"
@@ -1308,7 +1313,7 @@ sig = "9c6d05daff1e0345"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "src/boot.ts"
-sig = "5f0eb119d057e585"
+sig = "6083228cffeb97ed"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -1377,13 +1382,18 @@ sig = "87cba624518bd54f"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
+target = "scripts/probe-ghost-flip.mjs"
+sig = "637433c5f0504d86"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
 target = "scripts/probe-piece-order.mjs"
 sig = "38ba83af4eebb5bf"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/boot.ts"
-sig = "40d5204955c00896"
+sig = "6083228cffeb97ed"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1398,12 +1408,12 @@ sig = "a38e01706f33daf6"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/pages/farewell.ts"
-sig = "59b8cd4568121fa1"
+sig = "80ffd592cf33f9ee"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/pages/ghost.ts"
-sig = "5ca3945d8f739e09"
+sig = "d2bb52d63b31e956"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1453,7 +1463,7 @@ sig = "3c5a96399a09b23c"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/levelselect.ts"
-sig = "f3e5206b61c5e703"
+sig = "cd3c4f784557ec51"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1468,17 +1478,17 @@ sig = "4b5962fbc2cfe15b"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/settings.ts"
-sig = "f83db9ef6b318b3f"
+sig = "e1bff588771cda42"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/ui/shell.css"
-sig = "40a5051912e0b1b5"
+sig = "218cd7a8861e52b8"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/world/campaign.ts"
-sig = "af3dda9ec71a2fd4"
+sig = "8cce90d8ad95a55e"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1522,13 +1532,18 @@ sig = "ddbe32d0124dd69d"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
+target = "tests/e2e/daily.spec.ts"
+sig = "79e678aa3f80d0ef"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/farewell.spec.ts"
-sig = "daf7aea7b2891c4f"
+sig = "d6a0ca210d5b9ea3"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/ghosts.spec.ts"
-sig = "1e950221a3c04bfa"
+sig = "9bba870284864c86"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1553,12 +1568,12 @@ sig = "d4c50c7057aafa6c"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/p4-chrome.spec.ts"
-sig = "04c8d5fc8c6e6235"
+sig = "b4f87b9763dcb3bb"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/p4-words-where.spec.ts"
-sig = "61e9da4b0a0fec07"
+sig = "b12d0b22d67003dd"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1632,6 +1647,11 @@ sig = "59904e54be68ab65"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
+target = "tests/e2e/stage6-sandboxes.spec.ts"
+sig = "4227ab4424a058d4"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/viewport-aim.spec.ts"
 sig = "bdb97b5d8f764945"
 
@@ -1647,13 +1667,18 @@ sig = "f8c688f0055fa0f4"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
+target = "tests/unit/boot.test.ts"
+sig = "cbe55f8def42a8c2"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/callouts.test.ts"
 sig = "12a2dc0e4e1c0edb"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/campaign.test.ts"
-sig = "1ef2957bbee5a5a0"
+sig = "ba91dc0e5796f5cd"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1668,7 +1693,7 @@ sig = "17ab5e19a4c746d3"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/ghost.test.ts"
-sig = "76375d6c92597fb8"
+sig = "36134e59a7db74af"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1688,7 +1713,7 @@ sig = "58f5fe859fa18a99"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/save.test.ts"
-sig = "67837c46596536a2"
+sig = "12818e6463688827"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1713,7 +1738,7 @@ sig = "2bcbeeffa80b98e6"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/boot.ts"
-sig = "5f0eb119d057e585"
+sig = "6083228cffeb97ed"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1743,7 +1768,7 @@ sig = "b10082b8262b15be"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/campaign.ts"
-sig = "af3dda9ec71a2fd4"
+sig = "8cce90d8ad95a55e"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1793,7 +1818,7 @@ sig = "b18d8b61f39acad7"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/campaign.test.ts"
-sig = "1ef2957bbee5a5a0"
+sig = "ba91dc0e5796f5cd"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1848,12 +1873,12 @@ sig = "9599dbdb90965a2b"
 [[bindings]]
 doc = "docs/vault/Reference/Action Plan 2026-10-09.md"
 target = "src/boot.ts"
-sig = "5f0eb119d057e585"
+sig = "6083228cffeb97ed"
 
 [[bindings]]
 doc = "docs/vault/Reference/Action Plan 2026-10-09.md"
 target = "src/pages/farewell.ts"
-sig = "0d7923e75ad672d1"
+sig = "80ffd592cf33f9ee"
 
 [[bindings]]
 doc = "docs/vault/Reference/Action Plan 2026-10-09.md"
@@ -1873,7 +1898,7 @@ sig = "2833cd05625ea55b"
 [[bindings]]
 doc = "docs/vault/Reference/Action Plan 2026-10-09.md"
 target = "src/world/campaign.ts"
-sig = "af3dda9ec71a2fd4"
+sig = "8cce90d8ad95a55e"
 
 [[bindings]]
 doc = "docs/vault/Reference/Canonical Cameras.md"

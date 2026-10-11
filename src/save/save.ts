@@ -688,8 +688,13 @@ function rememberInstalled(envelope: string, store: StorageLike): void {
  *  the commutative per-key law: the disk view, the incoming save (keys it
  *  still carries UNCHANGED keep their on-disk stamp, so a settings-only
  *  write is byte-stable; a key whose value differs is stamped now), and
- *  this tab's write journal. */
-function mergeEnvelope(raw: string | null, data: SaveData, journal: StampedMaps): string {
+ *  this tab's write journal. Exported for the unit proof (engineering
+ *  round-2 N5): the algebra table `mergeEnvelopes` is proved with binds
+ *  this PRODUCTION merge too — every pair from the table run through
+ *  `mergeEnvelope` as the write it is (an incoming save + a journal), and
+ *  the per-key winners come out the same law's way, all three inputs
+ *  alive (`tests/unit/save.test.ts`). */
+export function mergeEnvelope(raw: string | null, data: SaveData, journal: StampedMaps): string {
   const now = Date.now();
   const base = stampedView(raw) ?? { builds: {}, stars: {}, reached: {}, settings: data.settings };
   const incoming: StampedMaps = {
