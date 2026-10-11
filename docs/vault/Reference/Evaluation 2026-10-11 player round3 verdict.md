@@ -19,7 +19,7 @@ tags: [reference, evaluation, player]
 | 1 | k02 pays the dump (orders 2/3) | **CLOSED** | headless 24-order table + 5 shipped-browser orders; no order seats 4, no ★3 without choosing |
 | 2 | Par ghost reads the answer aloud | **CLOSED** | locked on unearned rungs, unlocks at first minted finish, afterlife default ON |
 | 3 | 633px stage shrank to 574×323 | **CLOSED (one residue)** | canvas measured 613×345 at 1280×633, idle rects disjoint; fail band still crosses the chips |
-| 4 | Daily = date sticker on rung one | pending | |
+| 4 | Daily = date sticker on rung one | **CLOSED** | `dailyBoardId` folds `dailySeed(date)` onto the 30-rung ladder; 3 dates → 3 named boards in the browser |
 | 5 | Sandbox door hidden | pending | |
 | 6 | Encore rail one rung in four paints | pending | |
 | 7 | Bloom / post mid-run honesty | pending | |
@@ -85,6 +85,16 @@ surface):
   "the fail band overlays what it found" is still true at this tree; it is the failure-note row riding
   the chip band, not the idle chrome. The world itself is no longer paying for the chrome. CLOSED with
   that asterisk.
+
+## Item 4 — the daily is a board now, not a sticker
+
+Headless: `dailySeed` (FNV-1a over the UTC key) → `dailyBoardId` on the 30-board ladder:
+2026-10-11 → porch02, 2026-10-12 → garage05, 2026-10-13 → garage04. In the shipped browser the same URLs
+show named boards (`#gw-daily-board`): **"today’s board — The Open Door · 2026-10-11"**, **"Spill Course ·
+2026-10-12"**, **"Last Lap · 2026-10-13"**. Two dates, two boards, three dates, three boards — the
+round-2 "race against rung one, forever" sentence is false now, and `?date=` makes it checkable without
+racing midnight. The seed still rides the build hash only (physics law unchanged); what the date decides
+is the BOARD. CLOSED.
 
 ## Fresh verdict
 
