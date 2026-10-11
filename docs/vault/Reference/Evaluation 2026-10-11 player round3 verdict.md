@@ -25,6 +25,9 @@ tags: [reference, evaluation, player]
 | 7 | Bloom / post mid-run honesty | **CLOSED** | flare probe re-run on this tree: small-disc spread 0.0 px (pre-gate 5.5), area control still glows; mid-run shots read clean |
 | 8 | Garage/bathroom run-camera hero grammar | **CLOSED** | `RUN_FRAMING.eyeUp: 0.028` rows shipped; mid-run shots frame deck grammar |
 
+The WORSE paragraph is answered in the fresh walk below: every fix I probed bought its claim WITHOUT a
+new lie in my lane — the two residues are pre-existing (fail band over chips; encore/finale substance).
+
 ## Item 1 — kitchen02, all 24 orders (the round-2 flagship failure)
 
 Headless sweep (`node scripts/k02-order-table.mjs`, played through the shipped placement model + replay):
@@ -135,6 +138,90 @@ reads as the round-2 complaint (flat deck void under a floating car). CLOSED —
 show the fail-band/dev-badge chrome unchanged, and the bathroom frame's white tub still holds its AREA
 glow honestly (it is a wide bright region; the size gate keeps it soft, not flared). CLOSED.
 
-## Fresh verdict
+## Fresh verdict — scored like a stranger at tree `c9c2ea7`
 
-pending
+Method note: two stated divergences, same family as prior rounds — (1) the harness reports
+`navigator.webdriver`, so the premiere beat is skipped on my landings (its spec is green; a human first
+visit gets it); (2) the farewell needed a finisher's save, so I seeded all 30 rungs' stars after
+earning honest ones where unlocked — the crane, the doors and the film are what a finisher sees; the
+tally numbers ("30 rungs walked — 88 of 90 stars") are my seed plus my one honest porch05 finish (2
+stars, 1.36 s over par — the tally read 14/15 Porch, honest with itself). One methodology confession:
+my FIRST bulk dumps ran through page-side `.click()` calls, and the ring aims differently for
+pointer-less scripted clicks — k03 "died" at 1.07 s that way. Every rung verdict below was re-run with
+real CDP clicks at human pacing; the scripted deaths were thrown out. That is also the shape of the
+round-2 lesson, now on my side of the glass.
+
+**The cold sixty seconds (1280×633, fresh save, `cold-k01-633.png`):** display chrome, honest lock lines
+on the board, the rung-1 stage at 613×345 (54 % of the window, the ledger's own number), the ghost bar
+carrying its locked sentence, and the teacher voice one calm line above the chips. Best first minute
+this game has had on a short laptop.
+
+**The 14-rung walk (six rooms, CDP clicks):** k01 par-build ★★★ (par mints real stars — rung 1 unlocks
+honestly). k02 five orders — see item 1: the dump is now PUNISHED or paid two, never paid three for not
+choosing; the one ★★★ is the authored line, and both its 3-piece seatings pay it identically. k03 dump
+FINISHES ★★☆ 1.50 s "same pieces as par". k04 dump seats 3 of 4, DIES 2.66 s — the note still says
+"**flatten** the landing by the lip or lower the lip by the drop": one of the two verbs still has no key.
+bedroom01/garden01/garage01 dumps finish at 2.37–2.38 s ★★☆ — the rung-1 grammar in three aprons at
+rungs 4/14/21, same clock as round 2 to the 0.01. bedroom02 dump 5/5, DIES 2.33 s, note unchanged:
+"flatten the landing past the cup" — still, at the fourth evaluation, the unspeakable fix. bathroom02
+par-run 0.74 s with the tub and tile grid in frame (item 8). The encores stagger their deaths but a
+4-piece dump still COMPLETES both at par-adjacent clocks (2.86/3.12 vs 2.9/3.15). porch01 par-run
+finishes at 1.02 s with the unlocked par ghost racing alongside (earned surfaces show the line).
+porch05 — the FINALE — still finishes by dumping the tray: 4/4, 1.36 s, and the crane flies me out of a
+rung that asked nothing. Fifteen-ish rung-visits, ONE real choice (k02), and two rungs that still ask
+for a verb the builder does not ship.
+
+**First share:** built a bedroom01 line by dumping, hit Share, got a `#s=` link; the page says
+"✓ verified · matches the link — re-simulated on this machine" and shows replay hash = link hash. The
+film stars the blue sedan (`share-film-1s.png` at the end frame: a blue car parked at the cup on my
+orange track, sharp, NOT a bokeh blur — the round-2 ending-frame seam is gone); a 0.8 s sample of the
+porch05 film is a close deck pass with the car out of frame, so the car reads late in short films.
+Pasting the link into "ghost: from link" → "their car is on the grid — launch to race it", mode
+`friend`, and I lost the race by 0.003 s. The social loop is the most polished part of the game.
+
+**The farewell:** the crane sweeps clean rooms — no leaked chrome — but the between-room legs are still
+flat discs in a warm void (`farewell-mid.png`: a beige planchet floating in beige nothing, props tiny at
+the edge; the round-2 green-disc complaint repainted, not re-architected). The doors land honestly and
+now wear SIX real sandbox links under them (door 1 → porch sandbox, door 2 → today's named board, door
+3 → the film of the run, verified) — the "you could have been a tinkerer all along" sentence is finally
+spoken by the interface itself.
+
+**Ten minutes in kitchen-sandbox:** every one of the thirteen kinds at ×99, loops and springs included.
+My first build — booster, straight, loop, launched — FINISHED 2.52 s ★★★ at the FIRST try: the
+round-2 "first loop lands on the spawn ramp" problem is gone (the ring's default seats the run-up where
+the 2.30-R law wants it), and the sandbox par (5 pieces / 2.70 s) is no longer a scored-freebuild lie —
+it encodes the loop+run-up answer, which is the affordance lesson wearing a number. A spring+wide-curve
+build died honestly at 2.62 s with a real "add a straight · place at: end of straight". One cosmetic
+seam: the sandbox's "Stars: … at or under 2.70 s" rules line OVERPRINTS the "why the same build always
+runs the same way" disclosure at 633 (`sandbox-tray.png`, bottom left) — the only text collision I
+found, and it is the rules line choosing a freebuild's afterlife surface to live on.
+
+**Sound:** mute harness again, stated limit: what plays is code-verified roll-noise, thuds, ticks and
+a three-note chime; my hour-two worry (the chime as a congratulations metronome on a sandbox grind)
+stands unchanged.
+
+### VERDICT — 7.5 / 10 (fresh stranger; prior rounds: 4 → 6.5 → 7 → 6.5)
+
+Every fix the program shipped against the round-2 indictment verified TRUE IN THE HAND, not just in the
+harness — the choice rung keeps its promise under every click order I could stage, the daily names its
+board, the 20 px came back, the ghost keeps its spoiler budget, the door is open, the toy is the first
+toy I could actually play. That honesty is what moved the number, more than any new feature.
+
+**What keeps it below 8:**
+1. **Substance, one rung deep.** One corridor visit in ~fifteen asks anything the tray-dump does not
+   answer (k02); the finale and all four encores are dump-completable; rung-1 grammar repeats verbatim
+   in three rooms. The weave fixed spacing; the ladder's average DECISION count is still ~1.
+2. **"Flatten" still has no verb.** k04 (2.66 s death) and bedroom02 (2.33 s death) print a fix sentence
+   the builder cannot execute — four evaluations, the same two rungs. One rotate-step or "lower it" ask
+   closes the game's worst teacher-moment.
+3. **The crane's legs.** Between the rooms the farewell flies over void; the sets read only when docked.
+   A cheap set-dressing smear along the leg (even the fog the build view already knows) is the last
+   unfinished shot of the ending.
+4. **The fail band still rides the chips at 633,** and the sandbox rules line overprints its own
+closure — two small chrome debts at the flagship window.
+5. The chime's repetition at sandbox grind (uneard by me; law-verified only).
+
+Cheapest points, in order: (1) give one encore or the finale a blocked-rim moment (the k02 machinery
+already exists — point it at porch05's last gap); (2) ship the "lower it" verb (one rotate detent step
+or a param nudge on the aimed piece); (3) paint the crane legs; (4) move the sandbox rules line off the
+hash row.
