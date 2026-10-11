@@ -1,7 +1,7 @@
 {
   "header": {
     "generator": "tools/hash-atlas.mjs",
-    "generated": "2026-10-09",
+    "generated": "2026-10-10",
     "platform": "darwin-arm64",
     "node": "v22.22.1",
     "rapier": "0.21.0"
@@ -49,11 +49,11 @@
     },
     {
       "levelId": "bathroom05",
-      "hash": "1b37dfed",
-      "steps": 362,
-      "time": 3.016667,
+      "hash": "b986542f",
+      "steps": 343,
+      "time": 2.858333,
       "parPieces": 4,
-      "parTime": 3.05
+      "parTime": 2.9
     },
     {
       "levelId": "bedroom-sandbox",
@@ -97,11 +97,11 @@
     },
     {
       "levelId": "bedroom05",
-      "hash": "1b37dfed",
-      "steps": 362,
-      "time": 3.016667,
+      "hash": "5bfb2380",
+      "steps": 374,
+      "time": 3.116667,
       "parPieces": 4,
-      "parTime": 3.05
+      "parTime": 3.15
     },
     {
       "levelId": "feeltrack",
@@ -153,11 +153,11 @@
     },
     {
       "levelId": "garage05",
-      "hash": "1f99683a",
-      "steps": 161,
-      "time": 1.341667,
+      "hash": "2e3aa2df",
+      "steps": 235,
+      "time": 1.958333,
       "parPieces": 4,
-      "parTime": 1.35
+      "parTime": 2
     },
     {
       "levelId": "garden-sandbox",
@@ -225,11 +225,11 @@
     },
     {
       "levelId": "kitchen02",
-      "hash": "0b4dbab2",
-      "steps": 121,
-      "time": 1.008333,
+      "hash": "8008b9aa",
+      "steps": 120,
+      "time": 1,
       "parPieces": 3,
-      "parTime": 1.05
+      "parTime": 1
     },
     {
       "levelId": "kitchen03",

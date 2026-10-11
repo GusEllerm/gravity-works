@@ -35,6 +35,28 @@
  * The set ships no live zones and neither does this rung (the bedroom
  * ladder's law). Measured numbers: `npm run pars`, `tests/unit/bedroom-
  * levels.test.ts`.
+ *
+ * THE DEATH-CLOCK STAGGER (round 2, P4 item 6): all four encores rode ONE
+ * rail, so the same failing build died at the SAME millisecond in sibling
+ * rooms (player round 2: "same tray, same death"). This room takes the
+ * SHELF-PAIR's late slot: the SAME 0.26 m finale shelf on its own eased
+ * −11.35° grade (`BED05_GRADE`) with a 0.18 m crossing plate
+ * (`BED05_PLANK`) — both stated rung-local deviations like `KITCHEN05_GAP`
+ * before them; the room's ONE deck geometry and its 0.26 m shelf stay true
+ * for the 01–04 ladder. Measured first: height, lead and catch moves
+ * leave the death clock where it was (the arrival-plus-fall sum
+ * self-cancels) and every shelf-height move either stalls the par or
+ * drops the last-spend trim into the cup gap. At −11.35° + 0.18 m the
+ * rail still sits on the set's floor disc (chain 1.397 m < the 1.4 m rim,
+ * the rail-containment law intact), the canonical death — `drop →
+ * straight → landing`, dip two uncrossed — lands at 3.100 s, 0.308 s
+ * LATER than bathroom05's 2.792 s, every pair of encore deaths ≥0.3 s
+ * apart (table: session note 2026-10-11), and EVERY order/promise/booster
+ * law survives verbatim — deck-first still never catches sink two (falls
+ * at 2.925), the mid decoy still kills, the hidden line (2.617 s) and the
+ * gluttony builds are themselves. Only the decoy's run-out drag
+ * compresses with the eased crawl (+0.39 → +0.14 s measured, the
+ * porch-pair's idiom). Par moves 3.017 → 3.117 s.
  */
 import type { Build } from '../../track/build.ts';
 import { PIECE_KINDS, type PieceKind } from '../../track/pieces.ts';
@@ -60,12 +82,30 @@ export const BEDROOM05_ID = 'bedroom05';
  *  shortcut. Rung-local deviation, stated, like `PORCH_STEP` before it. */
 export const ENCORE_DIP = { height: 0.12, angle: 45, radius: 0.02, lead: 0.11 };
 
+/** THE STAGGER GRADE (round 2 P4 item 6): the finale's 0.26 m shelf on
+ *  this room's own eased pitch — see the header. The grade is the ONLY
+ *  axis that moves the death clock at all (height, lead and catch moves
+ *  leave it where it was — the arrival-plus-fall sum self-cancels), and
+ *  −11.35° is its measured limit: anything shallower stalls the par on
+ *  the flat approach (the ladder's −12° convention's own margin) and
+ *  anything steeper lands inside bathroom05's 0.3 s window. */
+const BED05_GRADE = -11.35;
+
+/** THE STAGGER PLANK (round 2 P4 item 6): the rail's plate 0.02 m shorter
+ *  than the room's ladder deck (`BEDROOM_STRAIGHT` stays the law for
+ *  01–04; the encore's rail is its own, stated). The eased grade lengthens
+ *  the ramp, and the set's 1.4 m floor disc (the rail-containment law the
+ *  disc-centring tests pin) only takes the rung's whole chain back to the
+ *  eased crawl if the crossing plate shrinks — measured: 0.2 m walks the
+ *  chain 4 mm off the disc rim, 0.18 m lands it back at 1.397 m. */
+const BED05_PLANK = 0.18;
+
 function parBuild(): Build {
   return lay(
     [
-      { def: 'ramp', params: kitchenRamp(0.26) }, // the finale's shelf (fixture)
+      { def: 'ramp', params: kitchenRamp(0.26, BED05_GRADE) }, // the finale's shelf at the stagger grade (fixture)
       { def: 'drop', params: ENCORE_DIP }, // tray: cable dip ONE — ridden
-      { def: 'straight', params: { length: BEDROOM_STRAIGHT } }, // tray: the plank between
+      { def: 'straight', params: { length: BED05_PLANK } }, // tray: the plank between
       { def: 'drop', params: ENCORE_DIP }, // tray: cable dip TWO — ridden
       { def: 'landing', params: KITCHEN_GAP.landing }, // tray: the run-out catch
       { def: 'finishCup' }, // fixture
@@ -82,10 +122,10 @@ function parBuild(): Build {
 export function bedroom05BoosterBuild(): Build {
   return lay(
     [
-      { def: 'ramp', params: kitchenRamp(0.26) },
+      { def: 'ramp', params: kitchenRamp(0.26, BED05_GRADE) },
       { def: 'booster' }, // the early spend
       { def: 'drop', params: ENCORE_DIP },
-      { def: 'straight', params: { length: BEDROOM_STRAIGHT } },
+      { def: 'straight', params: { length: BED05_PLANK } },
       { def: 'landing', params: KITCHEN_GAP.landing },
       { def: 'finishCup' },
     ],
@@ -102,7 +142,7 @@ export const BEDROOM05: BedroomLevel = registerBedroom(
     seed: 1,
     startSocket: startSocketFromBuild(parBuild(), BEDROOM_GEOM.release * BEDROOM_GEOM.rampBlend),
     // measured on the par build (regenerate via `npm run pars`)
-    par: { pieces: 4, time: 3.05 },
+    par: { pieces: 4, time: 3.15 },
     maxTime: 12,
     // par's four + one DECOY straight + one TEMPTATION booster = 6 = budget
     tray: { drop: 2, straight: 2, landing: 1, booster: 1 },

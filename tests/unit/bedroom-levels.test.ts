@@ -454,11 +454,11 @@ describe('bedroom05 — the ENCORE: the double crossing, every omission fatal, t
 
   test('the ORDER is the line: deck-first never catches dip two; the par order is beatable within the tray', async () => {
     const deckFirst = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['st', 'dr', 'dr', 'la'])));
-    expect(deckFirst.status).not.toBe('finished'); // measured fall at 2.808 — the plank first strands the second sink
+    expect(deckFirst.status).not.toBe('finished'); // measured fall at 2.925 at the stagger grade — the plank first strands the second sink
     const beat = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['dr', 'la', 'dr', 'st'])));
     const par = await replayRun(BEDROOM05, BEDROOM05.parBuild());
     expect(beat.status).toBe('finished');
-    expect(beat.time).toBeLessThan(par.time); // measured 2.783 vs 3.017 — kitchen04's law holds here too
+    expect(beat.time).toBeLessThan(par.time); // measured 3.000 vs 3.117 — kitchen04's law holds here too
   }, 90_000);
 
   test('the spare straight is a decoy: TAIL-placed it finishes at the par’s OWN hash, mid-line it kills the run, after the catcher it drags', async () => {
@@ -470,7 +470,10 @@ describe('bedroom05 — the ENCORE: the double crossing, every omission fatal, t
     expect(mid.status).not.toBe('finished'); // deck-first again, in disguise: dip two goes uncrossed
     const runout = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['dr', 'st', 'dr', 'st', 'la'])));
     expect(runout.status).toBe('finished');
-    expect(runout.time).toBeGreaterThan(par.time + 0.3); // measured 3.408 — the extra plank before the catch drags
+    // measured 3.258 against the 3.117 par — the eased stagger crawl
+    // compresses the old +0.39 s drag (the porch pair's idiom); the
+    // extra plank before the catch still never pays for itself.
+    expect(runout.time).toBeGreaterThan(par.time + 0.1);
   }, 120_000);
 
   test('the booster is a CHOICE both ways: spent EARLY it buys dip two whole (exported hidden line); spent LAST it is trim at the par’s hash', async () => {
@@ -478,7 +481,7 @@ describe('bedroom05 — the ENCORE: the double crossing, every omission fatal, t
     expect((await replayRun(BEDROOM05, bedroom05BoosterBuild())).status).toBe('finished'); // chained export
     const early = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['bo', 'dr', 'st', 'la'])));
     expect(early.status).toBe('finished');
-    expect(early.time).toBeLessThan(par.time); // measured 2.442 — the room's hidden 3★, porch03's bounce law
+    expect(early.time).toBeLessThan(par.time); // measured 2.617 — the room's hidden 3★, porch03's bounce law
     const last = await replayRun(BEDROOM05, placed(BEDROOM05, spec(['dr', 'st', 'dr', 'la', 'bo'])));
     expect(last.status).toBe('finished');
     expect(last.hash).toBe(par.hash); // measured: the par's own clock and hash — one piece wasted

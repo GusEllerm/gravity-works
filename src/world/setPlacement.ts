@@ -128,7 +128,7 @@ const BEDROOM_ROWS: Record<string, readonly [number, number, number]> = {
   // bedroom05 (encore): the double-crossing rail — same rule (x = the par
   // rail's midpoint, floor 5 mm under the finish deck), 12.6 cm deeper
   // than the finale's row because the par rides TWO 0.12 m dips.
-  bedroom05: [1.3602, -0.57419, -0.15],
+  bedroom05: [1.38598, -0.573821, -0.15], // x re-derived at the round-2 death-clock stagger
   // bedroom-sandbox (stage 6): the no-budget room, same rule — the lap's own
   // finish deck (one `KITCHEN_GAP` down from the 0.28 shelf) and rail midpoint.
   'bedroom-sandbox': [1.31299, -0.468092, -0.15],
@@ -164,7 +164,7 @@ const BATH_ROWS: Record<string, readonly [number, number, number]> = {
   bathroom04: [1.2165, -0.44809, -BATH_AXIS_OFFSET],
   // bathroom05 (encore): same rule; 12.6 cm under the finale's row (the
   // par rides two sink dips — see the bedroom05 row note).
-  bathroom05: [1.3602, -0.57419, -BATH_AXIS_OFFSET],
+  bathroom05: [1.33977, -0.574409, -BATH_AXIS_OFFSET], // xy re-derived at the round-2 death-clock stagger // x re-derived at the round-2 death-clock stagger
   // bathroom-sandbox (stage 6): the no-budget room, same rule off the lap's
   // own deck (one `KITCHEN_GAP` down from the 0.28 shelf).
   'bathroom-sandbox': [1.31299, -0.468092, -BATH_AXIS_OFFSET],
@@ -262,9 +262,9 @@ const GARAGE_ROWS: Record<string, readonly [number, number, number]> = {
   garage03: [1.1825, -0.42567, -GARAGE_AXIS_OFFSET],
   garage04: [1.21654, -0.44809, -GARAGE_AXIS_OFFSET],
   // garage05 (encore): same rule; re-derived at the stage-6 BREVITY TRIM
-  // (the rung's fail-timing chute and its shorter rail move the row — the
-  // centre follows the run).
-  garage05: [0.95817, -0.595429, -GARAGE_AXIS_OFFSET],
+  // and again at the round-2 DEATH-CLOCK STAGGER (the −17° grade and the
+  // stagger plank move the row — the centre follows the run).
+  garage05: [1.14409, -0.585587, -GARAGE_AXIS_OFFSET],
   // garage-sandbox (stage 6): the no-budget room, same rule off the lap's deck.
   'garage-sandbox': [1.31299, -0.468092, -GARAGE_AXIS_OFFSET],
 };

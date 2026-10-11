@@ -27,12 +27,12 @@
   {
     "levelId": "bathroom05",
     "parPieces": 4,
-    "parTime": 3.05
+    "parTime": 2.9
   },
   {
     "levelId": "bedroom-sandbox",
     "parPieces": 5,
-    "parTime": 2.75
+    "parTime": 3.15
   },
   {
     "levelId": "bedroom01",
@@ -57,7 +57,7 @@
   {
     "levelId": "bedroom05",
     "parPieces": 4,
-    "parTime": 3.05
+    "parTime": 3.15
   },
   {
     "levelId": "feeltrack",
@@ -92,7 +92,7 @@
   {
     "levelId": "garage05",
     "parPieces": 4,
-    "parTime": 1.35
+    "parTime": 2
   },
   {
     "levelId": "garden-sandbox",
@@ -137,7 +137,7 @@
   {
     "levelId": "kitchen02",
     "parPieces": 3,
-    "parTime": 1.05
+    "parTime": 1
   },
   {
     "levelId": "kitchen03",

@@ -565,3 +565,28 @@ the shipped garden set already ships the sprinkler as a DATA grip-zone + a `prop
 spray mesh, so the scored garden frames never carried the dots (confirmed on the measured garden03 mid-run and
 the garden hero); "out" was the shipped answer, this pass only makes the exploration quote honest. Materials /
 geometry in one dev scene; nothing sim. See [[sets]], [[dev]], `Sessions/2026-10-11 Round2 bloom`.
+
+## 2026-10-11 — round 2 Lane A: re-anchor kitchen02's par; stagger the encore death clocks
+
+Two honesty calls, both measured past the point where the shipped numbers were load-bearing.
+(1) KITCHEN02'S PAR MOVES `0b4dbab2` → `8008b9aa` (parTime 1.05 → 1.00). The P4 rim guard made the
+union dump CHOOSE but not EXCLUSIVE: the ring could still seat a 4th ask past the mouth (the
+goal-tell seat — now REFUSED, placement layer, the same machinery as the body guard) and an
+off-list trio 3★'d the 1.05 bar. The star law is made order-invariant by anchoring the par AT the
+measured 1.00 floor of the authored line (`drop → straight → straight`) — the beater the fail-timing
+pass had already named. Rejected: geometry sweeps to push the lip-last seatings ≥ 1.06 (swept
+lead/height/blend/span ×~1000 worlds — those seatings are a physical dribble pop at 1.025–1.033,
+invariant to every knob; no honest geometry separates them). Proof: 24-permutation sweep in
+`tests/unit/goal-guard.test.ts`, the order table in [[Sessions/2026-10-11 Round2 choice]].
+(2) THE ENCORE DEATH CLOCKS STAGGER — bathroom05/bedroom05/garage05 rails move, garden05 holds as
+the porch anchor, so no two encores share a death clock (player: "same tray, same death"). The
+canonical shared fail (`drop → straight → landing`) dies at 1.475/2.008/2.792/3.100, pairwise
+≥ 0.308 s. Grade is the only lever (the death clock self-cancels under height/lead/catch/release —
+measured); each room's cell was chosen by its OWN law set surviving the battery verbatim in
+status, with four named law re-statements (garage's trim-era carries flip back to the original
+kill; bathroom's mid bridge and drag restate in the porch-clocked idiom; bedroom's drag
+compresses). Rejected: moving garden05 (spends the hidden line), bedroom grade past −11.35° (walks
+the chain off the 1.4 m floor disc — the rug law binds before the stagger target), any garage
+grade that lets the five-piece over-earn beat the par clock, a catch-wall stand-up (moves the
+cup out of the hidden line's reach). Proof: `tests/unit/encore-stagger.test.ts` + the four room
+ladder tests; ledger in [[Sessions/2026-10-11 Round2 choice]].
