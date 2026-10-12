@@ -64,6 +64,8 @@
  */
 import * as THREE from 'three';
 import { CAMPAIGN, CAMPAIGN_LADDER } from '../world/campaign.ts';
+import { getLevel } from '../world/levels/feeltrack.level.ts';
+import { HOUSE_ID } from '../world/levels/house.level.ts';
 import { SETS } from '../sets/index.ts';
 import { encodeShareUrl, type SharePayload } from '../share/share.ts';
 import { boundaryStopped } from '../ui/errors.ts';
@@ -420,6 +422,26 @@ export function startFarewell(
     roomLink.href = `?level=${room.sandboxId}`;
     roomLink.textContent = `${room.label.toLowerCase()} sandbox`;
     sandboxRow.appendChild(roomLink);
+  }
+  // THE WHOLE HOUSE, ADDED (downhill build 2 — law 4, THE FAREWELL
+  // REWIRED, NOT DELETED): the crane pass and the three doors are the law
+  // kept verbatim; what door 1 OPENS ON gains the house once the house
+  // EXISTS — a deep-link into the house route (`?level=house`, the
+  // build-1 address, no new URL grammar) with copy that says what it is.
+  // The door's own click still lands one place in one click (porch
+  // sandbox), unchanged; if the registry ever lacks the house the row
+  // simply does not grow — the farewell never links a door that is not
+  // there.
+  try {
+    getLevel(HOUSE_ID);
+    const houseLink = document.createElement('a');
+    houseLink.className = 'gw-farewell-house';
+    houseLink.id = 'gw-farewell-house';
+    houseLink.href = `?level=${HOUSE_ID}`;
+    houseLink.textContent = 'the whole house';
+    sandboxRow.appendChild(houseLink);
+  } catch {
+    // no house on this registry: door 1 opens on exactly what it always did
   }
   const daily = document.createElement('a');
   daily.id = 'gw-farewell-daily';

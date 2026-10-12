@@ -21,14 +21,28 @@
  * its own word. Absolute URLs (`about:blank`) pass through untouched.
  *
  * THE URL AFFORDANCE FAMILY grows THE HOUSE rows (downhill build 1, the
- * Decision Log 2026-10-07 doctrine unchanged): `?level=house` addresses the
- * downhill page (`src/pages/house.ts` — the recorded debug addressing as a
- * whole page), `?level=house&room=<id>` parks its menu camera at another
- * room's window (presentation only — no force enters the sim), and the
- * family's own `?launch=1` releases the car at first ready; the downhill
- * e2e rides exactly these bytes. The room windows' TOUR links are the
- * UNCHANGED `?level=<room>NN` addresses the level select writes — the
- * campaign demoted to tours, byte-compatible by construction.
+ * Decision Log 2026-10-07 doctrine unchanged): `?level=house` addresses
+ * the downhill page (`src/pages/house.ts` — the recorded debug
+ * addressing as a whole page), `?level=house&room=<id>` parks its menu
+ * camera at another room's window (presentation only — no force enters
+ * the sim), and the family's own `?launch=1` releases the car at first
+ * ready; the downhill e2e rides exactly these bytes. The room windows'
+ * TOUR links are the UNCHANGED `?level=<room>NN` addresses the level
+ * select writes — the campaign demoted to tours, byte-compatible by
+ * construction.
+ *
+ * THE FAMILY GROWS THE FRONT DOOR (build 2, Decision Log law 3 — the
+ * RE-BASELINE ACT, stated not quiet): `?boot=rung` is now part of the
+ * DEFAULTS every non-visual spec rides, because the BARE route is no
+ * longer the kitchen01 builder — it is THE HOUSE, rendered (the home
+ * screen). A spec that wants the old front end gets it explicitly
+ * through this door like every other affordance; a spec that wants the
+ * HOME boot names `?boot=house` on its own URL (an explicit param always
+ * wins — the same asymmetry that lets a cinematic spec opt back IN).
+ * Visual specs — the files that never import this one (visual, filmstrip,
+ * the hash family, perf*, post-dispose, intro, harness) — keep riding
+ * DEFAULT pages and therefore opt into any front consciously, never by
+ * harness accident.
  */
 import type { Page } from '@playwright/test'
 
@@ -44,6 +58,10 @@ export const SPEC_DEFAULT_PARAMS = {
   post: "off",
   intro: "off",
   farewell: "off",
+  // build 2 (law 3): the bare route is the HOUSE now; non-visual specs
+  // that land on `/` want the rung builder they always audited, and they
+  // say so through this door (`?boot=house` names the other front)
+  boot: "rung",
 } as const
 
 /** Pure, unit-tested (`tests/unit/spec-url.test.ts`): append the spec

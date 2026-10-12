@@ -1,22 +1,28 @@
 /**
- * THE PREMISE BEAT (program T1.2, player evaluation "The first 60 seconds":
- * at t+0 "no title screen, no menu, no premise — the page IS the kitchen01
- * builder"). On the COLD FIRST VISIT the house shows itself first: the room
- * with ONE silent car rolling the rung's own par line, BEFORE any builder
- * chrome appears. Nothing new is built for it — the beat reuses the shipped
- * machinery: the level's par reference build mounted in the ordinary game
- * shell (the `?build=par` rig), the ordinary §7.3 run camera leading the
- * car, and the ordinary terminal edge ending it. It is ANIMATED by
- * definition, so the reduced-motion law sends reduced-motion players
- * STRAIGHT to the builder (the same `reducedMotionActive` rule every
- * decorative tween asks). A click or any keypress SKIPS (the one event is
- * swallowed whole — the splash owns it, it never places a piece or starts
- * audio mid-beat).
+ * THE PREMISE BEAT (program T1.2, “the first 60 seconds”; REPURPOSED by
+ * downhill build 2, Decision Log law 4 — “the crane gains a beginning, not
+ * a replacement”). The audience law is UNCHANGED; WHERE it plays moved
+ * with the front door: a cold first visit now watches THE HOUSE — the
+ * crane pulling back from the kitchen window while a car free-rolls one
+ * room and dies in the next (`src/pages/house.ts`, the home boot) — the
+ * game saying “it’s all one place” before any UI word. The old beat (one
+ * silent car rolling kitchen01’s par line) rode the bare rung boot, and
+ * the rung boot is now an ADDRESSED page (`?boot=rung`, the re-baseline
+ * act of law 3): addressed pages never play the beat, so the kitchen01
+ * film survives only under its own forcing (`?boot=rung&intro=1`, the
+ * recorded rig) and has no first-visit audience left.
+ * Nothing new is built for the beat — it reuses the shipped machinery
+ * (a stepped `World` over declared data, the run camera, the terminal
+ * edge), and the reduced-motion law sends reduced-motion players
+ * STRAIGHT to the home chrome. A click or any keypress SKIPS (the one
+ * event is swallowed whole — the splash owns it, it never releases a car
+ * or starts audio mid-beat).
  *
  * WHOSE FIRST VISIT this is, said exactly:
  * - a real cold browser (no `localStorage` beat flag), landing on the bare
- *   root — no `?level=`/`?build=`/`?set=` address, because a recorded
- *   address is a test rig or a return path, nobody's first visit;
+ *   root — no `?level=`/`?build=`/`?set=`/`?boot=`/`?launch=` address,
+ *   because a recorded address is a test rig or a return path, nobody's
+ *   first visit;
  * - NOT automation: headless runners (`navigator.webdriver`) skip the beat
  *   — every suite page would otherwise sit through a 3-second film — and
  *   the beat's own spec (`tests/e2e/intro.spec.ts`) opts IN explicitly with
@@ -50,8 +56,19 @@ import { loadSave } from '../save/save.ts';
 
 /** One-shot flag: the beat plays exactly once per browser. A save-schema
  *  reservation was the worse trade (`Modules/save`); this is a UI fact,
- *  not a game fact, and it never touches a hash or a star. */
+ *  not a game fact, and it never touches a hash or a star. Build 2 moved
+ *  the beat onto the home page but NOT onto a second flag: the home page
+ *  marks it seen through `markPremiereSeen` — one key, one source. */
 const SEEN_KEY = 'gravity-works.premiere.seen';
+
+/** Mark the beat seen through the ONE key (the home beat owns no flag). */
+export function markPremiereSeen(): void {
+  try {
+    localStorage.setItem(SEEN_KEY, '1');
+  } catch {
+    // storage blocked — the audience rule already refused to nag
+  }
+}
 
 /** Safety net: a build that never reaches a terminal status (impossible on
  *  the par rails the suite proves, but a beat that outstays 9 s is a bug
@@ -71,7 +88,16 @@ export function premiereWanted(params: URLSearchParams): boolean {
   // automation never sits through the film (its own spec opts in)
   if (typeof navigator !== 'undefined' && navigator.webdriver) return false;
   // a recorded address is a test rig or a return path, not a first visit
-  if (params.has('level') || params.has('build') || params.has('set')) return false;
+  // (build 2: `?boot=rung` is exactly such an address — the old front end
+  // is a rig now, and rigs do not get premieres)
+  if (
+    params.has('level') ||
+    params.has('build') ||
+    params.has('set') ||
+    params.has('boot') ||
+    params.has('launch')
+  )
+    return false;
   try {
     if (localStorage.getItem(SEEN_KEY)) return false;
   } catch {

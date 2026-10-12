@@ -104,6 +104,67 @@ export function menuPose(layout: HouseLayout, room: FrameRoom = 'porch'): HouseP
   };
 }
 
+/**
+ * THE HOME POSE (build 2, "the crane's path parked as the menu camera it
+ * always was", Decision Log law 3): the parked crane pulled to the width
+ * that frames the WHOLE cross-section — every deck's bounds inside the
+ * frustum with a 15 % margin, eye on the section's own axis at gaze
+ * height. Pure over the layout, like every other pose: the six windows of
+ * the front door project through exactly this pose, so their screen
+ * positions are layout facts, not tunings. `fov`/`aspect` are passed in
+ * by the page (the camera the pose is meant for), defaults match
+ * `src/pages/house.ts`.
+ */
+export function homePose(layout: HouseLayout, fovDeg = 35, aspect = 960 / 540): HousePose {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const d of layout.decks) {
+    minX = Math.min(minX, d.bounds.min[0]);
+    maxX = Math.max(maxX, d.bounds.max[0]);
+    minY = Math.min(minY, d.bounds.min[1]);
+    maxY = Math.max(maxY, d.bounds.max[1]);
+  }
+  const vFov = (fovDeg * Math.PI) / 180;
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
+  const dz =
+    1.15 *
+    Math.max((maxX - minX) / 2 / Math.tan(hFov / 2), (maxY - minY) / 2 / Math.tan(vFov / 2));
+  const midX = (minX + maxX) / 2;
+  const midY = (minY + maxY) / 2;
+  return { eye: [midX, midY + 0.35, dz], target: [midX, midY, 0], fog: 0 };
+}
+
+/** The premise beat's PULL-BACK (build 2, law 4's opening image): the eye
+ *  starts AT the kitchen window (`menuPose('kitchen')`) and pulls back to
+ *  `homePose` over `pullS` seconds — the farewell's PULL grammar written
+ *  spatially, a pure function of beat time, fog clear the whole way. */
+export function beatPullPose(
+  layout: HouseLayout,
+  t: number,
+  pullS = 1.0,
+  fovDeg = 35,
+  aspect = 960 / 540,
+): HousePose {
+  const from = menuPose(layout, 'kitchen');
+  const to = homePose(layout, fovDeg, aspect);
+  const u = smoothstep(Math.min(1, Math.max(0, t / pullS)));
+  return {
+    eye: [
+      from.eye[0] + (to.eye[0] - from.eye[0]) * u,
+      from.eye[1] + (to.eye[1] - from.eye[1]) * u,
+      from.eye[2] + (to.eye[2] - from.eye[2]) * u,
+    ],
+    target: [
+      from.target[0] + (to.target[0] - from.target[0]) * u,
+      from.target[1] + (to.target[1] - from.target[1]) * u,
+      0,
+    ],
+    fog: 0,
+  };
+}
+
 /** THE RUN POSE at run-time `t` over the plan — a pure function of plan
  *  time, deterministic on every machine like the farewell's crane. */
 export function houseRunPose(layout: HouseLayout, plan: readonly HouseSegment[], t: number): HousePose {

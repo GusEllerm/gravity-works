@@ -348,6 +348,29 @@ export function boot(root: HTMLElement): void {
     });
     return;
   }
+  // THE FRONT DOOR (downhill build 2, Decision Log law 3 — the
+  // irreversible UI act, stated not quiet): the BARE route is THE HOUSE,
+  // rendered. `?boot=rung` is the recorded address of the old front end
+  // (the re-baseline act: every non-visual spec names it explicitly
+  // through `tests/e2e/goto.ts`; visual specs opt consciously); a page
+  // that already addresses a rig (`?level=`, `?build=`, `?set=`,
+  // `?launch=`, the daily family) is an ADDRESSED landing and routes
+  // exactly as it always did — addressing doctrine stands. The rung boot
+  // is now addressed and therefore no longer anyone's first visit: the
+  // premise beat moved with the door (`src/pages/intro.ts`).
+  const bootParam = params.get('boot');
+  const addressedRig =
+    params.has('level') ||
+    params.has('build') ||
+    params.has('set') ||
+    params.has('launch') ||
+    dailyAddress(params) !== null;
+  if (bootParam === 'house' || (bootParam === null && !addressedRig)) {
+    startPage(async () => {
+      await (await import('./pages/house.ts')).bootHouse(root, params, { home: true });
+    });
+    return;
+  }
   startPage(() => bootGame(root, resolveLevel(params)));
 }
 
