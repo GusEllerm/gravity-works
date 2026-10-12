@@ -114,3 +114,18 @@ Item 3 CLOSED. The one honest seam is visual again: the windows are paper cards 
   artifact (page-side `.click()` aims the ring differently; the same flow with real CDP clicks in
   the specs verifies byte-clean). What matters is what the page did with my broken input: it said
   the truth — `mismatch`, `invalid` — and never once faked a `verified`. The receipt fails honest.
+
+## Item 5 — does any path force a rung-first boot on a returning player?
+
+**No, with one named address.** The router (`src/boot.ts` front-door block) sends the BARE route to
+the house home ALWAYS — save state never redirects: no `location` write anywhere keys off
+`progress`/`reached`, and there is no "resume last rung" memory. Verified live with a seeded
+veteran save (12 stars, porch05 cleared, premiere seen): bare landing → "Gravity Works — the House",
+Release button, ZERO builder tray, no world running, sill reads "★ 12/15", no premiere re-sit. The
+only rung-boot doors left are ADDRESSED ones the player walks through: a tour link (window click),
+`?levels=1`, the daily chip, a pasted `#s=` link (lands on the replay page, "Build your own" is a
+choice, and share-replay.spec proves no replay chrome leaks into the build view), a Lines-tab row,
+or the farewell's links — all clicks, none forced. `?boot=rung` exists for the test family only;
+no shipped surface links it (grep: zero hrefs in `src/`). The ladder is reachable but never the
+first screen. CLOSED — and the returning-player seam that DOES exist is the reverse one: nothing
+greets a returning player either; the door says the same first-visit sentence forever.
