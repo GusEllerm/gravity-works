@@ -50,8 +50,15 @@ doctrine untouched. Branch `fp-pixelgate`, worktree `gw-g3` (outside the repo ro
   `E2E_PORT=5024`; the run's replay-spec side effect rewrote the docs/explorations/replay PNGs — restored,
   not committed, per the binary-clobber doctrine). `npm run typecheck` clean; `npm run build`
   clean before push.
-- CI: first PR run — `linux-baselines` captures + commits the PNG; `check` then runs the assert on ubuntu.
-  Receipts filled from the watched runs below.
+- CI (PR #21, run 38259203070, all green): `linux-baselines` captured the missing view on ubuntu and
+  its self-check logged `consecutive captures differ by 0.0000 % (0 px) on platform "linux"` — SwiftShader
+  frame stability PROVEN on the CI machine, not assumed; the bot committed `tests/visual/linux/
+  shell-kitchen01-idle.png` (99,662 B) to the branch as a PR diff; `check` then ran the same run's assert:
+  `[visual] shell-kitchen01-idle: 0.0000 % differing pixels (0 of 518400) vs
+  tests/visual/linux/shell-kitchen01-idle.png` — the pixel gate live on ubuntu, pixel-exact, in the PR's
+  own run. Cross-platform honesty: the same capture re-diffed on the Mac against the linux PNG reads
+  0.4701 % — over the 0.1 % gate, exactly why platform directories exist (and why the assert is real
+  CI-machine truth, not darwin pixels re-checked).
 
 ## Next
 
