@@ -54,3 +54,23 @@ re-judged here, plus the resume lane's re-landing:
 
 Item 1 as CHECKED: front door is the house, boots instantly, says the premise in one line, < 60 s
 by two orders of magnitude. Residue: the rendered house is visually thinner than its name.
+
+## Item 2 — the downhill run is the pitch; the receipt is honest
+
+Physics and receipt, verified two ways at tree `57aa710` on :5065:
+
+- **Headless (`downhill.spec.ts` against the shipped preview, 7/7 green)**: the page run's hash equals
+  the same-(level,build,seed) NODE replay; **a second release is the SAME run** (seating law live);
+  ≥ 3 rooms physics-approved; the result bar reads rooms; the par ghost is default-ON "because this
+  IS the afterlife"; tour links equal the unchanged `?level=<room>NN` bytes.
+- **Live page, three fresh boots**: result bar **"4 rooms · 6.7 s — you stopped at the bathroom"**,
+  receipt `6caea49b` all three times — the same hash the atlas and Decision Log record for the house.
+  Room order garage → kitchen → bedroom → bathroom (dead-lane check, confirmed by the stop-at-bathroom
+  row). The result bar counts ROOMS, not stars — law 6 honored HERE ONLY, campaign stars untouched.
+- **What the pitch LOOKS like (`r-downhill-mid.png`, `r-downhill-late.png`)**: a wide crane view of
+  deck slabs and floating rail segments over cream void — no props, car barely in frame. Compared
+  against the committed truth `tests/visual/darwin/shell-home-idle.png`: identical in kind — six
+  label cards on a slope, orange slivers, one grey slab. **The cross-section is the shipped look**,
+  so this is not a capture artifact: the downhill speaks as a diagram, not as a house. The physics
+  approved four rooms; the camera sells them as four grey planes. Honest receipt: yes. Sensory pitch:
+  the crane law study's "cost plain" reading is plainer than the notes imply.
