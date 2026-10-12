@@ -703,7 +703,7 @@ sig = "0f065f90d47289b6"
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
 target = "docs/vault/Reference/hash-atlas.json"
-sig = "e1069741d35da695"
+sig = "24f5b3ae6da537cc"
 
 [[bindings]]
 doc = "docs/vault/Modules/replay.md"
@@ -1473,7 +1473,7 @@ sig = "94a2ee27e5931879"
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
 target = "src/world/world.ts"
-sig = "28e1d46c14426bb4"
+sig = "4bc9263256eb5013"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -1873,7 +1873,7 @@ sig = "ba5ae9976e607253"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "docs/vault/Modules/replay.md"
-sig = "7d38276f7ffb5614"
+sig = "490c12183196a771"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1883,7 +1883,7 @@ sig = "2bcbeeffa80b98e6"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/boot.ts"
-sig = "6083228cffeb97ed"
+sig = "9b0e1822561f3937"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1912,6 +1912,11 @@ sig = "b10082b8262b15be"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
+target = "src/ui/builder.ts"
+sig = "ed9c2529a3682408"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
 target = "src/world/campaign.ts"
 sig = "8cce90d8ad95a55e"
 
@@ -1923,7 +1928,7 @@ sig = "c574d75a051da4fc"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/level.ts"
-sig = "766280b83f64efcb"
+sig = "7a34b1db4530e169"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1948,7 +1953,12 @@ sig = "6178c7e423d10226"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/world/world.ts"
-sig = "28e1d46c14426bb4"
+sig = "4bc9263256eb5013"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "tests/e2e/retry-share-verify.spec.ts"
+sig = "6770687207377d87"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -1992,6 +2002,11 @@ sig = "f560623ad3d27479"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
+target = "tests/unit/porch-guard.test.ts"
+sig = "299cabed4c4a66bf"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
 target = "tests/unit/porch-levels.test.ts"
 sig = "05ccd6489c396eaa"
 
@@ -1999,6 +2014,11 @@ sig = "05ccd6489c396eaa"
 doc = "docs/vault/Modules/world.md"
 target = "tests/unit/replay.test.ts"
 sig = "c55f143b9eaa05bc"
+
+[[bindings]]
+doc = "docs/vault/Modules/world.md"
+target = "tests/unit/seating.test.ts"
+sig = "a0790594a77daed4"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"

@@ -6,6 +6,31 @@ livedocs: snapshot
 
 Dated entries tagged `[agent decision]`. Newest first.
 
+## 2026-10-12 — THE SEATING LAW: every launch seats identically, or the hash is a dice roll wearing a receipt `[agent decision]` `[systems engineer]`
+
+- **THE FIX (closes the retry-law escalation above)** — `World.reset()` no longer removes-and-re-adds the car
+  bodies. It REBUILDS the physics world through the constructor's own creation sequence (`createSimWorld` →
+  `addTrackColliders` over the stored splines → `spawnCar`), so every launch is a FIRST launch by construction.
+  THE MECHANISM, measured not assumed: Rapier frees the car's collider slot only when the NEXT step reclaims
+  memory, and the re-added registration comes back at the same slot index with a bumped handle GENERATION —
+  kitchen-sandbox's last collider reads `…8200000000` fresh vs `…8200000001` after any Retry. The solver
+  iterates the contact graph keyed by those bits, so the impulse accumulation sums in a different order, the
+  suspension settles ~0.1 mm apart by step 1, and the run lands two steps late (320 vs 322 kitchen-sandbox;
+  kitchen01's par `557f33bc`/266 vs `d32417dc`/268; the escalated 337/339 kitchen line, same signature). This
+  is the collider-order law ("2.84 → 2.72 on rebuild") caught in the launch path, now closed at its root.
+- **THE LAW** — a run's hash is a receipt only if every launch of a build seats the car in the identical
+  collider/world state; otherwise the hash is a dice roll wearing a receipt. Enforced by
+  `tests/unit/seating.test.ts` (fresh-vs-Retry collider handle bits + spawn poses, three levels; run equality
+  fresh/Retry/replayRun) and the e2e the repo lacked — `tests/e2e/retry-share-verify.spec.ts`: build → Retry →
+  launch → share → paste → `verified`, RED pre-fix (kitchen01's post-Retry link printed `mismatch`), green after.
+- **THE LAWS it honors** — (1) the 30 reference anchors are FIRST-launch replays: `replay:all` 30/30 verified
+  and the atlas hashes byte-identical at this fix (only its date field moves); (2) STRICT REPAIR — live-retry
+  hashes CONVERGE to fresh-launch hashes, nothing that ever verified changes meaning; a link created after a
+  Retry BEFORE this fix replays from scratch and cannot match its recorded live hash — such links can never
+  verify and age honestly, silently re-keying them would burn the receipt; (3) the sim rebuild per Retry is
+  construction cost, not frame cost (once per Retry, 131 colliders), and `dispose()` semantics are unchanged.
+  See `Modules/world` THE SEATING LAW and `Sessions/2026-10-12 Seating fix`.
+
 ## 2026-10-12 — the sheet-fix retune: thresholds swept at BOTH scales (325 rigs), and the retry-launch finding escalated `[agent decision]` `[feel engineer]`
 
 - **THE RETUNE** — the sheet re-probe verdicted the tally PAINT: ~35 launches, one badge, zero in free play.

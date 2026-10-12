@@ -336,7 +336,8 @@ export class World {
   readonly scene: THREE.Scene | null;
   readonly carMesh: THREE.Mesh | null;
 
-  private readonly sim: RAPIER.World;
+  private sim: RAPIER.World;
+  private readonly splines: ReturnType<typeof reify>['splines'];
   private readonly physicsPieces: PlacedPiece[];
   private readonly hashedBodies: RAPIER.RigidBody[] = [];
   private car: Car;
@@ -381,19 +382,10 @@ export class World {
     this.launchSpeed = options.launchSpeed ?? 0;
 
     const { splines, pieces } = reify(build);
+    this.splines = splines;
     this.physicsPieces = pieces;
     this.sim = createSimWorld();
-
-    // One fixed body carries every collider of the build. The kit generates
-    // the descs from the same samples the meshes sweep (invariant 1).
-    const trackBody = this.sim.createRigidBody(RAPIER.RigidBodyDesc.fixed());
-    for (const spline of splines) {
-      const descs = spline.toColliderDescs(RAPIER, { scale: SIM_SCALE, friction: TRACK_FRICTION });
-      for (const desc of descs) {
-        (desc as RAPIER.ColliderDesc).setCollisionGroups(TRACK_GROUP);
-        this.sim.createCollider(desc as RAPIER.ColliderDesc, trackBody);
-      }
-    }
+    this.addTrackColliders();
 
     // Launchers and the finish cup, resolved to world-metre anchor points.
     let cup: { center: Vec; radius: number } | null = null;
@@ -483,10 +475,21 @@ export class World {
     this.runStatus = 'running';
   }
 
-  /** Back to the spawn pose, hash reseeded, step zero. */
+  /**
+   * Back to the spawn pose, hash reseeded, step zero — THE SEATING LAW:
+   * every launch seats the car in the IDENTICAL collider/world state, so a
+   * live retry, a fresh launch and a share replay are the SAME run. The old
+   * reset removed-and-re-added the car bodies; Rapier re-registers them with
+   * bumped handle generations, the solver iterates the contact graph in a
+   * different order, and the run drifts a couple of steps (Decision Log
+   * 2026-10-12, the retry-law finding). Rebuilding the sim from the same
+   * creation sequence is the only seating that is canonical by construction:
+   * reset() now replays the constructor's physics steps verbatim.
+   */
   reset(): void {
-    this.sim.removeRigidBody(this.car.chassis);
-    for (const wheel of this.car.wheels) this.sim.removeRigidBody(wheel);
+    this.sim.free();
+    this.sim = createSimWorld();
+    this.addTrackColliders();
     this.car = this.spawnCar();
     for (const l of this.launchers) l.fired = false;
     this.hashValue = seededHash(this.build.seed);
@@ -606,6 +609,21 @@ export class World {
   }
 
   // ---- internals -----------------------------------------------------------
+
+  /** One fixed body carries every collider of the build. The kit generates
+   *  the descs from the same samples the meshes sweep (invariant 1). The
+   *  spline desc generation runs again verbatim on reset — same splines,
+   *  same order, same wasm kernel (the seating-law rebuild, see `reset`). */
+  private addTrackColliders(): void {
+    const trackBody = this.sim.createRigidBody(RAPIER.RigidBodyDesc.fixed());
+    for (const spline of this.splines) {
+      const descs = spline.toColliderDescs(RAPIER, { scale: SIM_SCALE, friction: TRACK_FRICTION });
+      for (const desc of descs) {
+        (desc as RAPIER.ColliderDesc).setCollisionGroups(TRACK_GROUP);
+        this.sim.createCollider(desc as RAPIER.ColliderDesc, trackBody);
+      }
+    }
+  }
 
   private spawnCar(): Car {
     const s = this.level.startSocket;
