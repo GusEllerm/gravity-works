@@ -18,12 +18,12 @@ tags: [reference, evaluation, freeplay]
 
 | # | Checklist item | Status | Evidence |
 |---|---|---|---|
-| 1 | Cold first visit = the house, timed | *recorded below* | beat + home screenshots, < 60 s |
-| 2 | Downhill run = the pitch; receipt honest (hash twice) | pending | |
-| 3 | Campaign demotion honored (tour from a window, stars live there) | pending | |
-| 4 | Chain round trip (publish → paste → beat-by-name → lineage) | pending | |
-| 5 | No path forces a rung-first boot for a returning player | pending | |
-| 6 | Regressions: a11y Tab walk, disclosure line true in play, farewell kept | pending | |
+| 1 | Cold first visit = the house, timed | **CLOSED (one seam)** | instant landing, six windows, premise line; beat skipped under webdriver; house renders as schematic |
+| 2 | Downhill run = the pitch; receipt honest (hash twice) | **CLOSED (one seam)** | 4 rooms · 6.7 s, `6caea49b` ×3 fresh + node-verified + seating-law re-release; crane frames read as a diagram |
+| 3 | Campaign demotion honored (tour from a window, stars live there) | **CLOSED** | byte-identical `?level=` tour links, ★★★ minted there, sill reads "★ 3/15", locks stay locks |
+| 4 | Chain round trip (publish → paste → beat-by-name → lineage) | **CLOSED** | lineage mints, LINES tab prints the beat, third device verifies the chain of two; page refuses bad links honestly |
+| 5 | No path forces a rung-first boot for a returning player | **CLOSED** | veteran save → bare route → house; rung boots are addressed-only; no save-driven redirect anywhere |
+| 6 | Regressions: a11y Tab walk, disclosure line true in play, farewell kept | **CLOSED** | real Tab walk names every window; 2.23 s/`d32417dc` ghost-ON = ghost-OFF = atlas; porch05 clear → crane + doors incl. "the whole house" |
 
 ## Item 1 — cold first visit: the sixty seconds at the new front door
 
