@@ -84,3 +84,30 @@ Ladder tail: garage04 → porch01..05; compared against the corresponding sandbo
 | sandbox | ×99 everything; all 13 kinds including the structural verbs the campaign withholds (loop/spring/banked turn); the wipe-the-board blank canvas; the place-the-cup-yourself proto-goal-maker | any reason; any budget that means something; any par that isn't inherited; any END that isn't the default cup; any win condition past the cup |
 
 The sandbox's problem is NOT that it's missing features — it's missing the CONSEQUENCE that makes a choice. It has every verb and no grammar.
+
+- porch04 (4-pc budget, par 4/1.10 s): default dies `nose-first — 0.90 s`; my landing+straight+drop dies 1.26 s `flatten the landing by the ramp or add a lip` — UNSOLVED in two attempts; the 10-piece budget wall is real difficulty.
+- Variant race (22:43–22:46, kitchen sandbox): shared my 9-pc dump (link A), edited the SAME board into an 8-pc variant B (which accidentally REMOVED the cup — the variant could not finish at all, the verdict kept reading `before the cup` with no cup on the board, and the game still compared to a par of a course I had dismantled), then loaded link A as ghost on board B: launch ran 1.11 s and the verdict line stayed `you vs par` — the friend ghost adds a second CAR but ZERO scoreboard; two variants of the same idea cannot be SCORED against each other on any surface.
+
+## Invented games (the imagination tax)
+
+1. **Time trial** (kitchen, 22:0x): the toy acknowledges the NUMBER (run time on every result) but not the ATTEMPT — time is a pure function of build+order, so "beat my best" is only beatable by editing pieces; nothing to retry, only rebuild. HAD TO IMAGINE AWAY: the absence of a driver-skill channel (steering is parked) and any "attempt" concept — Retry replays the same deterministic film.
+2. **Longest line / farthest reach** (garden 22:27 + kitchen dumps): the toy acknowledges length only through the piece COUNTER and the 999 budget, and it actively rewards dumping (the 13-pc garden pile went FARTHER than my planned line). HAD TO IMAGINE AWAY: the cup — every run ENDS at the cup, `nothing past it is ever travelled`, so "farthest from the start" is not a stat the game can see.
+3. **Reach the porch door from the deck** (porch, 22:32): the toy ANSWERS this goal before you build (`the run ends at the cup, so nothing past it is ever travelled`), lets you spend 7 pieces anyway, and replays the identical 0.89 s death. HAD TO IMAGINE AWAY: place-as-placeable-destination. Props are scenery with guards, not places.
+
+## Affordances actually reached for (frequency, whole probe)
+
+1. tray-pick a kind — ~200
+2. place at the ring (click/move) — ~140
+3. Launch — ~45 (incl. ~6 silent swallows)
+4. read the failure advice (`place at:` line) — constant, it is the dialogue
+5. Remove (LIFO unwind) — ~60
+6. Retry — ~40
+7. launch-and-watch (screenshot mid-run) — ~20
+8. share / ghost / par-chip — ~12 total
+(Rotate/flip: 0 uses. Never once wanted R.)
+
+## The 3 moments the toy was genuinely mine
+
+1. 22:08:30 kitchen — the booster→loop→straight line FINISHED (2.84 s ★☆☆) and I shared it unprompted: my loop, my goal, the game honored both.
+2. 22:29:01 garage — the lip jump over the oil slick, my first invented TRICK (not line) that ran (★★★, −0.19 s), born from watching a prop and asking "what if I skipped it".
+3. 22:18:26 bedroom — deleting the cup and PLACING MY OWN at the far end of my own line: the 3.38 s finish is the only run in the probe whose goal I authored — and it scored ★☆☆ because the game can only grade me against a goal I didn't choose. That single run is the whole freeform question in one number.
