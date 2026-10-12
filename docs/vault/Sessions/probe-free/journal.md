@@ -44,3 +44,10 @@ Build: worktree `gw-dd2` @ branch `probe-free`, base main `ec95e72`, preview `:4
 - 22:27:30 tour+stunt line (straight→curve→straight→booster→loop, 7 pc): died 2.55 s `… place at: end of loop` — under the par TIME (2.55 < 2.75) but a DNF pays nothing: the scoreboard only loves you at the finish line.
 - 22:27:55 **DUMP #4** (6 kinds chained onto the failed line, 13 pc total): `fell off — 2.55 s` and it went FARTHER than my planned line — dumping is mechanically rewarded, which I felt as a nudge away from authorship. Launch after same-tick places got swallowed once more (4th sighting).
 - Camera pulls WAY out mid-run (whole garden in a circle) — great for reading my tour, terrible for watching the car; no run-camera control in sandbox (the cinematic cam is share-page-only).
+
+## Garage sandbox (22:28–22:30)
+
+- 22:28 arrival: workbench + hanging wheel + oil slick props; big empty apron bottom-right (like bathroom, half the board is void).
+- 22:29:01 first invented line (straight→ramp→**lip jump** over the slick) — after the launch-swallow relaunch: **FINISHED ★★★ 2.56 s, −0.19 vs par, `you vs par — time −0.19 s vs par · same pieces as par`** — my first and only 3-star in the probe, first room where a jump made physical sense. Genuinely-mine moment #2.
+- HONEST COUNTER-RECORD: that "creation" was steered — the failure band had said `add a straight, a drop, a lip or a landing · place at: end of ramp` and I added EXACTLY a lip there. The advice channel is so competent it authors the answer; free-play converges onto par through the hints. Spark and suffocation are the same line here.
+- 22:29:36 **DUMP #5**: wiped, dumped 5 kinds (Spring, Drop, Banked turn, Curve, S-bend) at the ring before porch — died `stalled — 0.33 s` (fastest death of the probe; the pile didn't even reach the first socket). Urge: wanted to see the oil slick as a hazard BEFORE learning the room; the toy doesn't say hazards are off in garages-sandbox, physics just shrugs.
