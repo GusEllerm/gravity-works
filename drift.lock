@@ -2113,7 +2113,7 @@ sig = "4bc9263256eb5013"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "tests/e2e/retry-share-verify.spec.ts"
-sig = "6770687207377d87"
+sig = "07a16f84905678d4"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
