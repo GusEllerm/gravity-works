@@ -65,3 +65,22 @@ Build: worktree `gw-dd2` @ branch `probe-free`, base main `ec95e72`, preview `:4
 - `?daily=1&date=2026-10-10` → **`Screen Door`** = porch01 (3 pieces). Chip carried my history: `not yet today (last: 1.32 s on 2026-10-11)` — the daily is the only place my own past runs are characters in the game. Solved 1.08 s ★★★ (−0.02 vs par).
 - `?daily=1` (real today, 2026-10-12) → **`Spill Course`** = garage05. One launch at 22:39:38 died `fell off — 1.48 s`; after that I optimized ONLY the clock — I did not once try a line I was curious about. Named boards = clock-mode, zero authorship-mode. That is the behavior delta the director asked about: named board changes WHAT you optimize, not just what you see.
 - Daily verdict for the freeform question: the daily proves the RECURRING-HOOK slot exists (chip, streak, name, budget-locked tray) — but it delivers it on a campaign rung wearing a hat, i.e. the free-form-ness the daily could grade (a sandbox board with a named self-set goal) is NOT what it uses.
+
+## Campaign last-6 vs sandbox (22:40–22:43)
+
+Ladder tail: garage04 → porch01..05; compared against the corresponding sandboxes (garage, porch) and against the daily boards already played (Screen Door = porch01, The Open Door = porch02, Spill Course = garage05 — so ALL SIX of the campaign's last rungs were touched in this probe).
+
+- garage04 (`double crossing`, 4-piece budget, par 4/2.70 s): first launch falls off at 2.17 s, the advice names the missing piece KIND (`add a straight, a drop, a lip or a landing`); one straight+lip lands ★★★ 2.63 s on the first rebuild — the rung solves in ~90 s and the budget is what makes it a PUZZLE, not a toy. What the sandbox never has: a tray that TALKS BACK (`Straight ×1`) and a par that's a COMPOSER's intent, not a target.
+- porch01 (`Screen Door`, 3 pc, par 1.10 s): first build with the pre-built ramp is dead-on-arrival; one lip+straight+drop sequence ★★★ −0.02 s. What the rung gives the sandbox doesn't: a pre-built ramp that sets the ENERGY, so every piece you add has a consequence the sandbox's flat deck can't give.
+- porch02 (`The Open Door`, 5 pc, par 4/1.20 s): budget of 5 straights, first attempt with 3 straights falls off at 1.15 s; the lip at the right socket solves it. Rung vs sandbox: the tray IS the puzzle — in the sandbox you get ×99 straights, so straight-spamming is a choice not a lesson; here ×3 straights and ×1 lip mean every placement carries a question the sandbox never asks.
+- porch03 (4 pc, par 1.25 s): one lip+straight+drop+straight lands ★★★; the rung's geometry (a railing gap as the finish) makes the cup tiny at the far edge, so a single piece too many overshoots. The rung rewards economy; the sandbox punishes it (par always 5 pieces).
+- porch05 (finale, 4 pc, par 1.20 s): two full-launch attempts, first fell off at 0.89 s, second at 1.30 s — the finale is the hardest rung I touched today and the FIRST one I couldn't solve in one retry. That friction IS the campaign's case: the sandbox never frustrates, the rung occasionally blocks you hard, and the block is what you remember.
+
+### What each surface gives that the other doesn't
+
+| surface | gives | doesn't give |
+|---|---|---|
+| campaign rung | budget = design; par = composer intent; a tray that says what it thinks; a NAME and a story; geometry with teeth; the advice that names the missing KIND | ×99 freedom; loops/springs/banked turns; building without a target; the cup in a place YOU chose |
+| sandbox | ×99 everything; all 13 kinds including the structural verbs the campaign withholds (loop/spring/banked turn); the wipe-the-board blank canvas; the place-the-cup-yourself proto-goal-maker | any reason; any budget that means something; any par that isn't inherited; any END that isn't the default cup; any win condition past the cup |
+
+The sandbox's problem is NOT that it's missing features — it's missing the CONSEQUENCE that makes a choice. It has every verb and no grammar.
