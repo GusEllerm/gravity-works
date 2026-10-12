@@ -30,10 +30,12 @@
 import { CAMPAIGN, CAMPAIGN_LADDER, dailyBoardId, levelUnlock, previousInCampaign } from '../world/campaign.ts';
 import { getLevel } from '../world/levels/feeltrack.level.ts';
 import { parFor, starGlyphs, type StarCount } from '../world/stars.ts';
-import { starRulesLine } from './result.ts';
+import { starRulesLine, BADGE_ORDER } from './result.ts';
 import { defaultStorage, loadSave, type StorageLike } from '../save/save.ts';
 import { chainRankLine, readChain } from '../share/chain.ts';
 import { dailySeed } from '../save/daily.ts';
+import { readRecords, RECORDS_HONESTY } from '../save/records.ts';
+import { BADGE_WORDS } from '../tally/detectors.ts';
 
 /** The level's display name — registry truth; a nameless rung shows its id. */
 function levelName(id: string): string {
@@ -328,5 +330,32 @@ export function createLinesTab(panel: HTMLElement, store: StorageLike | null = d
       chain.appendChild(item);
     }
     panel.appendChild(chain);
+  }
+
+  // 3. THE SHEET HAS A FACE (final-sheet probe item (e)/(10) — "the
+  //    invisible sheet": counts accumulated with no surface, so the sheet
+  //    could not be read, shown off, or finished). ONE quiet footline —
+  //    every kind the tally can grant, its lifetime number, the device
+  //    honesty sentence VERBATIM (one key, one wording — the law of
+  //    `RECORDS_HONESTY`). The campaign-only kinds print their zeros:
+  //    `crossed 0` is the honest shape of a free session, and a face that
+  //    omits them would be edited, not calm. No streaks, no ranks, no
+  //    button — reading the sheet stays a READ: the probe proved an
+  //    invisible ledger carries no temptation, and a footline you can
+  //    only look at is that truth with its face up. Absent while the
+  //    device has earned NOTHING (an empty footline over an empty save is
+  //    noise, and the chain rows above already say "nothing yet").
+  const badges = readRecords(loadSave(store)).badges;
+  if (badges && BADGE_ORDER.some((k) => (badges[k] ?? 0) > 0)) {
+    const sheet = document.createElement('p');
+    sheet.id = 'gw-lines-sheet';
+    // The kinds in the sheet's own row order (`BADGE_ORDER` — the order
+    // `tallyLines` prints) with the tally's OWN words (`BADGE_WORDS`,
+    // verbatim — one key keeps one wording, so a renamed badge can never
+    // drift into a second name here).
+    sheet.textContent =
+      BADGE_ORDER.map((k) => `${BADGE_WORDS[k]} ${badges[k] ?? 0}`).join(' · ') +
+      ` — ${RECORDS_HONESTY}`;
+    panel.appendChild(sheet);
   }
 }

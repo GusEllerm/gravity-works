@@ -108,6 +108,36 @@ describe('tally tail (the result bar’s three lines)', () => {
       ).length,
     ).toBe(3);
   });
+
+  // THE FACE (final-sheet probe item (e)/(10)): the lifetime numbers ride
+  // the earned line in parentheses — never their own line, sandbox only
+  // (the shell passes `sheet` only there), and `null` keeps the shipped
+  // tail byte-identical.
+  test('THE FACE: a sandbox sheet annotates the earned line; the campaign `null` stays byte-identical', () => {
+    // sandbox: lifetime numbers show only once the sheet is PAST the run
+    expect(
+      tallyLines([{ kind: 'air' }, { kind: 'catch' }], [], null, { air: 7, catch: 1, spend: 5 }),
+    ).toEqual(['earned — air (7) · clean catch · your own runs on this device only']);
+    // a first sighting says `first … earned`, never `(1)`
+    expect(tallyLines([{ kind: 'air' }], ['air'], null, { air: 1 })).toEqual([
+      'earned — air · your own runs on this device only',
+      'first air — earned',
+    ]);
+    // the three-line law survives the face
+    expect(
+      tallyLines(
+        [{ kind: 'air' }, { kind: 'air' }, { kind: 'catch' }],
+        ['air'],
+        { name: 'x', best: 1, fresh: true },
+        { air: 9, catch: 2 },
+      ).length,
+    ).toBe(3);
+    // campaign / shared / replay (`null`): the shipped line, byte-for-byte
+    expect(tallyLines([{ kind: 'air' }, { kind: 'air' }], [], null, null)).toEqual([
+      'earned — air ×2',
+    ]);
+    expect(tallyLines([{ kind: 'air' }], [])).toEqual(['earned — air']);
+  });
 });
 
 /** Build a trace from a per-step generator (120 Hz). */

@@ -33,7 +33,10 @@ tags: [concept, freeplay, chain, share]
   a DOOR, not the building. The seed — all thirty authored pars republished as links "published by
   the house", one click, ghost+par+name rows — then the device's chain walk, the links it published
   or raced, rows straight from the payloads under a rank sentence phrased as what it is (a count
-  WALKED ON THIS DEVICE, `chainRankLine`). The campaign stands as tutorial-spine-plus-seed-gallery:
+  WALKED ON THIS DEVICE, `chainRankLine`). Badges never enter the rank — the NOT-an-input clause;
+  since the final-sheet probe (2026-10-12) the panel ends in a READ-ONLY sheet footline (the
+  badge counts themselves, `#gw-lines-sheet`, `Modules/ui`) — a face to look at, never an input
+  to feed. The campaign stands as tutorial-spine-plus-seed-gallery:
   undeleted, unmodified, hashes unmoved.
 - **The daily gains today's LINK** (`dailyLinkLine` in `src/save/daily.ts`): the seed fold that
   picks today's board picks today's link with it — the house line on that board, named on the

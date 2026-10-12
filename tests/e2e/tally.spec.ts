@@ -66,6 +66,21 @@ test('sandbox: placing a cup + finishing mints a named record whose ghost races 
 
   // the chip: this line has no name yet — name it
   await expect(page.locator('#gw-result-name-chip')).toHaveText('name this line')
+  // THE FIELD, NOT THE VERB-BUTTON (final-sheet probe item (g): a lone
+  // `save` button beside the Save dropdown's `Save` — one page, two
+  // controls, one name; the probe's click meant for the name opened the
+  // settings). The row is a field now: `name this line` is a real <label>
+  // for the input, the commit says `name it`, and its rect stays out of
+  // the Save dropdown's corner.
+  await expect(page.locator('#gw-result-name-chip')).toHaveAttribute('for', 'gw-result-name-input')
+  await expect(page.locator('#gw-result-name-save')).toHaveText('name it')
+  expect(
+    await page.evaluate(() => {
+      const a = document.getElementById('gw-result-name-save')!.getBoundingClientRect()
+      const b = document.getElementById('gw-save-toggle')!.getBoundingClientRect()
+      return !(a.right < b.left || b.right < a.left || a.bottom < b.top || b.bottom < a.top)
+    }),
+  ).toBe(false)
   await page.fill('#gw-result-name-input', 'the spillway')
   await page.click('#gw-result-name-save')
 

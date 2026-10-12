@@ -19,9 +19,9 @@
  */
 import * as THREE from 'three';
 import { PIECES, defaultParams, type PieceKind, type PieceParams } from './pieces.ts';
-import { canonicalBuild, fitSocket } from './snap.ts';
+import { canonicalBuild, fitSocket, SNAP_TRANSLATION_TOL } from './snap.ts';
 import { TrackSpline } from './spline.ts';
-import { transformSocket, type Socket } from './socket.ts';
+import { socketGap, transformSocket, type Socket } from './socket.ts';
 
 export interface PlacedPiece {
   def: PieceKind;
@@ -98,6 +98,67 @@ export function fixtureQuota(
     left[def] = n - 1;
     return true;
   };
+}
+
+/**
+ * THE PAST-GOAL SEAT — ONE source for the two sentences that point at the
+ * same piece (the final-sheet probe, item (c): the failure note said
+ * `the straight sits past the cup — pull it back` while the Remove button
+ * only ever took the LAST piece placed, so on 3 of 6 sandboxes the advice
+ * owned no verb). THE ORPHAN-PAST-GOAL reading of the build graph: the
+ * index of the FIRST piece (array order — placement order) whose ENTRY is
+ * joined to the OPEN EXIT of the goal fixture (the one kind the registry
+ * gives a `captureVolume`, at its FIRST occurrence, the same piece
+ * `goalNounFor` names), or -1 when the build has no goal or nothing sits
+ * past it. The join test is the walk's own (`SNAP_TRANSLATION_TOL`), so
+ * the seat the sentence names is the seat the graph sees.
+ *
+ * WHAT THIS DECIDES AND WHAT IT DOES NOT: this is the join fact only — a
+ * pure read of the build, the same law every derivation in this file
+ * keeps (no World, no physics, no hash). WHO MAY NAME the piece is the
+ * caller's rule and both callers read the same index: the note
+ * (`moveHintFor` in `src/ui/advice.ts`) names it only when the piece is
+ * NOT a fixture occurrence (kitchen02's authored run-out curve stays
+ * silent); the button (`removeIndex` in `src/ui/builder.ts`) TARGETS it
+ * only under the same fixture rule plus its own tray-ownership rule —
+ * Remove never deletes what the level shipped. Where both stay silent,
+ * the shipped LIFO law of Remove is untouched.
+ */
+export function goalExitJoinIndex(pieces: readonly PlacedPiece[]): number {
+  const goalAt = pieces.findIndex((p) => PIECES[p.def]?.captureVolume !== undefined);
+  if (goalAt < 0) return -1;
+  const goal = pieces[goalAt]!;
+  const goalExit = transformSocket(PIECES[goal.def]!.sockets(goal.params)[1], goal.transform);
+  return pieces.findIndex(
+    (p, i) =>
+      i !== goalAt &&
+      socketGap(transformSocket(PIECES[p.def]!.sockets(p.params)[0], p.transform), goalExit) <
+        SNAP_TRANSLATION_TOL,
+  );
+}
+
+/** The REMOVE TARGET past the goal — the join fact above filtered by the
+ *  two ownership laws Remove has always kept, in ONE pure reading (the
+ *  button, the note-side claim, and the pull-back verification sweep all
+ *  call THIS): a kind the tray does not stock is not the button's to take
+ *  (`trayKinds`, the same gate the LIFO scan obeys; `null` = no tray =
+ *  every placed piece is the player's), and the FIRST `fixtures[kind]`
+ *  occurrences in array order are what the level shipped (the occurrence
+ *  quota `playerPieceCount` applies). -1 = nothing REMOVABLE sits past
+ *  the goal, and the LIFO law stands untouched. */
+export function pullbackTargetIndex(
+  pieces: readonly PlacedPiece[],
+  fixtures: Partial<Record<PieceKind, number>> | undefined,
+  trayKinds: ReadonlySet<PieceKind> | null,
+): number {
+  const at = goalExitJoinIndex(pieces);
+  if (at < 0) return -1;
+  const p = pieces[at]!;
+  if (trayKinds && !trayKinds.has(p.def)) return -1;
+  const quota = fixtureQuota(fixtures ?? {});
+  for (let i = 0; i < at; i++) quota(pieces[i]!.def);
+  if (quota(p.def)) return -1; // the occurrence IS a fixture — not the player's
+  return at;
 }
 
 // ---- canonical JSON --------------------------------------------------------

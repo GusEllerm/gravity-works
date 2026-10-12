@@ -124,7 +124,7 @@
  */
 import * as THREE from 'three';
 import { canonicalBuild, fitSocket, snapSocket } from '../track/snap.ts';
-import { rigFingerprint } from '../track/build.ts';
+import { rigFingerprint, pullbackTargetIndex } from '../track/build.ts';
 import { PIECES, PIECE_KINDS, pieceGeometries, pieceLabel, type PieceKind, type PieceParams } from '../track/pieces.ts';
 import { socketMatrix, transformSocket, type Socket } from '../track/socket.ts';
 import type { Build, PlacedPiece } from '../track/build.ts';
@@ -1119,16 +1119,26 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
       ? `Place \u2014 ${list[Math.min(targetIndex, list.length - 1)]!.label}`
       : 'Place';
     placeBtn.setAttribute('aria-disabled', String(!canPlace));
-    // THE REMOVE BUTTON NAMES WHAT IT TAKES (T2.1): the same LIFO index
-    // the click will take, phrased in the socket-graph words the ring and
-    // the failure note already speak — the LIFO law stated in the label.
+    // THE REMOVE BUTTON NAMES WHAT IT TAKES (T2.1): the same index the
+    // click will take, phrased in the socket-graph words the ring and the
+    // failure note already speak — the law behind the pick stated in the
+    // title. Under the pull-back override (see `removeIndex`) the law is
+    // the note's own sentence: the piece past the goal, `pull it back`;
+    // otherwise it is the LIFO law, the last piece placed.
     {
       const ri = removeIndex();
+      const pulling = ri >= 0 && pullbackIndex() === ri;
       remove.textContent = ri < 0 ? 'Remove piece' : `Remove the ${removePhrase(pieces[ri]!)}`;
-      remove.title = 'removes the last piece you placed';
+      remove.title = pulling
+        ? `removes the ${removePhrase(pieces[ri]!)} — pull it back`
+        : 'removes the last piece you placed';
       remove.setAttribute(
         'aria-label',
-        ri < 0 ? 'Remove the last piece you placed' : `Remove the ${removePhrase(pieces[ri]!)} — the last piece you placed`,
+        ri < 0
+          ? 'Remove the last piece you placed'
+          : pulling
+            ? `Remove the ${removePhrase(pieces[ri]!)} — pull it back, the piece past the finish`
+            : `Remove the ${removePhrase(pieces[ri]!)} — the last piece you placed`,
       );
     }
   }
@@ -1303,13 +1313,45 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
 
   /** The index LIFO Remove takes — the last piece the TRAY owns (the
    *  scan `removeLast` performs, factored so the BUTTON LABEL can name
-   *  the same piece the CLICK will take; one source, no drift). */
+   *  the same piece the CLICK will take; one source, no drift).
+   *
+   *  THE PULL-BACK OVERRIDE (final-sheet probe item (c) — the overshoot
+   *  soft-lock: the note said `the straight sits past the cup — pull it
+   *  back` while the button only ever took the LAST piece placed, so the
+   *  sentence owned no verb and 3 of 6 sandboxes could not close). When a
+   *  PLAYER-placed, TRAY-owned piece sits joined to the goal's own open
+   *  exit — the exact piece `moveHintFor`'s ORPHAN clause names, read off
+   *  the same `goalExitJoinIndex` scan — Remove takes THAT piece first:
+   *  `pull it back` now rides the button the sentence already points at,
+   *  in the label law that never let the button name one piece and take
+   *  another. An authored fixture past the goal never qualifies (Remove
+   *  never deletes what the level shipped — the same fixture rule keeps
+   *  the sentence silent on kitchen02's run-out curve); with nothing past
+   *  the goal, or nothing removable past it, the plain LIFO law below is
+   *  untouched, so every campaign rebuild the `]`-walk notes teach —
+   *  kitchen05's booster-first, five Removes — keeps its exact order. */
   function removeIndex(): number {
+    const pull = pullbackIndex();
+    if (pull >= 0) return pull;
     let i = pieces.length - 1;
     if (trayKinds) {
       while (i >= 0 && !trayKinds.has(pieces[i]!.def)) i -= 1;
     }
     return i;
+  }
+
+  /** The pull-back target of the law above: the past-goal join and the
+   *  two ownership rules, read off ONE pure source
+   *  (`pullbackTargetIndex`, `src/track/build.ts`) that the failure
+   *  note's ORPHAN clause reads the same way — the piece this button
+   *  targets when it fires is the piece that sentence names. -1 = nothing
+   *  the button owns sits past the goal. */
+  function pullbackIndex(): number {
+    return pullbackTargetIndex(
+      pieces,
+      (level as unknown as { fixtures?: Partial<Record<PieceKind, number>> }).fixtures,
+      trayKinds,
+    );
   }
 
   /** Where this piece sits, in the page's existing socket words (the
