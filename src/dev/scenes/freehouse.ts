@@ -72,7 +72,10 @@ function freehouseScene(): SceneFactory {
       shadowed(set.group)
       scene.add(set.group)
       const rung = LEVELS[`${room}04`]
-      if (rung) {
+      // A rung's PAR BUILD is optional in the `Level` shape (the rigs have
+      // none); the spike only shifts a track when the room's 04 rung ships
+      // one — the optional-call the type asks for, behavior unchanged.
+      if (rung?.parBuild) {
         const track = buildTrackMeshes(shifted(rung.parBuild(), dx, dz))
         shadowed(track)
         scene.add(track)
