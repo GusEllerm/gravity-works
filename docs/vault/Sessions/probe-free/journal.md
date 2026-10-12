@@ -36,3 +36,11 @@ Build: worktree `gw-dd2` @ branch `probe-free`, base main `ec95e72`, preview `:4
 - 22:25:15 spring+booster edit: `fell off — 2.42 s` — my line curved AWAY from the default cup and nothing hints the cup is behind me; the goal marker is tiny in the big room; a line can tour the whole bathroom and never touch the goal — verdict is still "before the cup".
 - Launch-swallow pattern (3 sightings across bedroom/bathroom): clicking Launch while the failure band is up can no-op — status stays `ready`, the OLD verdict keeps showing; only Retry-then-Launch runs. Failure-surface state machine is confusing.
 - 22:25:43 **DUMP #3** (Loop, Curve, Banked turn, Landing, Lip at the ring): stalled 1.09 s. Urge trigger here: board huge, goal tiny — by minute 3 I was placing for spectacle, not purpose. Paralysis by scale; same law, new cause name.
+
+## Garden sandbox (22:26–22:29)
+
+- 22:26 arrival: grass + patio tiles + trellis/log/pot props; page carries the honesty disclosure `Why the same build always runs the same way`; par 5 pc / 2.75 s. Default dies 2.23 s (universal — same 2.23 death in kitchen/bedroom/bathroom/garden; the default course is one gesture in six rooms).
+- Prop probe: hover the LOG — `fits here` + Place button `Place — end of ramp` again: the BUTTON is the honest channel, the STATUS line is the flattering one.
+- 22:27:30 tour+stunt line (straight→curve→straight→booster→loop, 7 pc): died 2.55 s `… place at: end of loop` — under the par TIME (2.55 < 2.75) but a DNF pays nothing: the scoreboard only loves you at the finish line.
+- 22:27:55 **DUMP #4** (6 kinds chained onto the failed line, 13 pc total): `fell off — 2.55 s` and it went FARTHER than my planned line — dumping is mechanically rewarded, which I felt as a nudge away from authorship. Launch after same-tick places got swallowed once more (4th sighting).
+- Camera pulls WAY out mid-run (whole garden in a circle) — great for reading my tour, terrible for watching the car; no run-camera control in sandbox (the cinematic cam is share-page-only).
