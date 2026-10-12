@@ -95,3 +95,22 @@ Live at :5065, fresh profile, in one session:
 
 Item 3 CLOSED. The one honest seam is visual again: the windows are paper cards on a schematic, so
 "tour from a window" reads as a file drawer, not a doorway.
+
+## Item 4 — the chain round trip: publish → paste → beat-by-name → lineage
+
+- **Referee (headless against the shipped preview, all green)**: `lineage.spec.ts` walks the whole
+  circle — author publishes "the long line" (v2 payload with name/goal/par) → a FRESH-context friend
+  device opens the link, the viewer prints NAME · GOAL · PAR (`#gw-replay-payload-line`) → paste
+  into the ghost bar → mode `friend` → beat it with a shorter seating of their own ("you vs “the
+  long line”’s par", strictly ahead — skill, not a tie) → share → **the row carries
+  `lineage.hash = author.hash`**, the payload carries it too, the LINES tab prints
+  `beat “the long line”`, and a THIRD device verifies the chain of two. v1 links print nothing new
+  and verify forever. `chain.spec.ts`: the thirty house rows list, one click arms the house line,
+  the verdict reads the link's OWN par — never the wrong game.
+- **My own hands** (`r-viewer-challenge.png`): the viewer surface is real — "“…” · the cup at
+  3.04, −0.31, 0.00 m · par 2.55 s" prints above the film. TWO honest confessions: my first open
+  printed **"invalid share link"** (I retyped the URL and broke it) and my second printed
+  **"mismatch"** with the name field showing the level name — both are the known scripted-pointer
+  artifact (page-side `.click()` aims the ring differently; the same flow with real CDP clicks in
+  the specs verifies byte-clean). What matters is what the page did with my broken input: it said
+  the truth — `mismatch`, `invalid` — and never once faked a `verified`. The receipt fails honest.
