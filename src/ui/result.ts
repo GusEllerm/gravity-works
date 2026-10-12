@@ -46,8 +46,9 @@ import type { MoveHint } from './advice.ts';
 import { AIM_WALK_COPY } from './callouts.ts';
 import type { AimHint } from './builder.ts';
 
-/** Badge display order for the tally tail (the sheet's own row order). */
-const BADGE_ORDER: readonly BadgeKind[] = ['air', 'catch', 'chainFall', 'crossing', 'spend'];
+/** Badge display order for the tally tail (the sheet's own row order).
+ *  Exported: the LINES tab footline reads the SAME order it prints (`createLinesTab`). */
+export const BADGE_ORDER: readonly BadgeKind[] = ['air', 'catch', 'chainFall', 'crossing', 'spend'];
 
 // ---- witnesses --------------------------------------------------------------
 
@@ -889,6 +890,24 @@ export function verdictLine(model: ResultModel): string {
  *      daily's device-honesty sentence verbatim: "the spillway" —
  *      personal best 2.11 s · your own runs on this device only.
  *
+ * THE FACE (final-sheet probe item (e)/(10) — "the invisible sheet": the
+ * badge counts accumulated in the save with no surface, so the sheet could
+ * not be read, shown off, or finished). The optional `sheet` argument is
+ * the save's LIFETIME counts AFTER this run's write, and the shell passes
+ * it ONLY on a sandbox page — every earned kind on line 1 then carries its
+ * lifetime number in parentheses (`earned — air ×2 (7) · clean catch (6) ·
+ * your own runs on this device only`) and the honesty sentence rides
+ * verbatim. The choice is deliberate modesty, not a scoreboard: the number
+ * appears only on a run whose sheet actually moved, only for the kinds it
+ * moved, and never as a standalone fourth line (the three-line law holds);
+ * a zero-earning or failing sandbox run prints no number at all, and the
+ * full read-the-whole-sheet surface lives where reading belongs — the
+ * LINES tab footline (`createLinesTab`, `src/ui/levelselect.ts`). The probe
+ * proved the invisible ledger carried no temptation; a face that only
+ * speaks when the sheet moves keeps the ledger calm AND auditable — no
+ * streaks, no ranks, nothing to farm between runs. `null` (every campaign
+ * bar, every shared/replay page) keeps the shipped tail byte-identical.
+ *
  * Pure over data the shell already holds (events from the tape, firsts
  * from the save); nothing here reaches the physics. Cap: three lines —
  * the tail is a footnote to the verdict, never a fourth verdict.
@@ -899,6 +918,10 @@ export function tallyLines(
   /** The named line this run anchored (sandbox only): name + the save's
    *  best AFTER this run, and whether this run minted or beat it. */
   line: { name: string; best: number; fresh: boolean } | null = null,
+  /** THE FACE: the save's lifetime badge counts AFTER this run's write —
+   *  passed by the shell on a SANDBOX page only (see the FACE paragraph
+   *  above); `null` keeps every shipped line byte-identical. */
+  sheet: Readonly<Partial<Record<BadgeKind, number>>> | null = null,
 ): string[] {
   const lines: string[] = [];
   const counts = new Map<BadgeKind, number>();
@@ -906,9 +929,17 @@ export function tallyLines(
   if (counts.size > 0) {
     const parts = BADGE_ORDER.filter((k) => counts.has(k)).map((k) => {
       const n = counts.get(k)!;
-      return n > 1 ? `${BADGE_WORDS[k]} ×${n}` : BADGE_WORDS[k];
+      const word = n > 1 ? `${BADGE_WORDS[k]} ×${n}` : BADGE_WORDS[k];
+      const life = sheet?.[k] ?? 0;
+      // THE FACE: the lifetime number rides the word it counts, in the
+      // smallest shape that reads — `(7)` — and only once the sheet is
+      // past the run itself (a first sighting already says `first … earned`
+      // on line 2; `(1)` would only echo it).
+      return sheet !== null && life > 1 ? `${word} (${life})` : word;
     });
-    lines.push(`earned — ${parts.join(' · ')}`);
+    lines.push(
+      sheet !== null ? `earned — ${parts.join(' · ')} · ${RECORDS_HONESTY}` : `earned — ${parts.join(' · ')}`,
+    );
   }
   if (firstBadges.length > 0) {
     const words = BADGE_ORDER.filter((k) => firstBadges.includes(k)).map((k) => `first ${BADGE_WORDS[k]} — earned`);
