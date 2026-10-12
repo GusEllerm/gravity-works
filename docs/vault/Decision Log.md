@@ -6,6 +6,34 @@ livedocs: snapshot
 
 Dated entries tagged `[agent decision]`. Newest first.
 
+## 2026-10-12 — THE GHOST law, extended: MOUNTING a ghost is physics-neutral — proven, not asserted; a link ACCEPTED ends the run in friend mode `[agent decision]` `[systems engineer]`
+
+The final sheet probe named a determinism fault (item (d): the identical 4-piece build reportedly ran
+0.57 s with the par ghost mounted vs 0.67 s off; the re-probe's bedroom 2.80/2.83 split, "confirmed and
+reproducible"). The audit closed the mechanism question before touching code: NO ghost lane adds a
+physics body — every source is a translucent Three.js rig (the car-rig precedent) plus a `GhostTrace`,
+and every wind steps a FRESH headless `World` that is `free()`d; `attachScene` moves scene nodes; the
+entire coupling remains one `sync` line. The probe's own numbers read the audit honestly: 0.57 s is the
+friend's `bbc4df19` rail-shortcut build and 0.67 s the author's DIFFERENTLY seated cup — two builds, one
+misattribution (the return trip's own −0.03/0.10 rows ARE those builds' times), and the re-probe's split
+correlates with re-anchored seatings, not mounts (a remove/re-place cycle re-aims the ring — the same
+builder law as the porch re-anchor). LAWS, now held by tests rather than prose: (1) THE MOUNTING LAW —
+with ANY ghost source mounted (bundle par trace, your-best record mirror, pasted friend link, chain/house
+row, cold page) the run's hash AND finish print are IDENTICAL to the unmoved run: `tests/e2e/ghost-purity.spec.ts`
++ the Node interleaved-wind family in `tests/unit/ghost.test.ts`; a ghost that ever adds a body to a
+live world fails them red. (2) THE LINEAGE ACCEPTANCE (item (a), one flag deep): a run that ACCEPTED a
+hashed link ENDS in friend mode — `beatLineage` reads the SAME acceptance fact (`racedLink` with a hash)
+the verdict row already prints, not the rail's current visual mode; an edit that lifts their car off the
+grid never un-races the link, and the CHAIN's middle link mints (red-first receipt: the pre-fix gate
+printed `lineage=NONE` in `tests/e2e/lineage.spec.ts`, which now walks paste → beat → publish → row
+SHOWS lineage → two fresh-context devices verify the chain of two). (3) THE DOOR SHOWS THE CHALLENGE
+(item (b)): the `#s=` viewer page prints NAME · GOAL · PAR straight off the payload v2 fields
+(`#gw-replay-payload-line`) — presentation only, no field enters a sim; a v1 link prints nothing new.
+Rejected: a separate non-stepped world per ghost (there was never a shared one to separate), mounting
+census-ordered ghost bodies (no lane added a body to hold to the law — the law now catches anyone who
+ever does). `replay:all` stays 30/30 byte-identical at this HEAD. See [[Modules/replay]], [[Modules/share]],
+[[Concepts/Chain]], `Sessions/2026-10-12 Ghost purity.md`.
+
 ## 2026-10-12 — THE SEATING LAW: every launch seats identically, or the hash is a dice roll wearing a receipt `[agent decision]` `[systems engineer]`
 
 - **THE FIX (closes the retry-law escalation above)** — `World.reset()` no longer removes-and-re-adds the car

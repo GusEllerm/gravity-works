@@ -95,6 +95,20 @@ export async function bootSharedRun(root: HTMLElement): Promise<void> {
   tagline.id = 'gw-replay-tagline';
   tagline.textContent = 'One build, one release — this page replays it exactly.';
   root.appendChild(tagline);
+  // THE DOOR SHOWS THE CHALLENGE (final sheet probe item (b): the friend's
+  // viewer page was a beautiful film with hashes and NO name, no GOAL, no
+  // PAR text anywhere — the payload carried all three). One calm line,
+  // straight off the payload's OWN fields (v2): NAME · GOAL · PAR. Nothing
+  // here is computed — the name is the author's string, the cup is the
+  // transform `cupGoalFromBuild` COPIED (presentation geometry, the same
+  // numbers the chain rows read), the par is the author's measured
+  // gen-pars reference. A v1 link (no fields) prints NOTHING new — a link
+  // that never had a name keeps its silence, and no absent field is ever
+  // dressed up as a zero (`Modules/share`).
+  const payloadLine = document.createElement('p');
+  payloadLine.id = 'gw-replay-payload-line';
+  payloadLine.hidden = true;
+  root.appendChild(payloadLine);
 
   // the honest half, BELOW the fold: the verdict and the two hashes, exactly
   // the strings the stage-2/3/4 specs read
@@ -134,6 +148,22 @@ export async function bootSharedRun(root: HTMLElement): Promise<void> {
     return;
   }
   embedded.textContent = `link hash ${payload.hash}`;
+  // fill the CHALLENGE line from the payload's own v2 fields (see the DOM
+  // block above — presentation only, no field enters a sim, no hash near
+  // it). `goal` is the cup's 4x4 transform; the printed numbers are its
+  // TRANSLATION (column 4), the same read `cupGoalFromBuild` ships.
+  {
+    const parts: string[] = [];
+    if (payload.name !== undefined) parts.push(`\u201C${payload.name}\u201D`);
+    if (payload.goal !== undefined && payload.goal.length === 16) {
+      parts.push(`the cup at ${payload.goal[12]!.toFixed(2)}, ${payload.goal[13]!.toFixed(2)}, ${payload.goal[14]!.toFixed(2)} m`);
+    }
+    if (payload.par !== undefined) parts.push(`par ${payload.par.toFixed(2)} s`);
+    if (parts.length > 0) {
+      payloadLine.textContent = parts.join(' \u00b7 ');
+      payloadLine.hidden = false;
+    }
+  }
   // The verdict is LAZY: the cinematic wind settles it as soon as the tape
   // is done (`settle` below), and the share card reads `run` at click time.
   // Nothing here blocks the bar on a simulation any more.

@@ -18,7 +18,7 @@ tags: [concept, freeplay, chain, share]
 - **Payload v2** (`src/share/share.ts`, `Modules/share`): the link grows `name` (the line's), `par`
   (the AUTHOR's measured reference run through the gen-pars rule — `parOfRun` is one home for
   `scripts/gen-pars.mjs`'s ceil), `goal` (the placed cup's transform, guard geometry copied from
-  the build, presentation only) and `lineage` (the link whose ghost this run beat, by hash).
+  the build, presentation only) and `lineage` (the link whose ghost this run beat, by hash — since the final sheet probe the mode it reads is the ACCEPTANCE: a run that accepted a hashed link ends in friend mode, so a rebuild-to-beat mints its beat; Decision Log 2026-10-12, Ghost-law extension).
   Optional-on-read, mandatory-on-write-new: the share button stamps `v: 2` always
   (`src/boot.ts`), and **v1 links verify forever** — real v1 fixtures in
   `tests/fixtures/share-v1.json` replay to their embedded hashes and re-serialize byte-identically
@@ -41,6 +41,7 @@ tags: [concept, freeplay, chain, share]
 
 ## The laws this rests on
 
+- **The DOOR shows the CHALLENGE.** The `#s=` viewer page prints NAME · GOAL · PAR from the payload's own v2 fields (`#gw-replay-payload-line`, `Modules/share`) — presentation only; a v1 link stays silent.
 - **No hash near any of it.** The cup-goal is guard geometry the guard already places from BUILD
   (`World` reifies the last player `finishCup`; `cupGoalFromBuild` COPIES that transform, never
   recomputes); the verdict reads the cup from BUILD; the payload fields never enter a step loop.
@@ -61,7 +62,7 @@ tags: [concept, freeplay, chain, share]
 `tests/unit/share-v1.test.ts` (the fixtures verify forever, both directions), `tests/unit/chain.test.ts`
 (the verdict-row impossibility sweep, the chain store and its ride, the goal's guard geometry, the
 hash-neutrality receipt, the gen-pars rule, the daily fold), `tests/e2e/chain.spec.ts` (seed thirty
-playable, the named-line publish into a v2 payload, the beat-a-friend verdict row live), plus the
+playable, the named-line publish into a v2 payload, the beat-a-friend verdict row live), `tests/e2e/lineage.spec.ts` (the CHAIN's middle link: paste → beat with skill → publish → the row SHOWS the lineage → two fresh-context devices verify the chain of two; the viewer page's NAME · GOAL · PAR line; the v1 silence), `tests/e2e/ghost-purity.spec.ts` (the ghost MOUNTING law the chain leans on — mounted runs are unmoved runs), plus the
 unchanged families: `replay:all` 30/30, `share.test.ts`, `ghosts.spec.ts`, `tally.spec.ts`.
 
 ## See also

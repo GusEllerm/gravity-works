@@ -2171,10 +2171,20 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // its own build's re-simulated finish, checkable from the link's
       // bytes). A house line carries no payload hash, so nothing enters
       // the chain for it here — the CHAIN is payloads.
+      //
+      // THE RUN ENDS IN FRIEND MODE WHEN A HASHED LINK WAS ACCEPTED (the
+      // final probe, item (a): the receipt was thrown away): the mode the
+      // lineage reads is the ACCEPTANCE, not the rail's current visual
+      // state. An edit that lifts their car off the grid ("your edits
+      // replaced their track") or a par-toggle never un-races the link —
+      // the beat claim this mint prints is the SAME fact the verdict row
+      // already prints from `racedLink`, and a fact phrased twice must
+      // read from one place. The flag IS `racedLink` with a hash: set on
+      // accept, cleared only when another link replaces it or refuses.
       beatLink = beatLineage({
         finished: result.status === 'finished',
         myTime: result.time,
-        ghostMode: ghost.ghostMode === 'friend' && racedLink !== null && racedLink.hash !== null ? 'friend' : 'other',
+        ghostMode: racedLink !== null && racedLink.hash !== null ? 'friend' : 'other',
         ghostTime: racedLink?.time ?? 0,
         link:
           racedLink !== null && racedLink.hash !== null
