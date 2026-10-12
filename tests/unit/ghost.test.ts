@@ -13,6 +13,9 @@ import { FEELTRACK } from '../../src/world/levels/feeltrack.level.ts';
 import { KITCHEN01 } from '../../src/world/levels/kitchen01.level.ts';
 import '../../src/world/levels/kitchen01.level.ts';
 import { replayRun } from '../../src/replay/replay.ts';
+import { World } from '../../src/world/world.ts';
+import { deserialize } from '../../src/track/build.ts';
+import { serialize } from '../../src/track/build.ts';
 import {
   cachedGhostTrace,
   clearGhostTraceCache,
@@ -92,6 +95,70 @@ describe('ghost trace derivation (T3.2)', () => {
       ],
     };
     await expect(deriveGhostTrace(FEELTRACK, broken)).rejects.toBeTruthy();
+  });
+});
+
+// THE MOUNTING LAW (final sheet probe item (d), Decision Log 2026-10-12):
+// a ghost is TRACE — mounting one is physics-neutral, PROVEN. The Node side
+// of the proof: a wind that runs BESIDE a live run (the browser's shape —
+// the slices interleave with the live steps) and a trace wound BEFORE a run
+// (every source: par, the your-best mirror's own bytes, a pasted payload's
+// round-tripped bytes) must leave the run's hash and finish time BIT-FOR-BIT
+// where no ghost was mounted. The page side is `tests/e2e/ghost-purity.spec.ts`.
+describe('ghost MOUNTING is physics-neutral (the mounting law)', () => {
+  test('a wind stepped beside a live run does not move the run', async () => {
+    const clean = await replayRun(FEELTRACK, FEELTRACK.placeholderBuild());
+    const live = await World.create(FEELTRACK, FEELTRACK.placeholderBuild(), { visuals: false });
+    live.launch();
+    // the mirror shape: a second headless world winding the SAME bytes,
+    // its slices interleaved with the live run's steps (message-task
+    // yields let the wind's pump() land between live steps)
+    const wind = deriveGhostTrace(FEELTRACK, FEELTRACK.placeholderBuild());
+    while (live.status === 'running' && live.stepCount < 15 * 120) {
+      live.step();
+      if (live.stepCount % 8 === 0) await new Promise((r) => setTimeout(r, 0));
+    }
+    const traced = await wind;
+    expect(traced.steps).toBeGreaterThan(0); // the wind DID run beside it
+    expect(live.hashHex()).toBe(clean.hash);
+    expect(live.time).toBe(clean.time);
+    live.dispose();
+  });
+
+  test('winding every ghost source BEFORE a run leaves it bit-for-bit', async () => {
+    const clean = await replayRun(FEELTRACK, FEELTRACK.placeholderBuild());
+    // par trace, the record mirror's own bytes, and a pasted payload's
+    // serialize→deserialize round trip (the friend lane's decode)
+    await deriveGhostTrace(FEELTRACK, FEELTRACK.placeholderBuild());
+    const mirror = deserialize(serialize(FEELTRACK.placeholderBuild()));
+    await deriveGhostTrace(FEELTRACK, mirror);
+    const after = await replayRun(FEELTRACK, FEELTRACK.placeholderBuild());
+    expect(after.hash).toBe(clean.hash);
+    expect(after.time).toBe(clean.time);
+    expect(after.steps).toBe(clean.steps);
+  });
+
+  test('the rig mounted INTO the live scene is a pure Three.js citizen', async () => {
+    // the car-rig precedent, held: the ghost rig hangs in the RENDER scene
+    // and never touches the sim — stepping with it attached is the clean run
+    const clean = await replayRun(FEELTRACK, FEELTRACK.placeholderBuild());
+    const world = await World.create(FEELTRACK, FEELTRACK.placeholderBuild(), { visuals: true });
+    const race = new GhostRace(SET_TOKENS.kitchen);
+    race.attachScene(world.scene!);
+    race.setTrace('par', await deriveGhostTrace(FEELTRACK, FEELTRACK.placeholderBuild()));
+    world.launch();
+    race.beginRace();
+    while (world.status === 'running' && world.stepCount < 15 * 120) {
+      world.step();
+      race.sync(world.time);
+    }
+    expect(world.hashHex()).toBe(clean.hash);
+    expect(world.time).toBe(clean.time);
+    // and the proof it is a VISUAL: a scene node, never a body
+    expect(race.group.parent).toBe(world.scene);
+    expect(race.state().pos).not.toBeNull();
+    race.dispose();
+    world.dispose();
   });
 });
 

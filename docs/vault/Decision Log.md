@@ -31,6 +31,60 @@ otherwise checked, not assumed: the rebase self-check gates consecutive captures
 CI it gets replaced by a more static one, not chased. Proof of non-vacuity: on a box with no
 `tests/visual/linux/`, `CI=1 GQA_BASELINE_DIR=tests/visual/linux npx playwright test visual -g "game shell"`
 FAILS (was: SKIPPED-green). See [[Concepts/CI Pixel Truth]], `Sessions/2026-10-12 Pixel gate`.
+## 2026-10-12 — THE DOWNHILL greenlit: the house becomes ONE world and the front door; deck altitudes become canon `[agent decision]` `[creative designer]`
+
+The bet is made in the open, with receipts, not by drift. Evidence: the spike's NUMBER (median 4 rooms physics
+approves from the garage mezzanine, range 2..6, 13/15 sweeps >= 3, hash-stable twice), the greenlight re-probe
+(4/4: broken rooms closable, chain round trip mints lineage, ghost mounting proven physics-neutral, the ledger
+changes play), and the campaign's own verdict history (~1 decision per rung; "the sandboxes are the toy and the
+game hides the door"). Chosen: candidate A — the six ratified sets mounted on a HOUSE FRAME at canonical deck
+altitudes (porch 0 -> garage mezzanine top), joined by AUTHORED DROP-AND-CATCH connectors as fixtures — ballistic
+only, because the steering spike crossed zero banked arcs: rooms connect by flight or not at all, which is the
+grammar two years of level work already speaks. THE LAW: (1) the house is ONE NEW LEVEL ID joining the atlas
+APPEND-ONLY — the 37 anchors do not move, and the campaign stays byte-identical, demoted to what the re-probe
+proved it already is: the tutorial spine (a TOUR per window, "learn this floor"), never deleted; (2) the deck
+altitudes are CANON from this entry onward — every future set placement, camera rig, and the farewell's path
+inherit the six-deck ladder (this line predates the connector pass on purpose); (3) the home screen becomes
+THE HOUSE, rendered — the crane's path parked as the menu camera it always was; this is the irreversible UI act,
+and pixel baselines, the premise beat, and every rung-first chrome spec re-baseline AFTER it ships, stated, not
+quietly; (4) THE FAREWELL IS REWIRED, NOT DELETED — porch05's one-clear-one-farewell law keeps its promise; the
+crane gains a beginning, not a replacement; (5) THE INPUT LAW governs the whole field: every force that can move
+the car lives in the replayed data step-keyed — the house run's hash is its own receipt; the world needs no
+anchor, only a tape; (6) player-chosen goals ride the existing verdict block (the cup IS player-placed geometry);
+rooms-collected replace stars HERE ONLY — the campaign keeps its star law untouched. Rejected: relocating the 30
+rungs INTO the house (the spike proved geometry position IS the hash — 0/2 survive translation; a scatter-parcel
+house would be thirty islands wearing a hub), a drivable-corner house (steering veto), and shipping A before B/C
+(the empty cathedral is the paralysis problem with a higher ceiling — B/C are why A opens on a furnished world).
+Proof required: house-hash stable twice headless; a downhill e2e collecting >= 3 rooms; tour deep-links byte-
+compatible; old-link verification untouched; visual re-baselines enumerated per surface.
+
+## 2026-10-12 — THE GHOST law, extended: MOUNTING a ghost is physics-neutral — proven, not asserted; a link ACCEPTED ends the run in friend mode `[agent decision]` `[systems engineer]`
+
+The final sheet probe named a determinism fault (item (d): the identical 4-piece build reportedly ran
+0.57 s with the par ghost mounted vs 0.67 s off; the re-probe's bedroom 2.80/2.83 split, "confirmed and
+reproducible"). The audit closed the mechanism question before touching code: NO ghost lane adds a
+physics body — every source is a translucent Three.js rig (the car-rig precedent) plus a `GhostTrace`,
+and every wind steps a FRESH headless `World` that is `free()`d; `attachScene` moves scene nodes; the
+entire coupling remains one `sync` line. The probe's own numbers read the audit honestly: 0.57 s is the
+friend's `bbc4df19` rail-shortcut build and 0.67 s the author's DIFFERENTLY seated cup — two builds, one
+misattribution (the return trip's own −0.03/0.10 rows ARE those builds' times), and the re-probe's split
+correlates with re-anchored seatings, not mounts (a remove/re-place cycle re-aims the ring — the same
+builder law as the porch re-anchor). LAWS, now held by tests rather than prose: (1) THE MOUNTING LAW —
+with ANY ghost source mounted (bundle par trace, your-best record mirror, pasted friend link, chain/house
+row, cold page) the run's hash AND finish print are IDENTICAL to the unmoved run: `tests/e2e/ghost-purity.spec.ts`
++ the Node interleaved-wind family in `tests/unit/ghost.test.ts`; a ghost that ever adds a body to a
+live world fails them red. (2) THE LINEAGE ACCEPTANCE (item (a), one flag deep): a run that ACCEPTED a
+hashed link ENDS in friend mode — `beatLineage` reads the SAME acceptance fact (`racedLink` with a hash)
+the verdict row already prints, not the rail's current visual mode; an edit that lifts their car off the
+grid never un-races the link, and the CHAIN's middle link mints (red-first receipt: the pre-fix gate
+printed `lineage=NONE` in `tests/e2e/lineage.spec.ts`, which now walks paste → beat → publish → row
+SHOWS lineage → two fresh-context devices verify the chain of two). (3) THE DOOR SHOWS THE CHALLENGE
+(item (b)): the `#s=` viewer page prints NAME · GOAL · PAR straight off the payload v2 fields
+(`#gw-replay-payload-line`) — presentation only, no field enters a sim; a v1 link prints nothing new.
+Rejected: a separate non-stepped world per ghost (there was never a shared one to separate), mounting
+census-ordered ghost bodies (no lane added a body to hold to the law — the law now catches anyone who
+ever does). `replay:all` stays 30/30 byte-identical at this HEAD. See [[Modules/replay]], [[Modules/share]],
+[[Concepts/Chain]], `Sessions/2026-10-12 Ghost purity.md`.
 
 ## 2026-10-12 — THE SEATING LAW: every launch seats identically, or the hash is a dice roll wearing a receipt `[agent decision]` `[systems engineer]`
 

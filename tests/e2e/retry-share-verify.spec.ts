@@ -21,6 +21,16 @@ async function finishRun(page: Page): Promise<void> {
   await expect(page.locator('#gw-result')).toBeVisible({ timeout: 60_000 })
 }
 
+// THE SPEC'S OWN STATED CLOCK (pacing doctrine, cf. campaign.spec.ts and the
+// tally fix): the waits below DOCUMENT 60_000 + 15_000 + 90_000 budgets but
+// the test ran on Playwright's 30 s default — fine while the wall clock kept
+// it under (green on main), red on CI at 30.6 s once this lane's two new
+// heavy specs (ghost-purity, lineage) joined the fullyParallel workers.
+// The failure was NOT a mismatch: `toHaveText` was still polling when the
+// 30 s timeout killed the session (CI log: "Test timeout of 30000ms
+// exceeded" under a 90 s expect). `slow()` carries the documented budgets.
+test.slow()
+
 test('build -> Retry -> launch -> share -> paste: the link verifies its own replay', async ({ page, browser }) => {
   const errors: string[] = []
   page.on('console', (msg) => {
