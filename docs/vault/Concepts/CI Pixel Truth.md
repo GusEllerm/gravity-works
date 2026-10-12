@@ -20,7 +20,11 @@ tags: [concept, testing, ci, visual]
   surviving two tests of frame stability: consecutive captures identical within the 0.1 % gate, on the
   exact renderer the baseline will be judged by. First member: `shell-kitchen01-idle` — the shipped
   shell at `/?level=kitchen01&post=on`, settled idle (nothing animates on the table, liquid `uTime`
-  stays 0), fixed 1600x900 viewport, canvas's own 960x540. The canonical kitchen-set shots stay on the
+  stays 0), fixed 1600x900 viewport, canvas's own 960x540. Second member (downhill build 2, the
+  front door): `shell-home-idle` — the BARE-route home screen addressed explicitly
+  (`/?boot=house&post=on`), the parked crane's cross-section with no run and no ghost race begun —
+  a static table by construction; its linux truth is bootstrapped by the same `linux-baselines`
+  job line (extended per-view `test -f … || capture`). The canonical kitchen-set shots stay on the
   old doctrine; the exploration-vs-ratified cross-check (`againstExploration`) is unchanged.
 - `againstBaseline` under `CI=1`: enforced view + missing baseline = hard failure; every other missing
   baseline keeps the loud skip (fresh clones on unlit platforms still run), and the darwin gate and its

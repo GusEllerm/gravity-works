@@ -3,7 +3,7 @@ version = 1
 [[bindings]]
 doc = "docs/vault/Concepts/CI Pixel Truth.md"
 target = "tests/e2e/visual.spec.ts"
-sig = "c0657d3ecbe52bf4"
+sig = "99523cb6d5c59591"
 
 [[bindings]]
 doc = "docs/vault/Concepts/CI Pixel Truth.md"
@@ -228,7 +228,7 @@ sig = "ec632ace702f8f1d"
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "tests/e2e/farewell.spec.ts"
-sig = "d6a0ca210d5b9ea3"
+sig = "8c3e72f7dca77458"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -1523,7 +1523,7 @@ sig = "cb1fd2703c276779"
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
 target = "tests/e2e/intro.spec.ts"
-sig = "b7e66aa56b0ad5ee"
+sig = "d11431f002735d3f"
 
 [[bindings]]
 doc = "docs/vault/Modules/src.md"
@@ -1913,7 +1913,12 @@ sig = "da25df475f1f5cd7"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/farewell.spec.ts"
-sig = "d6a0ca210d5b9ea3"
+sig = "8c3e72f7dca77458"
+
+[[bindings]]
+doc = "docs/vault/Modules/ui.md"
+target = "tests/e2e/front-door.spec.ts"
+sig = "94103cc671937983"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"

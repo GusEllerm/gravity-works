@@ -1503,7 +1503,10 @@ the ladder walks (30 rungs × 3 stars = 90 the maximum) and an off-ladder star �
 room's sandbox (`PORCH_SANDBOX_ID`, the same registry-addressed page the sandbox census specs boot),
 today's daily rung (`?daily=1`, `src/save/daily.ts`), and the film of the run that just ended (a share
 payload frozen at the same terminal edge the Share button would have used, `src/share/share.ts`) — the
-three things the campaign has to offer once it is finished, and nothing else. THE ONCE-PER-SAVE FLAG is
+three things the campaign has to offer once it is finished, and nothing else. Since downhill build 2
+(Decision Log “THE DOWNHILL greenlit” law 4 — REWIRED, NOT DELETED) the row door 1 opens ON gained a
+seventh honest name once the house exists — `#gw-farewell-house`, “the whole house”, the unchanged
+`?level=house` bytes; the crane pass, the three doors and the one-click law are verbatim. THE ONCE-PER-SAVE FLAG is
 UI state, not level state (`gravity-works.farewell.seen`, outside the save schema), so no level data
 moved, no shipped hash moved, and `replay:all` stays 30/30 — the farewell is post-run cinema, never
 sim. A second clear of porch05 is an ordinary run behind an ordinary bar. Law, pages and proofs:

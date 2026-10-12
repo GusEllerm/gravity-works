@@ -112,7 +112,7 @@ const REBASE = process.env.GQA_UPDATE_BASELINES === '1'
  * on one Mac only and the clobber stayed green for days). Off CI the loud
  * skip still stands so a fresh clone on an unlit platform still runs.
  */
-const CI_ENFORCED_VIEWS = new Set(['shell-kitchen01-idle'])
+const CI_ENFORCED_VIEWS = new Set(['shell-kitchen01-idle', 'shell-home-idle'])
 
 /**
  * Compare a fresh capture with the committed baseline for THIS platform.
@@ -245,6 +245,44 @@ test('game shell kitchen01 idle matches its committed baseline', async ({ page }
   // CI-enforced view: rebase mode double-captures to prove frame stability
   // on the capturing renderer before the baseline is ever committed.
   await againstBaseline('shell-kitchen01-idle', buf, async () =>
+    (await canvas.screenshot()) as Buffer,
+  )
+  expect(errors).toEqual([])
+})
+
+// THE FRONT DOOR VIEW (downhill build 2, the re-baseline act of law 3 —
+// the NEW view, enumerated per surface in `Sessions/2026-10-12 Front
+// door.md`): the bare-route home screen renders THE HOUSE, so the shipped
+// FRONT PAGE gains its own pixel truth. `shell-kitchen01-idle` above is
+// UNMOVED (it addresses `?level=kitchen01` — an addressed rig the door
+// did not touch); this view addresses the door explicitly (`?boot=house`,
+// the named face of the bare route — a visual view never rides a bare
+// default it did not choose). The camera is the pure parked `homePose`
+// (no run, no ghost race begun, no wind), so the cross-section is a
+// static table by construction and the rebase self-check proves it. Its
+// linux truth is bootstrapped by the CI `linux-baselines` job exactly
+// like the shell view's.
+test('home shell — the front-door cross-section idle matches its committed baseline', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (err) => errors.push(String(err)))
+  await page.goto('/?boot=house&post=on')
+  await page.waitForFunction(
+    () => typeof (window as any).__gwHouseState === 'function',
+    undefined,
+    { timeout: 60_000 },
+  )
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  )
+  const canvas = page.locator('#gw-canvas')
+  expect(
+    await canvas.evaluate((c) => `${(c as HTMLCanvasElement).width}x${(c as HTMLCanvasElement).height}`),
+  ).toBe('960x540')
+  const buf = (await canvas.screenshot()) as Buffer
+  await againstBaseline('shell-home-idle', buf, async () =>
     (await canvas.screenshot()) as Buffer,
   )
   expect(errors).toEqual([])

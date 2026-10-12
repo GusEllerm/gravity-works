@@ -144,20 +144,37 @@ test('a key skips the crane and the doors land whole (still an honest seen)', as
   await expect(page.locator('#gw-farewell')).toHaveCount(0)
 })
 
-test('door one: the sandbox — one click, the porch sandbox page, and all six rooms named', async ({ page }) => {
+test('door one: the sandbox — one click, the porch sandbox page, all six rooms named, and the whole house', async ({ page }) => {
   test.setTimeout(120_000)
   await toDoors(page)
   // (round 2, Lane C) the door NAMES all six: "a room of your own, every
   // room" — one small link per room sandbox, registry ids, and the door's
-  // own click still lands the porch sandbox in one click
+  // own click still lands the porch sandbox in one click.
+  // (downhill build 2, law 4 — REWIRED NOT DELETED) once the house exists
+  // the row door 1 opens ON gains a seventh, honest name: "the whole
+  // house", deep-linking the house route at its unchanged `?level=house`
+  // bytes. The crane pass and the three doors are the law kept verbatim;
+  // this is the beginning the crane gained, not a replacement.
   await expect(page.locator('#gw-farewell-sandbox')).toContainText('a room of your own, every room')
-  await expect(page.locator('#gw-farewell-sandboxes a')).toHaveCount(6)
+  await expect(page.locator('#gw-farewell-sandboxes a')).toHaveCount(7)
   for (const room of ['kitchen', 'bedroom', 'bathroom', 'garden', 'garage', 'porch']) {
     await expect(page.locator(`#gw-farewell-sandboxes a[href="?level=${room}-sandbox"]`))
       .toHaveText(`${room} sandbox`)
   }
+  await expect(page.locator('#gw-farewell-house'))
+    .toHaveAttribute('href', '?level=house')
+  await expect(page.locator('#gw-farewell-house')).toHaveText('the whole house')
   await page.click('#gw-farewell-sandbox')
   await expect(page).toHaveURL(/level=porch-sandbox/)
+  await expect(page.locator('#gw-launch')).toBeVisible({ timeout: 60_000 })
+})
+
+test('the whole house opens: door 1’s seventh name deep-links the house route (law 4, rewired not deleted)', async ({ page }) => {
+  test.setTimeout(120_000)
+  await toDoors(page)
+  await page.click('#gw-farewell-house')
+  // one click, one landing: the house page, menu camera parked, Release live
+  await expect(page).toHaveURL(/level=house/)
   await expect(page.locator('#gw-launch')).toBeVisible({ timeout: 60_000 })
 })
 
