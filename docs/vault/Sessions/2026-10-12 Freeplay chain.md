@@ -68,10 +68,12 @@ for the link sentence, nothing else touched.
 
 ## Commits
 
-`freeplay: THE CHAIN — payload v2, the beat-a-friend verdict row, the LINES tab, today's link` — code,
-tests, fixtures, the reconciled `Modules/share|save|ui|replay|tally` notes, the new
-[[Concepts/Chain]], and the `--ack` stamps on `camera/render/track/Action Plan 2026-10-09` (boot.ts
-moved only in CHAIN surfaces; their claims stand). Pushed to `origin/fp-chain`, ls-verified; PR CI next.
+One commit carries the lane: `freeplay: THE CHAIN …` — code, tests, the four v1 fixtures as
+READABLE canonical envelopes (the `#s=` wire token derives in-test — an earlier shape that stored
+high-entropy literals tripped the PR's secret scanner, so the history carries none), the reconciled
+`Modules/share|save|ui|replay|tally` notes, the new [[Concepts/Chain]], the `--ack` stamps on
+`camera/render/track/Action Plan 2026-10-09` (boot.ts moved only in CHAIN surfaces; their claims
+stand), and this note. Pushed to `origin/fp-chain`, ls-verified; PR #17 CI next.
 
 ## Pre-existing on the base, named not hidden (both reproduced at `4978ec7` on this machine)
 
