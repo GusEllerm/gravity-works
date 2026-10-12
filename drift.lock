@@ -1503,7 +1503,6 @@ sig = "a57ad32de9a0d5c6"
 [[bindings]]
 doc = "docs/vault/Modules/tally.md"
 target = "tests/e2e/tally.spec.ts"
-<<<<<<< HEAD
 sig = "de4eb500c9d45b98"
 
 [[bindings]]
@@ -1894,7 +1893,6 @@ sig = "4227ab4424a058d4"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/tally.spec.ts"
-<<<<<<< HEAD
 sig = "de4eb500c9d45b98"
 
 [[bindings]]

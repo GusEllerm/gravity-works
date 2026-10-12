@@ -84,6 +84,14 @@ stand), and this note. Pushed to `origin/fp-chain`, ls-verified; PR #17 CI next.
 - `npm run pars -- --check` fails on ONE row — `bedroom-sandbox` parTime shipped 3.15 vs recomputed
   2.75 — also failing verbatim at the base commit. Not CI-gated (ci.yml runs `replay:all`, which is
   30/30 byte-same on this branch), the sandbox is off the ladder; handed to the pars owner.
+- `tally.spec.ts` "sandbox: placing a cup + finishing" was RED on CI ever since it merged — on MAIN
+  too (runs at `38ae6d9` and `4978ec7` fail it, at the record-ghost poll) — its own 60 s budgets
+  outrunning Playwright's 30 s default timeout on the software-GL runner. Fixed here the test's own
+  way: the test now sets its stated clock (`test.setTimeout(180_000)`); assertions untouched,
+  green on the rerun.
+- The PR's first CI shape showed GitGuardian's 4 "secrets" — the four high-entropy wire tokens the
+  first fixture commit stored. History was squashed so no commit ever carries them (the tokens
+  derive in-test from readable canonical bytes); GitGuardian green since.
 
 ## Open, honestly
 
