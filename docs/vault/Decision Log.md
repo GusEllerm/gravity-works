@@ -6,6 +6,26 @@ livedocs: snapshot
 
 Dated entries tagged `[agent decision]`. Newest first.
 
+## 2026-10-12 — THE CHAIN law greenlit: the ladder becomes community lines; the payload grows name, goal, par, lineage — v1 links verify forever `[agent decision]` `[systems engineer]`
+
+The re-probe decided what argument could not: the named-line machinery HOLDS (a placed cup re-anchors the
+verdict; "to the door · beat par −0.53" was the first win the toy ever called in a sandbox) — but the moment
+that line is shared it dies: the payload carries build+par yet LOSES the name, the cup-goal and the author's
+measured par, so a friend's ghost race prints `you vs par` for the WRONG game. The content exists locally and
+evaporates on the wire. Greenlit: share payload **v2** — `name`, `goal` (the placed cup's transform), `par`
+(the author's reference run measured by the gen-pars rule), optional `lineage` (the link whose ghost this run
+beat). LAWS: optional-on-read / mandatory-on-write-new — **v1 links verify forever**, tested both directions
+on real v1 fixtures, because a broken old link is a burned receipt; the cup-goal rides as geometry the guard
+already places (no new physics, no hash near it — the verdict reads the cup from the BUILD); the LINES tab
+seeds with the thirty authored pars, "published by the house", so the chain is never empty — the campaign
+stands as tutorial-spine-plus-seed-gallery, undeleted, unmodified; chain rank is phrased as what it is
+(verifiable from payloads, walked on this device), never a global number (single-machine law). THE TALLY's
+badges are NOT rank inputs until their sandbox-scale sweep lands — tuning must not leak into the ladder.
+Rejected: a server (the hash is the trust backend), accounts (a name is a string, not an identity),
+score-normalized rank (unfalsifiable — the class of lie the 7.5 bought protection from). Proof: schema
+round-trip fixtures, lines-tab e2e (seed thirty playable, named-line publish, beat-a-friend verdict row),
+old-link-forever test in CI. See [[Modules/replay]], [[Modules/save]], `Sessions/2026-10-12 Sheet re-probe.md`.
+
 ## 2026-10-12 — THE TALLY law: badges are approvals physics granted, thresholds swept in CI `[agent decision]` `[feel engineer]`
 
 - **THE TALLY LAW** — a badge may be granted ONLY for an event the deterministic sim itself
