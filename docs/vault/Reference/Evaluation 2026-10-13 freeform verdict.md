@@ -74,3 +74,24 @@ Physics and receipt, verified two ways at tree `57aa710` on :5065:
   so this is not a capture artifact: the downhill speaks as a diagram, not as a house. The physics
   approved four rooms; the camera sells them as four grey planes. Honest receipt: yes. Sensory pitch:
   the crane law study's "cost plain" reading is plainer than the notes imply.
+
+## Item 3 — the campaign demotion is honored: tours from windows, stars still live there
+
+Live at :5065, fresh profile, in one session:
+
+- The bare route is the house; the kitchen window's aria reads **"kitchen, 5 rungs, not toured yet"**,
+  and clicking it opens its tour list in place — the FIRST href is exactly `?level=kitchen01`, the
+  old board's bytes (downhill.spec proves byte-equality for all 30 and that a locked rung is a
+  🔒-worn lock, never a dead link; my list showed "Book Drop · Two Ways · The Bowl 🔒 · The Tap 🔒 ·
+  Sunday Run 🔒").
+- Running the tour address honestly (`?level=kitchen01&build=par`, no dev badge) printed **★★★**,
+  2.23 s vs par 2.25, hash `d32417dc` — which IS the shipped atlas receipt for that par (the
+  post-seating-fix number `tools/replay-all.mjs` claims; tally.test pins it). The live first launch
+  and the replay agree: no seating dice-roll in my lane.
+- Back at the door, the same window reads **"kitchen, 5 rungs, toured, 3 of 15 stars"** with the sill
+  line **"★ 3/15"** — stars live in the campaign surface and fold INTO the house, not onto it: the
+  house run itself counts rooms, never stars (law 6's HERE ONLY). The `?levels=1` board still exists
+  untouched behind "All levels". Nothing was deleted; the ladder is now a shelf behind windows.
+
+Item 3 CLOSED. The one honest seam is visual again: the windows are paper cards on a schematic, so
+"tour from a window" reads as a file drawer, not a doorway.
