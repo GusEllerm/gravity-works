@@ -1253,12 +1253,12 @@ sig = "1c20018312f789f9"
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
 target = "scripts/gen-pars.mjs"
-sig = "2bcbeeffa80b98e6"
+sig = "8ac21bf68e36431d"
 
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
 target = "src/boot.ts"
-sig = "372e797f6014c9b8"
+sig = "b0454ef4e07e9644"
 
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
@@ -1328,7 +1328,7 @@ sig = "4027748e1e9f62a9"
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
 target = "tools/hash-atlas.mjs"
-sig = "1becf3bba294d4ef"
+sig = "cb2c0c4b196ce59d"
 
 [[bindings]]
 doc = "docs/vault/Modules/sound.md"
