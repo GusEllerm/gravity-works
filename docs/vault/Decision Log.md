@@ -133,9 +133,13 @@ old-link-forever test in CI. See [[Modules/replay]], [[Modules/save]], `Sessions
 - **Agents' worktrees live OUTSIDE the repo root**; if `git worktree add` fails, report — never fall back
   to branch work in the main checkout; never `git add -A` beside a stray nested clone (the gitlink
   incident: two evaluator worktrees staged as embedded repos).
-- **Merge-conflict order that survived**: `drift.lock` + capture PNGs `--theirs` (intentional
-  re-baselines), `Decision Log` by hand keeping BOTH blocks, complete the merge commit, THEN the stamp
-  loop until `livedocs affected` is clean, THEN push. Tests run over an unresolved merge mean nothing.
+- **Merge-conflict order (amended 2026-10-12 after it burned)**: `drift.lock` `--theirs` + restamp, `Decision Log`
+  by hand keeping BOTH blocks, complete the merge, THEN the stamp loop until `livedocs affected` is clean, THEN
+  push. Tests run over an unresolved merge mean nothing. **Capture PNGs are NEVER `--theirs`** — a binary cannot
+  merge and one side's legitimate re-take gets clobbered silently (the r2-bloom merge buried the ghost-law's
+  locked-word re-baseline of `shell-kitchen01-idle.png`; the pixel gate is darwin-only, so CI stayed green for
+  days). Correct: merge the code, then REGENERATE any capture whose code moved on both sides
+  (`GQA_UPDATE_BASELINES=1`), state the diff, commit the fresh frame with the merge.
 
 ## 2026-10-09 — The FAREWELL law: porch05's first clear replaces the result bar with one crane pass and three doors `[agent decision]` `[level designer]`
 
