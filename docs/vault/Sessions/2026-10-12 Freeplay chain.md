@@ -86,12 +86,24 @@ stand), and this note. Pushed to `origin/fp-chain`, ls-verified; PR #17 CI next.
   30/30 byte-same on this branch), the sandbox is off the ladder; handed to the pars owner.
 - `tally.spec.ts` "sandbox: placing a cup + finishing" was RED on CI ever since it merged — on MAIN
   too (runs at `38ae6d9` and `4978ec7` fail it, at the record-ghost poll) — its own 60 s budgets
-  outrunning Playwright's 30 s default timeout on the software-GL runner. Fixed here the test's own
-  way: the test now sets its stated clock (`test.setTimeout(180_000)`); assertions untouched,
-  green on the rerun.
+  outrunning Playwright's 30 s default timeout on the software-GL runner. main took the fix
+  (`07fe80b`, the honest 180 s budget) while this lane's identical attempt was in flight; the
+  rebase onto the reseat main keeps main's version and the branch reproduces GREEN under
+  `E2E_SWIFTSHADER=1 E2E_STARVE_RAF_MS=300`.
 - The PR's first CI shape showed GitGuardian's 4 "secrets" — the four high-entropy wire tokens the
   first fixture commit stored. History was squashed so no commit ever carries them (the tokens
   derive in-test from readable canonical bytes); GitGuardian green since.
+
+## Rebase onto the reseat main (`d633bb8`)
+
+main merged THE SEATING LAW (`5101755` — reset() rebuilds through the creation sequence; retries
+converge to fresh-launch hashes) and the tally clock fix while this lane ran. Rebased: one conflict,
+`tally.spec.ts` (main's clock fix wins — same mechanism, better comment) and the `drift.lock` tally
+binding (main's signature). After the rebase: `npm test` 979 green (51 files, the seating units
+included), `replay:all` 30/30 byte-same (the v1 fixtures verify untouched through the seating law —
+replays are FRESH sims, seating only ever reseated retries), full e2e 267 passed with only the
+known kitchen01 idle baseline drift, and the CI-pacing reproduction (SwiftShader + 300 ms rAF
+starve) green across tally/chain/ghosts/daily/share-replay.
 
 ## Open, honestly
 
