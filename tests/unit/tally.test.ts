@@ -35,6 +35,44 @@ import { accumulateBadges, recordNamedLine, readNamedLine, readRecords } from '.
 import { serialize } from '../../src/track/build.ts';
 import { tallyLines } from '../../src/ui/result.ts';
 
+describe('THE TALLY SWEEP FIXTURES — sandbox scale (the sheet-fix, 2026-10-12)', () => {
+  test('THE FILM-KEPT RUN MINTS: the garage "slick skip" jump-fly-land earns air AND clean catch', async () => {
+    // The re-probe's decisive exhibit: a run that visibly JUMPS, FLIES,
+    // LANDS and rolls into the player's cup printed `events: []` under the
+    // campaign-scale thresholds. The fixture is the journal reconstruction
+    // (`tools/tally-fixtures.mjs`); the claim is the sheet-fix law — what
+    // the eyes see, the sheet must grant.
+    const { namedLines } = await import('../../tools/tally-fixtures.ts');
+    const { getLevel } = await import('../../src/world/levels/feeltrack.level.ts');
+    const { lay } = await import('../../src/world/levels/kitchen01.level.ts');
+    const fixture = namedLines().find(f => f.name === "garage-slick-skip")!;
+    const level = getLevel(fixture.levelId);
+    const run = await replayRun(level, lay(fixture.list, fixture.levelId, 1), { record: true });
+    expect(run.status).toBe('finished');
+    const counts = tallyCounts(tallyFromTrace(run.trace!));
+    expect(counts.air ?? 0).toBeGreaterThanOrEqual(1);
+    expect(counts.catch ?? 0).toBeGreaterThanOrEqual(1);
+  });
+
+  test('a sandbox gap hop is a JUMP FACT at every swept threshold between the seam and the flight', async () => {
+    // the seam/flight separation the sweep measures: deck seams fly one
+    // step (0.0083 s), sandbox gap flights fly ~0.108 s. A threshold in
+    // the void between must grant on the flight and never on the seam.
+    const { namedLines } = await import('../../tools/tally-fixtures.ts');
+    const { getLevel } = await import('../../src/world/levels/feeltrack.level.ts');
+    const { lay } = await import('../../src/world/levels/kitchen01.level.ts');
+    const fixture = namedLines().find(f => f.name === "garage-slick-skip")!;
+    const level = getLevel(fixture.levelId);
+    const run = await replayRun(level, lay(fixture.list, fixture.levelId, 1), { record: true });
+    for (const airMinS of [0.25, 0.05]) {
+      const ev = tallyFromTrace(run.trace!, { thresholds: { airMinS } });
+      for (const e of ev.filter(e => e.kind === 'air')) {
+        expect(e.value).toBeGreaterThanOrEqual(0.1); // no seam-sized grant
+      }
+    }
+  });
+});
+
 describe('tally tail (the result bar’s three lines)', () => {
   test('line 1 counts this run’s badges in sheet order; ×n repeats only', () => {
     const lines = tallyLines(

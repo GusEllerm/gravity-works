@@ -98,6 +98,22 @@ export const BADGE_CAP_PER_RUN = 6;
 
 export interface TallyOptions {
   rooms?: readonly RoomRect[];
+  /** SWEEP-ONLY override of the shipped thresholds (`tools/tally-sweep.mjs`
+   * reads the candidate grid through this door; the page never passes it).
+   * Pure and default-empty: an absent key reads the shipped constant, so
+   * every shipped call site is bit-for-bit the old one. */
+  thresholds?: Partial<TallyThresholds>;
+}
+
+/** The five swept thresholds + the noise-floor spend bar, as a record (the
+ *  sweep's grid shape). */
+export interface TallyThresholds {
+  airMinS: number;
+  runoutMinM: number;
+  catchMinAirS: number;
+  fallMinDropM: number;
+  fallMinS: number;
+  spendMinGainMps: number;
 }
 
 function roomAt(rooms: readonly RoomRect[], x: number, z: number): string | null {
@@ -118,6 +134,14 @@ export function tallyFromTrace(
   trace: readonly TallySample[],
   options: TallyOptions = {},
 ): TallyEvent[] {
+  const th = {
+    airMinS: options.thresholds?.airMinS ?? AIR_MIN_S,
+    runoutMinM: options.thresholds?.runoutMinM ?? RUNOUT_MIN_M,
+    catchMinAirS: options.thresholds?.catchMinAirS ?? CATCH_MIN_AIR_S,
+    fallMinDropM: options.thresholds?.fallMinDropM ?? FALL_MIN_DROP_M,
+    fallMinS: options.thresholds?.fallMinS ?? FALL_MIN_S,
+    spendMinGainMps: options.thresholds?.spendMinGainMps ?? SPEND_MIN_GAIN_MPS,
+  };
   const events: TallyEvent[] = [];
   const rooms = options.rooms ?? [];
   let airStart: number | null = null;
@@ -141,20 +165,20 @@ export function tallyFromTrace(
     }
     if (s.grounded && airStart !== null) {
       const air = s.t - airStart;
-      if (air > AIR_MIN_S) events.push({ kind: 'air', t: s.t, value: air });
+      if (air > th.airMinS) events.push({ kind: 'air', t: s.t, value: air });
       // THE CHAIN FALL: the same airborne segment, read for what physics
       // GRANTED — a sustained descent (the car fell for longer than
       // FALL_MIN_S and lower than FALL_MIN_DROP_M). Two approvals from
       // one flight (air AND fall) only when the flight is both long and
       // deeply down; the sweep caps what any rig can farm.
       const drop = airStartY - s.pos[1];
-      if (air >= FALL_MIN_S && drop >= FALL_MIN_DROP_M) {
+      if (air >= th.fallMinS && drop >= th.fallMinDropM) {
         events.push({ kind: 'chainFall', t: s.t, value: air });
       }
       // the same touchdown opens the clean-catch candidate: only a flight
       // of CATCH_MIN_AIR_S can be caught, and the badge lands only if the
       // landing deck then carries the car RUNOUT_MIN_M of honest ground.
-      catchPending = air >= CATCH_MIN_AIR_S;
+      catchPending = air >= th.catchMinAirS;
       runoutDist = 0;
       airStart = null;
     } else if (catchPending && s.grounded) {
@@ -162,7 +186,7 @@ export function tallyFromTrace(
         catchPending = false; // the run-out died: a stop is not a catch
       } else {
         if (p) runoutDist += Math.hypot(s.pos[0] - p.pos[0], s.pos[2] - p.pos[2]);
-        if (runoutDist >= RUNOUT_MIN_M) {
+        if (runoutDist >= th.runoutMinM) {
           events.push({ kind: 'catch', t: s.t, value: runoutDist });
           catchPending = false;
         }
@@ -171,7 +195,7 @@ export function tallyFromTrace(
 
     // booster / spring spend: a one-step speed gain beyond anything gravity
     // can add (the launchers' impulse is a step event the tape shows).
-    if (p && s.speed - p.speed > SPEND_MIN_GAIN_MPS) {
+    if (p && s.speed - p.speed > th.spendMinGainMps) {
       events.push({ kind: 'spend', t: s.t, value: s.speed - p.speed });
     }
 

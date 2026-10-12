@@ -13,7 +13,7 @@ sig = "4729a6ad2b71b866"
 [[bindings]]
 doc = "docs/vault/Concepts/Freeplay Exploration.md"
 target = "tools/tally-sweep.mjs"
-sig = "b916f8a62ffe49e1"
+sig = "f32bf0920290a276"
 
 [[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
@@ -898,7 +898,7 @@ sig = "fc98edbbe806f84d"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "tests/unit/tally.test.ts"
-sig = "dda52ca5c9a2b545"
+sig = "9c82f82a085a6456"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
@@ -1378,7 +1378,7 @@ sig = "d5caa09b5262a959"
 [[bindings]]
 doc = "docs/vault/Modules/tally.md"
 target = "src/tally/detectors.ts"
-sig = "f4c98798cc3c5dd4"
+sig = "4c482492259b22de"
 
 [[bindings]]
 doc = "docs/vault/Modules/tally.md"
@@ -1403,7 +1403,7 @@ sig = "ae061ee54f318b05"
 [[bindings]]
 doc = "docs/vault/Modules/tally.md"
 target = "tests/unit/tally.test.ts"
-sig = "dda52ca5c9a2b545"
+sig = "9c82f82a085a6456"
 
 [[bindings]]
 doc = "docs/vault/Modules/tally.md"
@@ -1412,8 +1412,13 @@ sig = "ff51252b8588fba3"
 
 [[bindings]]
 doc = "docs/vault/Modules/tally.md"
+target = "tools/tally-fixtures.ts"
+sig = "70f55b9bf9197892"
+
+[[bindings]]
+doc = "docs/vault/Modules/tally.md"
 target = "tools/tally-sweep.mjs"
-sig = "b916f8a62ffe49e1"
+sig = "f32bf0920290a276"
 
 [[bindings]]
 doc = "docs/vault/Modules/track.md"
@@ -1863,7 +1868,7 @@ sig = "60f975ea6fcc355d"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/tally.test.ts"
-sig = "dda52ca5c9a2b545"
+sig = "9c82f82a085a6456"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"

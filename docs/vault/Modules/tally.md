@@ -17,7 +17,9 @@ tags: [module, tally, freeplay]
 `src/tally/detectors.ts` — the five badges, each a PURE function of a `TallySample` list
 (structurally the `TraceSample` of `src/replay/replay.ts`, so the page tape and the Node trace
 yield identical event streams — asserted step-for-step in `tests/unit/tally.test.ts`).
-`tallyFromTrace(trace, { rooms? })` walks the tape once and grants: **air** (an airborne segment
+`tallyFromTrace(trace, { rooms?, thresholds? })` walks the tape once (the
+`thresholds` door is sweep-only — the page never passes it, an absent key reads the
+shipped constant) and grants: **air** (an airborne segment
 outlasting `AIR_MIN_S` = 0.25 s, granted at the touchdown the flight ends on — the spike's rule
 from `tools/spike-freehouse.mjs` T4), **clean catch** (a flight of `CATCH_MIN_AIR_S` whose
 touchdown is followed by `RUNOUT_MIN_M` of held ground — the run-out is measured off the tape,
@@ -75,13 +77,24 @@ also mounts the share page's **run-cam**: `makeRunCam` assembles a `RunTrace` fr
 The debug seam `__gwTally` reports events, badge counts, the line key, and whether the film is
 mounted.
 
-`tools/tally-sweep.mjs` — THE SWEEP, k02-order-table idiom: every campaign par build, the six
-sandbox reference builds, and a placeable BOOSTER-FARM rig (every other deck a booster) played
-through the shipped `replayRun({ record: true })` and scored by the shipped detectors, printing
-the per-badge table. `--gate` (npm `tally:sweep`, a CI line after `replay:all`) fails any rig
-over `BADGE_CAP_PER_RUN` = **6**: measured max 4 (kitchen05's par line: air, catch, fall,
-spend), booster-farm 3, 37 rigs — a detector regression that starts granting per FRAME trips
-the gate; thresholds changed ⇒ re-sweep and restate the numbers here.
+`tools/tally-sweep.mjs` — THE SWEEP, k02-order-table idiom, at TWO SCALES since the
+sheet-fix fixtures of 2026-10-12 (the sheet re-probe's verdict: the tally was PAINT —
+the thresholds were swept only where campaign air lives, and sandbox-scale air is
+invisible to the sheet). 325 rigs: every campaign par build, the six sandbox reference
+builds, **288 sandbox-scale fixture builds** (`tools/tally-fixtures.ts` — the six
+probe-named lines inside a deterministic 48-cell grammar grid per sandbox: launch verb
+× release height × deck scale × cup ownership; the grid replaces the sandbox-reference
+cell with the named line), and a placeable BOOSTER-FARM rig (every other deck a
+booster) — all played through the shipped `replayRun({ record: true })` and scored by
+the shipped detectors. Report 1 is the per-rig table at the shipped thresholds;
+report 2 re-scores every trace against the five-threshold candidate grid PER SCALE
+(air+catch mint rate on jump-and-land runs — finished, a flight ≥ 0.08 s, ≥ 0.15 m of
+carried ground after touchdown — the per-run max, and the degenerate count over
+`BADGE_CAP_PER_RUN` = **6**). At the campaign-scale thresholds the extended sweep
+measures degenerates **0/325** and jump-and-land mints **1/142** — the PAINT verdict,
+quantified; `--gate` fails on a rig over cap, on the farm's 3-spend law moving, or on
+any jump-and-land rig minting no air+catch (the sheet-fix law: what the eyes see, the
+sheet must grant — red at these thresholds, green by the retune below). thresholds changed ⇒ re-sweep and restate the numbers here.
 
 ## Proofs
 
