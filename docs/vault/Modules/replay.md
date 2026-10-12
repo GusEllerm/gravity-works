@@ -91,3 +91,16 @@ determinism claim per rung, not just per rig), respect `pars.json` parTime, and 
 IDENTICAL hashes across rooms sharing a deck (bathroom/garden/garage 01 run on kitchen01's
 physics — the port doctrine made decks reusable, hashes prove it) — the same fact that makes the
 F6 save-stamp deferral matter. The step runs in CI after typecheck.
+
+## The link on the tape (freeplay Lane C, 2026-10-12)
+
+A raced LINK adds a trace to the ghost rail and a sentence to the verdict row — and nothing to the
+tape. The friend ghost's car list is the payload build's own `TapeRecorder` wind (unchanged G2
+machinery); the payload's v2 fields (`name`, `par`, `goal`, `lineage` — `Modules/share`) are read
+only at the terminal edge for presentation, and the verdict's cup stays exactly where the guard
+reifies it, from BUILD (`World` reifies the last player `finishCup`; the `goal` field is the same
+transform, copied, never consulted by the sim). Hash neutrality is a gate, not a claim: kitchen01's
+par build replays to its atlas receipt `d32417dc` with goal extraction, a v2 payload mint/parse and
+a chain write mounted around the step loop, and the v1 fixtures replay to their embedded hashes
+byte-for-byte (`tests/unit/chain.test.ts`, `tests/unit/share-v1.test.ts`); `replay:all` stays 30/30
+byte-same with the LINES tab's house-link wind wired the same lazy way as the par line.

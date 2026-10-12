@@ -144,3 +144,12 @@ Reads `src/replay/replay.ts` types, `src/physics/sim.ts` constants, `src/save/sa
 `src/track/build.ts` (quota, serialize) and `src/feel/kittrack.ts` cup geometry via boot;
 presents through `src/ui/result.ts`. Used by `src/boot.ts` (terminal edge, launch, frame loop)
 and `tools/tally-sweep.mjs`. It is used BY nothing that steps: the sim never imports this module.
+
+## Badges are not rank inputs (freeplay Lane C addendum, 2026-10-12)
+
+THE CHAIN law names one boundary this sheet must respect: `src/share/chain.ts` never reads
+`records.badges`, and no LINES-tab sentence is phrased from a badge count — the rank line is a
+count of PAYLOADS walked on this device (`chainRankLine`). The one records-layer duty Lane C adds
+is the ride: `readRecords` passes the sibling `chain` array through untouched so a badges write or
+a named-line mint cannot erase it (`Modules/save`). The sandbox-scale threshold re-sweep the
+re-probe asked for (edge (a)) stays on this sheet's own ledger — not Lane C's debt, not paid here.

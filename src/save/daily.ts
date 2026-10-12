@@ -153,3 +153,18 @@ export function dailyChipLine(rec: DailyRecord, today: string, boardName?: strin
   }
   return `${board}race today — not yet today (last: ${rec.best.toFixed(2)} s on ${rec.date}) · your own runs on this device only`;
 }
+
+/**
+ * TODAY'S LINK (freeplay Lane C — THE CHAIN: "the daily gains today's
+ * LINK (the seed fold already is a curator)"). The fold that picks
+ * today's BOARD already picks today's LINK with it: the house line on
+ * that board — the same par-build, par-time bytes every other surface
+ * reads, published by the house. Pure: same seed folds to the same link
+ * on every machine; the seed's run stays bit-stable because the seed is
+ * the ONLY physics-adjacent fact (and the sim never reads it, as the
+ * daily law already records). `parTime` is the board's shipped par
+ * (`parFor`), not a new number.
+ */
+export function dailyLinkLine(boardName: string, parTime: number): string {
+  return `today’s link — ${boardName} · published by the house · par ${parTime.toFixed(2)} s`;
+}

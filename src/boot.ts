@@ -61,7 +61,7 @@ import { fitSocket } from './track/snap.ts';
 import { transformSocket } from './track/socket.ts';
 import type { Level } from './world/level.ts';
 import { createBuilder, type Builder } from './ui/builder.ts';
-import { encodeShareUrl, parseShareUrl, type SharePayload } from './share/share.ts';
+import { encodeShareUrl, parOfRun, parseShareUrl, type SharePayload } from './share/share.ts';
 import { bootSharedRun } from './pages/share.ts';
 import { bootLevelSelect } from './pages/select.ts';
 import { premiereWanted, startPremiereBeat, type PremiereBeat } from './pages/intro.ts';
@@ -75,7 +75,7 @@ import {
   registerAutosaveFlush,
 } from './ui/errors.ts';
 import { createBuildAutosave, loadSave, rememberBuild, recordStars, saveSave, savedBuild } from './save/save.ts';
-import { dailyChipLine, dailySeed, readDaily, recordDailyBest, utcDateKey } from './save/daily.ts';
+import { dailyChipLine, dailyLinkLine, dailySeed, readDaily, recordDailyBest, utcDateKey } from './save/daily.ts';
 // THE TALLY (freeplay program Lane B): the tape, the pure detectors, and
 // the save's personal records. Everything imported here is READ-ONLY over
 // the run or writes only the save — THE TALLY LAW: badges are approvals
@@ -83,6 +83,10 @@ import { dailyChipLine, dailySeed, readDaily, recordDailyBest, utcDateKey } from
 import { tallyCounts, tallyFromTrace } from './tally/detectors.ts';
 import { TallyTape } from './tally/tape.ts';
 import { accumulateBadges, lineAnchorKey, readNamedLine, readRecords, recordNamedLine } from './save/records.ts';
+// THE CHAIN (freeplay program Lane C): the device's walked links, the
+// goal field read the guard's way, and the lineage of a beaten ghost.
+// Payloads only — nothing here steps physics or moves a hash.
+import { beatLineage, chainLinkPayload, cupGoalFromBuild, findChainLink, rememberLink } from './share/chain.ts';
 import { cupView, deriveEvents, planShots, ReplayDirector, REPLAY_TAIL, REPLAY_FOV, type RunTrace } from './replay/cinematic.ts';
 import {
   cachedGhostTrace,
@@ -104,7 +108,7 @@ import { SET_TOKENS, darken } from './render/tokens.ts';
 import { paintedWood } from './render/materials.ts';
 import type { PostStack } from './render/post/index.ts';
 import { parFor, type RunResult, type StarCount } from './world/stars.ts';
-import { createResultPanel, createRunRecorder, resultModel, starRulesLine, tallyLines, type ResultModel } from './ui/result.ts';
+import { createResultPanel, createRunRecorder, resultModel, starRulesLine, tallyLines, type LinkVerdict, type ResultModel } from './ui/result.ts';
 import { createHelpDrawer } from './ui/help.ts';
 import { createSaveSettings } from './ui/settings.ts'; // T0.3/R1 — save export/import row + quarantine line
 import { firstLesson, firstSight, firstSetAppearance } from './ui/callouts.ts';
@@ -429,7 +433,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   if (daily) {
     const boardTag = document.createElement('p');
     boardTag.id = 'gw-daily-board';
-    boardTag.textContent = `today’s board — ${level.name} · ${utcDateKey(daily.now)}`;
+    // TODAY'S LINK (Lane C): the seed fold that picks today's board picks
+    // today's LINK with it — the house line on that board, the shipped
+    // par's own bytes, stated beside the board it rides.
+    boardTag.textContent = `today’s board — ${level.name} · ${utcDateKey(daily.now)} · ${dailyLinkLine(level.name, parFor(level.id, level.par).time)}`;
     stage.appendChild(boardTag); // corner-pinned, zero flow
   }
   const statusLine = paragraph('gw-status', root);
@@ -820,7 +827,23 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
    *  their build as the track through the ordinary `rebuild` line, and wind
    *  THEIR car from it. Every refusal lands a sentence on the bar, never a
    *  silent no-op — a link that is not a run, and a build that will not
-   *  mount, say different true things. */
+   *  mount, say different true things.
+   *
+   *  THE CHAIN (Lane C) adds the honest bookkeeping behind the race: the
+   *  payload being raced is remembered (its name, its par, its finish —
+   *  the VERDICT ROW reads the LINK's par, never this page's, so the
+   *  re-probe's wrong-game `you vs par` cannot print), a build mounted
+   *  from a FOREIGN board marks the board foreign (no par verdict is
+   *  honest across boards, with the ghost up or down), and the accepted
+   *  link enters the device's chain walk (`rememberLink` — payloads only).
+   *  A house line from the LINES tab (`?line=house`) rides the same
+   *  machinery on the level's own par build — one click, no paste, the
+   *  link is the par build's bytes and the shipped par.
+   *  THE GHOST LAW does not lock either: an explicit ask, never a spoiler
+   *  budget (round 2's law, extended to the tab's rows). */
+  interface RacedLink { levelId: string; hash: string | null; name?: string; par?: number; time: number }
+  let racedLink: RacedLink | null = null;
+  let foreignBoard: string | null = null;
   async function raceFriendLink(url: string): Promise<void> {
     if (!url) {
       ghostBar.setNote('paste a share link first');
@@ -831,17 +854,25 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       payload = await parseShareUrl(url);
     } catch {
       ghost.setTrace('off', null);
+      racedLink = null;
       ghostBar.setNote('that link is not a run — nothing to race');
       return;
     }
+    await racePayload(payload);
+  }
+  /** Mount and race a decoded payload (a pasted link or a chain row — one
+   *  race path, the same honest refusals). */
+  async function racePayload(payload: SharePayload): Promise<void> {
     ghostBar.setNote('mounting their track…');
     try {
       await rebuild(payload.build);
     } catch {
       ghost.setTrace('off', null);
+      racedLink = null;
       ghostBar.setNote("their build refuses to mount on this rung — it stays their run, not your track");
       return;
     }
+    foreignBoard = payload.levelId === level.id ? foreignBoard : payload.levelId;
     try {
       const trace = await cachedGhostTrace(level, payload.build);
       // THE GHOST LAW does not lock a pasted link (round 2): an explicit ask
@@ -849,6 +880,17 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       // par spoiler is the only thing the law gates.
       ghost.setEnabled(true);
       ghost.setTrace('friend', trace);
+      racedLink = {
+        levelId: payload.levelId,
+        hash: payload.hash,
+        ...(payload.name !== undefined ? { name: payload.name } : {}),
+        ...(payload.par !== undefined ? { par: payload.par } : {}),
+        time: trace.time,
+      };
+      // THE CHAIN WALK: a link this device raced is a link it walked —
+      // the payload enters the store the LINES tab reads (payloads only,
+      // deduped by hash; no hash, no physics, nothing stepped).
+      rememberLink(payload);
       if (world && world.status !== 'idle') ghost.resumeRace();
       ghostBar.setNote(
         payload.levelId === level.id
@@ -857,9 +899,47 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       );
     } catch {
       ghost.setTrace('off', null);
+      racedLink = null;
       ghostBar.setNote('their track mounted, but their car would not wind — launch it yourself');
     }
   }
+  /** THE HOUSE LINE (LINES tab's click, `?line=house`): race the level's
+   *  own par build as a LINK — the ghost is the par trace wound the same
+   *  cheap way, the verdict row names the house and reads the shipped
+   *  par (the gen-pars number, the same bytes the rung's stars use), and
+   *  the rung's own stars/par/hashes are untouched. */
+  function startHouseLinkRace(): void {
+    const parBuild = (level as unknown as { parBuild?: () => Build }).parBuild;
+    if (!parBuild) {
+      ghostBar.setNote('this rig has no house line to race');
+      return;
+    }
+    ghost.setEnabled(true);
+    ghostOn = true;
+    ghostBar.toggle.setAttribute('aria-pressed', 'true');
+    ghostBar.setNote('winding the house line…');
+    void cachedGhostTrace(level, parBuild()).then(
+      (trace) => {
+        if (ghost.ghostMode === 'friend' && racedLink !== null) return; // a real link outranks
+        ghost.setTrace('friend', trace);
+        racedLink = { levelId: level.id, hash: null, name: level.name.slice(0, 48), par: parFor(level.id, level.par).time, time: trace.time };
+        ghostBar.setNote('the house line is on the grid — launch to race it');
+        if (world) {
+          if (world.status !== 'idle') ghost.resumeRace();
+          ghost.sync(world.time);
+        }
+      },
+      () => {
+        ghostBar.setNote('the house line could not be wound on this machine');
+      },
+    );
+  }
+  // LINES-tab and chain addresses (the recorded-debug-param family, the
+  // `?daily=`/`?farewell=` law): a house row is `?level=<id>&line=house`
+  // (wound right here — a trace needs no world), a walked-link row is
+  // `?level=<id>&link=<hash>` (dispatched after the first world mounts —
+  // it MOUNTS the payload's build, the pasted-link flow's own path).
+  if (params.get('line') === 'house') startHouseLinkRace();
   // the e2e seam for the ghost law (debug surface, not UI): the live ghost
   // state — mode, readiness, its clock, and where its car sits right now.
   (window as unknown as Record<string, unknown>).__gwGhostState = () => ghost.state();
@@ -1177,22 +1257,49 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // any edit hides the panel (onChange), so the build, seed and hash the
   // link encodes are the run the player just watched.
   let lastShare: { url: string; time: number; stars: StarCount } | null = null;
-  let lastOutcome: { hash: string; time: number; stars: StarCount } | null = null;
+  let lastOutcome: { hash: string; time: number; stars: StarCount; finished: boolean } | null = null;
+  /** The link the LAST run beat (Lane C's lineage source; recomputed at
+   *  every terminal edge, null when nothing was raced-and-beaten). */
+  let beatLink: SharePayload['lineage'] | null = null;
   resultPanel.share.addEventListener('click', () => {
     if (!lastOutcome) return;
     const outcome = lastOutcome;
+    // PAYLOAD v2 (Decision Log 2026-10-12, THE CHAIN): mandatory-on-write-
+    // new — every link minted from here is a v2 envelope. The NAME is the
+    // line's (the sandbox named line wins, the board's registry name is
+    // the honest fallback); the PAR is the AUTHOR'S MEASURED RUN through
+    // the gen-pars rule (`parOfRun` — the same ceil-to-0.05 law
+    // `scripts/gen-pars.mjs` states, applied to this run, not a page
+    // constant); the GOAL is the placed cup's transform read the guard's
+    // way (last player cup, fixtures excluded) — presentation geometry
+    // only, the verdict's cup comes from BUILD; and LINEAGE rides when
+    // this very run beat a link.
     const payload: SharePayload = {
+      v: 2,
       levelId: level.id,
       seed: currentBuild.seed,
       hash: outcome.hash,
       build: currentBuild,
+      name:
+        (() => {
+          const key = lineGhostKey();
+          const named = key !== null ? readNamedLine(key) : undefined;
+          return (named?.name ?? level.name).slice(0, 48);
+        })(),
     };
+    if (outcome.finished) payload.par = parOfRun(outcome.time);
+    const goal = cupGoalFromBuild(currentBuild, (level as unknown as { fixtures?: Record<string, number> }).fixtures ?? {});
+    if (goal !== null) payload.goal = goal;
+    if (beatLink !== null) payload.lineage = beatLink;
     resultPanel.shareNote.hidden = false;
     resultPanel.shareNote.textContent = 'making link…';
     void encodeShareUrl(payload).then(
       (frag) => {
         const url = `${window.location.origin}${window.location.pathname}${frag}`;
         lastShare = { url, time: outcome.time, stars: outcome.stars };
+        // THE CHAIN WALK: a link this device published is a link it
+        // walked — the payload enters the store the LINES tab reads.
+        rememberLink(payload);
         // the VISIBLE LINK is the fallback that never fails: clipboard
         // permission can be denied (headless, permissions policy, http),
         // a select-and-copy on a real input cannot
@@ -1696,6 +1803,22 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // on pages that never race (CI's CPU is the budget this buys back).
   armParGhost();
 
+  // THE CHAIN ROW ADDRESS (Lane C): `?link=<hash>` races a PAYLOAD this
+  // device walked (`src/share/chain.ts`) — dispatched here, after the
+  // first world mounted, because racing a link mounts the link's build
+  // through the same `rebuild` line a pasted link uses. An unknown hash
+  // says so honestly; a non-hash says less kindly.
+  const chainLinkParam = params.get('link');
+  if (chainLinkParam !== null) {
+    if (/^[0-9a-f]{8}$/.test(chainLinkParam)) {
+      const found = findChainLink(chainLinkParam);
+      if (found) void racePayload(chainLinkPayload(found));
+      else ghostBar.setNote('no walked link with that hash on this device');
+    } else {
+      ghostBar.setNote('that is not a link hash');
+    }
+  }
+
   // STAR RULES BEFORE THE FIRST RUN (playtest N: "the star rules only
   // appear after a run — teaching precedes failure"): a quiet one-liner
   // on the level's FIRST boot, the same three lines with this level's par
@@ -1918,6 +2041,32 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         // button's own join-graph words (`placedWhereFor`, `src/ui/advice.ts`;
         // pure data like every gate above).
         placedWhereFor(level, currentBuild),
+        // THE CHAIN'S VERDICT ROW (Lane C): the link that was on the grid
+        // as this run raced it — the verdict reads the LINK's par, and a
+        // link from another board gets the honest refusal, never a
+        // `you vs par` for the wrong game (the re-probe's #5). UI-side
+        // only: the physics and the hash never see a payload.
+        (() => {
+          // The verdict follows the LINK that was accepted for this race
+          // (`racedLink` — set when a payload/house line mounted, cleared
+          // only by a refusal), not the rail's momentary visibility: a
+          // link's track is the board being raced whether or not its car
+          // painted this run's grid.
+          const raced = racedLink;
+          if (raced) {
+            if (raced.levelId !== level.id)
+              return { kind: 'foreign', levelId: raced.levelId } satisfies LinkVerdict;
+            return {
+              kind: 'same',
+              ...(raced.name !== undefined ? { name: raced.name } : {}),
+              ...(raced.par !== undefined ? { par: raced.par } : {}),
+              theirTime: raced.time,
+            } satisfies LinkVerdict;
+          }
+          if (foreignBoard !== null)
+            return { kind: 'foreign', levelId: foreignBoard } satisfies LinkVerdict;
+          return null;
+        })(),
       );
       // THE TALLY TAIL (freeplay Lane B): the sheet physics signed this
       // run, derived from the tape OUTSIDE the step loop at the terminal
@@ -2014,7 +2163,24 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       lastRun = { hash: h, pieces: result.piecesUsed };
       // the SHARE payload's run (see the share wiring): the hash, time and
       // stars of the run the panel is about, frozen at its terminal edge
-      lastOutcome = { hash: h, time: result.time, stars: model.stars };
+      lastOutcome = { hash: h, time: result.time, stars: model.stars, finished: result.status === 'finished' };
+      // THE LINEAGE of a beat (Lane C): a finished run strictly ahead of
+      // the LINK ghost on the grid beat that link — the claim lands on
+      // the NEXT share's payload (`lineage`), computed from the two
+      // finish times the shell already holds (the ghost's trace time is
+      // its own build's re-simulated finish, checkable from the link's
+      // bytes). A house line carries no payload hash, so nothing enters
+      // the chain for it here — the CHAIN is payloads.
+      beatLink = beatLineage({
+        finished: result.status === 'finished',
+        myTime: result.time,
+        ghostMode: ghost.ghostMode === 'friend' && racedLink !== null && racedLink.hash !== null ? 'friend' : 'other',
+        ghostTime: racedLink?.time ?? 0,
+        link:
+          racedLink !== null && racedLink.hash !== null
+            ? { levelId: racedLink.levelId, hash: racedLink.hash, ...(racedLink.name !== undefined ? { name: racedLink.name } : {}) }
+            : null,
+      });
       // THE DAILY CHIP (T3.4, round 2: the board's NAME leads it): on a
       // daily-seeded page the result screen carries today's line — a
       // FINISHED run records into it, a failure just reads it. The

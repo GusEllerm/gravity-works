@@ -53,7 +53,10 @@ test('two dates, two boards: each day lands on its named rung and says so', asyn
     const want = boardOfDay(day)
     await goto(page, `/?daily=1&date=${day}`)
     await expect(page.locator('#gw-daily-board')).toBeVisible()
-    await expect(page.locator('#gw-daily-board')).toHaveText(`today’s board — ${want.name} · ${day}`)
+    await expect(page.locator('#gw-daily-board')).toContainText(`today’s board — ${want.name} · ${day}`)
+    // THE CHAIN (Lane C): the fold names TODAY'S LINK too — the house
+    // line on today's board, its shipped par, no new number.
+    await expect(page.locator('#gw-daily-board')).toContainText(`today’s link — ${want.name} · published by the house · par`)
     // the ghost law rides the daily: afterlife surface, default ON, even
     // though this save never finished (or addressed!) the rung
     await expect(page.locator('#gw-ghost-toggle')).toHaveText('ghost: par')
@@ -67,7 +70,7 @@ test('stable within a date: the same day twice shows the same board, and a plain
   const want = boardOfDay(DAY_A)
   for (const _ of [0, 1]) {
     await goto(page, `/?daily=1&date=${DAY_A}`)
-    await expect(page.locator('#gw-daily-board')).toHaveText(`today’s board — ${want.name} · ${DAY_A}`)
+    await expect(page.locator('#gw-daily-board')).toContainText(`today’s board — ${want.name} · ${DAY_A}`)
   }
   // the un-pinned face names the day the page itself claims, and its tag
   // date is the UTC day the seed was folded from (both sides read ONE key)

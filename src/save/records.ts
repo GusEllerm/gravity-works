@@ -54,6 +54,12 @@ export interface PersonalRecords {
   badges?: Partial<Record<BadgeKind, number>>;
   /** Named sandbox lines, keyed by `lineAnchorKey`. */
   lines?: Record<string, NamedLine>;
+  /** THE CHAIN (Lane C): the links this device published or raced, as
+   *  payloads. Owned by `src/share/chain.ts`; THIS module only guarantees
+   *  the ride — `readRecords` passes the array through untouched so a
+   *  badges/lines write cannot drop a chain the writer never read (the
+   *  same by-reference law that put records under `settings` at all). */
+  chain?: unknown[];
 }
 
 function recordsOf(data: SaveData): PersonalRecords | undefined {
@@ -98,6 +104,12 @@ export function readRecords(data: SaveData): PersonalRecords {
     }
     out.lines = lines;
   }
+  // THE CHAIN RIDE (Lane C): the chain array passes through UNVALIDATED
+  // and UNTOUCHED (validated where it is read, `src/share/chain.ts`) —
+  // `accumulateBadges`/`recordNamedLine` write this object back whole, so
+  // a key this module dropped would be a key every tally line-write
+  // silently erased from the chain.
+  if (Array.isArray(raw?.chain)) out.chain = raw.chain as unknown[];
   return out;
 }
 

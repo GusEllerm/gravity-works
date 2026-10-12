@@ -24,3 +24,7 @@ Garbage never crashes the game, and since T0.3 (stage-7 program, engineering R1)
 ## Depends on / used by
 
 `src/track` (serialize/deserialize). Used by `src/boot.ts`.
+
+## The chain ride (freeplay Lane C, 2026-10-12)
+
+`settings.records.chain` (owned by `src/share/chain.ts`, Decision Log 2026-10-12 "THE CHAIN law") is the SAME optional-key technique one level down: an array of walked-link payloads living inside the records object, `SAVE_VERSION` stays 2, no migrade. The one save-layer duty is THE RIDE: `readRecords` passes an unknown `chain` array through UNVALIDATED and UNTOUCHED (validated where it is read), because `accumulateBadges`/`recordNamedLine` write the records object back whole — a key the records module dropped would be a key every tally line-write silently erased from the chain (`tests/unit/chain.test.ts` proves the ride: a badges write and a named-line mint both leave the chain standing). The daily gained a sentence, not a key: `dailyLinkLine` (`src/save/daily.ts`) is pure copy over the fold the seed law already computes (`dailyBoardId(dailySeed(…))`) — today's LINK is the house line on today's board, no new stored fact.

@@ -1,0 +1,33 @@
+{
+  "note": "REAL v1 share payloads — extracted 2026-10-12 on branch fp-chain from main 4978ec7 by replaying each shipped par build through the shipped deterministic sim (src/replay/replay.ts) and encoding with the v1 writer (shareJson over a payload with no v2 fields — the exact `\"v\":1` bytes the first ship wrote). `json` is the canonical envelope; the `#s=` wire token is DERIVED in the test (raw DEFLATE of these bytes), so the fixture file carries no high-entropy literals for secret scanners to trip on. v1 links verify forever (Decision Log 2026-10-12 THE CHAIN law): tests/unit/share-v1.test.ts replays each one to its embedded hash.",
+  "fixtures": [
+    {
+      "levelId": "kitchen01",
+      "status": "finished",
+      "time": 2.2333333333333334,
+      "hash": "d32417dc",
+      "json": "{\"build\":{\"levelId\":\"kitchen01\",\"pieces\":[{\"def\":\"ramp\",\"params\":{\"angle\":-12,\"blend\":0.08,\"level\":1.0103893998618942},\"seq\":0,\"transform\":[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]},{\"def\":\"gapLip\",\"params\":{\"angle\":10,\"blend\":0.05,\"length\":0.02},\"seq\":1,\"transform\":[1,0,0,0,0,1,0,0,0,0,1,0,1.147142799218935,-0.22676577184546376,0,1]},{\"def\":\"drop\",\"params\":{\"angle\":45,\"height\":0.12,\"lead\":0.05,\"radius\":0.02},\"seq\":2,\"transform\":[1,0,0,0,0,1,0,0,0,0,1,0,1.2367879531221058,-0.22067261040941805,0,1]},{\"def\":\"landing\",\"params\":{\"angle\":12,\"blend\":0.06,\"level\":0.24},\"seq\":3,\"transform\":[1,0,0,0,0,1,0,0,0,0,1,0,1.4733564956170295,-0.3406726104094181,0,1]},{\"def\":\"finishCup\",\"params\":{},\"seq\":4,\"transform\":[1,0,0,0,0,1,0,0,0,0,1,0,1.8272365437460076,-0.40309191870755745,0,1]}],\"seed\":1},\"hash\":\"d32417dc\",\"levelId\":\"kitchen01\",\"seed\":1,\"v\":1}"
+    },
+    {
+      "levelId": "bedroom02",
+      "status": "finished",
+      "time": 1.7166666666666666,
+      "hash": "8166e5e1",
+      "json": "{\"build\":{\"levelId\":\"bedroom02\",\"pieces\":[{\"def\":\"ramp\",\"params\":{\"angle\":-22,\"blend\":0.08,\"level\":0.6993340656643781},\"seq\":0,\"transform\":[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]},{\"def\":\"straight\",\"params\":{\"length\":0.4},\"seq\":1,\"transform\":[1,-1.6653345369377348e-16,0,0,1.6653345369377348e-16,1,0,0,0,0,1,0,0.8045085403089607,-0.29231739064356976,0,1]},{\"def\":\"landing\",\"params\":{\"angle\":32,\"blend\":0.06,\"level\":0.29},\"seq\":2,\"transform\":[1,-1.6653345369377348e-16,0,0,1.6653345369377348e-16,1,0,0,0,0,1,0,1.2045085403089608,-0.2923173906435698,0,1]},{\"def\":\"straight\",\"params\":{\"length\":0.4},\"seq\":3,\"transform\":[1,-1.6653345369377348e-16,0,0,1.6653345369377348e-16,1,0,0,0,0,1,0,1.5643005031564763,-0.47864223769325365,0,1]},{\"def\":\"straight\",\"params\":{\"length\":0.4},\"seq\":4,\"transform\":[1,-1.6653345369377348e-16,0,0,1.6653345369377348e-16,1,0,0,0,0,1,0,1.9643005031564762,-0.4786422376932537,0,1]},{\"def\":\"finishCup\",\"params\":{},\"seq\":5,\"transform\":[1,-1.6653345369377348e-16,0,0,1.6653345369377348e-16,1,0,0,0,0,1,0,2.364300503156476,-0.47864223769325376,0,1]}],\"seed\":1},\"hash\":\"8166e5e1\",\"levelId\":\"bedroom02\",\"seed\":1,\"v\":1}"
+    },
+    {
+      "levelId": "garden04",
+      "status": "finished",
+      "time": 2.683333333333333,
+      "hash": "69206512",
+      "json": "{\"build\":{\"levelId\":\"garden04\",\"pieces\":[{\"def\":\"ramp\",\"params\":{\"angle\":-12,\"blend\":0.08,\"level\":1.2027787736516595},\"seq\":0,\"transform\":[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]},{\"def\":\"straight\",\"params\":{\"length\":0.3},\"seq\":1,\"transform\":[1,0,0,0,0,1,0,0,0,0,1,0,1.3353280035980732,-0.2667657718454637,0,1]},{\"def\":\"gapLip\",\"params\":{\"angle\":10,\"blend\":0.05,\"length\":0.02},\"seq\":2,\"transform\":[1,0,0,0,0,1,0,0,0,0,1,0,1.6353280035980733,-0.2667657718454637,0,1]},{\"def\":\"drop\",\"params\":{\"angle\":45,\"height\":0.12,\"lead\":0.05,\"radius\":0.02},\"seq\":3,\"transform\":[1,0,0,0,0,1,0,0,0,0,1,0,1.7249731575012441,-0.26067261040941797,0,1]},{\"def\":\"landing\",\"params\":{\"angle\":12,\"blend\":0.06,\"level\":0.24},\"seq\":4,\"transform\":[1,0,0,0,0,1,0,0,0,0,1,0,1.961541699996168,-0.380672610409418,0,1]},{\"def\":\"finishCup\",\"params\":{},\"seq\":5,\"transform\":[1,0,0,0,0,1,0,0,0,0,1,0,2.315421748125146,-0.4430919187075574,0,1]}],\"seed\":1},\"hash\":\"69206512\",\"levelId\":\"garden04\",\"seed\":1,\"v\":1}"
+    },
+    {
+      "levelId": "porch05",
+      "status": "finished",
+      "time": 1.1916666666666667,
+      "hash": "1e367c94",
+      "json": "{\"build\":{\"levelId\":\"porch05\",\"pieces\":[{\"def\":\"ramp\",\"params\":{\"angle\":-29,\"blend\":0.12,\"level\":0.2572647222544388},\"seq\":0,\"transform\":[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]},{\"def\":\"gapLip\",\"params\":{\"angle\":12,\"blend\":0.05,\"length\":0.0405},\"seq\":1,\"transform\":[1,0,0,0,0,1,0,0,0,0,1,0,0.45489192795924327,-0.1841762325612452,0,1]},{\"def\":\"landing\",\"params\":{\"angle\":21,\"blend\":0.06,\"level\":0.245},\"seq\":2,\"transform\":[1,-2.775557561562891e-17,0,0,2.775557561562891e-17,1,0,0,0,0,1,0,0.5647317485236955,-0.17473368692441288,0,1]},{\"def\":\"gapLip\",\"params\":{\"angle\":12,\"blend\":0.05,\"length\":0.0405},\"seq\":3,\"transform\":[1,-2.775557561562891e-17,0,0,2.775557561562891e-17,1,0,0,0,0,1,0,0.9107902159966695,-0.2842798987845503,0,1]},{\"def\":\"drop\",\"params\":{\"angle\":45,\"height\":0.1,\"lead\":0.125,\"radius\":0.02},\"seq\":4,\"transform\":[1,-5.551115123125782e-17,0,0,5.551115123125782e-17,1,0,0,0,0,1,0,1.0206300365611218,-0.27483735314771796,0,1]},{\"def\":\"finishCup\",\"params\":{},\"seq\":5,\"transform\":[1,-5.551115123125782e-17,0,0,5.551115123125782e-17,1,0,0,0,0,1,0,1.3871985790560457,-0.374837353147718,0,1]}],\"seed\":1},\"hash\":\"1e367c94\",\"levelId\":\"porch05\",\"seed\":1,\"v\":1}"
+    }
+  ]
+}

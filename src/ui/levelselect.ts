@@ -27,11 +27,13 @@
  * the param is how the test rig and the developer do; what a player may
  * PLAY is decided by stars earned, not by either.
  */
-import { CAMPAIGN, levelUnlock, previousInCampaign } from '../world/campaign.ts';
+import { CAMPAIGN, CAMPAIGN_LADDER, dailyBoardId, levelUnlock, previousInCampaign } from '../world/campaign.ts';
 import { getLevel } from '../world/levels/feeltrack.level.ts';
 import { parFor, starGlyphs, type StarCount } from '../world/stars.ts';
 import { starRulesLine } from './result.ts';
 import { defaultStorage, loadSave, type StorageLike } from '../save/save.ts';
+import { chainRankLine, readChain } from '../share/chain.ts';
+import { dailySeed } from '../save/daily.ts';
 
 /** The level's display name — registry truth; a nameless rung shows its id. */
 function levelName(id: string): string {
@@ -54,10 +56,33 @@ function levelRulesLine(id: string): string {
   }
 }
 
+/** The rung's par line in seconds — registry/pars truth, empty if the
+ *  rig has no shipped par (a house line needs one, so it never lists). */
+function levelParLine(id: string): string {
+  try {
+    return parFor(id, getLevel(id).par).time.toFixed(2);
+  } catch {
+    return '';
+  }
+}
+
 /**
  * Render the page into `root`. One read of the save at render time: stars
  * recorded after this page loads show on the next visit (the page never
  * watches storage — a page swap is a page boot, the shell's convention).
+ *
+ * THE LINES TAB (freeplay Lane C — THE CHAIN): the ladder is a DOOR, not
+ * the building, so the page's second tab lists LINES, not rungs — first
+ * the thirty authored pars republished as links "published by the house"
+ * (one click: `?level=<id>&line=house` races the par build's own ghost
+ * against the shipped par — the seed is never empty and the campaign is
+ * undeleted, unchanged-hash, tutorial-spine-plus-seed-gallery), then the
+ * device's CHAIN WALK: the links this browser published or raced, rows of
+ * link/ghost/par/name straight from the stored payloads, and the rank
+ * sentence phrased as what it is — a count walked here, never a global
+ * number, never badges (the CHAIN law's NOT-an-input clause). The LEVELS
+ * tab is the whole stage-4 page unchanged, default-shown: every existing
+ * surface, lock law and star readout rides it untouched.
  */
 export function createLevelSelect(root: HTMLElement, store: StorageLike | null = defaultStorage()): void {
   const save = loadSave(store);
@@ -66,12 +91,41 @@ export function createLevelSelect(root: HTMLElement, store: StorageLike | null =
   // scoped to this page's root class in src/ui/shell.css
   root.classList.add('gw-levelselect');
 
+  // ---- the tabs (plain accessible DOM: a tablist of two real buttons,
+  // the panels are plain sections; default tab = LEVELS, the whole
+  // stage-4 page, so every existing surface is exactly where it was) ----
+  const tabs = document.createElement('div');
+  tabs.id = 'gw-levelselect-tabs';
+  tabs.setAttribute('role', 'tablist');
+  const levelsTabBtn = tabButton('gw-tab-levels', 'Levels', true);
+  const linesTabBtn = tabButton('gw-tab-lines', 'Lines', false);
+  tabs.append(levelsTabBtn, linesTabBtn);
+  root.appendChild(tabs);
+
+  const levelsPanel = document.createElement('div');
+  levelsPanel.id = 'gw-panel-levels';
+  levelsPanel.setAttribute('role', 'tabpanel');
+  root.appendChild(levelsPanel);
+  const linesPanel = document.createElement('div');
+  linesPanel.id = 'gw-panel-lines';
+  linesPanel.setAttribute('role', 'tabpanel');
+  linesPanel.hidden = true;
+  root.appendChild(linesPanel);
+  const show = (levels: boolean): void => {
+    levelsPanel.hidden = !levels;
+    linesPanel.hidden = levels;
+    levelsTabBtn.setAttribute('aria-selected', String(levels));
+    linesTabBtn.setAttribute('aria-selected', String(!levels));
+  };
+  levelsTabBtn.addEventListener('click', () => show(true));
+  linesTabBtn.addEventListener('click', () => show(false));
+
   const status = document.createElement('p');
   status.id = 'gw-levelselect-status';
   status.setAttribute('role', 'status');
   status.setAttribute('aria-live', 'polite');
   status.textContent = 'A level opens when the level before it earns at least one star.';
-  root.appendChild(status);
+  levelsPanel.appendChild(status);
 
   // THE SANDBOX DOORS, VISIBLE (round 2, Lane C — supersedes P4 item 5's
   // one calm line): the 2026-10-11 player evaluation named the residue —
@@ -181,6 +235,98 @@ export function createLevelSelect(root: HTMLElement, store: StorageLike | null =
     sandboxItem.appendChild(sandboxLink);
     list.appendChild(sandboxItem);
     section.appendChild(list);
-    root.appendChild(section);
+    levelsPanel.appendChild(section);
+  }
+
+  // ---- THE LINES TAB (Lane C — THE CHAIN) --------------------------------
+  createLinesTab(linesPanel, store);
+}
+
+function tabButton(id: string, label: string, selected: boolean): HTMLButtonElement {
+  const b = document.createElement('button');
+  b.id = id;
+  b.type = 'button';
+  b.setAttribute('role', 'tab');
+  b.setAttribute('aria-selected', String(selected));
+  b.textContent = label;
+  b.addEventListener('click', () => {
+    if (document.activeElement === b) b.blur();
+  });
+  return b;
+}
+
+/** The LINES panel body, pure over the save's chain store and the shipped
+ *  pars — every row is an `<a>` to an address, no new physics surface. */
+export function createLinesTab(panel: HTMLElement, store: StorageLike | null = defaultStorage()): void {
+  panel.innerHTML = '';
+  const heading = document.createElement('h2');
+  heading.textContent = 'Lines';
+  panel.appendChild(heading);
+
+  const rank = document.createElement('p');
+  rank.id = 'gw-lines-rank';
+  const links = readChain(store);
+  rank.textContent = chainRankLine(links);
+  panel.appendChild(rank);
+
+  // 1. THE SEED — the thirty authored pars, republished as links. House
+  //    rows are campaign ORDER (the ladder as a gallery); the daily's
+  //    seed fold marks TODAY'S LINK so the tab and the daily agree about
+  //    which house line the day is (same fold, same number, same name).
+  const houseHeading = document.createElement('h3');
+  houseHeading.textContent = 'Published by the house';
+  panel.appendChild(houseHeading);
+  const todayLinkId = dailyBoardId(dailySeed());
+  const house = document.createElement('ol');
+  house.id = 'gw-lines-house';
+  for (const id of CAMPAIGN_LADDER) {
+    const par = levelParLine(id);
+    if (par === '') continue; // a rig with no shipped par is not a house line
+    const item = document.createElement('li');
+    const a = document.createElement('a');
+    a.id = `gw-line-${id}`;
+    a.className = 'gw-line';
+    a.href = `?level=${encodeURIComponent(id)}&line=house`;
+    a.textContent =
+      `${levelName(id)} — par ${par} s · published by the house` +
+      (id === todayLinkId ? ' · today’s link' : '');
+    item.appendChild(a);
+    house.appendChild(item);
+  }
+  panel.appendChild(house);
+
+  // 2. THE CHAIN — the links this device published or raced, straight
+  //    from the payloads (name, par, the board, what they beat). The
+  //    phrasing is the store's: walked HERE, verifiable from the bytes
+  //    below, no server anywhere in the sentence.
+  const chainHeading = document.createElement('h3');
+  chainHeading.textContent = 'This device’s chain';
+  panel.appendChild(chainHeading);
+  if (links.length === 0) {
+    const none = document.createElement('p');
+    none.id = 'gw-lines-chain-empty';
+    none.textContent = 'nothing published or raced here yet — a share press or a pasted link becomes a row';
+    panel.appendChild(none);
+  } else {
+    const chain = document.createElement('ol');
+    chain.id = 'gw-lines-chain';
+    for (const link of links.slice().reverse()) {
+      const item = document.createElement('li');
+      item.className = 'gw-line-item';
+      item.dataset['hash'] = link.hash;
+      const a = document.createElement('a');
+      a.className = 'gw-line';
+      a.id = `gw-line-link-${link.hash}`;
+      a.href = `?level=${encodeURIComponent(link.levelId)}&link=${link.hash}`;
+      const parts = [link.name !== undefined ? `“${link.name}”` : levelName(link.levelId)];
+      if (link.par !== undefined) parts.push(`par ${link.par.toFixed(2)} s`);
+      parts.push(`board ${levelName(link.levelId)}`);
+      if (link.lineage !== undefined)
+        parts.push(`beat ${link.lineage.name !== undefined ? `“${link.lineage.name}”` : link.lineage.hash}`);
+      a.textContent = parts.join(' · ');
+      item.appendChild(a);
+      chain.appendChild(item);
+    }
+    panel.appendChild(chain);
   }
 }

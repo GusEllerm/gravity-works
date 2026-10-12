@@ -675,7 +675,27 @@ export interface ResultModel {
    *  empty/absent tail prints nothing — the panel never claims a sheet
    *  the physics did not sign. */
   tally?: readonly string[];
+  /** THE CHAIN'S VERDICT ROW (freeplay Lane C): when the run raced a
+   *  LINK (a pasted/published share payload, or a house line from the
+   *  LINES tab), the verdict reads against THAT link's own facts, not
+   *  this page's par — the re-probe's wrong-game `you vs par` is the bug
+   *  this closes. The shell fills it from the mounted ghost at the
+   *  terminal edge; absent/null means no link was on the grid and the
+   *  ordinary `vsParLine` stands. */
+  link?: LinkVerdict | null;
 }
+
+/** What the link on the grid was, as the verdict row reads it:
+ *  - `same` — the link addressed THIS board: its par (a v2 link's
+ *    measured par, the gen-pars rule) is the line the delta reads
+ *    against; with no par on the link, the delta reads against the
+ *    ghost's own re-simulated finish (`theirTime` — verifiable from the
+ *    link's bytes, honest without a par).
+ *  - `foreign` — the link is from another board: their car ghosts HERE,
+ *    and no par verdict of either board is honest on the other's line. */
+export type LinkVerdict =
+  | { kind: 'same'; name?: string; par?: number; theirTime?: number }
+  | { kind: 'foreign'; levelId: string; levelName?: string };
 
 /** Stars + note for one finished-or-not run: the panel's whole content.
  *  `actionableKinds` (kinds placed in the build that ran, plus kinds with
@@ -709,6 +729,10 @@ export function resultModel(
    *  button already speaks (`placedWhereFor` in `src/ui/advice.ts`); the
    *  CRITIQUE WHERE of the nose-first halves (P4 item 4) — UI-side only. */
   critiqueWhere: Readonly<Partial<Record<PieceKind, string>>> | null = null,
+  /** THE CHAIN'S VERDICT ROW (freeplay Lane C): the link that was on the
+   *  grid as this run raced it (see `LinkVerdict` above) — UI-side only,
+   *  the physics and the hash never see a payload. */
+  link: LinkVerdict | null = null,
 ): ResultModel {
   return {
     stars: starsFor(result, par),
@@ -729,6 +753,7 @@ export function resultModel(
     status: result.status,
     par,
     bestStarsBefore,
+    link,
   };
 }
 
@@ -809,6 +834,42 @@ export function vsParLine(model: ResultModel): string {
         ? `${-dp} fewer piece${dp === -1 ? '' : 's'} than par`
         : `${dp} more piece${dp === 1 ? '' : 's'} than par`;
   return `you vs par — ${dTime} · ${dPieces}`;
+}
+
+/** The signed time delta in the panel's own words (negative = you were
+ *  quicker), shared by the par beat and the link verdict. */
+function signedDelta(dt: number, unit: string): string {
+  return Math.abs(dt) < 0.005 ? `time even with ${unit}` : `time ${dt < 0 ? '−' : '+'}${Math.abs(dt).toFixed(2)} s vs ${unit}`;
+}
+
+/**
+ * THE VERDICT ROW (freeplay Lane C — THE CHAIN): one finished run, one
+ * honest line about the race it actually ran. With no link on the grid
+ * this is the T3.2 par beat verbatim (`vsParLine`). With a link it is
+ * the beat-a-friend row: `you vs “to the door”’s par — time −0.53 s vs
+ * their par`, reading the LINK's own measured par (payload v2) — or,
+ * when the link carries no par (a v1 link, forever valid), the ghost's
+ * OWN re-simulated finish, phrased as `their run` so the claim stays
+ * exactly as strong as the bytes behind it. A foreign-board link gets
+ * the honest refusal — no par verdict across boards. THE LAW THIS
+ * FUNCTION EXISTS FOR: whenever a link was raced, the line never reads
+ * plain `you vs par` — proved by `tests/unit/chain.test.ts`.
+ */
+export function verdictLine(model: ResultModel): string {
+  if (model.status !== 'finished') return '';
+  const link = model.link ?? null;
+  if (link === null) return vsParLine(model);
+  if (link.kind === 'foreign') {
+    return `their link is from ${link.levelName ?? link.levelId} — their car ghosts here, no verdict against either par`;
+  }
+  const whose = link.name ? `“${link.name}”’s` : 'their';
+  if (link.par !== undefined) {
+    return `you vs ${whose} par — ${signedDelta(model.time - link.par, 'their par')}`;
+  }
+  if (link.theirTime !== undefined && link.theirTime > 0) {
+    return `you vs ${whose} run — ${signedDelta(model.time - link.theirTime, 'their run')}`;
+  }
+  return `you raced their line — no par or finish time on the link to score against`;
 }
 
 /**
@@ -1068,7 +1129,7 @@ export function createResultPanel(host: HTMLElement): ResultPanel {
       const lines = outcomeLines(model);
       time.textContent = lines.time;
       pieces.textContent = lines.pieces;
-      const delta = vsParLine(model);
+      const delta = verdictLine(model);
       vsPar.textContent = delta;
       vsPar.hidden = delta === '';
       rules.textContent = lines.rules;
