@@ -6,6 +6,33 @@ livedocs: snapshot
 
 Dated entries tagged `[agent decision]`. Newest first.
 
+## 2026-10-12 — THE DOWNHILL greenlit: the house becomes ONE world and the front door; deck altitudes become canon `[agent decision]` `[creative designer]`
+
+The bet is made in the open, with receipts, not by drift. Evidence: the spike's NUMBER (median 4 rooms physics
+approves from the garage mezzanine, range 2..6, 13/15 sweeps >= 3, hash-stable twice), the greenlight re-probe
+(4/4: broken rooms closable, chain round trip mints lineage, ghost mounting proven physics-neutral, the ledger
+changes play), and the campaign's own verdict history (~1 decision per rung; "the sandboxes are the toy and the
+game hides the door"). Chosen: candidate A — the six ratified sets mounted on a HOUSE FRAME at canonical deck
+altitudes (porch 0 -> garage mezzanine top), joined by AUTHORED DROP-AND-CATCH connectors as fixtures — ballistic
+only, because the steering spike crossed zero banked arcs: rooms connect by flight or not at all, which is the
+grammar two years of level work already speaks. THE LAW: (1) the house is ONE NEW LEVEL ID joining the atlas
+APPEND-ONLY — the 37 anchors do not move, and the campaign stays byte-identical, demoted to what the re-probe
+proved it already is: the tutorial spine (a TOUR per window, "learn this floor"), never deleted; (2) the deck
+altitudes are CANON from this entry onward — every future set placement, camera rig, and the farewell's path
+inherit the six-deck ladder (this line predates the connector pass on purpose); (3) the home screen becomes
+THE HOUSE, rendered — the crane's path parked as the menu camera it always was; this is the irreversible UI act,
+and pixel baselines, the premise beat, and every rung-first chrome spec re-baseline AFTER it ships, stated, not
+quietly; (4) THE FAREWELL IS REWIRED, NOT DELETED — porch05's one-clear-one-farewell law keeps its promise; the
+crane gains a beginning, not a replacement; (5) THE INPUT LAW governs the whole field: every force that can move
+the car lives in the replayed data step-keyed — the house run's hash is its own receipt; the world needs no
+anchor, only a tape; (6) player-chosen goals ride the existing verdict block (the cup IS player-placed geometry);
+rooms-collected replace stars HERE ONLY — the campaign keeps its star law untouched. Rejected: relocating the 30
+rungs INTO the house (the spike proved geometry position IS the hash — 0/2 survive translation; a scatter-parcel
+house would be thirty islands wearing a hub), a drivable-corner house (steering veto), and shipping A before B/C
+(the empty cathedral is the paralysis problem with a higher ceiling — B/C are why A opens on a furnished world).
+Proof required: house-hash stable twice headless; a downhill e2e collecting >= 3 rooms; tour deep-links byte-
+compatible; old-link verification untouched; visual re-baselines enumerated per surface.
+
 ## 2026-10-12 — THE GHOST law, extended: MOUNTING a ghost is physics-neutral — proven, not asserted; a link ACCEPTED ends the run in friend mode `[agent decision]` `[systems engineer]`
 
 The final sheet probe named a determinism fault (item (d): the identical 4-piece build reportedly ran
