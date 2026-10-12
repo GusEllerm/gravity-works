@@ -1,6 +1,16 @@
 version = 1
 
 [[bindings]]
+doc = "docs/vault/Concepts/Freeplay Exploration.md"
+target = "src/pages/farewell.ts"
+sig = "0f83b4be3720b4e5"
+
+[[bindings]]
+doc = "docs/vault/Concepts/Freeplay Exploration.md"
+target = "src/pages/ghost.ts"
+sig = "d2bb52d63b31e956"
+
+[[bindings]]
 doc = "docs/vault/Concepts/Levels.md"
 target = "docs/vault/Modules/feel.md"
 sig = "e4e17cd7588ac713"
