@@ -1723,7 +1723,7 @@ sig = "4e0fc998b5b96411"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "scripts/a11y-contrast.mjs"
-sig = "87cba624518bd54f"
+sig = "34f51f12bc6f83bd"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"

@@ -172,6 +172,14 @@ const rows = [
   { label: 'replay head marker (non-text UI)', fg: '#gw-replay-head', fgProp: 'background', kind: 'ui', base: '#gw-replay-timeline' },
   { label: 'replay event tick (non-text UI)', fg: '.gw-replay-tick', fgProp: 'background', kind: 'ui', base: '#gw-replay-timeline' },
   { label: 'tray/control button border (non-text UI)', fg: '#gw-tray button', fgProp: 'border', kind: 'ui', base: 'body' },
+  // THE FRONT DOOR (downhill build 2): the windows lie ON the
+  // cross-section, so their worst case is the cream canvas behind the
+  // translucent chip — and the ring they wear is the GLOBAL one, already
+  // tabled on paper (the canvas background IS the paper's twin, #efe0c8).
+  { label: 'front-door window label (over the cross-section)', fg: '.gw-house-window button', px: 12, base: '#gw-stage canvas', over: ['.gw-house-window button'] },
+  { label: 'front-door sill — stars on the sill', fg: '.gw-window-sill', px: 10, base: '#gw-stage canvas', over: ['.gw-house-window button'] },
+  { label: 'front-door window border (non-text UI)', fg: '.gw-house-window button', fgProp: 'border', kind: 'ui', base: '#gw-stage canvas' },
+  { label: 'focus ring on the cross-section (non-text)', fg: ':focus-visible', fgProp: 'outline', kind: 'ui', base: '#gw-stage canvas' },
   { label: 'focus ring on paper (non-text)', fg: ':focus-visible', fgProp: 'outline', kind: 'ui', base: 'body' },
   { label: 'focus ring on panel (non-text)', fg: '#gw-result :focus-visible', fgProp: 'outline-color', kind: 'ui', base: 'body', over: ['#gw-result'] },
   { label: 'focus ring on panel, bright canvas behind', fg: '#gw-result :focus-visible', fgProp: 'outline-color', kind: 'ui', base: '#gw-stage canvas', over: ['#gw-result'] },
