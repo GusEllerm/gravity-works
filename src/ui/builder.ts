@@ -480,6 +480,21 @@ export function goalGuardFor(
   };
 }
 
+/**
+ * THE DECLARED RIMS (round 3 — porch05's last gap; `Level.blockedRims`).
+ * A rung's literal rim boxes join the builder's guard solids exactly as the
+ * goal body does in `goalGuardFor` — same `blockerOf` law, same named
+ * refusal copy, placement layer only (no geometry, no collider, no physics
+ * read, so every replay hash is untouched). `[]` on every level that
+ * declares none, which is every rung but the finale's.
+ */
+export function blockedRimGuards(level: Level): SetGuard[] {
+  return (level.blockedRims ?? []).map((r) => ({
+    name: r.name,
+    box: new THREE.Box3(new THREE.Vector3(...r.min), new THREE.Vector3(...r.max)),
+  }));
+}
+
 /** Where the failure note should send the player NEXT (stage 6, playtest DD:
  *  "the only snap is a curve exit the game itself says is blocked; building
  *  backwards from the cup runs off-table" — the advice named kinds, never a
@@ -555,7 +570,9 @@ export function createBuilder(host: HTMLElement, options: BuilderOptions): Build
   // flags open ends the run can never travel past. The goal piece is a
   // fixture (its transform is mounted, never moved), so ONE box is exact.
   const goalGuard = goalGuardFor(level, pieces);
-  const solids = [...setSolids, ...(goalGuard?.solids ?? [])];
+  // THE DECLARED RIMS (round 3): the same one law — a named box the seat
+  // must not overlap — read off the level's own data (porch05's thresholds).
+  const solids = [...setSolids, ...(goalGuard?.solids ?? []), ...blockedRimGuards(level)];
   let kind: PieceKind | null = null;
   let flipped = false;
   let targetIndex = chainHeadIndex();
