@@ -129,3 +129,59 @@ or the farewell's links — all clicks, none forced. `?boot=rung` exists for the
 no shipped surface links it (grep: zero hrefs in `src/`). The ladder is reachable but never the
 first screen. CLOSED — and the returning-player seam that DOES exist is the reverse one: nothing
 greets a returning player either; the door says the same first-visit sentence forever.
+
+## Item 6 — regressions: a11y walk, the disclosure line in play, the farewell promise
+
+- **A11y Tab walk on the house** (live key presses, not `focus()`): the walk is All levels → daily
+  chip → **Lines** → Release → Run receipt → the six room windows, each a real button ONCE with the
+  room-reading name ("kitchen, 5 rungs, not toured yet") — the sill text is text, never color-only.
+  `front-door.spec.ts` (13 tests, green on this preview) + `a11y.spec.ts` (Tab/Enter/L end-to-end on
+  the game page, unchanged surface) back it up. CLEAN.
+- **The disclosure line is TRUE in play** (this build, not prose): on `?level=kitchen01&build=par`,
+  run 1 with the par ghost MOUNTED (`mode:par`) → `d32417dc`, **2.23 s**; ghost toggled OFF, Retry,
+  launch (`mode:off`) → **`d32417dc`, 2.23 s** — identical hash, identical clock, and it IS the
+  atlas receipt. "Why the same build always runs the same way" sits in the page honest; the
+  seating-law fix holds live, and `retry-share-verify.spec.ts` (post-Retry link self-verifies) and
+  `ghost-purity.spec.ts` (every ghost source mounted: hash and finish print UNMOVED) are green on
+  the same server. CLEAN — the round of probes' worst fault is dead in the hand.
+- **The farewell promise kept** (`r-farewell-doors.png` + DOM): clearing porch05 (unlocked, par, no
+  badge) REPLACED the result bar with the crane pass; Space skipped to the doors (the skip
+  affordance works, flag set at the fire); door 1's row carries the six sandboxes AND
+  **`#gw-farewell-house` → `?level=house` — "the whole house"**, the rewire is one honest added
+  name; the tally read "30 rungs walked — 90 of 90 stars". `?farewell=off` honored; the one-shot
+  flag exists. KEPT.
+
+## Verdict — 8 / 10
+
+**Did the innovation work, and what did it cost?** Yes, and it cost paint, not truth. The
+free-form experience is literally the front door now: a stranger lands on ONE house in under a
+minute, one press sends a car downhill through four physics-approved rooms with the run's own hash
+as its receipt, and the receipt never once lied to me — identical across three boots, Retry,
+ghost-on and ghost-off, and to the Node replay; when I fed the machine a broken input it said
+"mismatch" rather than flatter. The permissive tray has stakes: named lines carry their name across
+the wire, beating one mints a lineage a third device can audit, and the ladder demoted itself to
+tours behind windows without losing a byte. What it cost is the ONE word the door keeps promising:
+the house is a DIAGRAM — six label cards, grey deck slabs and rail slivers over cream void, in the
+menu, in the downhill crane and (pixel-truth per the committed baseline) in the shipped frame; four
+rooms of physics sell to the eye as four grey planes. That, plus a door that never learns your name
+between visits, is the gap.
+
+### What keeps it below 9
+
+1. **The furnished world is still a promise.** Home, downhill and farewell frames are schematic;
+   the ratified sets exist — they are just not mounted where the crane can sell them. Dressing the
+   six decks is now the highest-value art work in the repo, ahead of any new mechanic.
+2. **The house run is one tape.** The launch-only law makes the front-door downhill the SAME par
+   descent every visit (hash `6caea49b`, forever) — the receipt's honesty is bought with the door
+   being a film until you walk into a sandbox; the free in "free-form" currently lives one click
+   off the door, not on it.
+3. **The door is deaf.** A veteran with 90 stars lands on the same first-visit sentence as a
+   stranger ("Six rooms, one release…") — no "your best: 4 rooms", no today's line, no hello;
+   all greeting lives behind a corner button.
+4. **Small chrome debts ride on:** the daily chip's two-clause sentence is the densest text on the
+   front page, and my farewell screenshot caught a mid-sweep frame where the doors' own text is
+   already in the DOM but off-canvas.
+
+Cheapest points up: dress the decks along the crane's law; put the device's own best line on the
+home status; give the par descent one per-save variation (your build rides the mezzanine) so the
+door's film is YOURS.
