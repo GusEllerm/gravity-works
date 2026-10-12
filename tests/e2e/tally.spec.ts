@@ -44,6 +44,11 @@ test('campaign result bar shows its tally tail — earned counts and firsts', as
 })
 
 test('sandbox: placing a cup + finishing mints a named record whose ghost races the next attempt', async ({ page }) => {
+  // The record-ghost wind and the run-cam mount are honest work (the a11y
+  // spec's own words), and on CI's SwiftShader frame pacing the launch
+  // cycle alone outlasts the default 30 s budget — the same budget the
+  // wind-bearing specs carry (a11y/farewell); the assertions are unchanged.
+  test.setTimeout(180_000)
   await goto(page, '/?level=kitchen-sandbox')
   await expect(page.locator('#gw-tray')).toBeVisible()
 

@@ -1398,7 +1398,7 @@ sig = "2aa947ec8e62d578"
 [[bindings]]
 doc = "docs/vault/Modules/tally.md"
 target = "tests/e2e/tally.spec.ts"
-sig = "ae061ee54f318b05"
+sig = "de4eb500c9d45b98"
 
 [[bindings]]
 doc = "docs/vault/Modules/tally.md"
@@ -1778,7 +1778,7 @@ sig = "4227ab4424a058d4"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/tally.spec.ts"
-sig = "ae061ee54f318b05"
+sig = "de4eb500c9d45b98"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
