@@ -35,6 +35,27 @@
  * the crane even on a page that clears porch05 (Decision Log 2026-10-07,
  * "recorded, not stripped").
  *
+ * THE LEGS ARE PAINTED (player evaluation round 3, item 3's residue: "the
+ * crane's legs — between the rooms the farewell flies over void; the sets
+ * read only when docked"): the travelling lift flies over the SAME table
+ * the build view already draws (`world.ts`'s ground — a
+ * `MeshLambertMaterial('#e6d3b3')` plane, re-surfaced here as one long
+ * board under the whole row of rooms) and into the SAME warm cream haze,
+ * the haze is a `THREE.FogExp2` tuned to the scene's own background, SWAPPED
+ * in as a fresh object every frame — three refreshes a program's fog
+ * uniforms only when the fog reference changes, so mutating one fog's
+ * distances in place would silently ship the distances it was compiled
+ * with. The swap costs nothing and reaches every material honestly.
+ * Board and haze are both gated by the SAME pure
+ * predicate (`craneInMove`): the
+ * fog density rides the lift's own sine (`craneAtmosphere`), the board
+ * is visible only mid-MOVE, and every DWELL and PULL frame ships the
+ * exact pixels it shipped before this note — the docked shots keep their ratified pixels by law, not by luck.
+ * Mid-leg the discs below dissolve into warm air and the next room
+ * resolves OUT of the haze as the crane docks. Visuals only: the plan,
+ * the poses and the reveal times are the pure constants they were —
+ * nothing here can move a frame the specs schedule.
+ *
  * THE REDUCED-MOTION LAW: the crane is pure motion, so a reduced-motion
  * player gets the STATIC SUMMARY PAGE instead — the same tally, the same
  * three doors, no camera move (`src/ui/motion.ts` law; the set row is never
@@ -157,6 +178,51 @@ export function craneRoomX(i: number, roomCount = CAMPAIGN.length): number {
 function smoothstep(u: number): number {
   const k = Math.min(1, Math.max(0, u));
   return k * k * (3 - 2 * k);
+}
+
+/** The haze's deepest bite (mid-lift): near sits under the ground plane
+ *  directly below the lifted eye, far under the next room — so the discs
+ *  dissolve into the scene's own cream and the arriving room resolves
+ *  out of the haze. See `craneAtmosphere`. */
+/** The haze's bite at the lift's apex, as an exponential fog density:
+ *  the quadratic falloff is flat across the near table (no banded
+ *  contours over the big ground sheets the sets carry) and decisive past
+ *  ~8 m, where the far sheets end in a hard horizon seam. See
+ *  `craneAtmosphere`. */
+export const CRANE_HAZE = { density: 0.11 } as const;
+/** No haze — density 0 is arithmetic no-fog, so every DWELL and PULL
+ *  frame ships exactly the pixels it shipped before this note. */
+export const CRANE_CLEAR = { density: 0 } as const;
+
+/**
+ * THE ATMOSPHERE, A PURE FUNCTION OF PLAN TIME: the fog distances at
+ * plan time `t` ride the MOVE's own lift sine (`cranePose`'s `lift`), so
+ * the haze breathes IN for a leg and OUT as the eye docks. Outside a
+ * MOVE (dwell, pull, approach) the answer is `CRANE_CLEAR` — density 0,
+ * arithmetic no-fog — so the docked pixels are lawed fog-free by this
+ * function, not by tuning luck.
+ */
+export function craneInMove(t: number, roomCount = CAMPAIGN.length): boolean {
+  for (let i = 0; i < roomCount - 1; i++) {
+    const moveStart = CRANE_LEAD + i * (CRANE_DWELL + CRANE_MOVE) + CRANE_DWELL;
+    if (t >= moveStart && t < moveStart + CRANE_MOVE) return true;
+  }
+  return false;
+}
+
+export function craneAtmosphere(
+  t: number,
+  roomCount = CAMPAIGN.length,
+): { density: number } {
+  const n = roomCount;
+  for (let i = 0; i < n - 1; i++) {
+    const moveStart = CRANE_LEAD + i * (CRANE_DWELL + CRANE_MOVE) + CRANE_DWELL;
+    const u = (t - moveStart) / CRANE_MOVE;
+    if (u >= 0 && u < 1) {
+      return { density: CRANE_HAZE.density * Math.sin(Math.PI * u) };
+    }
+  }
+  return { ...CRANE_CLEAR };
 }
 
 /**
@@ -420,10 +486,34 @@ export function startFarewell(
   // ---- the crane: mount the six rooms ONCE, one rAF over the plan --------
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#efe0c8');
+  // The haze: a fog the colour of the scene's wall, at distances that
+  // ride the lift (`craneAtmosphere`) — the dwells ship clear, the legs
+  // fly through warm air. `scene.fog` alone would NOT show on these
+  // toons on this three build (their shader programs are cached
+  // `USE_FOG`-less — see the header); `fogToon` below wires the shader's
+  // own `<fog_fragment>` path to this very Fog object, and the plane
+  // geometry's own fog uniforms are refreshed every frame by the
+  // renderer, so the per-frame distance ride below still drives
+  // everything.
+  scene.fog = new THREE.FogExp2('#efe0c8', CRANE_CLEAR.density);
   scene.add(new THREE.AmbientLight(0xffffff, 0.85));
   const key = new THREE.DirectionalLight(0xffffff, 1.1);
   key.position.set(1, 2.5, 1.5);
   scene.add(key);
+  // One long board under the row of rooms — the build view's ground
+  // (`#e6d3b3` Lambert), stretched the length of the house so the lifts
+  // cross a surface, not a void. It rides 8 cm BELOW every set's own
+  // ground plane (each shell carries a 20 m sheet at y ≈ 0 — coplanarity
+  // there would z-fight into stripes), so it reads as the far table under
+  // the discs. `craneInMove` gates it: docked frames never see it.
+  const board = new THREE.Mesh(
+    new THREE.PlaneGeometry(CRANE_STEP * rooms.length + 14, 16),
+    new THREE.MeshLambertMaterial({ color: '#e6d3b3' }),
+  );
+  board.rotation.x = -Math.PI / 2;
+  board.position.y = -0.08;
+  board.visible = false; // shown only mid-MOVE (`craneInMove`) — see the header
+  scene.add(board);
   const camera = new THREE.PerspectiveCamera(38, 16 / 9, 0.05, 40);
   const renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
   renderer.setSize(960, 540, false);
@@ -452,6 +542,13 @@ export function startFarewell(
       eventCursor += 1;
     }
     const pose = cranePose(t, rooms.length);
+    const haze = craneAtmosphere(t, rooms.length);
+    // A FRESH fog object per frame: the renderer refreshes fog uniforms
+    // only when the fog REFERENCE changed (identity, not value), so an
+    // in-place near/far ride never reaches the shaders. Swapping is
+    // value-cheap and hits every material, toon and Lambert alike.
+    scene.fog = new THREE.FogExp2('#efe0c8', haze.density);
+    board.visible = craneInMove(t, rooms.length);
     camera.position.set(...pose.eye);
     camera.lookAt(...pose.target);
     renderer.render(scene, camera);
