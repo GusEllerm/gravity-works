@@ -19,6 +19,16 @@
  * address does not already carry (an explicit `post=`/`intro=`/`farewell=`
  * on the call always wins), so a spec that opts back IN through the same helper keeps
  * its own word. Absolute URLs (`about:blank`) pass through untouched.
+ *
+ * THE URL AFFORDANCE FAMILY grows THE HOUSE rows (downhill build 1, the
+ * Decision Log 2026-10-07 doctrine unchanged): `?level=house` addresses the
+ * downhill page (`src/pages/house.ts` — the recorded debug addressing as a
+ * whole page), `?level=house&room=<id>` parks its menu camera at another
+ * room's window (presentation only — no force enters the sim), and the
+ * family's own `?launch=1` releases the car at first ready; the downhill
+ * e2e rides exactly these bytes. The room windows' TOUR links are the
+ * UNCHANGED `?level=<room>NN` addresses the level select writes — the
+ * campaign demoted to tours, byte-compatible by construction.
  */
 import type { Page } from '@playwright/test'
 

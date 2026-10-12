@@ -1587,3 +1587,13 @@ finish deck) and a DERIVED dress sweep (the roof corner POSTS set the
 53 cm offset) — and extends the cross-ladder describe to SIX ladders
 (kitchen, bedroom, bathroom, garden, garage, porch; the porch door,
 bounce and catch-first lines ride the roster).
+
+## The house rung — one id, zero rungs (downhill build 1)
+
+`house` (`src/world/levels/house.level.ts`) joins the registry as ONE new level id beside the
+thirty, never among them: off `CAMPAIGN_LADDER`, invisible to the unlock rule and the daily fold,
+its pars/atlas rows APPENDED (`replay:all` 30/30 stays the referee). What the entry demoted the
+rungs to is data on the house page, not a re-weave: each room's window lists its five rungs with
+the level select's own `?level=<room>NN` bytes ("learn this floor"), locks and all. The rung
+ladder law (ordering, prerequisites, star lines) is untouched — rooms replace stars on the house
+ALONE. See [[Modules/house]] and Decision Log 2026-10-12 "THE DOWNHILL greenlit".

@@ -60,6 +60,22 @@ export interface PersonalRecords {
    *  badges/lines write cannot drop a chain the writer never read (the
    *  same by-reference law that put records under `settings` at all). */
   chain?: unknown[];
+  /** THE HOUSE (downhill build 1): the personal best per house level —
+   *  rooms physics-approved and the run's time, THIS DEVICE only (the
+   *  same honesty sentence the tally tail prints; rooms replace stars
+   *  HERE ONLY — `progress.stars` and the campaign law are untouched).
+   *  Written by `recordHouseRun`, read by `readHouseBest`. */
+  houses?: Record<string, HouseBest>;
+}
+
+/** The device's best downhill run on a house level: more rooms wins, the
+ *  faster clock breaks the tie (the run is the point; the clock is the
+ *  tiebreak). */
+export interface HouseBest {
+  rooms: number;
+  time: number;
+  /** Wall-clock ms of the record's latest write. */
+  t: number;
 }
 
 function recordsOf(data: SaveData): PersonalRecords | undefined {
@@ -110,6 +126,27 @@ export function readRecords(data: SaveData): PersonalRecords {
   // a key this module dropped would be a key every tally line-write
   // silently erased from the chain.
   if (Array.isArray(raw?.chain)) out.chain = raw.chain as unknown[];
+  if (raw?.houses && typeof raw.houses === 'object') {
+    const houses: Record<string, HouseBest> = {};
+    for (const [k, v] of Object.entries(raw.houses)) {
+      if (
+        typeof k === 'string' &&
+        v &&
+        typeof v === 'object' &&
+        Number.isInteger((v as HouseBest).rooms) &&
+        (v as HouseBest).rooms > 0 &&
+        Number.isFinite((v as HouseBest).time) &&
+        (v as HouseBest).time > 0
+      ) {
+        houses[k] = {
+          rooms: (v as HouseBest).rooms,
+          time: (v as HouseBest).time,
+          t: typeof (v as HouseBest).t === 'number' ? (v as HouseBest).t : 0,
+        };
+      }
+    }
+    out.houses = houses;
+  }
   return out;
 }
 
@@ -119,6 +156,46 @@ export function readRecords(data: SaveData): PersonalRecords {
 export function lineAnchorKey(levelId: string, cup: { x: number; y: number; z: number }): string {
   const mm = (m: number): number => Math.round(m * 1000);
   return `${levelId}@${mm(cup.x)},${mm(cup.y)},${mm(cup.z)}`;
+}
+
+/** The device's downhill best on a house level (undefined = never run
+ *  here, or a record too broken to trust — validate-on-read, the save law). */
+export function readHouseBest(
+  levelId: string,
+  store: StorageLike | null | undefined = undefined,
+): HouseBest | undefined {
+  return readRecords(loadSave(store)).houses?.[levelId];
+}
+
+/** End of a downhill run: mint or beat the house record. Rooms decide;
+ *  the clock breaks ties. A run that approved NO room records nothing —
+ *  the `recordStars` law in house grammar (there is no trophy in a zero).
+ *  Returns what happened so the result line can say it honestly. */
+export function recordHouseRun(
+  levelId: string,
+  rooms: number,
+  time: number,
+  store: StorageLike | null | undefined = undefined,
+): { outcome: 'minted' | 'beat' | 'held' | 'none'; best: HouseBest | undefined } {
+  if (!(rooms > 0) || !(time > 0)) return { outcome: 'none', best: readHouseBest(levelId, store) };
+  const data = loadSave(store);
+  const rec = readRecords(data);
+  const houses = { ...rec.houses };
+  const prev = houses[levelId];
+  const better =
+    !prev || rooms > prev.rooms || (rooms === prev.rooms && time < prev.time);
+  if (!prev) {
+    houses[levelId] = { rooms, time, t: Date.now() };
+  } else if (better) {
+    houses[levelId] = { rooms, time, t: Date.now() };
+  }
+  rec.houses = houses;
+  data.settings.records = rec;
+  saveSave(data, store);
+  return {
+    outcome: !prev ? 'minted' : better ? 'beat' : 'held',
+    best: houses[levelId],
+  };
 }
 
 /** Add this run's badges to the sheet. Returns the kinds the save had

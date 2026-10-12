@@ -11,6 +11,8 @@ tags: [module, camera]
 
 ## What it does
 
+`src/camera/house-camera.ts` (downhill build 1) — camera v1 for `?level=house`, and deliberately NOT a `RunCamera`: the spike's camera section made it a PLAN, not a chase. `menuPose` is the crane PARKED at a room's deck (porch by default — the menu-camera candidate the greenlight entry adopts for the home screen in build 2), and `houseRunPlan`/`houseRunPose` read the farewell's `CRANE_DWELL`/`CRANE_MOVE`/`CRANE_HAZE` (imported — one plan law) onto `roomGraph`: dwell where a parcel was APPROVED, one lift-and-walk along the leg with the haze riding the lift sine, dock into the next room as its parcel approves. The hand-off count is a theorem of the graph — a 4-room run hand-offs three times, the two-hand-off minimum needs no tuning (`tests/unit/house.test.ts`). The per-deck framing canon, house-wide `setCameraSolids` and the cross-section dressing stay named as the spike named them: focused per-room passes, not this build.
+
 `src/camera/run-camera.ts` — `RunCamera`, constructed from a `RunCameraSource`
 (`railPointAt(s)`, `frameAt(s)`, `length` — the interface `KitRig` in
 `src/feel/kittrack.ts` satisfies via `rail()` / `frameAt()`), an optional

@@ -25,8 +25,16 @@ livedocs: live
   five legs, deterministic order) with the PORCH `finishCup` LAST — the only cup the outcome law
   reads, so the full house finishes and everything else stops or falls, mid-descent approvals
   notwithstanding. `parStatuses` = `finished`/`stalled`/`fell`: the ways a downhill run COMPLETES.
-- `src/pages/house.ts` — the `?level=house` page: launch (the only player force), the ROOMS bar,
-  the room windows' TOUR links, the par ghost default-ON (it IS the afterlife), the personal best.
+- `src/pages/house.ts` — the `?level=house` page: `bootHouse` (routed by `src/boot.ts`’s
+  `?level=` branch before `bootGame`, so the campaign shell is untouched), `houseResultLine`,
+  `houseStatusLine`, `houseBestLine`. Launch-only chrome (the input law: RELEASE is the whole
+  control surface), the live ROOMS readout, the result bar “N rooms · T s — you stopped at the
+  <room>”, the device best line with the honesty sentence verbatim, the par ghost default-ON (the
+  page asks `parGhostRule` with `surface = afterlife` — the house IS the afterlife), the debug
+  seam `__gwHouseState`, and the room windows: six `<section data-room>`s whose tour links are the
+  UNCHANGED `?level=<room>NN` bytes of the level select (locked rungs stay locks, not dead links).
+  `?level=house&room=<id>` re-parks the menu camera (presentation only); the family is recorded in
+  `tests/e2e/goto.ts`.
 - `src/camera/house-camera.ts` — camera v1: `menuPose` (the crane parked at the porch) and the
   run's dwell/leg/dwell hand-offs read off `roomGraph` and the live parcel approvals.
 

@@ -53,6 +53,7 @@ import { PORCH02 } from './world/levels/porch02.level.ts';
 import { PORCH03 } from './world/levels/porch03.level.ts';
 import { PORCH04 } from './world/levels/porch04.level.ts';
 import { PORCH05, PORCH_SANDBOX, PORCH05_ID, PORCH_SANDBOX_ID } from './world/levels/porch05.level.ts';
+import { HOUSE, HOUSE_ID } from './world/levels/house.level.ts';
 import { World, type RunStatus } from './world/world.ts';
 import { deserialize, fixtureQuota, serialize, type Build } from './track/build.ts';
 export { fixtureQuota };
@@ -138,7 +139,7 @@ import type { PieceKind } from './track/pieces.ts';
 // registers it; the feel track stays addressable for the stage-2 specs). The
 // campaign table (`src/world/campaign.ts`) names its rungs; the sandboxes and
 // the feel rig are imported here for addressing only.
-void [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04, KITCHEN05, KITCHEN_SANDBOX, BEDROOM01, BEDROOM02, BEDROOM03, BEDROOM05, BEDROOM_SANDBOX, BEDROOM04, BATHROOM01, BATHROOM02, BATHROOM03, BATHROOM05, BATHROOM_SANDBOX, BATHROOM04, GARDEN01, GARDEN02, GARDEN03, GARDEN05, GARDEN_SANDBOX, GARDEN04, GARAGE01, GARAGE02, GARAGE03, GARAGE05, GARAGE_SANDBOX, GARAGE04, PORCH01, PORCH02, PORCH03, PORCH05, PORCH_SANDBOX, PORCH04];
+void [KITCHEN01, KITCHEN02, KITCHEN03, KITCHEN04, KITCHEN05, KITCHEN_SANDBOX, BEDROOM01, BEDROOM02, BEDROOM03, BEDROOM05, BEDROOM_SANDBOX, BEDROOM04, BATHROOM01, BATHROOM02, BATHROOM03, BATHROOM05, BATHROOM_SANDBOX, BATHROOM04, GARDEN01, GARDEN02, GARDEN03, GARDEN05, GARDEN_SANDBOX, GARDEN04, GARAGE01, GARAGE02, GARAGE03, GARAGE05, GARAGE_SANDBOX, GARAGE04, PORCH01, PORCH02, PORCH03, PORCH05, PORCH_SANDBOX, PORCH04, HOUSE];
 
 /** The level the game boots: ?level=<id> for anything registered, KITCHEN 01
  *  by default (the ladder's first rung; the feel track remains reachable as
@@ -334,6 +335,17 @@ export function boot(root: HTMLElement): void {
   // (player surface; `?level=` stays the recorded debug addressing)
   if (params.has('levels')) {
     startPage(() => bootLevelSelect(root));
+    return;
+  }
+  // THE HOUSE ROUTE (downhill build 1): `?level=house` is a PAGE, not a
+  // fork of the campaign shell — the six-deck world, its launch-only input
+  // law, rooms-collected and its tours live in `src/pages/house.ts`, so
+  // every campaign surface, builder and pixel baseline rides this commit
+  // untouched (the append-only law of the greenlight entry).
+  if (params.get('level') === HOUSE_ID) {
+    startPage(async () => {
+      await (await import('./pages/house.ts')).bootHouse(root, params);
+    });
     return;
   }
   startPage(() => bootGame(root, resolveLevel(params)));
