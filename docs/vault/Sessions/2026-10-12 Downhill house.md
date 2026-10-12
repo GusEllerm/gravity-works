@@ -38,7 +38,16 @@ Level Designer, build 1 of "THE DOWNHILL greenlit" (branch `dh-house`, ports 504
 6. **e2e** `tests/e2e/downhill.spec.ts`: the page's run verifies its own hash against this
    process's `replayRun` (the determinism family's wiring), 4 rooms ≥ 3, second release hashes
    SAME (seating law, live), result copy, best in the save, ghost on by default, tour bytes
-   unchanged. 7/7 green on port 5042.
+   unchanged. 7/7 green.
+
+## The referee (final, at the branch tip)
+
+`npm run typecheck` clean · `npm test` 1010/1010 (54 files) · `npm run replay:all` 30/30 verified
+byte-same · `tally:sweep` 0/325 degenerates, farm 3 · full `playwright test` 282 passed /
+1 skipped (a pre-existing environment skip; the pixel gate printed `shell-kitchen01-idle:
+0.0000 %` — the house is a NEW route, no shell chrome moved, exactly as the entry promised).
+The run-cam capture PNGs the suite regenerated locally were restored to main's bytes by the
+standing convention (`523e4be`). THE RECEIPT: `6caea49b` (807 steps, par 6.75 s, 4 rooms).
 
 ## Findings for the director
 
