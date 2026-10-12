@@ -4,6 +4,9 @@ livedocs: living
 ---
 # Action Plan 2026-10-12 — the freeplay program (B → C → A)
 
+> [!success] STATUS 2026-10-13: COMPLETE. B, C and A-build-1/2 all merged; A greenlit on the reprobe's 4/4
+> with the spike's number; verdict 8/10 (`Sessions/2026-10-13 Freeform program close`).
+
 > [!abstract] Inputs
 > [[Concepts/Freeplay Exploration]] (three shapes, the map, the recommendation),
 > `Sessions/2026-10-12 Freeplay probe.md` (sparks are real but narrow; suffocation is SYSTEMIC —
