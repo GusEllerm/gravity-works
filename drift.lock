@@ -1993,7 +1993,7 @@ sig = "ba5ae9976e607253"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "docs/vault/Modules/replay.md"
-sig = "490c12183196a771"
+sig = "1ec46ab242323216"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
@@ -2003,7 +2003,7 @@ sig = "2bcbeeffa80b98e6"
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
 target = "src/boot.ts"
-sig = "9b0e1822561f3937"
+sig = "d9f342a5411d0937"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"
