@@ -1,6 +1,16 @@
 version = 1
 
 [[bindings]]
+doc = "docs/vault/Concepts/CI Pixel Truth.md"
+target = "tests/e2e/visual.spec.ts"
+sig = "c0657d3ecbe52bf4"
+
+[[bindings]]
+doc = "docs/vault/Concepts/CI Pixel Truth.md"
+target = "tests/visual/darwin/shell-kitchen01-idle.png"
+sig = "e8641957ce51b4d2"
+
+[[bindings]]
 doc = "docs/vault/Concepts/Chain.md"
 target = "scripts/gen-pars.mjs"
 sig = "8ac21bf68e36431d"
@@ -1248,12 +1258,17 @@ sig = "2bcbeeffa80b98e6"
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
 target = "src/boot.ts"
-sig = "3e92473045371c0d"
+sig = "372e797f6014c9b8"
 
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
 target = "src/dev/cameras.ts"
 sig = "f82276202a825f48"
+
+[[bindings]]
+doc = "docs/vault/Modules/share.md"
+target = "src/pages/share.ts"
+sig = "80781e8d0824a15b"
 
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
@@ -1274,6 +1289,11 @@ sig = "4abd0065309ac032"
 doc = "docs/vault/Modules/share.md"
 target = "tests/e2e/chain.spec.ts"
 sig = "b4bb683eedf7ebcf"
+
+[[bindings]]
+doc = "docs/vault/Modules/share.md"
+target = "tests/e2e/lineage.spec.ts"
+sig = "cb4f8033ba3bbd3a"
 
 [[bindings]]
 doc = "docs/vault/Modules/share.md"

@@ -49,6 +49,21 @@
  *
  * Rebaselining deliberately: `GQA_UPDATE_BASELINES=1 E2E_PORT=<port> npx
  * playwright test visual`.
+ *
+ * CI-MACHINE PIXEL TRUTH (debt N1, Evaluation 2026-10-11 round 2): pixel
+ * truth must exist on CI's machine too. `CI_ENFORCED_VIEWS` names the views
+ * whose baseline MUST exist when `CI` is set — on any runner OS, a missing
+ * enforced baseline is a hard FAILURE, never the silent skip that let a
+ * clobbered darwin capture stay green for days. `shell-kitchen01-idle` is
+ * the first such view: the shipped shell at `?level=kitchen01&post=on`, a
+ * settled idle frame (nothing animates on the table, liquid `uTime` stays
+ * 0) at the fixed 1600x900 viewport / 960x540 canvas. Its Linux baseline is
+ * captured FROM A CI RUN (the `linux-baselines` bootstrap job in
+ * `.github/workflows/ci.yml` — capture-on-missing + double-capture
+ * frame-stability self-check, committed to the PR branch as a reviewable
+ * diff, which is what the 2026-10-07 Decision Log objection to
+ * generate-in-CI asked for); the `check` job then asserts it in the same
+ * PR run. The darwin gate and its regeneration doctrine are untouched.
  */
 import { test, expect } from '@playwright/test'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -91,22 +106,58 @@ const BASELINE_DIR = process.env.GQA_BASELINE_DIR ?? join('tests', 'visual', PLA
 const REBASE = process.env.GQA_UPDATE_BASELINES === '1'
 
 /**
- * Compare a fresh capture with the committed baseline for THIS platform.
- * Missing baseline: loud skip — never a silent pass — unless rebasing.
+ * Views whose pixel truth MUST exist on CI, on whatever machine CI runs on:
+ * a missing baseline for one of these is a hard failure under `CI=1`, not
+ * the loud-but-green skip (the darwin-clobber incident: pixel truth existed
+ * on one Mac only and the clobber stayed green for days). Off CI the loud
+ * skip still stands so a fresh clone on an unlit platform still runs.
  */
-const againstBaseline = (shotName: string, pngBuf: Buffer): void => {
+const CI_ENFORCED_VIEWS = new Set(['shell-kitchen01-idle'])
+
+/**
+ * Compare a fresh capture with the committed baseline for THIS platform.
+ * Missing baseline: loud skip — never a silent pass — unless rebasing; for
+ * `CI_ENFORCED_VIEWS` under `CI`, missing is RED. Rebase mode self-checks
+ * frame stability: with a `recapture` hook it captures a SECOND consecutive
+ * frame and gates the diff, so a view that animates between frames never
+ * commits as a baseline (the honest frame count: 2 captures, 1 asserted
+ * diff, on the exact renderer the baseline will be judged by).
+ */
+const againstBaseline = async (
+  shotName: string,
+  pngBuf: Buffer,
+  recapture?: () => Promise<Buffer>,
+): Promise<void> => {
   const path = join(BASELINE_DIR, `${shotName}.png`)
   if (REBASE) {
     mkdirSync(dirname(path), { recursive: true })
     writeFileSync(path, pngBuf)
     console.log(`[visual] REBASELINED ${path} (assertion skipped for this run)`)
+    if (recapture) {
+      const { ratio, count } = diffRatio(decode(pngBuf), decode(await recapture()))
+      console.log(
+        `[visual] REBASE frame-stability self-check ${shotName}: consecutive captures differ by ` +
+          `${(ratio * 100).toFixed(4)} % (${count} px) on platform "${PLATFORM}"`,
+      )
+      expect(
+        ratio,
+        `${shotName}: NOT frame-stable on platform "${PLATFORM}" — two consecutive captures differ ` +
+          `by ${(ratio * 100).toFixed(3)} % (> ${(MAX_DIFF_RATIO * 100).toFixed(1)} %). Do not commit this baseline; pick a more static view.`,
+      ).toBeLessThanOrEqual(MAX_DIFF_RATIO)
+    }
     return
   }
-  test.skip(
-    !existsSync(path),
-    `SKIPPED: no committed baseline for platform "${PLATFORM}" (${path}). This is NOT a pass — ` +
-      `generate one on this platform with GQA_UPDATE_BASELINES=1 and commit it.`,
-  )
+  if (!existsSync(path)) {
+    const remedy = `generate one on this platform with GQA_UPDATE_BASELINES=1 and commit it`
+    if (process.env.CI === '1' && CI_ENFORCED_VIEWS.has(shotName)) {
+      throw new Error(
+        `CI PIXEL TRUTH MISSING: no baseline for the CI-enforced view "${shotName}" on platform ` +
+          `"${PLATFORM}" (${path}). A skip here would make the CI pixel gate silently vacuous — ` +
+          `this is the clobber-hole the 2026-10-11 round-2 evaluation named (N1). ${remedy}.`,
+      )
+    }
+    test.skip(true, `SKIPPED: no committed baseline for platform "${PLATFORM}" (${path}). This is NOT a pass — ${remedy}.`)
+  }
   const base = decode(readFileSync(path))
   const shot = decode(pngBuf)
   const { ratio, count } = diffRatio(shot, base)
@@ -160,7 +211,7 @@ for (const shot of ['establishing', 'hero', 'floor'] as const) {
   // committed. Nothing else may live in this body — a test.skip here aborts
   // only this test.
   test(`canonical kitchen-set ${shot} matches its committed baseline`, async ({ page }) => {
-    againstBaseline(shot, await captureCanonical(page, shot))
+    await againstBaseline(shot, await captureCanonical(page, shot))
   })
 
   // Exploration comparison: platform-independent ratified-render diff. NO
@@ -191,6 +242,10 @@ test('game shell kitchen01 idle matches its committed baseline', async ({ page }
     await canvas.evaluate((c) => `${(c as HTMLCanvasElement).width}x${(c as HTMLCanvasElement).height}`),
   ).toBe('960x540')
   const buf = (await canvas.screenshot()) as Buffer
-  againstBaseline('shell-kitchen01-idle', buf)
+  // CI-enforced view: rebase mode double-captures to prove frame stability
+  // on the capturing renderer before the baseline is ever committed.
+  await againstBaseline('shell-kitchen01-idle', buf, async () =>
+    (await canvas.screenshot()) as Buffer,
+  )
   expect(errors).toEqual([])
 })
