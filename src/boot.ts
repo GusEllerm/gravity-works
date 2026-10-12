@@ -1491,11 +1491,22 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
 
   /** THE "NAME THIS LINE" CHIP (Lane B's re-anchor): shown on a finished
    *  sandbox run that captured IN THE PLAYER'S OWN CUP and has no name
-   *  yet. One chip, one input, one save — and the save re-prints the
-   *  panel's third tally line and arms the record ghost for the NEXT
-   *  attempt. A named line never re-mints under this chip: the name is
-   *  the line (the record's beat path is `recordNamedLine` at the next
-   *  finish). */
+   *  yet. One FIELD, one commit — and the commit re-prints the panel's
+   *  third tally line and arms the record ghost for the NEXT attempt. A
+   *  named line never re-mints under this chip: the name is the line (the
+   *  record's beat path is `recordNamedLine` at the next finish).
+   *
+   *  THE FIELD, NOT THE VERB-BUTTON (final-sheet probe item (g) — the
+   *  chrome trap #9: a lone lowercase `save` button on the result panel
+   *  collided with the Save dropdown's `Save`, and one probe click meant
+   *  for the name opened the settings instead — two controls, one name,
+   *  one page). The studio names a control by its noun, so the row IS a
+   *  field: `name this line` is the input's LABEL (a real `<label for>`,
+   *  the field speaks its noun) and the commit button says `name it` —
+   *  no second `save` on the page, and the ids ride untouched
+   *  (`#gw-result-name-save` is a test surface, not copy). Proven by
+   *  `tests/e2e/labels.spec.ts` (the row's controls name-unique, its
+   *  rects disjoint with the Save dropdown's). */
   let nameRow: HTMLElement | null = null;
   function hideNameChip(): void {
     nameRow?.remove();
@@ -1505,8 +1516,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     hideNameChip();
     const row = document.createElement('div');
     row.id = 'gw-result-name';
-    const chip = document.createElement('span');
+    const chip = document.createElement('label');
     chip.id = 'gw-result-name-chip';
+    chip.htmlFor = 'gw-result-name-input';
     chip.textContent = 'name this line';
     const input = document.createElement('input');
     input.id = 'gw-result-name-input';
@@ -1517,7 +1529,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     const saveBtn = document.createElement('button');
     saveBtn.id = 'gw-result-name-save';
     saveBtn.type = 'button';
-    saveBtn.textContent = 'save';
+    saveBtn.textContent = 'name it';
     row.append(chip, input, saveBtn);
     resultPanel.element.appendChild(row);
     nameRow = row;
@@ -2092,7 +2104,17 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
           }
         }
       }
-      model.tally = tallyLines(tallyEvents, firstBadges, tallyLine);
+      // THE FACE (final-sheet probe item (e)): on a SANDBOX page the tail
+      // also carries the sheet's lifetime numbers (see `tallyLines` — the
+      // read happens AFTER `accumulateBadges`, so the numbers include this
+      // run). Campaign bars pass `null` and print the shipped tail
+      // byte-identical; the full ledger face is the LINES tab footline.
+      model.tally = tallyLines(
+        tallyEvents,
+        firstBadges,
+        tallyLine,
+        isSandbox ? (readRecords(loadSave()).badges ?? null) : null,
+      );
       if (mintKey && !readNamedLine(mintKey)) mountNameChip(mintKey, result.time, currentBuild, model);
       else hideNameChip();
       // THE FAREWELL (program T3.3): the FIRST time the house's last word

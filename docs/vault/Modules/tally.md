@@ -45,7 +45,16 @@ tail**, three lines max in the stock voice: what this run earned (`earned — ai
 what the device had never seen (`first chain fall — earned` — the retroactive-forward hook, read
 BEFORE the save write), and the named line's record (`on “the spillway” — personal best 2.11 s ·
 your own runs on this device only`). It renders in `#gw-result-tally`; an empty tail stays
-hidden — the panel never prints a badge the run did not earn.
+hidden — the panel never prints a badge the run did not earn. THE FACE (final-sheet probe
+item (e)/(10), 2026-10-12): `tallyLines` takes a fourth, optional argument — the save's
+LIFETIME counts after this run's write — and the shell passes it on a SANDBOX page only, so
+the earned line carries each earned kind's number in parentheses plus the honesty sentence
+verbatim (`earned — air (8) · clean catch (7) · your own runs on this device only`); a run
+that earned nothing prints no number, campaign bars pass `null` and stay byte-identical, and
+the whole-ledger read lives where reading belongs — the LINES-tab footline (`createLinesTab`,
+`Modules/ui`). No streaks, no ranks — the probe proved the invisible ledger carried no
+temptation; the face keeps it auditable without becoming a barn (`Sessions/2026-10-12 Pullback
++ face.md`, screenshots in `Sessions/pullback-face/`).
 
 `src/save/records.ts` — the save's PERSONAL RECORDS: `settings.records` riding the v2 envelope by
 the `settings.sound`/`settings.ghosts` technique (deliberately UNDER `settings`, not top-level:
@@ -65,7 +74,9 @@ hidden, and there is no server to hide behind.
 The sandbox application lives in `src/boot.ts`: at the terminal edge a finished sandbox run
 whose build holds a player-placed cup reads/records the line (`readNamedLine`,
 `recordNamedLine`); a NAMED line with no name yet gets the **`name this line` chip**
-(`#gw-result-name`/`#gw-result-name-chip` — one chip, one input, one save); the NEXT launch on
+(`#gw-result-name`/`#gw-result-name-chip` — a FIELD since the final-sheet probe item (g):
+the chip is a real `<label for>`, the commit button says `name it`, no second `save` shares
+the page with the Save dropdown); the NEXT launch on
 that cup seat races **your-best** — `ensureRecordGhost` winds the stored build through
 `cachedGhostTrace` (the par ghost's `TapeRecorder` machinery, `Modules/replay`) and mounts it as
 `GhostMode` `'record'`, the bar re-worded `ghost: your line`; a par wind never evicts a line, and

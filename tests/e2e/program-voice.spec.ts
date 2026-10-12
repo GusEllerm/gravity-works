@@ -154,10 +154,13 @@ test.describe('T2.1 the move wave — kitchen04 names the piece past the cup', (
     await aimAndPlace(page, 'drop', [cupExit.pos.x, cupExit.pos.y, cupExit.pos.z])
     await expectBuildEquals(page, orphan)
 
-    // THE REMOVE BUTTON NAMED IT BEFORE THE NOTE EVER COULD: LIFO takes the
-    // drop — and the label says so, by where it sits.
+    // THE REMOVE BUTTON NAMED IT BEFORE THE NOTE EVER COULD: a piece sits
+    // past the cup, so the pull-back law targets it — and the label says
+    // so, by where it sits (the final-sheet probe made the button's pick
+    // the note's own sentence; here the LIFO tail and the named piece
+    // happen to be the same drop, so only the law-line in the aria moves).
     await expect(page.locator('#gw-remove-piece')).toHaveText('Remove the drop past the cup')
-    await expect(page.locator('#gw-remove-piece')).toHaveAttribute('aria-label', /the last piece you placed/)
+    await expect(page.locator('#gw-remove-piece')).toHaveAttribute('aria-label', /pull it back, the piece past the finish/)
 
     // the launch: the clause fires on the drive-off death the node predicted
     await page.click('#gw-launch')

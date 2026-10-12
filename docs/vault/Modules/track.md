@@ -84,7 +84,15 @@ runs in the builder, the renderer and a headless Node replay.
   OCCURRENCE rule (a piece is a fixture only while `fixtures[k]` copies of kind
   `k` remain, in build order), moved here from `src/boot.ts` (which re-exports)
   so the boot mount, the parity probe, the piece counter and the render-side
-  fixture signal share one classifier without an import cycle.
+  fixture signal share one classifier without an import cycle. Since the
+  final-sheet probe's pull-back (2026-10-12) it also owns the PAST-GOAL SEAT —
+  `goalExitJoinIndex` (the index of the first piece whose entry joins the goal
+  fixture's own open exit, the join test the walk itself uses) and
+  `pullbackTargetIndex` (that join fact plus the two Remove ownership laws —
+  tray-stocked and not-a-fixture-occurrence) — the ONE pure source the failure
+  note's ORPHAN clause (`moveHintFor`) and the Remove button's target
+  (`removeIndex`) both read, so the sentence and the verb cannot point at
+  different pieces (`Modules/ui`, `Sessions/2026-10-12 Pullback + face.md`).
 
 ## How it works
 

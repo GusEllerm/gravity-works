@@ -18,7 +18,7 @@
  * ladder tests (`levelTrayParams`, `stockedKindsFor`). `src/boot.ts` imports
  * these at the call sites; behavior is the boot's own unchanged line.
  */
-import { fixtureQuota, type Build, type PlacedPiece } from '../track/build.ts';
+import { fixtureQuota, goalExitJoinIndex, type Build, type PlacedPiece } from '../track/build.ts';
 import { PIECES, pieceLabel, type PieceKind, type PieceParams } from '../track/pieces.ts';
 import { SNAP_ANGLE_TOL, SNAP_TRANSLATION_TOL } from '../track/snap.ts';
 import { JOIN_TOL } from './builder.ts';
@@ -318,28 +318,31 @@ export function moveHintFor(
   // ORPHAN-PAST-GOAL: a piece seated on the goal's own open exit. Read
   // off the GOAL, not the start-chain walk — the stranded piece is usually
   // OFF the walked chain (the line let go short of the cup; that is why
-  // the run fell), so the scan starts at the goal fixture itself.
+  // the run fell), so the scan starts at the goal fixture itself. The scan
+  // is `goalExitJoinIndex` — THE ONE SOURCE it shares with the Remove
+  // button's pull-back target (`removeIndex`, `src/ui/builder.ts`): the
+  // piece this sentence names is by construction the piece that click
+  // takes (the final-sheet probe's item (c) law — an advice sentence with
+  // no reachable verb made 3 of 6 sandboxes unclosable).
   const goalAt = build.pieces.findIndex((p) => PIECES[p.def].captureVolume !== undefined);
   if (goalAt >= 0) {
-    const goal = build.pieces[goalAt]!;
-    const goalExit = transformSocket(PIECES[goal.def].sockets(goal.params)[1], goal.transform);
-    const past = build.pieces.find(
-      (p, i) =>
-        i !== goalAt &&
-        socketGap(transformSocket(PIECES[p.def].sockets(p.params)[0], p.transform), goalExit) <
-          SNAP_TRANSLATION_TOL,
-    );
-    if (past && !isFixture.get(past)) {
-      return {
-        move: 'orphan',
-        clause: `the ${pieceLabel(past.def).toLowerCase()} sits past the ${pieceLabel(goal.def).toLowerCase()} — pull it back`,
-        teachWalk: true,
-      };
+    const joinAt = goalExitJoinIndex(build.pieces);
+    if (joinAt >= 0) {
+      const past = build.pieces[joinAt]!;
+      if (!isFixture.get(past)) {
+        return {
+          move: 'orphan',
+          clause: `the ${pieceLabel(past.def).toLowerCase()} sits past the ${pieceLabel(
+            build.pieces[goalAt]!.def,
+          ).toLowerCase()} — pull it back`,
+          teachWalk: true,
+        };
+      }
+      // a piece seated past the goal that is a FIXTURE (kitchen02's visible
+      // run-out curve sits on the cup's exit in EVERY kitchen02 line) is
+      // authored, not stranded: it names nothing. The reading continues to
+      // the booster half.
     }
-    // a piece seated past the goal that is a FIXTURE (kitchen02's visible
-    // run-out curve sits on the cup's exit in EVERY kitchen02 line) is
-    // authored, not stranded: it names nothing. The reading continues to
-    // the booster half.
   }
 
   // BOOSTER SEQUENCING: actionable but not spent at the head of the line.
