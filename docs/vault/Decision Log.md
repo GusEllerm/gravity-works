@@ -6,6 +6,42 @@ livedocs: snapshot
 
 Dated entries tagged `[agent decision]`. Newest first.
 
+## 2026-10-12 — THE TALLY law: badges are approvals physics granted, thresholds swept in CI `[agent decision]` `[feel engineer]`
+
+- **THE TALLY LAW** — a badge may be granted ONLY for an event the deterministic sim itself
+  produced, read as a PURE function of the recorded trace (`src/tally/detectors.ts` over
+  `TraceSample` lists — the fifth surface of the input law: the tally owns no bodies, steps
+  nothing, reads the tape). Freeplay Lane B of [[Reference/Action Plan 2026-10-12]] ships the
+  sheet: five badges (air > 0.25 s, clean catch = a flight caught on ≥ 0.15 m of held ground,
+  room crossing between declared parcels, chain fall = an AIRBORNE sustained descent, booster/
+  spring spend = a one-step gain past 3·g·`FIXED_DT`), the tally tail on EVERY result bar
+  (`tallyLines`, three lines max, campaign included — the sheet fills during the tutorial), and
+  the personal records in the save (`settings.records`, no version bump — under `settings`
+  because the merge law carries settings by reference and would drop an unknown top-level key).
+- **Thresholds are SWEPT, not tuned**: `tools/tally-sweep.mjs` (k02-order-table idiom) plays 37
+  rigs — all 30 par builds, the six sandbox references, a placeable booster-farm — through the
+  shipped replay and the shipped detectors; measured max 4 badges/run, farm 3, `BADGE_CAP_PER_RUN`
+  = 6, and the `--gate` line runs in CI after `replay:all`. The exploration's degenerate-optimizer
+  risk is answered with a measurement and a number, not an assurance (same honesty as the fail-
+  timing sweeps). The chain-fall threshold is a measured correction in public: the first sweep
+  pass read the spike's dy-drop rule in world units and granted 2–3 per campaign run off rolling
+  deck descents — the sheet lying by generosity; the airborne reading is the shipped one.
+- **Hash neutrality is a gate, not a claim**: the feasibility note’s §3 probe measurement is
+  promoted to a unit test — kitchen01’s par build hashes to its atlas receipt `d32417dc` with a
+  tally tape mounted INLINE on the step loop and without, event streams equal across repeats
+  (`tests/unit/tally.test.ts`, written red before `src/tally` existed); `replay:all` 30/30 and
+  the atlas run unchanged.
+- **The sandbox gains a stake, not a new truth**: a cup the PLAYER placed already re-anchors the
+  physics’ capture volume (`World` reifies the last `finishCup`; the feasibility T5 measurement),
+  so a named line is keyed to the cup’s seat (mm-quantised) and its record is
+  (name, best time, the build that ran it) — the your-best ghost is that stored build’s own
+  `TapeRecorder` wind (`GhostMode` `'record'`, the bar says `ghost: your line`), a save-schema
+  statement and nothing else. The share page’s run-cam mounts on the sandbox result reading the
+  run’s own recorded states. Every number says the daily’s sentence verbatim: the records are
+  your own runs on this device only — there is no server and the sheet does not pretend there is
+  one. Nothing moves: the 37 anchors are frozen, stars stay stars, and the campaign is DEMOTED
+  by addition only.
+
 ## 2026-10-11 — Rules of the house, round two (wrong-branch drift, stamp paths, evaluator isolation) `[agent decision]`
 
 - **Wrong-branch drift is repaired with `git merge --ff-only <stray>`, never cherry-picks** — an evaluator

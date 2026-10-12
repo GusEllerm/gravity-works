@@ -188,6 +188,24 @@ the next clear back at the ordinary bar, the reduced-motion static page, and —
 cured chip leak: the sound chip, the save row and the ghost strip all wear the `hidden` attribute and
 render nothing at the crane).
 
+## The tally tail on the result bar (freeplay Lane B, 2026-10-12)
+
+`src/ui/result.ts` gains `tallyLines(events, firstBadges, line)` (pure) and one panel row:
+`show(model)` fills `#gw-result-tally` from `model.tally` — up to THREE lines of stock voice
+after the note: `earned — air ×2 · clean catch` (this run's approvals, counted, in sheet order),
+`first chain fall — earned` (a badge the save never held — the shell reads the FIRSTS from
+`accumulateBadges` in `src/save/records.ts` BEFORE the write lands), and
+`on “the spillway” — personal best 2.11 s · your own runs on this device only` (a named
+sandbox line, honesty sentence verbatim from `dailyChipLine`). An empty tail stays hidden —
+the panel never prints a badge the run did not earn, and a finished campaign run keeps every
+star line it shipped with: the campaign GAINS the tail, it does not trade one for the other.
+The sandbox result also grows the **name-this-line chip** (`#gw-result-name` with
+`#gw-result-name-chip`/`#gw-result-name-input`/`#gw-result-name-save`, shell-wired, shown only
+where a nameless player-cup line finished) and mounts the share page's run-cam under the panel
+while it stands (seek law intact; see `Modules/tally` — the mechanics, thresholds and proofs
+live there, not twice). `tests/e2e/tally.spec.ts` proves both tails; `tests/unit/tally.test.ts`
+the three-line law.
+
 ## Depends on / used by
 
 `src/track` only (snap/pieces/socket) — never `src/physics`; `src/ui/levelselect.ts` additionally reads `src/world/campaign` + `src/world/stars` + `src/save` (data and progress only, no `World`). Used by `src/boot.ts`.

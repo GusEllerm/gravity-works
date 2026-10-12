@@ -15,6 +15,14 @@ tags: [concept, freeplay, exploration]
 > anywhere in the vault or history — both recommendations notes are broken links; the plan note
 > itself stands in for their content.)
 
+> [!note] What became of this paper (2026-10-12)
+> The freeplay program adopted candidate B: **THE TALLY SHIPPED** — pure trace detectors, the
+> result-bar tail on every rung (campaign included), personal records under `settings.records`,
+> the swept CI cap (`tools/tally-sweep.mjs`), named sandbox lines with your-best ghosts and the
+> run-cam. The law and its proofs live in [[Modules/tally]] and Decision Log 2026-10-12; this
+> paper stands as written, and candidate B's "migration is an overlay — the campaign keeps stars
+> AND gains the tally tail" is what shipped. Candidates A, C, D, E, F remain paper.
+
 ## The endowment (what free-form must keep)
 
 Four assets, all shipped, all paid for:

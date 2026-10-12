@@ -40,9 +40,14 @@
  */
 import { starsFor, starGlyphs, type Par, type RunResult } from '../world/stars.ts';
 import type { PieceKind } from '../track/pieces.ts';
+import { BADGE_WORDS, type BadgeKind } from '../tally/detectors.ts';
+import { RECORDS_HONESTY } from '../save/records.ts';
 import type { MoveHint } from './advice.ts';
 import { AIM_WALK_COPY } from './callouts.ts';
 import type { AimHint } from './builder.ts';
+
+/** Badge display order for the tally tail (the sheet's own row order). */
+const BADGE_ORDER: readonly BadgeKind[] = ['air', 'catch', 'chainFall', 'crossing', 'spend'];
 
 // ---- witnesses --------------------------------------------------------------
 
@@ -665,6 +670,11 @@ export interface ResultModel {
    * `>= 1` marks the run a replay; the shell reads it from the save BEFORE
    * `recordStars` writes this run's best (see `Modules/ui`). */
   bestStarsBefore: number;
+  /** THE TALLY TAIL (freeplay Lane B): up to three stock-voice lines of
+   *  approved events this run earned, filled by `tallyLines` below. An
+   *  empty/absent tail prints nothing — the panel never claims a sheet
+   *  the physics did not sign. */
+  tally?: readonly string[];
 }
 
 /** Stars + note for one finished-or-not run: the panel's whole content.
@@ -801,6 +811,56 @@ export function vsParLine(model: ResultModel): string {
   return `you vs par — ${dTime} · ${dPieces}`;
 }
 
+/**
+ * THE TALLY TAIL (freeplay program Lane B — Action Plan 2026-10-12: "a
+ * tally tail on EVERY result bar (three lines, existing voice — campaign
+ * included, so the sheet fills during the tutorial)"). Three lines, in
+ * the order a player reads the sheet:
+ *
+ *   1. WHAT THIS RUN EARNED — the approvals the physics granted, counted:
+ *      `earned — air ×2 · clean catch · booster spend`. Nothing the
+ *      detectors did not grant appears; nothing granted is hidden.
+ *   2. WHAT THE DEVICE HAD NEVER SEEN — badges the save was empty of
+ *      before this run (the retroactive-forward hook of the exploration:
+ *      "first clean catch — earned"). The kinds are the save's truth,
+ *      read BEFORE `accumulateBadges` writes this run's counts.
+ *   3. THE LINE — a named sandbox line's personal best, carrying the
+ *      daily's device-honesty sentence verbatim: "the spillway" —
+ *      personal best 2.11 s · your own runs on this device only.
+ *
+ * Pure over data the shell already holds (events from the tape, firsts
+ * from the save); nothing here reaches the physics. Cap: three lines —
+ * the tail is a footnote to the verdict, never a fourth verdict.
+ */
+export function tallyLines(
+  events: readonly { kind: BadgeKind }[],
+  firstBadges: readonly BadgeKind[],
+  /** The named line this run anchored (sandbox only): name + the save's
+   *  best AFTER this run, and whether this run minted or beat it. */
+  line: { name: string; best: number; fresh: boolean } | null = null,
+): string[] {
+  const lines: string[] = [];
+  const counts = new Map<BadgeKind, number>();
+  for (const e of events) counts.set(e.kind, (counts.get(e.kind) ?? 0) + 1);
+  if (counts.size > 0) {
+    const parts = BADGE_ORDER.filter((k) => counts.has(k)).map((k) => {
+      const n = counts.get(k)!;
+      return n > 1 ? `${BADGE_WORDS[k]} ×${n}` : BADGE_WORDS[k];
+    });
+    lines.push(`earned — ${parts.join(' · ')}`);
+  }
+  if (firstBadges.length > 0) {
+    const words = BADGE_ORDER.filter((k) => firstBadges.includes(k)).map((k) => `first ${BADGE_WORDS[k]} — earned`);
+    if (words.length > 0) lines.push(words.join(' · '));
+  }
+  if (line) {
+    lines.push(
+      `${line.fresh ? 'new best on' : 'on'} “${line.name}” — personal best ${formatTime(line.best)} · ${RECORDS_HONESTY}`,
+    );
+  }
+  return lines.slice(0, 3);
+}
+
 export interface ResultPanel {
   element: HTMLElement;
   /** The as-built retry: one click back to Launch (wired by the shell). */
@@ -830,6 +890,9 @@ export interface ResultPanel {
   /** The daily chip (program T3.4): the shell fills it on a daily-seeded
    *  page and hides it everywhere else; `show` never touches it. */
   daily: HTMLElement;
+  /** THE TALLY TAIL (freeplay Lane B): up to three lines of approved
+   *  events, filled from `model.tally` by `show` — empty means hidden. */
+  tally: HTMLElement;
   show(model: ResultModel): void;
   hide(): void;
   /** Hide/restore the chrome that shares the FAILURE BAND's rect (the
@@ -871,6 +934,7 @@ function makePanel(): {
   pieces: HTMLElement;
   vsPar: HTMLElement;
   daily: HTMLElement;
+  tally: HTMLElement;
   rules: HTMLElement;
   note: HTMLElement;
   retry: HTMLButtonElement;
@@ -914,6 +978,11 @@ function makePanel(): {
   rules.id = 'gw-result-rules';
   const note = document.createElement('p');
   note.id = 'gw-result-note';
+  // THE TALLY TAIL (freeplay Lane B): the run's approvals in the stock
+  // voice, up to three lines, after the note and before the buttons.
+  const tally = document.createElement('p');
+  tally.id = 'gw-result-tally';
+  tally.hidden = true;
   const buttons = document.createElement('div');
   buttons.id = 'gw-result-buttons';
   const retry = panelButton('gw-result-retry', 'Retry', buttons);
@@ -945,9 +1014,9 @@ function makePanel(): {
   shareNote.setAttribute('role', 'status');
   shareNote.setAttribute('aria-live', 'polite');
   shareRow.prepend(shareUrl, shareNote);
-  root.append(stars, time, pieces, vsPar, daily, rules, note, buttons, shareRow);
+  root.append(stars, time, pieces, vsPar, daily, rules, note, tally, buttons, shareRow);
   return {
-    root, stars, time, pieces, vsPar, daily, rules, note, retry, next,
+    root, stars, time, pieces, vsPar, daily, tally, rules, note, retry, next,
     share, shareRow, shareUrl, shareCard, shareNote,
   };
 }
@@ -959,7 +1028,7 @@ function makePanel(): {
  */
 export function createResultPanel(host: HTMLElement): ResultPanel {
   const {
-    root, stars, time, pieces, vsPar, daily, rules, note, retry, next,
+    root, stars, time, pieces, vsPar, daily, tally, rules, note, retry, next,
     share, shareRow, shareUrl, shareCard, shareNote,
   } = makePanel();
   host.appendChild(root);
@@ -974,6 +1043,7 @@ export function createResultPanel(host: HTMLElement): ResultPanel {
     shareNote,
     vsPar,
     daily,
+    tally,
     resetShare() {
       shareRow.hidden = true;
       shareUrl.value = '';
@@ -1004,6 +1074,12 @@ export function createResultPanel(host: HTMLElement): ResultPanel {
       rules.textContent = lines.rules;
       note.textContent = model.note;
       note.hidden = model.note === '';
+      // THE TALLY TAIL: the sheet the physics signed, in up to three
+      // lines (see `tallyLines`); an empty tail stays hidden — the panel
+      // never prints a badge the run did not earn.
+      const tail = model.tally ?? [];
+      tally.textContent = tail.join('\n');
+      tally.hidden = tail.length === 0;
       // THE FAILURE STRIP (playtest BB item 6: the failure panel rendered
       // mid-canvas and hid the ball's fate during the flight camera). A
       // FAILED run's verdict drops to the BOTTOM of the stage, so the wide

@@ -22,6 +22,7 @@
  * last-writer-wins-the-whole-envelope.
  */
 import { deserialize, serialize, type Build } from '../track/build.ts';
+import type { PersonalRecords } from './records.ts';
 
 export const SAVE_KEY = 'gravity-works.save';
 /** v2 (stage 4): the `progress` record (per-level best stars + the legacy
@@ -79,6 +80,14 @@ export interface SaveSettings {
    * bump and no migration. `src/pages/ghost.ts` owns the read/write.
    */
   ghosts?: GhostSettings;
+  /**
+   * THE TALLY'S PERSONAL RECORDS (freeplay program Lane B): badge counts +
+   * the sandbox's named lines. Same optional-field technique as `sound`
+   * and `ghosts` — absent means "nothing earned yet", no schema bump, no
+   * migrade, and the object rides `settings` through every merge by
+   * reference (the records law of `src/save/records.ts`).
+   */
+  records?: PersonalRecords;
 }
 
 /** The `settings.ghosts` payload owned by `src/pages/ghost.ts`. */

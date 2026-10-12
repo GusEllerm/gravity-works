@@ -234,7 +234,7 @@ export function clearGhostTraceCache(): void {
   traceCache.clear();
 }
 
-export type GhostMode = 'off' | 'par' | 'friend';
+export type GhostMode = 'off' | 'par' | 'record' | 'friend';
 
 export interface GhostState {
   mode: GhostMode;

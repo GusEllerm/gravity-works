@@ -16,6 +16,7 @@
     "render": "node tools/render.mjs",
     "feel": "node tools/feel.mjs",
     "replay:all": "node tools/replay-all.mjs",
+    "tally:sweep": "node tools/tally-sweep.mjs --gate",
     "perf:table": "node tools/perf-table.mjs"
   },
   "devDependencies": {

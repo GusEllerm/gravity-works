@@ -17,6 +17,10 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run typecheck
       - run: npm run replay:all
+      # THE TALLY SWEEP (freeplay Lane B — THE TALLY LAW): no single rig
+      # farms more than 6 badges/run (measured max 4, booster-farm 3;
+      # tools/tally-sweep.mjs publishes the table).
+      - run: npm run tally:sweep
       - run: npm test
       - run: npx playwright test
       - name: Install drift + livedocs

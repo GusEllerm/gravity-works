@@ -54,7 +54,7 @@ import { PORCH03 } from './world/levels/porch03.level.ts';
 import { PORCH04 } from './world/levels/porch04.level.ts';
 import { PORCH05, PORCH_SANDBOX, PORCH05_ID, PORCH_SANDBOX_ID } from './world/levels/porch05.level.ts';
 import { World, type RunStatus } from './world/world.ts';
-import { fixtureQuota, serialize, type Build } from './track/build.ts';
+import { deserialize, fixtureQuota, serialize, type Build } from './track/build.ts';
 export { fixtureQuota };
 import { PIECES } from './track/pieces.ts';
 import { fitSocket } from './track/snap.ts';
@@ -76,6 +76,14 @@ import {
 } from './ui/errors.ts';
 import { createBuildAutosave, loadSave, rememberBuild, recordStars, saveSave, savedBuild } from './save/save.ts';
 import { dailyChipLine, dailySeed, readDaily, recordDailyBest, utcDateKey } from './save/daily.ts';
+// THE TALLY (freeplay program Lane B): the tape, the pure detectors, and
+// the save's personal records. Everything imported here is READ-ONLY over
+// the run or writes only the save — THE TALLY LAW: badges are approvals
+// physics granted, and the tally owns no bodies and steps nothing.
+import { tallyCounts, tallyFromTrace } from './tally/detectors.ts';
+import { TallyTape } from './tally/tape.ts';
+import { accumulateBadges, lineAnchorKey, readNamedLine, readRecords, recordNamedLine } from './save/records.ts';
+import { cupView, deriveEvents, planShots, ReplayDirector, REPLAY_TAIL, REPLAY_FOV, type RunTrace } from './replay/cinematic.ts';
 import {
   cachedGhostTrace,
   clearGhostTraceCache,
@@ -96,7 +104,7 @@ import { SET_TOKENS, darken } from './render/tokens.ts';
 import { paintedWood } from './render/materials.ts';
 import type { PostStack } from './render/post/index.ts';
 import { parFor, type RunResult, type StarCount } from './world/stars.ts';
-import { createResultPanel, createRunRecorder, resultModel, starRulesLine } from './ui/result.ts';
+import { createResultPanel, createRunRecorder, resultModel, starRulesLine, tallyLines, type ResultModel } from './ui/result.ts';
 import { createHelpDrawer } from './ui/help.ts';
 import { createSaveSettings } from './ui/settings.ts'; // T0.3/R1 — save export/import row + quarantine line
 import { firstLesson, firstSight, firstSetAppearance } from './ui/callouts.ts';
@@ -741,7 +749,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       s.settings.ghosts = { ...s.settings.ghosts, par: on };
       saveSave(s);
       ghost.setEnabled(on);
-      if (on && ghost.ghostMode !== 'friend') ensureParGhost();
+      if (on && ghost.ghostMode !== 'friend' && !ensureRecordGhost()) ensureParGhost();
       else if (!on) {
         ghost.setTrace('off', null);
         ghostBar.clearNote();
@@ -790,7 +798,9 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         ghost.setWinding(false);
         // a friend ghost that won the race to mount keeps the grid — the
         // par wind must not silently evict the link the player asked for
-        if (ghost.ghostMode === 'friend') return;
+        // — and the same law covers a NAMED LINE's record ghost (Lane B):
+        // a line mounted during this wind outranks the par line on it.
+        if (ghost.ghostMode === 'friend' || ghost.ghostMode === 'record') return;
         ghost.setTrace('par', trace);
         ghostBar.clearNote();
         window.dispatchEvent(new CustomEvent('gw-ghost-ready', { detail: { mode: 'par' } }));
@@ -899,6 +909,19 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // stage-3 run-end layer: the evidence recorder feeds the physics note, the
   // panel only shows on a TERMINAL status (§5.11: no panels during a run)
   const recorder = createRunRecorder();
+  // THE TALLY TAPE (freeplay Lane B): one TraceSample per physics step,
+  // run-local, written ONLY into its own list — the firewall pattern's
+  // third instance after `juice/layer.ts` and the car rig. It is the
+  // INPUT LAW's receipt shape: the tally DERIVES from the tape at the
+  // terminal edge, so a mounted tally moves no hash (unit-proved, and
+  // `replay:all` stays byte-identical).
+  const tallyTape = new TallyTape();
+  const isSandbox = CAMPAIGN.some((room) => room.sandboxId === level.id);
+  // The follow-camera pose per step, recorded for the SANDBOX RUN-CAM
+  // (Lane B: the share page's cinematic cam mounted where the toy lives).
+  // Sandboxes only — a campaign run never assembles the cinematic trace.
+  const followTape = { pos: [] as number[], quat: [] as number[] };
+  let lineCam: { trace: RunTrace; director: ReplayDirector; at: number } | null = null;
   const resultPanel = createResultPanel(stage);
   let lastStatus: RunStatus = 'idle';
   // the build the game starts in (`startBuildFor`, just below the save
@@ -1254,6 +1277,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     endHold = null;
     buildView.reset();
     ghost.park(); // the raced ghost returns to the unpainted grid with the car
+    lineCam = null; // Retry is a new attempt, not a film
     if (w.scene) frameCamera(camera, w.scene, framingFocus, null, buildView, framingSetCenter);
     resultPanel.hide();
   }
@@ -1275,6 +1299,8 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   function dismissOverlay(): void {
     if (resultPanel.element.hidden) return;
     resultPanel.hide();
+    hideNameChip(); // a dismissed verdict never keeps the mint chip waiting
+    lineCam = null; // the film belongs to the panel, not to the board
     runCamActive = false;
     endHold = null; // the damping tick must not re-solve the death hold
     buildView.reset();
@@ -1291,6 +1317,197 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     },
     { capture: true },
   );
+
+  // ---- THE TALLY (freeplay program Lane B) --------------------------------
+  // The sheet is derived from the tape at the terminal edge; the sandbox's
+  // NAMED LINES re-anchor the save (a cup the PLAYER placed defines a line
+  // and its personal best, and the record's ghost is the stored build's
+  // own replayed trace — `deriveGhostTrace` machinery, no new truth).
+
+  /** The world-space capture centre of the build's PLAYER-placed cup (the
+   *  `finishCup` occurrences past the fixture quota — and exactly the cup
+   *  `World` reified as THE capture volume, since a later piece wins).
+   *  Null when the build holds no player cup: an ordinary rung, or a
+   *  sandbox whose cup is the fixture's. */
+  function playerCupAnchorFor(build: Build): THREE.Vector3 | null {
+    const kl = level as unknown as { fixtures?: Partial<Record<PieceKind, number>> };
+    const isFixture = fixtureQuota(kl.fixtures ?? {});
+    let anchor: THREE.Vector3 | null = null;
+    for (const p of build.pieces) {
+      const fixture = isFixture(p.def);
+      if (p.def === 'finishCup' && !fixture) {
+        const cv = PIECES.finishCup.captureVolume!(p.params);
+        anchor = new THREE.Vector3(cv.center.x, cv.center.y, cv.center.z).applyMatrix4(p.transform);
+      }
+    }
+    return anchor;
+  }
+
+  /** The named line the CURRENT build sits on (the cup seat is the line's
+   *  identity — same seat, same line, whoever rebuilt the decks). */
+  function lineGhostKey(): string | null {
+    if (!isSandbox) return null;
+    const cup = playerCupAnchorFor(currentBuild);
+    return cup ? lineAnchorKey(level.id, cup) : null;
+  }
+
+  /** Mount the RECORD ghost — your best run on this named line — instead
+   *  of the par line. Returns true when a record line took the rail. The
+   *  trace is the stored build's own replayed tape (`cachedGhostTrace`,
+   *  the par ghost's machinery on a headless world): visuals-only law,
+   *  no new truth, `replay:all` untouched. */
+  function ensureRecordGhost(): boolean {
+    if (!ghostOn) return false;
+    const key = lineGhostKey();
+    const rec = key ? readNamedLine(key) : undefined;
+    if (!rec) return false;
+    void cachedGhostTrace(level, deserialize(rec.build)).then(
+      (trace) => {
+        if (ghost.ghostMode === 'friend') return; // an explicit link keeps the grid
+        ghost.setTrace('record', trace);
+        ghostBar.clearNote();
+        ghostBar.toggle.textContent = 'ghost: your line';
+        ghostBar.toggle.setAttribute('aria-label', `Race your best run on “${rec.name}”`);
+        window.dispatchEvent(new CustomEvent('gw-ghost-ready', { detail: { mode: 'record' } }));
+        if (world) {
+          if (world.status !== 'idle') ghost.resumeRace();
+          ghost.sync(world.time);
+        }
+      },
+      () => {
+        // the record could not be wound on this machine: the par line stands
+        if (ghostOn && !parWinding) ensureParGhost();
+      },
+    );
+    return true;
+  }
+
+  /** THE "NAME THIS LINE" CHIP (Lane B's re-anchor): shown on a finished
+   *  sandbox run that captured IN THE PLAYER'S OWN CUP and has no name
+   *  yet. One chip, one input, one save — and the save re-prints the
+   *  panel's third tally line and arms the record ghost for the NEXT
+   *  attempt. A named line never re-mints under this chip: the name is
+   *  the line (the record's beat path is `recordNamedLine` at the next
+   *  finish). */
+  let nameRow: HTMLElement | null = null;
+  function hideNameChip(): void {
+    nameRow?.remove();
+    nameRow = null;
+  }
+  function mountNameChip(key: string, time: number, build: Build, model: ResultModel): void {
+    hideNameChip();
+    const row = document.createElement('div');
+    row.id = 'gw-result-name';
+    const chip = document.createElement('span');
+    chip.id = 'gw-result-name-chip';
+    chip.textContent = 'name this line';
+    const input = document.createElement('input');
+    input.id = 'gw-result-name-input';
+    input.type = 'text';
+    input.maxLength = 48;
+    input.placeholder = 'the spillway';
+    input.setAttribute('aria-label', 'Name for this line (your cup, your record)');
+    const saveBtn = document.createElement('button');
+    saveBtn.id = 'gw-result-name-save';
+    saveBtn.type = 'button';
+    saveBtn.textContent = 'save';
+    row.append(chip, input, saveBtn);
+    resultPanel.element.appendChild(row);
+    nameRow = row;
+    const commit = (): void => {
+      const name = input.value.trim();
+      if (name.length === 0) {
+        input.focus();
+        return;
+      }
+      const res = recordNamedLine(key, name, time, build);
+      const lines = [...(model.tally ?? []).slice(0, 2), `named “${res.line.name}” — personal best ${res.line.best.toFixed(2)} s · your own runs on this device only`];
+      model.tally = lines.slice(0, 3);
+      resultPanel.show(model);
+      mountNameChipExisting(res.line.name); // the named form: no re-mint chip
+    };
+    saveBtn.addEventListener('click', commit);
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') commit();
+    });
+  }
+  /** After a mint the chip retires to a named label (the row keeps its
+   *  place, the input goes — the line has a name now). */
+  function mountNameChipExisting(name: string): void {
+    const row = nameRow;
+    if (!row) return;
+    row.replaceChildren();
+    const chip = document.createElement('span');
+    chip.id = 'gw-result-name-chip';
+    chip.textContent = `line “${name}”`;
+    row.appendChild(chip);
+  }
+
+  /** Assemble the sandbox run's cinematic trace from the tapes: the SAME
+   *  `RunTrace` shape the share page renders — car states and follow-cam
+   *  poses the sim itself produced at `FIXED_DT`, beats from
+   *  `deriveEvents`, shots from `planShots`. No physics is stepped here;
+   *  playback later READS these lists only (the seek law). */
+  function makeRunCam(): { trace: RunTrace; director: ReplayDirector; at: number } | null {
+    const tape = tallyTape.read();
+    const w = world;
+    if (!w || tape.length === 0) return null;
+    if (followTape.pos.length !== tape.length * 3) return null; // no rail, no film
+    const n = tape.length;
+    const pos = new Float64Array(n * 3);
+    const quat = new Float64Array(n * 4);
+    const speed = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      pos[i * 3] = tape[i]!.pos[0];
+      pos[i * 3 + 1] = tape[i]!.pos[1];
+      pos[i * 3 + 2] = tape[i]!.pos[2];
+      quat[i * 4] = tape[i]!.quat[0];
+      quat[i * 4 + 1] = tape[i]!.quat[1];
+      quat[i * 4 + 2] = tape[i]!.quat[2];
+      quat[i * 4 + 3] = tape[i]!.quat[3];
+      speed[i] = tape[i]!.speed;
+    }
+    const events = deriveEvents(tape, w.status);
+    const time = tape[n - 1]!.t;
+    const trace: RunTrace = {
+      dt: FIXED_DT,
+      steps: n,
+      time,
+      duration: time + REPLAY_TAIL,
+      status: w.status,
+      hash: w.hashHex(),
+      pos,
+      quat,
+      speed,
+      arc: new Float64Array(n),
+      followPos: Float64Array.from(followTape.pos),
+      followQuat: Float64Array.from(followTape.quat),
+      events,
+      plan: planShots(time, events),
+    };
+    const box = new THREE.Box3();
+    for (let i = 0; i < n; i++) box.expandByPoint(new THREE.Vector3(pos[i * 3]!, pos[i * 3 + 1]!, pos[i * 3 + 2]!));
+    box.expandByScalar(0.3);
+    const director = new ReplayDirector({
+      trace,
+      box,
+      cup: cupView(currentBuild),
+      fov: REPLAY_FOV,
+      aspect: camera.aspect,
+      reducedMotion: false,
+    });
+    return { trace, director, at: 0 };
+  }
+
+  // the e2e seam for the tally law (debug surface, not UI, the
+  // `__gwGhostState` idiom): what the tape granted, what the save holds,
+  // whether the sandbox film is mounted.
+  (window as unknown as Record<string, unknown>).__gwTally = () => ({
+    events: tallyFromTrace(tallyTape.read()),
+    records: readRecords(loadSave()).badges ?? {},
+    lineKey: lineGhostKey(),
+    film: lineCam !== null,
+  });
 
   function startRun(): void {
     if (farewellHolds) return; // the farewell owns the screen (T3.3)
@@ -1309,6 +1526,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       runCamActive = true;
     }
     recorder.reset(w.state()); // witnesses start at the release pose
+    tallyTape.reset(); // the tally tape is run-local, like the witnesses
+    followTape.pos.length = 0;
+    followTape.quat.length = 0;
+    lineCam = null; // a fresh release is never a replay
     juice.reset(); // squash/dust envelopes start clean too
     // THE GHOST RACES FROM LAUNCH (T3.2): the shared clock restarts it at
     // its start pose — `sync(world.time)` owns the rest of the race. The
@@ -1316,7 +1537,23 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     // first moment the ghost could be seen, and a mid-run wind lands on the
     // live clock via `resumeRace` — the race never waits on the tape.
     ghost.beginRace();
-    if (parArmed && !premiereOwned) ensureParGhost();
+    // THE TALLY LINE RIDES THE LAUNCH (Lane B): a named line's record
+    // ghost is checked on EVERY launch (the par wind's laziness is a
+    // SCHEDULING decision that must not hide the line — the first
+    // version gated this behind `parArmed`, which the first wind
+    // consumes, so the named record never took the rail on a retry).
+    if (!premiereOwned) {
+      if (!ensureRecordGhost()) {
+        if (ghost.ghostMode === 'record') {
+          // the cup MOVED: the line's ghost lifts, the board's par line
+          // returns (an unlived line is nobody's record)
+          ghost.setTrace('off', null);
+          ghostBar.setParLock(false);
+          armParGhost();
+        }
+        if (parArmed) ensureParGhost();
+      }
+    }
     resultPanel.hide();
   }
 
@@ -1561,9 +1798,21 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         // nothing and the layer presents the events on wall clocks.
         juice.step(...w.states());
         recorder.sample(s0);
+        tallyTape.sample(s0); // THE TALLY TAPE: a read of the same snapshot
         if (runCam && rig) {
           const s = w.state();
           runCam.update(FIXED_DT, rig.nearestArc(s.car.pos), s.car.speed, s.car.pos);
+          if (isSandbox) {
+            // the run camera's pose per step — the material the sandbox
+            // result's cinematic follow shot plays back (read-only)
+            followTape.pos.push(runCam.position.x, runCam.position.y, runCam.position.z);
+            followTape.quat.push(
+              runCam.rotation.x,
+              runCam.rotation.y,
+              runCam.rotation.z,
+              runCam.rotation.w,
+            );
+          }
         }
         acc -= FIXED_DT;
         steps += 1;
@@ -1670,6 +1919,33 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         // pure data like every gate above).
         placedWhereFor(level, currentBuild),
       );
+      // THE TALLY TAIL (freeplay Lane B): the sheet physics signed this
+      // run, derived from the tape OUTSIDE the step loop at the terminal
+      // edge; the badge counts land in the save's personal records and
+      // the FIRSTS are read before that write (retroactive-forward: a
+      // badge the device never saw says so once). On a sandbox, a finish
+      // inside the PLAYER'S OWN cup re-anchors the named line: an
+      // existing name beats its record; a nameless line gets the
+      // "name this line" chip. UI-side and save-side only — the physics
+      // and the hash never see any of it (hash-neutrality unit gate).
+      const tallyEvents = tallyFromTrace(tallyTape.read());
+      const firstBadges = accumulateBadges(tallyCounts(tallyEvents));
+      let tallyLine: { name: string; best: number; fresh: boolean } | null = null;
+      let mintKey: string | null = null;
+      if (isSandbox && result.status === 'finished' && !devPreview) {
+        const cup = playerCupAnchorFor(currentBuild);
+        if (cup) {
+          mintKey = lineAnchorKey(level.id, cup);
+          const known = readNamedLine(mintKey);
+          if (known) {
+            const res = recordNamedLine(mintKey, known.name, result.time, currentBuild);
+            tallyLine = { name: res.line.name, best: res.line.best, fresh: res.outcome === 'beat' };
+          }
+        }
+      }
+      model.tally = tallyLines(tallyEvents, firstBadges, tallyLine);
+      if (mintKey && !readNamedLine(mintKey)) mountNameChip(mintKey, result.time, currentBuild, model);
+      else hideNameChip();
       // THE FAREWELL (program T3.3): the FIRST time the house's last word
       // is cleared, the result bar is REPLACED by one crane pass over the
       // whole house and three doors (`src/pages/farewell.ts`). The gate is
@@ -1684,6 +1960,15 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
         level.id === PORCH05_ID &&
         !devPreview &&
         farewellWanted(params);
+      // THE SANDBOX RUN-CAM (Lane B): the share page's cinematic mounts
+      // where the toy actually lives — the finished sandbox run replays
+      // its own recorded states through the three-shot director while
+      // the panel rides. Reduced motion keeps the static end-hold (the
+      // motion law, not a setting); the farewell owns its own crane.
+      lineCam =
+        isSandbox && result.status === 'finished' && !reduceMotion && !farewellRun
+          ? makeRunCam()
+          : null;
       if (!farewellRun) resultPanel.show(model);
       // the run's OUTCOME is an audio event exactly once per run: the
       // engine hears the same fields the panel prints (status, stars,
@@ -1781,6 +2066,39 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     if (w.carMesh) {
       w.carMesh.position.set(pose.pos.x, pose.pos.y, pose.pos.z);
       w.carMesh.quaternion.set(pose.quat.x, pose.quat.y, pose.quat.z, pose.quat.w);
+    }
+    // THE SANDBOX RUN-CAM PLAYBACK (freeplay Lane B): while the result
+    // panel is up on a sandbox finish, the camera is the share page's
+    // `ReplayDirector` and the car rides the RECORDED state of step
+    // `floor(t/dt)` — the seek law, states the sim itself produced, no
+    // physics stepped on this path; the film loops quietly under the
+    // panel until the player edits, retries, or dismisses.
+    if (lineCam && !resultPanel.element.hidden) {
+      lineCam.at += dt;
+      if (lineCam.at > lineCam.trace.duration) lineCam.at = 0;
+      const filmT = Math.min(lineCam.at, lineCam.trace.time);
+      lineCam.director.poseAt(filmT);
+      camera.position.copy(lineCam.director.position);
+      camera.quaternion.copy(lineCam.director.quaternion);
+      const filmStep = Math.min(
+        lineCam.trace.steps - 1,
+        Math.max(0, Math.floor(filmT / lineCam.trace.dt + 1e-6)),
+      );
+      const fp = lineCam.trace.pos;
+      const fq = lineCam.trace.quat;
+      const fx = fp[filmStep * 3]!;
+      const fy = fp[filmStep * 3 + 1]!;
+      const fz = fp[filmStep * 3 + 2]!;
+      const qx = fq[filmStep * 4]!;
+      const qy = fq[filmStep * 4 + 1]!;
+      const qz = fq[filmStep * 4 + 2]!;
+      const qw = fq[filmStep * 4 + 3]!;
+      if (w.carMesh) {
+        w.carMesh.position.set(fx, fy, fz);
+        w.carMesh.quaternion.set(qx, qy, qz, qw);
+      }
+      carPoseGroup.position.set(fx, fy, fz);
+      carPoseGroup.quaternion.set(qx, qy, qz, qw);
     }
     // THE IN-GAME CAR (T1.1): the rig rides the SAME interpolated pose the
     // hidden box got — the ratified sedan replaces the red box on screen,
