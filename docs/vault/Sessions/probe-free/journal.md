@@ -18,6 +18,12 @@ Build: worktree `gw-dd2` @ branch `probe-free`, base main `ec95e72`, preview `:4
 - 22:13:40 **DUMP-AND-PRAY** (ks-08): 9 mixed pieces placed at the current ring without a plan, launched → `fell off — 1.11 s · the curve sits past the cup — pull it back`. WHY the dump started: the moment the board had NO named goal (I had just wiped the cup) — the toy without a scoreboard pulled me into noise in <90 s. Paralysis signature = blank canvas + still-permissive tray.
 - Verbs reached for, kitchen: tray-pick ×~40, place ~25, remove ~14, launch 7, retry 6, rotate 0(!), flip unused, zoom/orbit a few, share 1, ghost-load 2, par-chip 2, stopwatch 1 (imagined), goal-maker 1 (imagined, refused).
 
-## Bedroom sandbox (starts ~22:16)
+## Bedroom sandbox (22:16–22:21)
 
-(playing)
+- 22:16 arrival: same 13 kinds ×99; room geometry gives HEIGHT (loft ramp in, table+lamp+bed on deck); par 5 pc / 3.15 s. Default 2-piece dies 2.23 s.
+- 22:16–22:17 my descent line: straight→drop→landing→straits off the loft — FIRST TRY ★★☆ 2.79 s (`2.79 s — par 3.15 s ✓`, pieces ✗). Spark: height-dropping lines are this room's own grammar and the toy rewards reading it.
+- 22:17:40 bed probe: hover straight over the BED — `fits here` but the click places at END OF STRAIGHT, not on the bed: the single-line law — you cannot lay track anywhere you can see; everything must grow from the one free end. Terrain as a canvas is refused by grammar, not by guard text.
+- 22:18:26 proto-goal-maker: Remove-all-then-place **Cup at my line's end** — the system honors MY goal: finished 3.38 s, 10 pc. BUT the stars stay `★☆☆ — over par (par 5 / 3.15 s)` — EVERY goal I invent is over par BY CONSTRUCTION; the scoreboard is calibrated to the default course, so free play always reads as failing. Biggest suffocation find of the probe.
+- 22:19:04 **DUMP #2**: after wiping the board to try a spring stunt, placed 6 mixed pieces at the current ring: fell off 0.62 s; advice still says `let go before the cup` though no cup was placed (after Remove-all the advice hallucinates the cup). Dump law reproduced: the urge starts the moment the board loses its named goal — per sandbox: ~12 min into kitchen, ~3 min into bedroom after a wipe.
+- 22:20 spring-in-a-pile: launch click silently swallowed once (`ready` + STALE result panel showing the previous run — the band/toolbar-Retry lifecycle is confusing; a launch can no-op behind a stale panel); re-launch fell off 0.62 s. Spring's teaching voice fired: `Turns height into speed — the engine of every track.`
+- No-skill-channel observation (spans all free play): run time is a PURE FUNCTION of the build — my self-set time trials are meaningless to WIN, only to build around; "drive better" does not exist (steering is the parked ask). The toy is a puzzle wearing a playground's clothes. Piece-order rebuilds moved my kitchen time 2.84→2.72 without moving geometry — even "the same line" isn't one number.
