@@ -94,7 +94,34 @@ carried ground after touchdown — the per-run max, and the degenerate count ove
 measures degenerates **0/325** and jump-and-land mints **1/142** — the PAINT verdict,
 quantified; `--gate` fails on a rig over cap, on the farm's 3-spend law moving, or on
 any jump-and-land rig minting no air+catch (the sheet-fix law: what the eyes see, the
-sheet must grant — red at these thresholds, green by the retune below). thresholds changed ⇒ re-sweep and restate the numbers here.
+sheet must grant). **The published sweep at the retuned shipped thresholds
+(`AIR_MIN_S` 0.25 → 0.05, `CATCH_MIN_AIR_S` 0.15 → 0.09, the other three unchanged —
+Decision Log 2026-10-12 "the sheet-fix retune"): degenerates 0/325 (cap 6; 0/325 was
+also the baseline at the campaign-scale thresholds), farm 3 badges — 3 spend, the
+3/run law intact — and jump-and-land mints 142/142, up from 1/142: the PAINT verdict,
+fixed by measurement.** The one-variable candidate grid (minted jump-and-land rigs /
+total per scale; degenerates 0 and farm 3 in every row — no candidate farms the sheet):
+
+| knob | values swept | campaign mint (26 rigs) | sandbox mint (116 rigs) |
+|---|---|---|---|
+| `AIR_MIN_S` | 0.25 | 1/26 | 0/116 |
+| `AIR_MIN_S` | 0.15 | 3/26 | 0/116 |
+| `AIR_MIN_S` | 0.10 / 0.05 / 0.02 | 26/26 | 116/116 |
+| `CATCH_MIN_AIR_S` | 0.15 | 3/26 | 0/116 |
+| `CATCH_MIN_AIR_S` | 0.12 | 7/26 | 0/116 |
+| `CATCH_MIN_AIR_S` | 0.10 / 0.09 / 0.08 | 26/26 | 116/116 |
+| `RUNOUT_MIN_M` | 0.15 / 0.10 | 26/26 | 116/116 |
+| `RUNOUT_MIN_M` | 0.20 | 26/26 | 110/116 |
+| `RUNOUT_MIN_M` | 0.30 | 18/26 | 82/116 |
+| `FALL_MIN_S` | 0.15 (shipped) | 26/26 | 116/116 |
+| `FALL_MIN_S` | 0.12 | 26/26 | 116/116 (campaign max/run rises 4→6, badges 67→75 — generosity inflation kept out) |
+| `FALL_MIN_S` | 0.10 | 26/26 | 116/116 (badges 95 campaign / 632 sandbox, sandbox max/run 4) |
+| `FALL_MIN_DROP_M` | 0.06 / 0.08 / 0.10 | 26/26 | 116/116 |
+
+The air/catch rows at the OLD bars are the re-probe's deafness, row and all: sandbox
+mint 0/116. The chosen pair sits in the measured void between the seam population
+(≤ 0.0125 s, 289 segments) and the flight population (≥ 0.1 s, 144 segments) — the
+flight histogram has NOTHING between. thresholds changed ⇒ re-sweep and restate the numbers here.
 
 ## Proofs
 

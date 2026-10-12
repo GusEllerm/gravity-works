@@ -898,7 +898,7 @@ sig = "fc98edbbe806f84d"
 [[bindings]]
 doc = "docs/vault/Modules/save.md"
 target = "tests/unit/tally.test.ts"
-sig = "9c82f82a085a6456"
+sig = "ba5ae9976e607253"
 
 [[bindings]]
 doc = "docs/vault/Modules/sets-kitchen.md"
@@ -1378,7 +1378,7 @@ sig = "d5caa09b5262a959"
 [[bindings]]
 doc = "docs/vault/Modules/tally.md"
 target = "src/tally/detectors.ts"
-sig = "4c482492259b22de"
+sig = "abf3235a5422c51a"
 
 [[bindings]]
 doc = "docs/vault/Modules/tally.md"
@@ -1403,7 +1403,7 @@ sig = "ae061ee54f318b05"
 [[bindings]]
 doc = "docs/vault/Modules/tally.md"
 target = "tests/unit/tally.test.ts"
-sig = "9c82f82a085a6456"
+sig = "ba5ae9976e607253"
 
 [[bindings]]
 doc = "docs/vault/Modules/tally.md"
@@ -1868,7 +1868,7 @@ sig = "60f975ea6fcc355d"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/unit/tally.test.ts"
-sig = "9c82f82a085a6456"
+sig = "ba5ae9976e607253"
 
 [[bindings]]
 doc = "docs/vault/Modules/world.md"

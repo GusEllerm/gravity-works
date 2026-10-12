@@ -134,7 +134,12 @@ describe('tally detectors — truth tables', () => {
       }));
     };
     expect(tallyFromTrace(air(AIR_MIN_S + 0.05)).some((e) => e.kind === 'air')).toBe(true);
-    expect(tallyFromTrace(air(AIR_MIN_S - 0.05)).some((e) => e.kind === 'air')).toBe(false);
+    // the near-miss sits ONE STEP under the bar, not a fixed distance
+    // below it (the sheet-fix retune moved the bar to 0.05 s — six steps,
+    // and a seam is one: the boundary, not the margin, is the claim)
+    expect(tallyFromTrace(air(AIR_MIN_S - FIXED_DT)).some((e) => e.kind === 'air')).toBe(false);
+    // and a deck seam — one airborne step — is never air at any swept bar
+    expect(tallyFromTrace(air(FIXED_DT)).some((e) => e.kind === 'air')).toBe(false);
   });
 
   test('clean catch: a flight + RUNOUT_MIN_M of held ground grants; a bounce-roll and a run-out that dies do not', () => {

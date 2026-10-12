@@ -6,6 +6,40 @@ livedocs: snapshot
 
 Dated entries tagged `[agent decision]`. Newest first.
 
+## 2026-10-12 — the sheet-fix retune: thresholds swept at BOTH scales (325 rigs), and the retry-launch finding escalated `[agent decision]` `[feel engineer]`
+
+- **THE RETUNE** — the sheet re-probe verdicted the tally PAINT: ~35 launches, one badge, zero in free play.
+  The cause was measurement, not math: `AIR_MIN_S` 0.25 / `CATCH_MIN_AIR_S` 0.15 were swept only on campaign
+  pars, and every sandbox gap flight flies 0.108–0.117 s — under both bars. `tools/tally-sweep.mjs` now
+  plays 325 rigs (`tools/tally-fixtures.ts`: the six probe-named lines incl. the film-kept garage
+  "slick skip", inside a deterministic 48-cell grammar grid per sandbox) and re-scores every trace against
+  the five-threshold candidate grid per scale — the published table lives in [[Modules/tally]]. Shipped:
+  `AIR_MIN_S` 0.25 → **0.05**, `CATCH_MIN_AIR_S` 0.15 → **0.09**; `RUNOUT_MIN_M` 0.15, `FALL_MIN_S` 0.15,
+  `FALL_MIN_DROP_M` 0.06 and the noise-floor spend bar UNCHANGED (the grid shows no honest candidate moves).
+  The two bars sit in a measured void — deck seams fly ≤ 0.0125 s (289 segments), real flights ≥ 0.1 s
+  (144), nothing between. Farm cap re-checked: degenerates **0/325** (0/325 was the baseline at the old
+  bars too), BOOSTER-FARM still exactly **3 badges — 3 spend**, the 3/run law intact, cap 6 stands;
+  jump-and-land mints **142/142** (was 1/142). THE GATE now also fails any jump-and-land rig that mints
+  no air+catch — the sheet-fix law, what the eyes see the sheet must grant, pinned red-first by the
+  film-kept fixture before the constants moved. Rejected: one shared bar for air and catch (a seam can
+  open a catch candidate the eye never saw); lowering the FALL bars to buy sandbox falls (the sweep
+  shows it buys max-6 campaigns and 95-badge inflation — the lie-by-generosity the airborne reading
+  already retired once).
+- **THE RETRY-LAW FINDING (escalated, not papered)** — the re-probe's ENG FLAG (the kitchen 2.84 s finish
+  that did not reproduce; the bedroom line timing 2.80/2.83/2.83/2.80) is NOT the tally and NOT the ghost:
+  with ghosts OFF, headless, the same build replays **337 steps fresh vs 339 steps after `World.launch()`’s
+  `reset()`** (kitchen-sandbox 5-straight+cup build; hashes `b9479e90` vs `121319e0`; byte-identical on
+  pre-tally main `ec95e72` — the tally mounts read-only, the tape/interleave tests stay green). A re-seated
+  car enters the collider order one step differently; the suspension settles 0.1 mm apart and the run lands
+  two steps late. Consequences stated plainly: `Why the same build always runs the same way` is true of
+  REPLAYS and false of the second LIVE launch of a session; a record ghost wound from the build beats the
+  live car it records by ~0.02 s; and MEASURED on the shipped page — the share link taken after a FRESH
+  launch verifies (`verified · matches the link`) while the SAME build’s link taken after one RETRY
+  FAILS its own replay. This is the pre-existing collider-order law the freeplay probe already met as
+  "2.84 → 2.72 on rebuild", caught in the launch path. Fixing it is `World.reset()`’s physics surface (a full sim rebuild
+  per launch, or spawn-order-stable car re-entry) — the World/physics owner’s call, named for the director;
+  this branch changes no sim code. See `Sessions/2026-10-12 Sheet fix — the sandbox-scale tally.md`.
+
 ## 2026-10-12 — THE CHAIN law greenlit: the ladder becomes community lines; the payload grows name, goal, par, lineage — v1 links verify forever `[agent decision]` `[systems engineer]`
 
 The re-probe decided what argument could not: the named-line machinery HOLDS (a placed cup re-anchors the

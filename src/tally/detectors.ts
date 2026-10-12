@@ -64,17 +64,28 @@ export interface RoomRect {
 
 // ---- the thresholds (swept, not tuned — tools/tally-sweep.mjs) --------------
 
-/** Air-time a flight must outlast to be air, not a deck seam (s). The
- *  feasibility probe's own number: > 0.25 s. */
-export const AIR_MIN_S = 0.25;
+/** Air-time a flight must outlast to be air, not a deck seam (s). THE
+ *  SHEET-FIX RETUNE (2026-10-12, the sheet re-probe verdict: 0.25 was the
+ *  feasibility probe's CAMPAIGN-scale number and the sheet was silent on
+ *  every sandbox jump — 1/142 jump-and-land runs minted). Swept, not vibes
+ *  (`tools/tally-sweep.mjs`, 325 rigs, two scales): the flight histogram
+ *  of every fixture trace is bimodal — deck seams pop for ONE step
+ *  (0.0083 s; 289 segments, none above 0.0125) and real gap flights fly
+ *  0.108+ s (144 segments; nothing between 0.0125 and 0.09). 0.05 sits
+ *  4× above the worst seam and 2× under the shortest flight — the void's
+ *  middle. Mint rate on jump-and-land rigs: 136/136; degenerates 0/325. */
+export const AIR_MIN_S = 0.05;
 /** Flat ground the landing must hold after touchdown to be a CATCH, not a
  *  bounce-and-roll (world m). Half a car length at 1:10 toy scale —
  *  measured: the kit's landing decks carry a caught car 0.30+ m before any
  *  campaign par line turns or slows; a 0.10 bounce-roll never reaches it. */
 export const RUNOUT_MIN_M = 0.15;
-/** A flight must be a flight first: below `AIR_MIN_S` of air there is no
- *  catch to grant (a grounded wobble is a weld, not a landing). */
-export const CATCH_MIN_AIR_S = 0.15;
+/** A flight must be a flight first: below `CATCH_MIN_AIR_S` of air there is no
+ *  catch to grant (a grounded wobble is a weld, not a landing). Retuned with
+ *  `AIR_MIN_S` to the same measured void: the sandbox gap flight is 0.108 s
+ *  (13 steps), a seam is 1 step; 0.09 keeps a two-step margin under the
+ *  flight and eight steps above the seam (the sweep's mint table). */
+export const CATCH_MIN_AIR_S = 0.09;
 /** Descent a FALL must span (world m). Every kit `drop` is steeper than
  *  this in one piece; a ramp run-in is not a fall at all. THE CHAIN FALL
  *  is the airborne kind: the physics let go of the car (grounded false)
