@@ -208,6 +208,14 @@
       "parTime": 1.35
     },
     {
+      "levelId": "house",
+      "hash": "6caea49b",
+      "steps": 807,
+      "time": 6.725,
+      "parPieces": 51,
+      "parTime": 6.75
+    },
+    {
       "levelId": "kitchen-sandbox",
       "hash": "7f008f48",
       "steps": 320,

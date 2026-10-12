@@ -79,6 +79,7 @@ await import('../src/world/levels/porch02.level.ts');
 await import('../src/world/levels/porch03.level.ts');
 await import('../src/world/levels/porch04.level.ts');
 await import('../src/world/levels/porch05.level.ts');
+await import('../src/world/levels/house.level.ts');
 const { LEVELS } = await import('../src/world/levels/feeltrack.level.ts');
 const { replayRun } = await import('../src/replay/replay.ts');
 
@@ -92,7 +93,13 @@ async function computePars() {
   for (const level of Object.values(LEVELS)) {
     const build = level.parBuild ? level.parBuild() : level.placeholderBuild();
     const run = await replayRun(level, build);
-    if (run.status !== 'finished') {
+    // campaign law: `finished` is the only runnable status. A level that
+    // declares `parStatuses` (THE HOUSE — its verdict is rooms, and a run
+    // that stops or goes off the edge of the world is a COMPLETE run of it)
+    // names its own runnable set; a reference build still RUNNING at the
+    // cap is an error, not a par, on every level.
+    const runnable = level.parStatuses ?? ['finished'];
+    if (!runnable.includes(run.status)) {
       console.error(
         `gen-pars: ${level.id} reference build ended "${run.status}" at ${run.time.toFixed(2)} s — a par must be finishable`,
       );

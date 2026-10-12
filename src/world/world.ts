@@ -51,7 +51,7 @@ import {
 import { reify, fixtureQuota, type Build, type PlacedPiece } from '../track/build.ts';
 import { ROLL_COEF } from '../feel/run.ts';
 import { HazardField, type HazardZone } from './hazards.ts';
-import { PIECES, type PieceDef, type PieceKind } from '../track/pieces.ts';
+import { PIECES, applyImpulse, type PieceDef, type PieceKind } from '../track/pieces.ts';
 import { FIXTURE_SIGNAL, TRACK_FRICTION } from '../track/material.ts';
 import { DECK_HALF_WIDTH } from '../track/cross-section.ts';
 import { TrackSpline } from '../track/spline.ts';
@@ -211,6 +211,20 @@ interface LauncherTrigger {
   fired: boolean;
 }
 
+/** The resolved step-keyed wind (`Level.inputs`): an impulse of `power`
+ *  (sim Δv) every `every` steps along the car's velocity, GOVERNED off at
+ *  or above `governor` (sim m/s) of horizontal speed — the throttle stand-
+ *  in of the freeplay spikes, applied in the EXACT system order they used
+ *  (launchers → car forces → wind → step), so a hashed product run is the
+ *  spike's instrument step-for-step while it runs. An absent `Level.inputs`
+ *  resolves to null and the step loop takes an arithmetically empty branch
+ *  — every campaign hash byte-identical (`replay:all` referees). */
+interface StepWind {
+  every: number;
+  power: number;
+  governor: number;
+}
+
 function mixWord(h: number, word: number): number {
   let x = (h ^ (word >>> 0)) >>> 0;
   x = Math.imul(x, 0x01000193) >>> 0;
@@ -351,6 +365,12 @@ export class World {
   private readonly slowAirLimit: number;
   private readonly launchSpeed: number;
   private readonly variant: CarVariant;
+  /** THE INPUT LAW as data: the level's step-keyed wind (null = campaign
+   *  law: gravity, launchers, nothing else). */
+  private readonly wind: StepWind | null;
+  /** The declared world floor's TOP surface (world m), or null — the fell
+   *  line and the ground mesh read it when a level declares one. */
+  private readonly floorTop: number | null;
   /** The level's hazard zones (empty for hazard-free levels — the common
    *  case, and the hash-identical case: no callback is even passed to
    *  `carStep` then). */
@@ -379,7 +399,17 @@ export class World {
     this.stallSpeed = options.stallSpeed ?? STALL_SPEED;
     this.stallLimit = Math.round((options.stallSeconds ?? STALL_SECONDS) / FIXED_DT);
     this.slowAirLimit = Math.round(SLOW_AIR_SECONDS / FIXED_DT);
-    this.launchSpeed = options.launchSpeed ?? 0;
+    this.launchSpeed =
+      options.launchSpeed ?? (level.inputs?.launchSpeed !== undefined ? level.inputs.launchSpeed * SIM_SCALE : 0);
+    this.wind =
+      level.inputs && level.inputs.windEvery && level.inputs.windDeltaV
+        ? {
+            every: level.inputs.windEvery,
+            power: level.inputs.windDeltaV * SIM_SCALE, // world Δv -> sim Δv
+            governor: (level.inputs.governor ?? 2.5) * SIM_SCALE,
+          }
+        : null;
+    this.floorTop = level.floor ? level.floor.center[1] + level.floor.half[1] : null;
 
     const { splines, pieces } = reify(build);
     this.splines = splines;
@@ -411,7 +441,11 @@ export class World {
       }
     }
     this.cup = cup;
-    this.floorY = lowest - 0.75;
+    // THE DEPARTURE LAW: with a declared world floor, the world's bottom is
+    // 5 cm below the floor's own top (the spike's firstMiss law — a car
+    // rolling ON the slab reads ~2 cm above it and stands; a car that fell
+    // OFF its edge is gone). Without one, the campaign law is untouched.
+    this.floorY = this.floorTop !== null ? this.floorTop - 0.05 : lowest - 0.75;
 
     // Hazard zones are level data (Concepts/Levels §Hazards as data, ask
     // #2a): a world-space grip field the car samples per wheel contact.
@@ -437,7 +471,7 @@ export class World {
         new THREE.MeshLambertMaterial({ color: '#e6d3b3' }),
       );
       ground.rotation.x = -Math.PI / 2;
-      ground.position.y = this.floorY + 0.55;
+      ground.position.y = this.floorTop !== null ? this.floorTop + 0.001 : this.floorY + 0.55;
       // named so a SET-mounted shell can re-surface it as the wooden table
       // the dev stills' `ground` is (program T1.2: at the set-framed eye it
       // otherwise reads as a grey broken floor outside the set's footprint)
@@ -523,6 +557,20 @@ export class World {
     // dry, exactly, so a hazard-free level rolls bit-for-bit as before).
     const support = carStep(this.sim, this.car, this.gripAt);
     applyRollingResistance(this.car, support.grounded, this.rollCoef, support);
+
+    // inputs, part two: the step-keyed wind (THE INPUT LAW — every force
+    // that can move the car is in the replayed data, keyed to the step
+    // count, so the run's hash is its own receipt). Governor first, then
+    // the impulse, exactly the spike instrument's order.
+    if (this.wind && this.steps % this.wind.every === 0) {
+      const lv = this.car.chassis.linvel();
+      const hSpeed = Math.hypot(lv.x, lv.z);
+      if (hSpeed < this.wind.governor) {
+        const n = Math.hypot(lv.x, lv.y, lv.z);
+        const d = n > 1e-6 ? { x: lv.x / n, y: Math.max(lv.y / n, 0), z: lv.z / n } : { x: 1, y: 0, z: 0 };
+        applyImpulse(this.car.chassis, this.wind.power, d);
+      }
+    }
 
     // physics
     stepWorld(this.sim);
@@ -622,6 +670,26 @@ export class World {
         (desc as RAPIER.ColliderDesc).setCollisionGroups(TRACK_GROUP);
         this.sim.createCollider(desc as RAPIER.ColliderDesc, trackBody);
       }
+    }
+    // THE WORLD FLOOR (the house slab): a PHYSICAL body, never the track
+    // family — the suspension rays see it either way (they cast unfiltered),
+    // but a raycast chassis EXCLUDED from track groups by design would
+    // tunnel straight through a track-group slab at fall speed. Created in
+    // the same position in the construction sequence on every rebuild, so
+    // THE SEATING LAW holds for floor levels too.
+    if (this.level.floor) {
+      const f = this.level.floor;
+      const body = this.sim.createRigidBody(RAPIER.RigidBodyDesc.fixed());
+      const d = RAPIER.ColliderDesc.cuboid(
+        f.half[0] * SIM_SCALE,
+        f.half[1] * SIM_SCALE,
+        f.half[2] * SIM_SCALE,
+      )
+        .setTranslation(f.center[0] * SIM_SCALE, f.center[1] * SIM_SCALE, f.center[2] * SIM_SCALE)
+        .setFriction(TRACK_FRICTION)
+        .setRestitution(0)
+        .setCollisionGroups(0x0001_ffff);
+      this.sim.createCollider(d, body);
     }
   }
 

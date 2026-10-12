@@ -23,6 +23,45 @@ export interface LevelPar {
   time: number;
 }
 
+/** A static world box in WORLD metres (colliders scale it by `SIM_SCALE`).
+ *  Declared by levels whose floor is part of the world (the house slab of
+ *  `src/world/house-frame.ts`), NOT a placeable piece: it joins the sim as
+ *  one physical (non-track-group) body, because a raycast chassis tunnels
+ *  a track-family floor at fast fall speeds (the tunnel law). */
+export interface StaticBox {
+  center: readonly [number, number, number];
+  half: readonly [number, number, number];
+}
+
+/** THE INPUT LAW made product (Decision Log 2026-10-12, THE DOWNHILL): every
+ *  force that can move the car lives in the REPLAYED data, step-keyed. A
+ *  wind is a launcher-shaped impulse applied every `windEvery` steps along
+ *  the car's velocity, GOVERNED off above `governor` m/s of horizontal
+ *  speed — the existence-proof throttle of the freeplay spike, now level
+ *  data, so the run's hash covers it and replay stays exact. `launchSpeed`
+ *  (world m/s) is the release speed the level asks the car to leave the
+ *  start socket with — also data, also replayed by every caller. */
+export interface StepKeyedInputs {
+  /** Impulse every N steps (0/absent = no wind). */
+  windEvery?: number;
+  /** Impulse strength as a world Δv (m/s), like a launcher's `power`. */
+  windDeltaV?: number;
+  /** Horizontal speed cap (world m/s) above which the wind stays off. */
+  governor?: number;
+  /** Forward release speed (world m/s). */
+  launchSpeed?: number;
+}
+
+/** A parcel threshold: a named room's capture volume the downhill run can
+ *  APPROVE by crossing (physics under the shipped capture law). The probe
+ *  is READ-ONLY — approving a parcel never ends a run and never moves a
+ *  hash; the outcome law stays the last `finishCup`'s alone. */
+export interface ParcelThreshold {
+  room: string;
+  center: readonly [number, number, number];
+  radius: number;
+}
+
 export interface Level {
   id: string;
   name: string;
@@ -90,4 +129,35 @@ export interface Level {
    * Designer authors a better one.
    */
   parBuild?(): Build;
+  /**
+   * A static world floor (the house slab). Absent = the campaign law,
+   * byte-identical: no collider, the decorative catch plane at `floorY +
+   * 0.55`. Declared = the slab joins the sim as a PHYSICAL body (group
+   * `0x0001_ffff`, never the track family — the tunnel law) and the FELL
+   * line becomes the spike's departure law: `floorTop − 0.05` (a car that
+   * goes 5 cm below the world's own floor has left the world; a car
+   * ROLLING on it has not). `src/world/world.ts`.
+   */
+  floor?: StaticBox;
+  /**
+   * THE INPUT LAW as data: step-keyed field forces + the release speed.
+   * Absent = no force beyond the launchers and gravity, byte-identical.
+   * Everything here rides the replay — the run's hash is its receipt.
+   */
+  inputs?: StepKeyedInputs;
+  /**
+   * The room thresholds a run can APPROVE without ending (rooms-collected
+   * machinery; `approveParcels` in `src/world/house-frame.ts` folds them
+   * over a run's samples). Read-only: presentation and receipts, never
+   * physics.
+   */
+  parcels?: readonly ParcelThreshold[];
+  /**
+   * The statuses that count as this level's reference build having RUN —
+   * for the surfaces where a run ENDS without a cup (the downhill: its
+   * verdict is rooms, and a stalled or gone-off-the-edge line is a
+   * COMPLETE run of the house). Absent = the campaign law: `finished`
+   * only, and `npm run pars` errors on anything else.
+   */
+  parStatuses?: readonly string[];
 }

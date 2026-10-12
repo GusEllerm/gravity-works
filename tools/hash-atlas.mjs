@@ -66,6 +66,7 @@ await import('../src/world/levels/porch02.level.ts');
 await import('../src/world/levels/porch03.level.ts');
 await import('../src/world/levels/porch04.level.ts');
 await import('../src/world/levels/porch05.level.ts');
+await import('../src/world/levels/house.level.ts');
 const { LEVELS } = await import('../src/world/levels/feeltrack.level.ts');
 const { replayRun } = await import('../src/replay/replay.ts');
 const { fixtureQuota } = await import('../src/track/build.ts');
@@ -83,7 +84,9 @@ async function derive() {
   for (const level of Object.values(LEVELS)) {
     const build = level.parBuild ? level.parBuild() : level.placeholderBuild();
     const run = await replayRun(level, build, {});
-    if (run.status !== 'finished') {
+    // `parStatuses` (the house): a run that STOPS or goes off the edge of
+    // the world is a complete run of the downhill; still-running is never.
+    if (!(level.parStatuses ?? ['finished']).includes(run.status)) {
       console.error(`hash-atlas: ${level.id} reference build ended "${run.status}" — cannot atlas a rung that does not finish`);
       process.exit(2);
     }
