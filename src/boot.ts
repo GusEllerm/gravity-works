@@ -52,21 +52,21 @@ import { PORCH01 } from './world/levels/porch01.level.ts';
 import { PORCH02 } from './world/levels/porch02.level.ts';
 import { PORCH03 } from './world/levels/porch03.level.ts';
 import { PORCH04 } from './world/levels/porch04.level.ts';
-import { PORCH05, PORCH_SANDBOX, PORCH05_ID, PORCH_SANDBOX_ID } from './world/levels/porch05.level.ts';
+import { PORCH05, PORCH_SANDBOX } from './world/levels/porch05.level.ts';
 import { HOUSE, HOUSE_ID } from './world/levels/house.level.ts';
 import { World, type RunStatus } from './world/world.ts';
-import { deserialize, fixtureQuota, serialize, type Build } from './track/build.ts';
+import { fixtureQuota, serialize, type Build } from './track/build.ts';
 export { fixtureQuota };
 import { PIECES } from './track/pieces.ts';
 import { fitSocket } from './track/snap.ts';
 import { transformSocket } from './track/socket.ts';
 import type { Level } from './world/level.ts';
 import { createBuilder, type Builder } from './ui/builder.ts';
-import { encodeShareUrl, parOfRun, parseShareUrl, type SharePayload } from './share/share.ts';
 import { bootSharedRun } from './pages/share.ts';
 import { bootLevelSelect } from './pages/select.ts';
 import { premiereWanted, startPremiereBeat, type PremiereBeat } from './pages/intro.ts';
-import { farewellWanted, startFarewell } from './pages/farewell.ts';
+import { createLinkRace } from './pages/ghostLinks.ts';
+import { createRunEnd } from './pages/runEnd.ts';
 import { buildGameSet, levelSet, setCameraSolids, setPlacementGuard } from './pages/mount.ts';
 import { paragraph } from './ui/dom.ts';
 import {
@@ -75,25 +75,16 @@ import {
   installErrorBoundary,
   registerAutosaveFlush,
 } from './ui/errors.ts';
-import { createBuildAutosave, loadSave, rememberBuild, recordStars, saveSave, savedBuild } from './save/save.ts';
-import { dailyChipLine, dailyLinkLine, dailySeed, readDaily, recordDailyBest, utcDateKey } from './save/daily.ts';
+import { createBuildAutosave, loadSave, rememberBuild, savedBuild } from './save/save.ts';
+import { dailyLinkLine, dailySeed, utcDateKey } from './save/daily.ts';
 // THE TALLY (freeplay program Lane B): the tape, the pure detectors, and
 // the save's personal records. Everything imported here is READ-ONLY over
 // the run or writes only the save — THE TALLY LAW: badges are approvals
 // physics granted, and the tally owns no bodies and steps nothing.
-import { tallyCounts, tallyFromTrace } from './tally/detectors.ts';
 import { TallyTape } from './tally/tape.ts';
-import { accumulateBadges, lineAnchorKey, readNamedLine, readRecords, recordNamedLine } from './save/records.ts';
-// THE CHAIN (freeplay program Lane C): the device's walked links, the
-// goal field read the guard's way, and the lineage of a beaten ghost.
-// Payloads only — nothing here steps physics or moves a hash.
-import { beatLineage, chainLinkPayload, cupGoalFromBuild, findChainLink, rememberLink } from './share/chain.ts';
-import { cupView, deriveEvents, planShots, ReplayDirector, REPLAY_TAIL, REPLAY_FOV, type RunTrace } from './replay/cinematic.ts';
 import {
-  cachedGhostTrace,
   clearGhostTraceCache,
   createGhostBar,
-  ghostDefaultEnabled,
   GhostRace,
   ghostTraceCacheStats,
   parGhostEarned,
@@ -110,31 +101,25 @@ import { reducedMotionActive } from './ui/motion.ts';
 import { SET_TOKENS, darken } from './render/tokens.ts';
 import { paintedWood } from './render/materials.ts';
 import type { PostStack } from './render/post/index.ts';
-import { parFor, type RunResult, type StarCount } from './world/stars.ts';
-import { createResultPanel, createRunRecorder, resultModel, starRulesLine, tallyLines, type LinkVerdict, type ResultModel } from './ui/result.ts';
+import { parFor } from './world/stars.ts';
+import { createResultPanel, createRunRecorder, starRulesLine } from './ui/result.ts';
 import { createHelpDrawer } from './ui/help.ts';
 import { createSaveSettings } from './ui/settings.ts'; // T0.3/R1 — save export/import row + quarantine line
 import { firstLesson, firstSight, firstSetAppearance } from './ui/callouts.ts';
-import { downloadBlob, generateShareCard } from './share/card.ts';
 import { SETS, isRegisteredSet, type SetRegistration } from './sets/index.ts';
 import { CAMPAIGN, CAMPAIGN_LADDER, dailyBoardId, levelUnlock, nextInCampaign } from './world/campaign.ts';
 export { setPlacementGuard, setCameraSolids } from './pages/mount.ts';
-import {
-  actionableKindsFor,
-  flippedKindsFor,
-  goalNounFor,
-  levelTray,
-  levelTrayParams,
-  moveHintFor,
-  placedKindsFor,
-  placedWhereFor,
-  stockedKindsFor,
-} from './ui/advice.ts';
+import { levelTray, levelTrayParams } from './ui/advice.ts';
 import type { SetInstance } from './sets/index.ts';
 import { KitRig, finishCapture } from './feel/kittrack.ts';
 import { RunCamera } from './camera/run-camera.ts';
 import type { RunCameraSolid } from './camera/run-camera.ts';
 import { BuildCamera, attachBuildView, frameDeathHold } from './camera/build-camera.ts';
+// THE SHELL'S FRAMING (Lane F3): the static table framing, the gaze probe
+// and the run-status line moved to `src/camera/framing.ts`; the exports are
+// re-stated below so the boot surface is unchanged.
+import { frameCamera, framingScratch, gazeOnDeck, runStatusLine } from './camera/framing.ts';
+export { frameCamera, runStatusLine } from './camera/framing.ts';
 import type { PieceKind } from './track/pieces.ts';
 
 // Level registry ids reachable through ?level= (importing each file is what
@@ -750,20 +735,8 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   let ghostOn = ghostRule.enabled;
   let parLocked = ghostRule.locked;
   const ghostBar = createGhostBar(root, {
-    onToggle: (on) => {
-      if (parLocked) return; // the locked word is on the button itself
-      ghostOn = on;
-      const s = loadSave();
-      s.settings.ghosts = { ...s.settings.ghosts, par: on };
-      saveSave(s);
-      ghost.setEnabled(on);
-      if (on && ghost.ghostMode !== 'friend' && !ensureRecordGhost()) ensureParGhost();
-      else if (!on) {
-        ghost.setTrace('off', null);
-        ghostBar.clearNote();
-      }
-    },
-    onFriendLink: (url) => void raceFriendLink(url),
+    onToggle: (on) => linkRace.togglePar(on),
+    onFriendLink: (url) => void linkRace.raceFriendLink(url),
   });
   ghostBar.setParLock(parLocked);
   ghost.setEnabled(ghostOn);
@@ -778,169 +751,36 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // turning the bar says so (an honest winding word, never a silent
   // maybe), and the finish lands a `gw-ghost-ready` event for anything
   // that would rather wait on a fact than a timeout.
-  let parArmed = false;
-  let parWinding = false;
-  /** The rung's par trace is WANTED (armed at level-load and when a friend
-   *  ghost is lifted) — nothing winds while nobody could see the car. */
-  function armParGhost(): void {
-    if (!ghostOn) return;
-    parArmed = true;
-  }
-  /** Wind the par line NOW (the ghost is about to show). A rung with no
-   *  `parBuild` (a bespoke rig) says so on the bar rather than silently
-   *  showing nothing. */
-  function ensureParGhost(): void {
-    if (!ghostOn || parWinding || ghost.ghostMode === 'friend') return;
-    parArmed = false;
-    const parBuild = (level as unknown as { parBuild?: () => Build }).parBuild;
-    if (!parBuild) {
-      ghostBar.setNote('this rig has no par line to race');
-      return;
-    }
-    parWinding = true;
-    ghost.setWinding(true);
-    ghostBar.setNote('winding the par line…');
-    void cachedGhostTrace(level, parBuild()).then(
-      (trace) => {
-        parWinding = false;
-        ghost.setWinding(false);
-        // a friend ghost that won the race to mount keeps the grid — the
-        // par wind must not silently evict the link the player asked for
-        // — and the same law covers a NAMED LINE's record ghost (Lane B):
-        // a line mounted during this wind outranks the par line on it.
-        if (ghost.ghostMode === 'friend' || ghost.ghostMode === 'record') return;
-        ghost.setTrace('par', trace);
-        ghostBar.clearNote();
-        window.dispatchEvent(new CustomEvent('gw-ghost-ready', { detail: { mode: 'par' } }));
-        if (world) {
-          if (world.status !== 'idle') ghost.resumeRace(); // wound mid-run
-          ghost.sync(world.time);
-        }
-      },
-      () => {
-        parWinding = false;
-        ghost.setWinding(false);
-        ghostBar.setNote('the par line could not be wound on this machine');
-      },
-    );
-  }
-  /** THE SHARE LINK IS A GHOST (G2): decode with the shipped parser, mount
-   *  their build as the track through the ordinary `rebuild` line, and wind
-   *  THEIR car from it. Every refusal lands a sentence on the bar, never a
-   *  silent no-op — a link that is not a run, and a build that will not
-   *  mount, say different true things.
-   *
-   *  THE CHAIN (Lane C) adds the honest bookkeeping behind the race: the
-   *  payload being raced is remembered (its name, its par, its finish —
-   *  the VERDICT ROW reads the LINK's par, never this page's, so the
-   *  re-probe's wrong-game `you vs par` cannot print), a build mounted
-   *  from a FOREIGN board marks the board foreign (no par verdict is
-   *  honest across boards, with the ghost up or down), and the accepted
-   *  link enters the device's chain walk (`rememberLink` — payloads only).
-   *  A house line from the LINES tab (`?line=house`) rides the same
-   *  machinery on the level's own par build — one click, no paste, the
-   *  link is the par build's bytes and the shipped par.
-   *  THE GHOST LAW does not lock either: an explicit ask, never a spoiler
-   *  budget (round 2's law, extended to the tab's rows). */
-  interface RacedLink { levelId: string; hash: string | null; name?: string; par?: number; time: number }
-  let racedLink: RacedLink | null = null;
-  let foreignBoard: string | null = null;
-  async function raceFriendLink(url: string): Promise<void> {
-    if (!url) {
-      ghostBar.setNote('paste a share link first');
-      return;
-    }
-    let payload: SharePayload;
-    try {
-      payload = await parseShareUrl(url);
-    } catch {
-      ghost.setTrace('off', null);
-      racedLink = null;
-      ghostBar.setNote('that link is not a run — nothing to race');
-      return;
-    }
-    await racePayload(payload);
-  }
-  /** Mount and race a decoded payload (a pasted link or a chain row — one
-   *  race path, the same honest refusals). */
-  async function racePayload(payload: SharePayload): Promise<void> {
-    ghostBar.setNote('mounting their track…');
-    try {
-      await rebuild(payload.build);
-    } catch {
-      ghost.setTrace('off', null);
-      racedLink = null;
-      ghostBar.setNote("their build refuses to mount on this rung — it stays their run, not your track");
-      return;
-    }
-    foreignBoard = payload.levelId === level.id ? foreignBoard : payload.levelId;
-    try {
-      const trace = await cachedGhostTrace(level, payload.build);
-      // THE GHOST LAW does not lock a pasted link (round 2): an explicit ask
-      // shows THEIR car even on an unearned rung or with the rail off — the
-      // par spoiler is the only thing the law gates.
-      ghost.setEnabled(true);
-      ghost.setTrace('friend', trace);
-      racedLink = {
-        levelId: payload.levelId,
-        hash: payload.hash,
-        ...(payload.name !== undefined ? { name: payload.name } : {}),
-        ...(payload.par !== undefined ? { par: payload.par } : {}),
-        time: trace.time,
-      };
-      // THE CHAIN WALK: a link this device raced is a link it walked —
-      // the payload enters the store the LINES tab reads (payloads only,
-      // deduped by hash; no hash, no physics, nothing stepped).
-      rememberLink(payload);
-      if (world && world.status !== 'idle') ghost.resumeRace();
-      ghostBar.setNote(
-        payload.levelId === level.id
-          ? 'their car is on the grid — launch to race it'
-          : `their link is from ${payload.levelId} — their car ghosts HERE`,
-      );
-    } catch {
-      ghost.setTrace('off', null);
-      racedLink = null;
-      ghostBar.setNote('their track mounted, but their car would not wind — launch it yourself');
-    }
-  }
-  /** THE HOUSE LINE (LINES tab's click, `?line=house`): race the level's
-   *  own par build as a LINK — the ghost is the par trace wound the same
-   *  cheap way, the verdict row names the house and reads the shipped
-   *  par (the gen-pars number, the same bytes the rung's stars use), and
-   *  the rung's own stars/par/hashes are untouched. */
-  function startHouseLinkRace(): void {
-    const parBuild = (level as unknown as { parBuild?: () => Build }).parBuild;
-    if (!parBuild) {
-      ghostBar.setNote('this rig has no house line to race');
-      return;
-    }
-    ghost.setEnabled(true);
-    ghostOn = true;
-    ghostBar.toggle.setAttribute('aria-pressed', 'true');
-    ghostBar.setNote('winding the house line…');
-    void cachedGhostTrace(level, parBuild()).then(
-      (trace) => {
-        if (ghost.ghostMode === 'friend' && racedLink !== null) return; // a real link outranks
-        ghost.setTrace('friend', trace);
-        racedLink = { levelId: level.id, hash: null, name: level.name.slice(0, 48), par: parFor(level.id, level.par).time, time: trace.time };
-        ghostBar.setNote('the house line is on the grid — launch to race it');
-        if (world) {
-          if (world.status !== 'idle') ghost.resumeRace();
-          ghost.sync(world.time);
-        }
-      },
-      () => {
-        ghostBar.setNote('the house line could not be wound on this machine');
-      },
-    );
-  }
+  // THE PAR/RECORD/LINK GHOST WIRING (program H4, Lane F3): the lazy par
+  // wind, the named line's record ghost, the pasted-link/chain-row races
+  // and the house line live in `src/pages/ghostLinks.ts` — the scheduling
+  // and the chain bookkeeping that used to sit inside this closure. THE
+  // WIND IS LAZY ON FIRST SHOW (P3 CI honesty): level-load ARMS the wind;
+  // it runs when the car is first about to be seen.
+  const linkRace = createLinkRace({
+    level,
+    params,
+    world: () => world,
+    currentBuild: () => currentBuild,
+    rebuild: (b) => rebuild(b),
+    isSandbox: () => isSandbox,
+    ghost,
+    ghostBar,
+    ghostOn: () => ghostOn,
+    setGhostOn: (on) => {
+      ghostOn = on;
+    },
+    parLocked: () => parLocked,
+    setParLocked: (locked) => {
+      parLocked = locked;
+    },
+  });
   // LINES-tab and chain addresses (the recorded-debug-param family, the
   // `?daily=`/`?farewell=` law): a house row is `?level=<id>&line=house`
   // (wound right here — a trace needs no world), a walked-link row is
   // `?level=<id>&link=<hash>` (dispatched after the first world mounts —
   // it MOUNTS the payload's build, the pasted-link flow's own path).
-  if (params.get('line') === 'house') startHouseLinkRace();
+  if (params.get('line') === 'house') linkRace.startHouseLinkRace();
   // the e2e seam for the ghost law (debug surface, not UI): the live ghost
   // state — mode, readiness, its clock, and where its car sits right now.
   (window as unknown as Record<string, unknown>).__gwGhostState = () => ghost.state();
@@ -1002,7 +842,6 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // (Lane B: the share page's cinematic cam mounted where the toy lives).
   // Sandboxes only — a campaign run never assembles the cinematic trace.
   const followTape = { pos: [] as number[], quat: [] as number[] };
-  let lineCam: { trace: RunTrace; director: ReplayDirector; at: number } | null = null;
   const resultPanel = createResultPanel(stage);
   let lastStatus: RunStatus = 'idle';
   // the build the game starts in (`startBuildFor`, just below the save
@@ -1165,7 +1004,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     // an open panel was a silent no-op). The success path then places in
     // view (`onChange` rebuilds and reframes as ever); every refusal lands
     // its explanation on a live build view, never behind a panel.
-    onPlaceIntent: () => dismissOverlay(),
+    onPlaceIntent: () => runEnd.dismissOverlay(),
     onChange: (build) => {
       autosave.edit(build);
       // AN EDIT LIFTS A FRIEND GHOST (T3.2): their track WAS the world; the
@@ -1175,7 +1014,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       if (ghost.ghostMode === 'friend') {
         ghost.setTrace('off', null);
         ghostBar.setNote('your edits replaced their track — their ghost lifted');
-        armParGhost(); // the par line returns at the next launch (lazy wind)
+        linkRace.armParGhost(); // the par line returns at the next launch (lazy wind)
       }
       // first-time callout (§9.3): the first piece of a kind ever PLACED
       if (build.pieces.length > placedCount) {
@@ -1226,123 +1065,72 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // Retry = as-built, one click back to Launch; Next = the following rung,
   // only when this level HAS one; Reset (permanent, beside Launch) walks
   // the car home without touching the build.
-  const nextId = nextLevelId(level.id);
   // The panel Retry and the PERMANENT Retry beside Launch are one wiring:
-  // `resetCar` (playtest N: a dismissed panel hid the way back — the
+  // `runEnd.resetCar` (playtest N: a dismissed panel hid the way back — the
   // as-built retry now lives outside the panel too).
-  resultPanel.retry.addEventListener('click', () => resetCar());
-  builder.elements.reset.addEventListener('click', () => resetCar());
-  if (nextId) {
-    resultPanel.next.addEventListener('click', () => {
-      const p = new URLSearchParams(window.location.search);
-      p.set('level', nextId);
-      // ONE-USE rig params: `launch`/`build` describe THIS rung's boot (a test
-      // hook / dev preview), not the campaign walk. Carried forward they
-      // auto-launched the NEXT rung's par build on arrival — invisible on a
-      // quiet machine where `ready` won the race, a CI red where the sim got
-      // there first (campaign.spec "the campaign OPENS", twice).
-      p.delete('launch');
-      p.delete('build');
-      window.location.search = p.toString(); // a search swap is a page boot
-    });
-  }
-  gateNext(0); // hidden until a run EARNS a star (see gateNext)
+  builder.elements.reset.addEventListener('click', () => runEnd.resetCar());
 
-  // ---- SHARE (playtest AA item 1: "no share button exists anywhere… I'd
-  // send replays to a friend if the game would hand me a link") ----------
-  // The whole `#s=` machinery already existed (`src/share/share.ts`, the
-  // shared-run page, the card) with ONE missing surface: the panel never
-  // offered it. `lastOutcome` is the run the panel is ABOUT — captured at
-  // the terminal edge below, hash and all; `lastShare` is the link once a
-  // press has made one. `currentBuild` cannot have moved under the panel:
-  // any edit hides the panel (onChange), so the build, seed and hash the
-  // link encodes are the run the player just watched.
-  let lastShare: { url: string; time: number; stars: StarCount } | null = null;
-  let lastOutcome: { hash: string; time: number; stars: StarCount; finished: boolean } | null = null;
-  /** The link the LAST run beat (Lane C's lineage source; recomputed at
-   *  every terminal edge, null when nothing was raced-and-beaten). */
-  let beatLink: SharePayload['lineage'] | null = null;
-  resultPanel.share.addEventListener('click', () => {
-    if (!lastOutcome) return;
-    const outcome = lastOutcome;
-    // PAYLOAD v2 (Decision Log 2026-10-12, THE CHAIN): mandatory-on-write-
-    // new — every link minted from here is a v2 envelope. The NAME is the
-    // line's (the sandbox named line wins, the board's registry name is
-    // the honest fallback); the PAR is the AUTHOR'S MEASURED RUN through
-    // the gen-pars rule (`parOfRun` — the same ceil-to-0.05 law
-    // `scripts/gen-pars.mjs` states, applied to this run, not a page
-    // constant); the GOAL is the placed cup's transform read the guard's
-    // way (last player cup, fixtures excluded) — presentation geometry
-    // only, the verdict's cup comes from BUILD; and LINEAGE rides when
-    // this very run beat a link.
-    const payload: SharePayload = {
-      v: 2,
-      levelId: level.id,
-      seed: currentBuild.seed,
-      hash: outcome.hash,
-      build: currentBuild,
-      name:
-        (() => {
-          const key = lineGhostKey();
-          const named = key !== null ? readNamedLine(key) : undefined;
-          return (named?.name ?? level.name).slice(0, 48);
-        })(),
-    };
-    if (outcome.finished) payload.par = parOfRun(outcome.time);
-    const goal = cupGoalFromBuild(currentBuild, (level as unknown as { fixtures?: Record<string, number> }).fixtures ?? {});
-    if (goal !== null) payload.goal = goal;
-    if (beatLink !== null) payload.lineage = beatLink;
-    resultPanel.shareNote.hidden = false;
-    resultPanel.shareNote.textContent = 'making link…';
-    void encodeShareUrl(payload).then(
-      (frag) => {
-        const url = `${window.location.origin}${window.location.pathname}${frag}`;
-        lastShare = { url, time: outcome.time, stars: outcome.stars };
-        // THE CHAIN WALK: a link this device published is a link it
-        // walked — the payload enters the store the LINES tab reads.
-        rememberLink(payload);
-        // the VISIBLE LINK is the fallback that never fails: clipboard
-        // permission can be denied (headless, permissions policy, http),
-        // a select-and-copy on a real input cannot
-        resultPanel.shareUrl.value = url;
-        resultPanel.shareRow.hidden = false;
-        resultPanel.shareCard.hidden = false;
-        return navigator.clipboard
-          ?.writeText(url)
-          .then(() => {
-            resultPanel.shareNote.textContent = 'link copied';
-          })
-          .catch(() => {
-            resultPanel.shareNote.textContent = 'copy the link below';
-          });
-      },
-      () => {
-        resultPanel.shareNote.textContent = 'this browser could not build the link';
-      },
-    );
+  // ---- RUN-END TAIL (program H4, Lane F3) --------------------------------
+  // The terminal edge of a run — stars, verdict, tally tail, named-line
+  // mint, the panel's share/card wiring (playtest AA item 1: "no share
+  // button exists anywhere"), the lineage receipt, the daily chip, the
+  // farewell — lives in `src/pages/runEnd.ts`. This call is the whole boot
+  // wiring; the frame loop keeps only the edge it detects.
+  const runEnd = createRunEnd({
+    root,
+    stage,
+    level,
+    params,
+    camera,
+    carPoseGroup,
+    buildView,
+    camSolids,
+    framingSetCenter,
+    builder,
+    resultPanel,
+    recorder,
+    tallyTape,
+    followTape,
+    ghost,
+    ghostBar,
+    links: linkRace,
+    sound,
+    hashNote,
+    tray,
+    isSandbox,
+    devPreview,
+    daily,
+    dailySeedValue,
+    reduceMotion,
+    world: () => world,
+    currentBuild: () => currentBuild,
+    framingFocus: () => framingFocus,
+    hazardsTouched: () => hazardsTouched,
+    setHazardsTouched: (n) => {
+      hazardsTouched = n;
+    },
+    setAcc: (n) => {
+      acc = n;
+    },
+    setRunCamActive: (on) => {
+      runCamActive = on;
+    },
+    setEndHold: (v) => {
+      endHold = v;
+    },
+    setFarewellHolds: (on) => {
+      farewellHolds = on;
+    },
+    parLocked: () => parLocked,
+    setParLocked: (locked) => {
+      parLocked = locked;
+    },
+    ghostOn: () => ghostOn,
+    setGhostOn: (on) => {
+      ghostOn = on;
+    },
   });
-  // the card PNG "if cheap" — it was already wired for the SHARED page
-  // (`wireShareCard`); one reused call here, the card carrying the URL the
-  // share press just made
-  resultPanel.shareCard.addEventListener('click', () => {
-    const s = lastShare;
-    if (!s) return;
-    resultPanel.shareNote.textContent = 'rendering card…';
-    void generateShareCard({
-      levelId: level.id,
-      build: currentBuild,
-      time: s.time,
-      stars: s.stars,
-      url: s.url,
-    })
-      .then((blob) => {
-        downloadBlob(blob, `gravity-works-${level.id}.png`);
-        resultPanel.shareNote.textContent = 'card downloaded';
-      })
-      .catch(() => {
-        resultPanel.shareNote.textContent = 'card failed on this browser';
-      });
-  });
+  runEnd.gateNext(0); // hidden until a run EARNS a star (see gateNext)
 
   // the e2e/keyboard-parity seam: the world position of the VISIBLE target
   // marker — arrows and hover move this socket, nothing targets invisibly
@@ -1357,277 +1145,14 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     return p ? [p.x, p.y] : null;
   };
 
-  /** Star-gated progression (§9.2, playtest E/F/G): `Next level` appears
-   *  only when the level HAS a star to its name — this run's OR the
-   *  save's already-earned best (close-review F5: replay a level whose
-   *  star is banked, fail this run, and the panel used to show Retry only
-   *  while the level select said the next rung open — same save, two
-   *  surfaces, two answers; `levelUnlock` reads the saved best, so the
-   *  gate must too). The ladder walk stays the shell's (`nextLevelId`). */
-  function gateNext(stars: number): void {
-    const show = nextId !== null && stars >= 1;
-    resultPanel.next.hidden = !show;
-    resultPanel.next.style.display = show ? '' : 'none';
-  }
-
-  /** Car home to the release pose, the build untouched, the view back on
-   *  the board, the panel away — the missing "bring it back" control. The
-   *  view RESETS too (playtest Q's orbit): if the player had turned the
-   *  table away, Retry brings the framing home, damped. */
-  function resetCar(): void {
-    const w = world;
-    if (!w) return;
-    w.reset();
-    sound.stopRun(); // a walked-home car is not running; close the roll
-    acc = 0;
-    hazardsTouched = 0;
-    runCamActive = false;
-    endHold = null;
-    buildView.reset();
-    ghost.park(); // the raced ghost returns to the unpainted grid with the car
-    lineCam = null; // Retry is a new attempt, not a film
-    if (w.scene) frameCamera(camera, w.scene, framingFocus, null, buildView, framingSetCenter);
-    resultPanel.hide();
-  }
-
-  // ESC CLOSES THE OVERLAY FIRST (playtest AA item 3: "Home did nothing
-  // with the failure overlay up — camera stayed parked in a far failure
-  // vista"). The overlay is the thing between the player and the Home
-  // chord, so the FIRST Escape dismisses it and walks the framing home —
-  // build view, home pose, car left where it fell (Retry is still the
-  // button that moves the car). CAPTURE-phase stopPropagation hides the
-  // press from the camera's double-Escape pair entirely, so the SECOND
-  // Escape is a lone first half of the chord: it arms nothing the player
-  // did not ask for, and a vista that is already home stays home.
-  /** The overlay dismissal both doors share: Escape (below) and a PLACE
-   *  INTENT while the panel is up (playtest BB item 2). The panel away,
-   *  the framing walked home — the BUILD VIEW is what the placement (or
-   *  the refusal line) plays out in. The car is left where it fell;
-   *  Retry stays the button that moves it. */
-  function dismissOverlay(): void {
-    if (resultPanel.element.hidden) return;
-    resultPanel.hide();
-    hideNameChip(); // a dismissed verdict never keeps the mint chip waiting
-    lineCam = null; // the film belongs to the panel, not to the board
-    runCamActive = false;
-    endHold = null; // the damping tick must not re-solve the death hold
-    buildView.reset();
-    if (world?.scene) frameCamera(camera, world.scene, framingFocus, null, buildView, framingSetCenter);
-  }
-
-  window.addEventListener(
-    'keydown',
-    (ev) => {
-      if (ev.key !== 'Escape' || resultPanel.element.hidden) return;
-      ev.preventDefault();
-      ev.stopPropagation(); // capture: the camera's Escape chord never sees this press
-      dismissOverlay();
-    },
-    { capture: true },
-  );
+  // THE PANEL'S OWN DOORS (program H4, Lane F3): `gateNext`, `resetCar`,
+  // the overlay dismissal (Escape / place-intent) and the retry/next/share
+  // wiring live in `src/pages/runEnd.ts` — the panel's half of the exit.
 
   // ---- THE TALLY (freeplay program Lane B) --------------------------------
-  // The sheet is derived from the tape at the terminal edge; the sandbox's
-  // NAMED LINES re-anchor the save (a cup the PLAYER placed defines a line
-  // and its personal best, and the record's ghost is the stored build's
-  // own replayed trace — `deriveGhostTrace` machinery, no new truth).
-
-  /** The world-space capture centre of the build's PLAYER-placed cup (the
-   *  `finishCup` occurrences past the fixture quota — and exactly the cup
-   *  `World` reified as THE capture volume, since a later piece wins).
-   *  Null when the build holds no player cup: an ordinary rung, or a
-   *  sandbox whose cup is the fixture's. */
-  function playerCupAnchorFor(build: Build): THREE.Vector3 | null {
-    const kl = level as unknown as { fixtures?: Partial<Record<PieceKind, number>> };
-    const isFixture = fixtureQuota(kl.fixtures ?? {});
-    let anchor: THREE.Vector3 | null = null;
-    for (const p of build.pieces) {
-      const fixture = isFixture(p.def);
-      if (p.def === 'finishCup' && !fixture) {
-        const cv = PIECES.finishCup.captureVolume!(p.params);
-        anchor = new THREE.Vector3(cv.center.x, cv.center.y, cv.center.z).applyMatrix4(p.transform);
-      }
-    }
-    return anchor;
-  }
-
-  /** The named line the CURRENT build sits on (the cup seat is the line's
-   *  identity — same seat, same line, whoever rebuilt the decks). */
-  function lineGhostKey(): string | null {
-    if (!isSandbox) return null;
-    const cup = playerCupAnchorFor(currentBuild);
-    return cup ? lineAnchorKey(level.id, cup) : null;
-  }
-
-  /** Mount the RECORD ghost — your best run on this named line — instead
-   *  of the par line. Returns true when a record line took the rail. The
-   *  trace is the stored build's own replayed tape (`cachedGhostTrace`,
-   *  the par ghost's machinery on a headless world): visuals-only law,
-   *  no new truth, `replay:all` untouched. */
-  function ensureRecordGhost(): boolean {
-    if (!ghostOn) return false;
-    const key = lineGhostKey();
-    const rec = key ? readNamedLine(key) : undefined;
-    if (!rec) return false;
-    void cachedGhostTrace(level, deserialize(rec.build)).then(
-      (trace) => {
-        if (ghost.ghostMode === 'friend') return; // an explicit link keeps the grid
-        ghost.setTrace('record', trace);
-        ghostBar.clearNote();
-        ghostBar.toggle.textContent = 'ghost: your line';
-        ghostBar.toggle.setAttribute('aria-label', `Race your best run on “${rec.name}”`);
-        window.dispatchEvent(new CustomEvent('gw-ghost-ready', { detail: { mode: 'record' } }));
-        if (world) {
-          if (world.status !== 'idle') ghost.resumeRace();
-          ghost.sync(world.time);
-        }
-      },
-      () => {
-        // the record could not be wound on this machine: the par line stands
-        if (ghostOn && !parWinding) ensureParGhost();
-      },
-    );
-    return true;
-  }
-
-  /** THE "NAME THIS LINE" CHIP (Lane B's re-anchor): shown on a finished
-   *  sandbox run that captured IN THE PLAYER'S OWN CUP and has no name
-   *  yet. One FIELD, one commit — and the commit re-prints the panel's
-   *  third tally line and arms the record ghost for the NEXT attempt. A
-   *  named line never re-mints under this chip: the name is the line (the
-   *  record's beat path is `recordNamedLine` at the next finish).
-   *
-   *  THE FIELD, NOT THE VERB-BUTTON (final-sheet probe item (g) — the
-   *  chrome trap #9: a lone lowercase `save` button on the result panel
-   *  collided with the Save dropdown's `Save`, and one probe click meant
-   *  for the name opened the settings instead — two controls, one name,
-   *  one page). The studio names a control by its noun, so the row IS a
-   *  field: `name this line` is the input's LABEL (a real `<label for>`,
-   *  the field speaks its noun) and the commit button says `name it` —
-   *  no second `save` on the page, and the ids ride untouched
-   *  (`#gw-result-name-save` is a test surface, not copy). Proven by
-   *  `tests/e2e/labels.spec.ts` (the row's controls name-unique, its
-   *  rects disjoint with the Save dropdown's). */
-  let nameRow: HTMLElement | null = null;
-  function hideNameChip(): void {
-    nameRow?.remove();
-    nameRow = null;
-  }
-  function mountNameChip(key: string, time: number, build: Build, model: ResultModel): void {
-    hideNameChip();
-    const row = document.createElement('div');
-    row.id = 'gw-result-name';
-    const chip = document.createElement('label');
-    chip.id = 'gw-result-name-chip';
-    chip.htmlFor = 'gw-result-name-input';
-    chip.textContent = 'name this line';
-    const input = document.createElement('input');
-    input.id = 'gw-result-name-input';
-    input.type = 'text';
-    input.maxLength = 48;
-    input.placeholder = 'the spillway';
-    input.setAttribute('aria-label', 'Name for this line (your cup, your record)');
-    const saveBtn = document.createElement('button');
-    saveBtn.id = 'gw-result-name-save';
-    saveBtn.type = 'button';
-    saveBtn.textContent = 'name it';
-    row.append(chip, input, saveBtn);
-    resultPanel.element.appendChild(row);
-    nameRow = row;
-    const commit = (): void => {
-      const name = input.value.trim();
-      if (name.length === 0) {
-        input.focus();
-        return;
-      }
-      const res = recordNamedLine(key, name, time, build);
-      const lines = [...(model.tally ?? []).slice(0, 2), `named “${res.line.name}” — personal best ${res.line.best.toFixed(2)} s · your own runs on this device only`];
-      model.tally = lines.slice(0, 3);
-      resultPanel.show(model);
-      mountNameChipExisting(res.line.name); // the named form: no re-mint chip
-    };
-    saveBtn.addEventListener('click', commit);
-    input.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter') commit();
-    });
-  }
-  /** After a mint the chip retires to a named label (the row keeps its
-   *  place, the input goes — the line has a name now). */
-  function mountNameChipExisting(name: string): void {
-    const row = nameRow;
-    if (!row) return;
-    row.replaceChildren();
-    const chip = document.createElement('span');
-    chip.id = 'gw-result-name-chip';
-    chip.textContent = `line “${name}”`;
-    row.appendChild(chip);
-  }
-
-  /** Assemble the sandbox run's cinematic trace from the tapes: the SAME
-   *  `RunTrace` shape the share page renders — car states and follow-cam
-   *  poses the sim itself produced at `FIXED_DT`, beats from
-   *  `deriveEvents`, shots from `planShots`. No physics is stepped here;
-   *  playback later READS these lists only (the seek law). */
-  function makeRunCam(): { trace: RunTrace; director: ReplayDirector; at: number } | null {
-    const tape = tallyTape.read();
-    const w = world;
-    if (!w || tape.length === 0) return null;
-    if (followTape.pos.length !== tape.length * 3) return null; // no rail, no film
-    const n = tape.length;
-    const pos = new Float64Array(n * 3);
-    const quat = new Float64Array(n * 4);
-    const speed = new Float64Array(n);
-    for (let i = 0; i < n; i++) {
-      pos[i * 3] = tape[i]!.pos[0];
-      pos[i * 3 + 1] = tape[i]!.pos[1];
-      pos[i * 3 + 2] = tape[i]!.pos[2];
-      quat[i * 4] = tape[i]!.quat[0];
-      quat[i * 4 + 1] = tape[i]!.quat[1];
-      quat[i * 4 + 2] = tape[i]!.quat[2];
-      quat[i * 4 + 3] = tape[i]!.quat[3];
-      speed[i] = tape[i]!.speed;
-    }
-    const events = deriveEvents(tape, w.status);
-    const time = tape[n - 1]!.t;
-    const trace: RunTrace = {
-      dt: FIXED_DT,
-      steps: n,
-      time,
-      duration: time + REPLAY_TAIL,
-      status: w.status,
-      hash: w.hashHex(),
-      pos,
-      quat,
-      speed,
-      arc: new Float64Array(n),
-      followPos: Float64Array.from(followTape.pos),
-      followQuat: Float64Array.from(followTape.quat),
-      events,
-      plan: planShots(time, events),
-    };
-    const box = new THREE.Box3();
-    for (let i = 0; i < n; i++) box.expandByPoint(new THREE.Vector3(pos[i * 3]!, pos[i * 3 + 1]!, pos[i * 3 + 2]!));
-    box.expandByScalar(0.3);
-    const director = new ReplayDirector({
-      trace,
-      box,
-      cup: cupView(currentBuild),
-      fov: REPLAY_FOV,
-      aspect: camera.aspect,
-      reducedMotion: false,
-    });
-    return { trace, director, at: 0 };
-  }
-
-  // the e2e seam for the tally law (debug surface, not UI, the
-  // `__gwGhostState` idiom): what the tape granted, what the save holds,
-  // whether the sandbox film is mounted.
-  (window as unknown as Record<string, unknown>).__gwTally = () => ({
-    events: tallyFromTrace(tallyTape.read()),
-    records: readRecords(loadSave()).badges ?? {},
-    lineKey: lineGhostKey(),
-    film: lineCam !== null,
-  });
+  // The sheet is derived from the tape at the terminal edge — IN
+  // `src/pages/runEnd.ts` (Lane F3); the named lines' record ghost and the
+  // line's identity (`lineGhostKey`) live in `src/pages/ghostLinks.ts`.
 
   function startRun(): void {
     if (farewellHolds) return; // the farewell owns the screen (T3.3)
@@ -1649,7 +1174,7 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     tallyTape.reset(); // the tally tape is run-local, like the witnesses
     followTape.pos.length = 0;
     followTape.quat.length = 0;
-    lineCam = null; // a fresh release is never a replay
+    runEnd.clearFilm(); // a fresh release is never a replay
     juice.reset(); // squash/dust envelopes start clean too
     // THE GHOST RACES FROM LAUNCH (T3.2): the shared clock restarts it at
     // its start pose — `sync(world.time)` owns the rest of the race. The
@@ -1663,15 +1188,15 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     // version gated this behind `parArmed`, which the first wind
     // consumes, so the named record never took the rail on a retry).
     if (!premiereOwned) {
-      if (!ensureRecordGhost()) {
+      if (!linkRace.ensureRecordGhost()) {
         if (ghost.ghostMode === 'record') {
           // the cup MOVED: the line's ghost lifts, the board's par line
           // returns (an unlived line is nobody's record)
           ghost.setTrace('off', null);
           ghostBar.setParLock(false);
-          armParGhost();
+          linkRace.armParGhost();
         }
-        if (parArmed) ensureParGhost();
+        if (linkRace.parArmed) linkRace.ensureParGhost();
       }
     }
     resultPanel.hide();
@@ -1814,23 +1339,14 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   // THE PAR GHOST IS ARMED at level-load, not wound (P3 lazy wind): the
   // tape turns at the first launch that could show it, never as a boot tax
   // on pages that never race (CI's CPU is the budget this buys back).
-  armParGhost();
+  linkRace.armParGhost();
 
   // THE CHAIN ROW ADDRESS (Lane C): `?link=<hash>` races a PAYLOAD this
   // device walked (`src/share/chain.ts`) — dispatched here, after the
   // first world mounted, because racing a link mounts the link's build
-  // through the same `rebuild` line a pasted link uses. An unknown hash
-  // says so honestly; a non-hash says less kindly.
-  const chainLinkParam = params.get('link');
-  if (chainLinkParam !== null) {
-    if (/^[0-9a-f]{8}$/.test(chainLinkParam)) {
-      const found = findChainLink(chainLinkParam);
-      if (found) void racePayload(chainLinkPayload(found));
-      else ghostBar.setNote('no walked link with that hash on this device');
-    } else {
-      ghostBar.setNote('that is not a link hash');
-    }
-  }
+  // through the same `rebuild` line a pasted link uses (the dispatch
+  // itself lives in `src/pages/ghostLinks.ts`).
+  linkRace.dispatchChainLink();
 
   // STAR RULES BEFORE THE FIRST RUN (playtest N: "the star rules only
   // appear after a run — teaching precedes failure"): a quiet one-liner
@@ -1869,11 +1385,6 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       });
     };
   }
-
-  // the terminal state of the LAST finished run, for the honest same-hash
-  // line: equal hashes on DIFFERENT builds mean the added piece never
-  // entered the hashed body set (statics off the path do not perturb it)
-  let lastRun: { hash: string; pieces: number } | null = null;
 
   // the SOUND frame adapter's only memory: the car mesh's last drawn
   // position (screen motion, not sim state) — see the frame hook below
@@ -1972,293 +1483,14 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       premiereEnd?.();
       // the film suppressed the ghost; the player's view of the game starts
       // here, so the armed lazy wind finally runs.
-      if (parArmed) ensureParGhost();
+      if (linkRace.parArmed) linkRace.ensureParGhost();
       return;
     }
     if (w.status !== 'running' && w.status !== 'idle' && lastStatus === 'running') {
-      // the run just ended: stars, time, pieces, and the one-line note (§9.1)
-      // — and the follow camera HANDS THE VIEW BACK (§7.3): the static
-      // track framing at the end beat the rail freeze-frame every time
-      // ("camera buried inside the floor" — playtest B — was the run
-      // camera's last pose, kept forever)
-      runCamActive = false;
-      // the END-HOLD framing: the static table framing re-solved with the
-      // car's FINAL world position as part of the subject (frameCamera),
-      // so the wide end-of-run shot keeps car and cup in one frame under
-      // the verdict panel — never a chase cut-out that hides the death
-      // spot the player most needs to read (playtest M/N item 7).
-      //
-      // FAILURE takes the WIDE DEATH-HOLD (playtest R round3: "buried in
-      // a peach wall on fail — never saw the marble fall"): on fell /
-      // stalled / timed-out the framing biases toward the car's LAST
-      // SEEABLE point, not the cup side, widens past the table solve, and
-      // clears the eye over the set solids the way the run camera does —
-      // a wall-bury frame of a death the player must read is not a legal
-      // end pose. Success keeps the cup-biased framing (it frames well,
-      // R's own words). `endHold` keeps the witness live for the damping
-      // tick below, so a settling view re-solves the SAME cleared pose
-      // instead of overwriting the eye lift with the raw table framing.
-      if (w.status === 'finished') {
-        endHold = null;
-        frameCamera(camera, w.scene, framingFocus, w.carPose(0).pos, buildView);
-      } else {
-        endHold = { ...w.carPose(0).pos };
-        frameDeathHold(camera, w.scene, {
-          death: endHold,
-          solids: camSolids,
-          view: buildView,
-        });
-      }
-      const result: RunResult = {
-        status: w.status,
-        time: w.time,
-        piecesUsed: builder.playerCount(),
-        hazardsTouched,
-      };
-      // Replay honesty (playtest J): the star the save ALREADY held before
-      // this run decides whether the par lines aim or verdict — read HERE,
-      // before recordStars below writes this run's best, so a re-run in the
-      // same session counts as one (see outcomeLines in src/ui/result.ts).
-      const bestStarsBefore = loadSave().progress.stars[level.id] ?? 0;
-      // ACTIONABLE KINDS for the note's advice tails (playtest Q item 5:
-      // "flatten the landing" with no landing in the tray) — see
-      // `actionableKindsFor` — plus the PLACED kinds that PHRASE the tails
-      // (round-5 playtest W: a tray-only kind must be told to ADD, not to
-      // fix a piece the build never had) — see `placedKindsFor` — plus the
-      // STOCK-LEFT kinds that carry the drive-off tail (stage-5 B2 pass 2,
-      // playtest AA: six builds, one undifferentiated note) — see
-      // `stockedKindsFor`. UI-side only; physics and the hash never see
-      // any of the sets.
-      const model = resultModel(
-        result,
-        parFor(level.id, level.par),
-        recorder.evidence(),
-        bestStarsBefore,
-        actionableKindsFor(currentBuild, tray),
-        placedKindsFor(currentBuild),
-        goalNounFor(level),
-        stockedKindsFor(currentBuild, tray),
-        flippedKindsFor(level, currentBuild),
-        // THE WHERE of the drive-off tail: the end the next piece extends the
-        // line from, read off the builder's socket graph (stage 6, kitchen03).
-        // null with no builder (a shared/replay page) keeps the shipped line.
-        builder.aimHint(),
-        // THE MOVE clause (program T2.1): the build graph's reading of a
-        // spent tray — a piece stranded past the goal, or a booster not
-        // spent at the head of the line (`moveHintFor`, `src/ui/advice.ts`;
-        // pure data like every gate above — the physics and the hash never
-        // see it).
-        moveHintFor(level, currentBuild, tray),
-        // THE CRITIQUE WHERE (P4 item 4, the bedroom02 truth): the nose-first
-        // critique halves name the SITE of the placed piece in the Remove
-        // button's own join-graph words (`placedWhereFor`, `src/ui/advice.ts`;
-        // pure data like every gate above).
-        placedWhereFor(level, currentBuild),
-        // THE CHAIN'S VERDICT ROW (Lane C): the link that was on the grid
-        // as this run raced it — the verdict reads the LINK's par, and a
-        // link from another board gets the honest refusal, never a
-        // `you vs par` for the wrong game (the re-probe's #5). UI-side
-        // only: the physics and the hash never see a payload.
-        (() => {
-          // The verdict follows the LINK that was accepted for this race
-          // (`racedLink` — set when a payload/house line mounted, cleared
-          // only by a refusal), not the rail's momentary visibility: a
-          // link's track is the board being raced whether or not its car
-          // painted this run's grid.
-          const raced = racedLink;
-          if (raced) {
-            if (raced.levelId !== level.id)
-              return { kind: 'foreign', levelId: raced.levelId } satisfies LinkVerdict;
-            return {
-              kind: 'same',
-              ...(raced.name !== undefined ? { name: raced.name } : {}),
-              ...(raced.par !== undefined ? { par: raced.par } : {}),
-              theirTime: raced.time,
-            } satisfies LinkVerdict;
-          }
-          if (foreignBoard !== null)
-            return { kind: 'foreign', levelId: foreignBoard } satisfies LinkVerdict;
-          return null;
-        })(),
-      );
-      // THE TALLY TAIL (freeplay Lane B): the sheet physics signed this
-      // run, derived from the tape OUTSIDE the step loop at the terminal
-      // edge; the badge counts land in the save's personal records and
-      // the FIRSTS are read before that write (retroactive-forward: a
-      // badge the device never saw says so once). On a sandbox, a finish
-      // inside the PLAYER'S OWN cup re-anchors the named line: an
-      // existing name beats its record; a nameless line gets the
-      // "name this line" chip. UI-side and save-side only — the physics
-      // and the hash never see any of it (hash-neutrality unit gate).
-      const tallyEvents = tallyFromTrace(tallyTape.read());
-      const firstBadges = accumulateBadges(tallyCounts(tallyEvents));
-      let tallyLine: { name: string; best: number; fresh: boolean } | null = null;
-      let mintKey: string | null = null;
-      if (isSandbox && result.status === 'finished' && !devPreview) {
-        const cup = playerCupAnchorFor(currentBuild);
-        if (cup) {
-          mintKey = lineAnchorKey(level.id, cup);
-          const known = readNamedLine(mintKey);
-          if (known) {
-            const res = recordNamedLine(mintKey, known.name, result.time, currentBuild);
-            tallyLine = { name: res.line.name, best: res.line.best, fresh: res.outcome === 'beat' };
-          }
-        }
-      }
-      // THE FACE (final-sheet probe item (e)): on a SANDBOX page the tail
-      // also carries the sheet's lifetime numbers (see `tallyLines` — the
-      // read happens AFTER `accumulateBadges`, so the numbers include this
-      // run). Campaign bars pass `null` and print the shipped tail
-      // byte-identical; the full ledger face is the LINES tab footline.
-      model.tally = tallyLines(
-        tallyEvents,
-        firstBadges,
-        tallyLine,
-        isSandbox ? (readRecords(loadSave()).badges ?? null) : null,
-      );
-      if (mintKey && !readNamedLine(mintKey)) mountNameChip(mintKey, result.time, currentBuild, model);
-      else hideNameChip();
-      // THE FAREWELL (program T3.3): the FIRST time the house's last word
-      // is cleared, the result bar is REPLACED by one crane pass over the
-      // whole house and three doors (`src/pages/farewell.ts`). The gate is
-      // the mint's own: a finished run on porch05, not a dev preview (a
-      // preview mints no star, so it mints no ending either — the badge's
-      // law), and the URL-affordance family's `farewellWanted` decides
-      // against the once-per-save flag. Everything else at this edge —
-      // the stars, the sound, the hash note, the daily chip — runs
-      // exactly as it does behind a panel; ONLY the panel is replaced.
-      const farewellRun =
-        result.status === 'finished' &&
-        level.id === PORCH05_ID &&
-        !devPreview &&
-        farewellWanted(params);
-      // THE SANDBOX RUN-CAM (Lane B): the share page's cinematic mounts
-      // where the toy actually lives — the finished sandbox run replays
-      // its own recorded states through the three-shot director while
-      // the panel rides. Reduced motion keeps the static end-hold (the
-      // motion law, not a setting); the farewell owns its own crane.
-      lineCam =
-        isSandbox && result.status === 'finished' && !reduceMotion && !farewellRun
-          ? makeRunCam()
-          : null;
-      if (!farewellRun) resultPanel.show(model);
-      // the run's OUTCOME is an audio event exactly once per run: the
-      // engine hears the same fields the panel prints (status, stars,
-      // new-best, hazard tally) and nothing else
-      sound.finishRun({
-        status: result.status,
-        stars: model.stars,
-        newBest: model.stars > bestStarsBefore,
-        hazardsTouched: result.hazardsTouched,
-      });
-      // §9.2 progress persists: a finished run's stars are the save's best
-      // for this level (a failure records nothing); this is what opens the
-      // next rung on the level select, exactly what `gateNext` just offered
-      // — EXCEPT on a dev preview (BB item 5): a locked rung addressed by
-      // `?level=` mints no unlock, so the badge's promise is a property of
-      // the code path, not of copy. The gate reports 0 there, keeping the
-      // panel's Next honest with the "unlocks nothing" claim.
-      if (!devPreview) recordStars(level.id, model.stars);
-      // THE GHOST LAW UNLOCKS AT THE FIRST FINISH (round 2): the rung's
-      // par line goes from the calm locked word back to the plain toggle,
-      // remembered ON from here on (the reduced-motion law still decides;
-      // an explicit OFF the player left stays OFF). A dev-preview finish
-      // mints no star, so it mints no unlock either — the mint's own law.
-      if (parLocked && !devPreview && result.status === 'finished') {
-        parLocked = false;
-        ghostBar.setParLock(false);
-        ghostOn = loadSave().settings.ghosts?.par ?? ghostDefaultEnabled(reduceMotion);
-        ghostBar.toggle.setAttribute('aria-pressed', String(ghostOn));
-        ghost.setEnabled(ghostOn);
-        if (ghostOn) {
-          armParGhost();
-          ensureParGhost(); // wind now: the NEXT launch races the line it earned
-        }
-      }
-      gateNext(devPreview ? 0 : Math.max(model.stars, bestStarsBefore));
-      const h = w.hashHex();
-      if (lastRun && lastRun.hash === h && lastRun.pieces !== result.piecesUsed) {
-        hashNote.textContent = 'same run — your extra piece never touched the road';
-        hashNote.hidden = false;
-      } else {
-        hashNote.hidden = true;
-      }
-      lastRun = { hash: h, pieces: result.piecesUsed };
-      // the SHARE payload's run (see the share wiring): the hash, time and
-      // stars of the run the panel is about, frozen at its terminal edge
-      lastOutcome = { hash: h, time: result.time, stars: model.stars, finished: result.status === 'finished' };
-      // THE LINEAGE of a beat (Lane C): a finished run strictly ahead of
-      // the LINK ghost on the grid beat that link — the claim lands on
-      // the NEXT share's payload (`lineage`), computed from the two
-      // finish times the shell already holds (the ghost's trace time is
-      // its own build's re-simulated finish, checkable from the link's
-      // bytes). A house line carries no payload hash, so nothing enters
-      // the chain for it here — the CHAIN is payloads.
-      //
-      // THE RUN ENDS IN FRIEND MODE WHEN A HASHED LINK WAS ACCEPTED (the
-      // final probe, item (a): the receipt was thrown away): the mode the
-      // lineage reads is the ACCEPTANCE, not the rail's current visual
-      // state. An edit that lifts their car off the grid ("your edits
-      // replaced their track") or a par-toggle never un-races the link —
-      // the beat claim this mint prints is the SAME fact the verdict row
-      // already prints from `racedLink`, and a fact phrased twice must
-      // read from one place. The flag IS `racedLink` with a hash: set on
-      // accept, cleared only when another link replaces it or refuses.
-      beatLink = beatLineage({
-        finished: result.status === 'finished',
-        myTime: result.time,
-        ghostMode: racedLink !== null && racedLink.hash !== null ? 'friend' : 'other',
-        ghostTime: racedLink?.time ?? 0,
-        link:
-          racedLink !== null && racedLink.hash !== null
-            ? { levelId: racedLink.levelId, hash: racedLink.hash, ...(racedLink.name !== undefined ? { name: racedLink.name } : {}) }
-            : null,
-      });
-      // THE DAILY CHIP (T3.4, round 2: the board's NAME leads it): on a
-      // daily-seeded page the result screen carries today's line — a
-      // FINISHED run records into it, a failure just reads it. The
-      // single-machine clause rides INSIDE the sentence (`dailyChipLine`),
-      // never a footnote, and nothing here touches the save envelope or a
-      // shipped hash.
-      if (dailySeedValue !== null) {
-        const today = utcDateKey(daily?.now);
-        if (result.status === 'finished') {
-          const rec = recordDailyBest(result.time, daily?.now ?? new Date());
-          resultPanel.daily.textContent = rec
-            ? dailyChipLine(rec, today, level.name)
-            : `today’s board ${level.name} — race today — this browser refused to keep the record`;
-        } else {
-          const prev = readDaily();
-          resultPanel.daily.textContent = prev
-            ? dailyChipLine(prev, today, level.name)
-            : `today’s board ${level.name} — race today — not yet today · your own runs on this device only`;
-        }
-        resultPanel.daily.hidden = false;
-      }
-      if (farewellRun) {
-        // the crane opens AFTER `recordStars` above, so the tally it
-        // carries includes this run's own mint; the film door encodes the
-        // run the edge just froze (build, seed, hash — the same bytes the
-        // share button would have made from this panel).
-        farewellHolds = true;
-        const fparams = new URLSearchParams(window.location.search);
-        fparams.delete('launch'); // one-use rig params, the Next rule
-        fparams.delete('build');
-        fparams.delete('farewell');
-        fparams.delete('level'); // door 2 is TODAY'S board, not the rung we came from
-        fparams.set('daily', '1');
-        const farewellPage = startFarewell(root, stage, {
-          reducedMotion: reduceMotion,
-          stars: loadSave().progress.stars,
-          sandboxUrl: `?level=${PORCH_SANDBOX_ID}`,
-          dailyUrl: `?${fparams.toString()}`,
-          run: { levelId: level.id, seed: currentBuild.seed, hash: h, build: currentBuild },
-        });
-        // the e2e seam for the farewell law (debug surface, not UI): the
-        // live phase / plan clock / reveal count of the crane page
-        (window as unknown as Record<string, unknown>).__gwFarewellState = () =>
-          farewellPage.state();
-      }
+      // THE RUN JUST ENDED — the whole tail (framing hand-back, verdict,
+      // tally, mint, panel, sound, stars, ghost unlock, hash note, lineage,
+      // daily chip, farewell) lives in `src/pages/runEnd.ts` (Lane F3).
+      runEnd.onRunEnd(w);
     }
     lastStatus = w.status;
     const pose = w.carPose(w.status === 'running' ? acc / FIXED_DT : 0);
@@ -2266,39 +1498,10 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
       w.carMesh.position.set(pose.pos.x, pose.pos.y, pose.pos.z);
       w.carMesh.quaternion.set(pose.quat.x, pose.quat.y, pose.quat.z, pose.quat.w);
     }
-    // THE SANDBOX RUN-CAM PLAYBACK (freeplay Lane B): while the result
-    // panel is up on a sandbox finish, the camera is the share page's
-    // `ReplayDirector` and the car rides the RECORDED state of step
-    // `floor(t/dt)` — the seek law, states the sim itself produced, no
-    // physics stepped on this path; the film loops quietly under the
-    // panel until the player edits, retries, or dismisses.
-    if (lineCam && !resultPanel.element.hidden) {
-      lineCam.at += dt;
-      if (lineCam.at > lineCam.trace.duration) lineCam.at = 0;
-      const filmT = Math.min(lineCam.at, lineCam.trace.time);
-      lineCam.director.poseAt(filmT);
-      camera.position.copy(lineCam.director.position);
-      camera.quaternion.copy(lineCam.director.quaternion);
-      const filmStep = Math.min(
-        lineCam.trace.steps - 1,
-        Math.max(0, Math.floor(filmT / lineCam.trace.dt + 1e-6)),
-      );
-      const fp = lineCam.trace.pos;
-      const fq = lineCam.trace.quat;
-      const fx = fp[filmStep * 3]!;
-      const fy = fp[filmStep * 3 + 1]!;
-      const fz = fp[filmStep * 3 + 2]!;
-      const qx = fq[filmStep * 4]!;
-      const qy = fq[filmStep * 4 + 1]!;
-      const qz = fq[filmStep * 4 + 2]!;
-      const qw = fq[filmStep * 4 + 3]!;
-      if (w.carMesh) {
-        w.carMesh.position.set(fx, fy, fz);
-        w.carMesh.quaternion.set(qx, qy, qz, qw);
-      }
-      carPoseGroup.position.set(fx, fy, fz);
-      carPoseGroup.quaternion.set(qx, qy, qz, qw);
-    }
+    // THE SANDBOX RUN-CAM PLAYBACK (freeplay Lane B): the film under the
+    // panel — the seek law and the recorded states it reads live in
+    // `src/pages/runEnd.ts` (Lane F3); a no-op while no film is mounted.
+    runEnd.stepFilm(w, dt);
     // THE IN-GAME CAR (T1.1): the rig rides the SAME interpolated pose the
     // hidden box got — the ratified sedan replaces the red box on screen,
     // and nothing below this line reaches the simulation.
@@ -2390,180 +1593,3 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   requestAnimationFrame(frame);
 }
 
-/**
- * The static TABLE framing. Since program T1.2 the LOOK-AT is framed on the
- * SET — the mounted room's floor-bounds centre (Art Bible §Camera: “Build
- * camera: orbital, framed on the set, never free-fly”) — while the EYE
- * DISTANCE stays solved from the BUILD's span exactly as before (car size on
- * screen unchanged; the aim/pan proofs keep their scale). The player
- * evaluation's t+0 finding named the failure of the old rule: centring the
- * look-at on the TRACK's bbox with the set mounted 0.45 m off the run axis
- * marched the counter's rim and the grey background across the frame — “the
- * kitchen reads as a tan disc with grey corner wedges — closer to a broken
- * texture than to a monumental breakfast table”. Framed on the SET the disc
- * is larger than the frame at this distance (the canonical establishing
- * reads it as endless for the same reason), the rim never crosses the shot,
- * and the room fills it. The scene-wide box is STILL never the subject (the
- * 6 m ground plane re-centring the old cream-void finding); when no set is
- * mounted the track-centre rule stands untouched, and every end-hold framing
- * (`extra`) keeps the track/death-site subject — a death, not a room, is the
- * story of a failed run.
- */
-export function frameCamera(
-  camera: THREE.PerspectiveCamera,
-  scene: THREE.Scene | null,
-  focus: THREE.Vector3 | null = null,
-  extra: { x: number; y: number; z: number } | null = null,
-  view: BuildCamera | null = null,
-  setCenter: { x: number; y: number; z: number } | null = null,
-): void {
-  const track = scene?.getObjectByName('track');
-  const box = track ? new THREE.Box3().setFromObject(track) : new THREE.Box3();
-  if (extra) {
-    // the END-HOLD pass boxes the run's LAST SEEABLE POINT (where the car
-    // came to rest — a fallen car settles off the track's box, below a
-    // ledge or past a gap) as part of the subject, so the verdict panel
-    // never lands over an off-frame death spot (playtest M: "the result
-    // panel hides where the car died"). The point is CLAMPED into the
-    // track's neighbourhood — a wild coordinate (a car flung off-world)
-    // may not inflate the table framing into the same cream void the
-    // scene-wide box used to produce.
-    framingScratch.set(extra.x, extra.y, extra.z);
-    box.expandByScalar(0.6).clampPoint(framingScratch, framingScratch);
-    box.expandByPoint(framingScratch);
-  }
-  const center = box.isEmpty() ? new THREE.Vector3() : box.getCenter(new THREE.Vector3());
-  const span = box.isEmpty() ? 0.5 : Math.max(...box.getSize(new THREE.Vector3()).toArray());
-  // FRAMED ON THE SET (program T1.2, header): the static look-at centres on
-  // the mounted room's floor-bounds centre — a circle at the set group's
-  // origin on all six sets (`SetInstance.bounds`), so the group position IS
-  // the centre; the eye keeps the ratified stills' band (see the distance
-  // law below). Only the plain static framing takes the room as subject;
-  // end-hold passes (`extra`) keep the track/death subject law.
-  let setFramed = false
-  if (setCenter && !box.isEmpty() && !extra) {
-    // the TARGET sits at the set's deck plane (the mount rule puts the
-    // counter top at the group origin + 5 mm), like the ratified stills'
-    // target `[0, 0.05, 0]` — NOT at the track box centre, whose book-stack
-    // height lifts the eye a metre over the deck and flattens the room
-    // into a wall (measured at the book-stack law: rail and wall junction
-    // land on the same screen row).
-    center.set(setCenter.x, setCenter.y + 0.05, setCenter.z)
-    setFramed = true
-  }
-  // DISTANCE ON THE ROOM, NOT THE FIXTURES: on the set-framed path the eye
-  // solves into the ratified still's eye band — plan radius INSIDE the disc
-  // rim (rim off-frame = the counter reads endless, the canonical stills'
-  // trick), distance capped so the long FIXTURE spines (the books-to-cup
-  // span of `initialBuild` is ~1.6 m on L01) cannot lift the camera over
-  // the rim the way `span * 1.4` alone did. Build views orbit/pan to reach
-  // a wide build's ends; the ROOM is the subject here.
-  const d = setFramed
-    ? Math.min(Math.max(1.3, span * 1.4), 1.55)
-    : Math.max(1.2, span * 1.4);
-  // THE GOAL IS IN THE SUBJECT: the static framing biases its look-at 35 %
-  // of the way from the track's centre toward the build's FINISH CUP (the
-  // capture centre, `finishCapture`) — an establishing shot that puts the
-  // GOAL in the middle third, not at the edge where a fresh player cannot
-  // find it (playtest N: "never found the finishCup on screen once in
-  // either level", "the build camera never frames the cup"; measured: at
-  // zero bias the cup captured at |ndc| 0.43/0.46 on L01/L04 — geometrically
-  // in frame, perceptually a few pixels in the corner). At 0.35 the cup
-  // captures at |ndc| <= 0.28 (inside the middle thirds) on every ladder
-  // rung while every track-box corner stays at |ndc| <= 0.49 — the whole
-  // build still fits with room. A level with no cup (a hazard sandbox, the
-  // feel rig) frames its track exactly as before.
-  if (focus && !box.isEmpty()) {
-    // THE GOAL STAYS IN THE LEGAL FRAME — A FLOOR, NOT A FRACTION. On the
-    // set path the room-centred subject needs less of this pull than the
-    // track-box law did (the room already sits near the cup): the look-at
-    // moves toward the cup only until the cup is 0.55 m from it — the
-    // distance its |ndc| crosses under 0.85 on the 16:9 table (measured
-    // L01: full-0.35-ratio bias overshoots into a cup-hugging close-up
-    // that abandons the rim contract; the 0.55 m residual law lands the
-    // cup at 0.70 with the eye still inside the disc rim). The 0.35 goal
-    // law below is untouched for a set-less level.
-    framingScratch.copy(focus).sub(center);
-    if (setFramed) {
-      framingScratch.y = 0; // the ROOM's deck plane owns the eye height
-      // 45 % of the way to the cup, paired with the wide-azimuth eye
-      // above: at the 35 % track-law fraction the cup clips the frame
-      // edge on L01 (|ndc| 0.958, the T+U3 gate) because the cup sits
-      // ~1 m x-past the room centre the law now frames; deeper than 45 %
-      // the room slides out of the middle third. With the eye's extra
-      // 0.15·d of x (the azimuth), 45 % is the balance both gates
-      // measure — cup <= 0.9 everywhere, room near-centred.
-      framingScratch.multiplyScalar(0.45);
-      center.add(framingScratch);
-    } else {
-      center.addScaledVector(framingScratch, 0.35);
-    }
-  }
-  // with a build view attached the solved base framing lives in it and the
-  // view composes the pose (at zero yaw/pan that composition is bit-for-bit
-  // the direct set below — the proofs and visual baselines do not move)
-  if (view) {
-    view.setFraming(center, d, span, setFramed ? 'set' : 'track');
-    view.apply(camera);
-    return;
-  }
-  if (setFramed) {
-    // the ratified still's PITCH with the wider track azimuth — canonical
-    // offset (0.62, 0.42, 0.78) at |d| 1.14 sets the ~21°; the plan drifts
-    // onto the rim at the goal-biased centre, which the WOODEN TABLE (see
-    // the mounted-set table resurface below) turned from a grey void into
-    // an intentional stage edge (program T1.2). See the distance law above.
-    camera.position.set(center.x + d * 0.7, center.y + d * 0.45, center.z + d * 0.85);
-  } else {
-    camera.position.set(center.x + d * 0.7, center.y + d * 0.55, center.z + d * 0.9);
-  }
-  camera.lookAt(center);
-}
-
-const framingScratch = new THREE.Vector3();
-
-/** Where `camera`'s gaze crosses the horizontal plane at `planeY` (the
- *  build-table focus point — see the frame loop's post-focus law). */
-function gazeOnDeck(camera: THREE.PerspectiveCamera, planeY: number, out: THREE.Vector3): [number, number, number] {
-  camera.getWorldDirection(framingScratchB);
-  const t = framingScratchB.y !== 0 ? (planeY - camera.position.y) / framingScratchB.y : 0;
-  out.set(
-    camera.position.x + framingScratchB.x * Math.max(0, t),
-    planeY,
-    camera.position.z + framingScratchB.z * Math.max(0, t),
-  );
-  return [out.x, out.y, out.z];
-}
-
-const framingScratchB = new THREE.Vector3();
-
-/** Plain-text run status; the aria-live line the run reports through. The
- *  hash is NOT here (playtest E: engineer trivia on the player's line) — it
- *  lives in `#gw-hash-value` behind the same-pieces-same-run details. ONE
- *  COUNTER, ONE VERB (playtests P+Q: "0 of 4 used" vs "ready — 1 placed"
- *  was the same number wearing two words): the IDLE line states the tray
- *  tally in the SAME words as the builder's `#gw-piece-count` — "n of m
- *  pieces used" — so the two lines can never contradict mid-session; the
- *  in-run/terminal lines carry no tally at all (the clock is their only
- *  number; an edit-halted run's tally reappears when the line is idle
- *  again, recomputed from the same `playerCount`). */
-export function runStatusLine(world: World, pieces: number, budget: number): string {
-  const t = `${world.time.toFixed(2)}s`;
-  switch (world.status) {
-    case 'idle':
-      return `ready — ${pieces} of ${budget} pieces used`;
-    case 'running':
-      return `running — ${t}`;
-    case 'finished':
-      return `finished — ${t}`;
-    case 'fell':
-      // STAGE-4 SWEEP (playtest R: "the set" unreadable): the internal noun is
-      // gone from every player line; the head verb is just `fell off`, and it
-      // still EQUALS the physics note's head (`physicsNote`, result.ts).
-      return `fell off — ${t}`;
-    case 'stalled':
-      return `stalled — ${t}`;
-    case 'timeout':
-      return `timed out — ${t}`;
-  }
-}
