@@ -22,11 +22,12 @@ the MATERIAL fill bands (each room's accent stays reachable in shade), while the
 single warm `GLOBAL_TOKENS.keyLight` `DirectionalLight` on a section-wide ortho shadow box (the
 per-set 1.2 m extent is a room's; the house's spans the section, with the bias pair scaled to
 match) — and the World's default white ambient+directional pair is REMOVED on that page only, the
-one-strong-light law (§Light) finally running where the campaign shell never ran it. The shadow
-catchers are the decks' painted-wood SHELVES, not the floor platter: `surfaceHouseTable` gives the
-slab deeper ground wood than the shell's 0.06 and takes away its catch role, because four storeys
-of set shadows print as prop-shaped blots on the one big plane at section altitude — a stated
-dressing-depth cut, never a grey floor (never-list).
+one-strong-light law (§Light) finally running where the campaign shell never ran it. The other
+adaptation is the floor platter: on a 20 m upward face the directional FILL band alone almost
+whitens painted wood at any key setting (the toon fill is ambient-by-world-up, not a light), so
+`surfaceHouseTable` keeps the shell's tone and shadow-catcher role but rides a reduced
+`fillStrength` on that material — the section-altitude half of cause F (flat orange paper),
+proved out on the home frames; the decks' shelves take the bands at face value.
 
 `src/render/film.ts` adds the stain/decal capability as FILM, not cutout geometry (the stage-1 send-back): `stainDecal` returns a flat quad (mug ring / wet patch / splash ring shapes are soft SDFs in the shader, with a Fresnel sheen on wet films), transparent, depth-write off, polygon-offset onto the surface — never a squashed sphere lying on the counter.
 

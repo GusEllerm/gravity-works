@@ -381,6 +381,12 @@ export async function bootHouse(
   const table = scene.getObjectByName('table');
   if (table instanceof THREE.Mesh) {
     table.scale.set((layout.floor.half[0] * 2) / 6, (layout.floor.half[2] * 2) / 6, 1);
+    // the campaign table is a 6 m plane at the ORIGIN; the house slab is
+    // the frame's platter — scale alone left it centred on x = 0, half of
+    // it off-frame west of the garage (the section's platter wears the
+    // floor's own centre, the collider already does)
+    table.position.x = layout.floor.center[0];
+    table.position.z = layout.floor.center[2];
   }
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
@@ -647,6 +653,8 @@ export async function bootHouse(
     const bTable = beatScene.getObjectByName('table');
     if (bTable instanceof THREE.Mesh) {
       bTable.scale.set((layout.floor.half[0] * 2) / 6, (layout.floor.half[2] * 2) / 6, 1);
+      bTable.position.x = layout.floor.center[0];
+      bTable.position.z = layout.floor.center[2];
     }
     // THE SETS ARE MOUNTED for the beat too — the premise beat is the
     // journalist's first screenshot and it wears the same world (fresh
@@ -792,6 +800,7 @@ export async function bootHouse(
     ghostEnabled: ghost.state().enabled,
   });
   (window as unknown as Record<string, unknown>).__gwHouseState = state;
+  (window as unknown as Record<string, unknown>).__gwHouseScene = () => scene; // the render-layer probe seam (visuals-only debugging, same family as the pose seam below)
   (window as unknown as Record<string, unknown>).__gwHouseCameraPose = () =>
     home ? poseTarget : world.status === 'idle' && world.stepCount === 0 ? parked : houseCam.pose(world.time);
   requestAnimationFrame(frame);

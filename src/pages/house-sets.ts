@@ -221,14 +221,14 @@ export async function mountHouseSets(scene: THREE.Scene, layout: HouseLayout): P
   // house page never paid): the scaled Lambert slab becomes painted wood.
   surfaceHouseTable(scene);
 
-  // the world slab and the decks' own track catch the key too; the slab
-  // platter does NOT wear the campaign shell's shadow-catcher role — at
-  // section altitude the decks' long shadows print prop-shaped blots on
-  // the one big plane (stated dressing cut; the catchers are the shelves)
+  // the world slab and the decks' own track ride the key too; the slab
+  // keeps the shell's shadow-catcher role (it is what breaks the fill
+  // band on the big plane) but wears a REDUCED fill gain — see
+  // `surfaceHouseTable` (cause F, house-scale half)
   const track = scene.getObjectByName('track');
   if (track) shadowed(track);
   const table = scene.getObjectByName('table');
-  if (table) table.receiveShadow = false;
+  if (table) table.receiveShadow = true;
 
   return { groups, solids, key };
 }
@@ -239,17 +239,22 @@ export async function mountHouseSets(scene: THREE.Scene, layout: HouseLayout): P
 export function surfaceHouseTable(scene: THREE.Scene, T = SET_TOKENS): void {
   const table = scene.getObjectByName('table');
   if (table instanceof THREE.Mesh) {
-    table.receiveShadow = false;
+    table.receiveShadow = true;
     const t = T.kitchen;
-    // deeper than the campaign shell's 0.06: the house slab is a platter
-    // the whole section sits on, and at section altitude the shell's tone
-    // blew into a paper card under the key (cause F, house-scale half)
-    table.material = paintedWood(t, darken(t.ground, 0.16), {
+    // The shell's tone plus one house-scale adaptation: on a 20 m platter
+    // the GROUND-SIDE fill band alone almost whitens the wood (the toon
+    // fill is directional ambient — every upward face gets it at full
+    // gain), so the table material rides a reduced fill gain; without it
+    // the slab blew to flat orange PAPER at section altitude (cause F,
+    // house-scale half). Shadow-catching stays — it is what BREAKS the
+    // band once the decks shade their patch of floor.
+    table.material = paintedWood(t, darken(t.ground, 0.06), {
       fillHigh: t.fillHigh,
       fillLow: t.fillLow,
       shadowTint: t.shadowTint,
-      grain: 0.3,
-      grainScale: 0.05,
+      fillStrength: 0.1,
+      grain: 0.5,
+      grainScale: 0.02,
     });
   }
 }

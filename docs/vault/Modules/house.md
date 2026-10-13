@@ -54,7 +54,8 @@ livedocs: live
   box AT THE DOOR: the page mounts the ratified `createCarRig` through `attachCarRig` (the
   replay/share precedent — the rig rides `World.carPose(alpha)`, the hidden box keeps its
   transforms written, the wheel spin is a render-side omega read, never a physics drive; the beat
-  gets its own rig, disposed with the beat). THE PREMISE BEAT lives
+  gets its own rig, disposed with the beat). The render layer's probe seam `__gwHouseScene`
+  (visuals-only debugging, the same family as `__gwHouseState`/`__gwHouseCameraPose`). THE PREMISE BEAT lives
   HERE (law 4): `HOUSE_BEAT` + `HOUSE_BEAT_LEVEL` (the house with the wind OFF in the data and
   one legal launch push — every force still in replayed data; a stepped `World` on its own scene,
   disposed at the beat's end, recording nothing): the crane pulls back from the KITCHEN window
@@ -84,8 +85,9 @@ livedocs: live
   painted-wood posts in the dominant, accent lintel ON the post heads, forward sill plank flush to
   the shelf top — at the deck centre (the windows are GEOMETRY now; the DOM button is a
   transparent hit target over the opening); `surfaceHouseTable` pays the boot's T1.2 wood swap the
-  house page never made (deeper tone; the platter does NOT catch shadows — the decks' long shadows
-  would print prop-shaped blots, the catchers are the shelves); `setHouseFace` is the
+  house page never made (the shell's tone with a reduced `fillStrength` — at section altitude the
+  directional fill band alone blew the 20 m platter to flat orange paper; the catch role stays,
+  see [[Modules/render]]); `setHouseFace` is the
   `SET_TOKENS`-background law. RENDER LAYER ONLY: it arrives after `World.create`, owns no
   collider, no hashed body — `replay:all` 30/30 and the house's `6caea49b` stay byte-identical
   with or without the mount, and the downhill e2e is the standing hash-neutrality referee on the
