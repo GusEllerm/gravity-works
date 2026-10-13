@@ -56,7 +56,9 @@ export const HOUSE_KEY = { intensity: 1.3, dir: [0.9, 0.55, 0.6], extent: 12, di
 function shadowed(obj: THREE.Object3D): void {
   obj.traverse((o) => {
     if (o instanceof THREE.Mesh) {
-      o.castShadow = true;
+      // films (wet-patch/wet-drip/oil-drip planes) never CAST — a puddle's
+      // film has no body to shadow, the same law the guard walker keeps
+      o.castShadow = !o.name.includes('film');
       o.receiveShadow = true;
     }
   });

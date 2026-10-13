@@ -21,7 +21,10 @@ AT HOUSE SCALE the rig grammar survives with two stated adaptations (Lane F1, th
 the MATERIAL fill bands (each room's accent stays reachable in shade), while the scene carries a
 single warm `GLOBAL_TOKENS.keyLight` `DirectionalLight` on a section-wide ortho shadow box (the
 per-set 1.2 m extent is a room's; the house's spans the section, with the bias pair scaled to
-match) — and the World's default white ambient+directional pair is REMOVED on that page only, the
+match; the map is STATIC — `shadowMap.autoUpdate = false`, baked once per scene (boot, the beat's
+first frame, the beat's end), because the sets are static and the per-frame pass doubled the
+software-GL frame cost; the car is the one dynamic subject without a cast, and set FILMS never
+cast, the same law the guard walker keeps) — and the World's default white ambient+directional pair is REMOVED on that page only, the
 one-strong-light law (§Light) finally running where the campaign shell never ran it. The other
 adaptation is the floor platter: on a 20 m upward face the directional FILL band alone almost
 whitens painted wood at any key setting (the toon fill is ambient-by-world-up, not a light), so

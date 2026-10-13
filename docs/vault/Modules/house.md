@@ -60,7 +60,12 @@ livedocs: live
   one legal launch push — every force still in replayed data; a stepped `World` on its own scene,
   disposed at the beat's end, recording nothing): the crane pulls back from the KITCHEN window
   (`beatPullPose`), the car free-rolls one room and dies in the next (garage @ ~1.4 s, kitchen
-  @ ~3.2 s, measured), one still beat, then the chrome returns; `src/pages/intro.ts` keeps the
+  @ ~3.2 s, measured), one still beat, then the chrome returns; the beat MOUNTS THE SETS too (fresh
+  instances, freed with its own `world.dispose()`), the skip listener registers from the CLASS-ADD
+  tick (a press during the mounted boot skips the beat the moment it forms), and the phase walk +
+  ending (`pull → roll → still`, `endedBy: still | timeout | skip`) is the seam `__gwHouseBeat` —
+  "ends by itself on the dead car" is a claim about the PLAN, not a stopwatch;
+  `src/pages/intro.ts` keeps the
   audience law and the ONE seen flag (`markPremiereSeen`). `?level=house&room=<id>` re-parks the
   menu camera (presentation only); the family is recorded in `tests/e2e/goto.ts`.
 - `src/camera/house-camera.ts` — camera v1 + the door's wide stance: `menuPose` (the crane parked

@@ -200,6 +200,24 @@ export async function bootHouse(
   // the player never sees chrome for a frame.
   const wantBeat = home && !params.has('launch') && premiereWanted(params);
   if (wantBeat) root.classList.add('gw-premiere');
+  // THE SKIP EARLY (Lane F1 honesty): the class goes on BEFORE the mounted
+  // boot, so the dismissing gesture must be LISTENING from the same tick —
+  // a key pressed while the two worlds mount skips the beat the moment
+  // they finish, exactly as it skipped it instantly when boot was cheap.
+  let beat: BeatRuntime | null = null;
+  let beatScene: THREE.Scene | null = null;
+  let beatCar: { sync: (alpha: number) => void; dispose: () => void } | null = null;
+  const beatSkip: Array<[string, EventListener]> = [];
+  let beatSkipRequested = false;
+  if (wantBeat) {
+    const skip: EventListener = (ev: Event) => {
+      ev.stopPropagation(); // the dismissing gesture belongs to the beat alone
+      if (beat) endBeat('skip');
+      else beatSkipRequested = true;
+    };
+    beatSkip.push(['pointerdown', skip], ['keydown', skip]);
+    for (const [type, fn] of beatSkip) window.addEventListener(type, fn, true);
+  }
 
   root.innerHTML = '<h1>Gravity Works — the House</h1>';
   const nav = document.createElement('p');
@@ -396,6 +414,14 @@ export async function bootHouse(
   // map the harness always had and the house page never paid for.
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
+  // THE DRESSING DEPTH CUT (the perf law stated): the sets are STATIC, so
+  // the shadow map is rendered ONCE and held — the one dynamic subject
+  // that loses its cast is the car itself (the toon bands keep it lit; the
+  // campaign shell never had cast shadows at all). Per-frame shadow passes
+  // on the section doubled the software-GL cost and blew the specs'
+  // honest budgets; a static-set shadow is the dollhouse's own grammar.
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
   const camera = new THREE.PerspectiveCamera(35, 960 / 540, 0.01, 400);
 
   // THE SETS ARE MOUNTED (Lane F1, the art note's cause A closed): the six
@@ -641,10 +667,12 @@ export async function bootHouse(
     timer: number;
     active: boolean;
   }
-  let beat: BeatRuntime | null = null;
-  let beatScene: THREE.Scene | null = null;
-  let beatCar: { sync: (alpha: number) => void; dispose: () => void } | null = null;
-  const beatSkip: Array<[string, EventListener]> = [];
+  // THE BEAT'S OWN WITNESS (Lane F1): how the beat ended and the phases it
+  // walked — the e2e law (“ends by itself on the dead car”) is a CLAIM
+  // ABOUT THE PLAN, not a stopwatch, so the specs read the seam, not the
+  // wall (frame pacing under a loaded runner is not the law)
+  const beatPhases: string[] = ['pull'];
+  let beatEnd: { endedBy: 'still' | 'timeout' | 'skip'; phases: string[] } | null = null;
   if (wantBeat) {
     const beatWorld = await World.create(HOUSE_BEAT_LEVEL, HOUSE.parBuild(), { visuals: true });
     beatScene = beatWorld.scene!;
@@ -671,21 +699,17 @@ export async function bootHouse(
       prev: performance.now(),
       acc: 0,
       stillAt: 0,
-      timer: window.setTimeout(() => endBeat(), HOUSE_BEAT.timeoutMs),
+      timer: window.setTimeout(() => endBeat('timeout'), HOUSE_BEAT.timeoutMs),
       active: true,
     };
     beat.cam.setSolids(beatSets.solids);
-    const skip: EventListener = (ev: Event) => {
-      ev.stopPropagation(); // the dismissing gesture belongs to the beat alone
-      endBeat();
-    };
-    beatSkip.push(['pointerdown', skip], ['keydown', skip]);
-    for (const [type, fn] of beatSkip) window.addEventListener(type, fn, true);
+    if (beatSkipRequested) endBeat('skip'); // a press DURING the mounted boot
   }
 
-  function endBeat(): void {
+  function endBeat(endedBy: 'still' | 'timeout' | 'skip' = 'skip'): void {
     if (!beat?.active) return;
     beat.active = false;
+    beatEnd = { endedBy, phases: [...beatPhases] };
     clearTimeout(beat.timer);
     for (const [type, fn] of beatSkip) window.removeEventListener(type, fn, true);
     root.classList.remove('gw-premiere');
@@ -696,6 +720,7 @@ export async function bootHouse(
     beat = null;
     beatScene = null;
     applyIdlePose();
+    renderer.shadowMap.needsUpdate = true; // the page's OWN static map, re-baked once
     renderer.render(scene, camera);
   }
 
@@ -711,6 +736,7 @@ export async function bootHouse(
       fog.density = p.fog; // the build-view breath rides the pull in
       if (el >= HOUSE_BEAT.pullS) {
         beat.phase = 'roll';
+        beatPhases.push('roll');
         beat.acc = 0;
         beat.world.launch();
         beat.cam.approved('garage', 0); // the eye starts where the car is
@@ -742,21 +768,28 @@ export async function bootHouse(
       beatCar?.sync(beat.acc / FIXED_DT);
       if (w.status !== 'running' || w.time >= HOUSE_BEAT.rollEndS) {
         beat.phase = 'still';
+        beatPhases.push('still');
         beat.stillAt = now;
       }
       return;
     }
-    if (now - beat.stillAt >= HOUSE_BEAT.stillS * 1000) endBeat();
+    if (now - beat.stillAt >= HOUSE_BEAT.stillS * 1000) endBeat('still');
   }
 
   let last = performance.now();
   let accum = 0;
   let ended = false;
+  let beatSceneFirst = true; // the beat scene's once-baked static shadow map
   function frame(now: number): void {
     if (ended) return;
     if (!document.hidden) {
       if (beat?.active) {
         stepBeat(now);
+        if (beatSceneFirst) {
+          // the beat's static shadow map bakes on its first frame
+          renderer.shadowMap.needsUpdate = true;
+          beatSceneFirst = false;
+        }
         renderer.render(beatScene ?? scene, camera);
         requestAnimationFrame(frame);
         return;
@@ -801,6 +834,8 @@ export async function bootHouse(
   });
   (window as unknown as Record<string, unknown>).__gwHouseState = state;
   (window as unknown as Record<string, unknown>).__gwHouseScene = () => scene; // the render-layer probe seam (visuals-only debugging, same family as the pose seam below)
+  (window as unknown as Record<string, unknown>).__gwHouseBeat = () =>
+    beat ? { phase: beat.phase, phases: [...beatPhases], endedBy: null } : beatEnd;
   (window as unknown as Record<string, unknown>).__gwHouseCameraPose = () =>
     home ? poseTarget : world.status === 'idle' && world.stepCount === 0 ? parked : houseCam.pose(world.time);
   requestAnimationFrame(frame);
