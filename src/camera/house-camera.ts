@@ -36,6 +36,44 @@ export interface HousePose {
   fog: number;
 }
 
+/** THE BUILD-VIEW BREATH (Lane F1, art note plan line 2): the build-view
+ *  fog the campaign's build camera already rides, on the HOME camera ONLY
+ *  — nine metres of section reads as air instead of paper. `homePose`
+ *  carries it; the run's physics footage stays fog-free (only the leg's
+ *  haze sine breathes, unchanged), and `menuPose` — the per-room parked
+ *  eye, the dwell's face — stays clear like the dwell. The art note's
+ *  mock wash at 0.055 is too thick for the section; the note's own
+ *  recommendation band is 0.015–0.02 and this sits in it. */
+export const HOME_HAZE = 0.018;
+
+/** THE SOLID CLEARANCE (cause D, the house-wide `setCameraSolids` the
+ *  spike priced and never funded): a pure push of a pose EYE out of the
+ *  mounted sets' leaf boxes — the eye never sits inside a prop it should
+ *  be looking at. Walks toward the viewer (+z, the section's own axis;
+ *  the poses are all section-parallel by construction) until clear.
+ *  Deterministic: a pure function of pose + static layout geometry, so
+ *  every frame's pose stays a function of plan time (the camera law the
+ *  header states, unweakened). */
+export function eyeClear(
+  eye: [number, number, number],
+  solids: readonly THREE.Box3[],
+  margin = 0.05,
+  maxSteps = 24,
+): [number, number, number] {
+  if (solids.length === 0) return eye;
+  const p = new THREE.Vector3(eye[0], eye[1], eye[2]);
+  const pad = new THREE.Box3();
+  const inside = () => {
+    for (const b of solids) {
+      pad.copy(b).expandByScalar(margin);
+      if (pad.containsPoint(p)) return true;
+    }
+    return false;
+  };
+  for (let i = 0; i < maxSteps && inside(); i++) p.z += 0.25;
+  return [p.x, p.y, p.z];
+}
+
 /** The dwell grammar, lifted from the farewell's ratified stills band. */
 export const HOUSE_FRAMING = {
   gazeHeight: 1.45,
@@ -133,7 +171,9 @@ export function homePose(layout: HouseLayout, fovDeg = 35, aspect = 960 / 540): 
     Math.max((maxX - minX) / 2 / Math.tan(hFov / 2), (maxY - minY) / 2 / Math.tan(vFov / 2));
   const midX = (minX + maxX) / 2;
   const midY = (minY + maxY) / 2;
-  return { eye: [midX, midY + 0.35, dz], target: [midX, midY, 0], fog: 0 };
+  // THE BUILD-VIEW FOG rides the HOME pose only (plan line 2): the void
+  // gets air where a stranger sits; the run footage stays untouched.
+  return { eye: [midX, midY + 0.35, dz], target: [midX, midY, 0], fog: HOME_HAZE };
 }
 
 /** The premise beat's PULL-BACK (build 2, law 4's opening image): the eye
@@ -161,7 +201,9 @@ export function beatPullPose(
       from.target[1] + (to.target[1] - from.target[1]) * u,
       0,
     ],
-    fog: 0,
+    // the haze breathes IN with the pull: clear at the kitchen window,
+    // the home breath at the wide pose (still pure over beat time)
+    fog: to.fog * u,
   };
 }
 
@@ -203,6 +245,7 @@ export class HouseCamera {
   readonly layout: HouseLayout;
   private events: ParcelEvent[] = [];
   private plan: HouseSegment[] = [];
+  private solids: readonly THREE.Box3[] | null = null;
 
   constructor(layout: HouseLayout) {
     this.layout = layout;
@@ -214,6 +257,15 @@ export class HouseCamera {
     this.plan = [];
   }
 
+  /** THE HOUSE-WIDE SOLIDS (`setCameraSolids` over the mounted sets, the
+   *  page's `mountHouseSets` output): when set, every pose this wrapper
+   *  answers has its eye pushed clear of the set geometry (`eyeClear`,
+   *  cause D — the eye stops floating INSIDE the rooms). Absent = the
+   *  bare-deck camera the spike shipped, byte-for-byte. */
+  setSolids(solids: readonly THREE.Box3[] | null): void {
+    this.solids = solids;
+  }
+
   /** The parcel probe reports an approval (physics already did the work). */
   approved(room: FrameRoom, time: number): void {
     this.events.push({ room, time });
@@ -221,8 +273,9 @@ export class HouseCamera {
   }
 
   pose(t: number): HousePose {
-    if (this.events.length === 0) return menuPose(this.layout, 'garage');
-    return houseRunPose(this.layout, this.plan, t);
+    const p =
+      this.events.length === 0 ? menuPose(this.layout, 'garage') : houseRunPose(this.layout, this.plan, t);
+    return this.solids ? { ...p, eye: eyeClear(p.eye, this.solids) } : p;
   }
 
   /** Apply a pose to a live camera + fog (the page's one renderer touch). */

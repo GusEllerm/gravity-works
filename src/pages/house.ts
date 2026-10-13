@@ -90,6 +90,8 @@ import {
   type HousePose,
 } from '../camera/house-camera.ts';
 import { SET_TOKENS } from '../render/tokens.ts';
+import { createCarRig, CAR_GROUND_LIFT, CAR_SPIN_DAMP } from '../render/car-rig.ts';
+import { mountHouseSets, setHouseFace } from './house-sets.ts';
 import { loadSave, defaultStorage } from '../save/save.ts';
 import { reducedMotionActive } from '../ui/motion.ts';
 import { recordHouseRun, readHouseBest, RECORDS_HONESTY, type HouseBest } from '../save/records.ts';
@@ -384,7 +386,67 @@ export async function bootHouse(
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio ?? 1));
   renderer.setSize(960, 540, false);
+  // THE ONE KEY casts (cause B): the sets' long soft shadows need the
+  // map the harness always had and the house page never paid for.
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   const camera = new THREE.PerspectiveCamera(35, 960 / 540, 0.01, 400);
+
+  // THE SETS ARE MOUNTED (Lane F1, the art note's cause A closed): the six
+  // ratified sets at their decks, the dollhouse cut, the shelves, the
+  // doorframes, the painted-wood table and the ONE warm key — a render
+  // layer over the SAME world: no collider, no hashed body, the
+  // `6caea49b` receipt byte-identical with or without this line.
+  const houseSets = await mountHouseSets(scene, layout);
+  // THE FACE: the cross-section wears the kitchen's token background (the
+  // campaign shell reads its mounted set's `background`; six sets means
+  // the house reads the room the crane is parked at — applyIdlePose).
+  setHouseFace(scene, fog, home ? null : 'porch');
+
+  // THE HERO CAR (the replay/share precedent): the ratified car-a rig
+  // rides the pose the physics already reports; the World's red proxy box
+  // retires at the door (hidden, its transforms still written, exactly
+  // as the shell and the film path mount it — RENDER LAYER ONLY, the
+  // wheel spin a render-side omega read off on-screen motion, never a
+  // physics drive). Mounted per SCENE (the page's world; the beat gets
+  // its own rig for its own world, disposed with the beat).
+  function attachCarRig(w: World, target: THREE.Scene): { sync: (alpha: number) => void; dispose: () => void } {
+    const rig = createCarRig(SET_TOKENS.kitchen);
+    rig.setKeyLight(houseSets.key.color.getHex(), 1.3);
+    const poseGroup = new THREE.Group();
+    poseGroup.name = 'car-pose';
+    poseGroup.add(rig.group);
+    rig.group.position.y = -CAR_GROUND_LIFT;
+    target.add(poseGroup);
+    if (w.carMesh) w.carMesh.visible = false;
+    let wheelAngle = 0;
+    let prev = { ...w.state().car.pos };
+    const sync = (alpha: number): void => {
+      const a = Math.min(1, Math.max(0, alpha));
+      const pose = w.carPose(a);
+      // the hidden proxy keeps its transforms written (the shell's probe
+      // law): the box is retired from the SCREEN, not from the graph
+      if (w.carMesh) {
+        w.carMesh.position.set(pose.pos.x, pose.pos.y, pose.pos.z);
+        w.carMesh.quaternion.set(pose.quat.x, pose.quat.y, pose.quat.z, pose.quat.w);
+      }
+      poseGroup.position.set(pose.pos.x, pose.pos.y, pose.pos.z);
+      poseGroup.quaternion.set(pose.quat.x, pose.quat.y, pose.quat.z, pose.quat.w);
+      const travelled = Math.hypot(
+        pose.pos.x - prev.x,
+        pose.pos.y - prev.y,
+        pose.pos.z - prev.z,
+      );
+      // cosmetic omega, arc length over (radius × SPIN_DAMP) — the same
+      // class of read the share tape integrates, never a physics input
+      wheelAngle += travelled / (rig.wheelRadius * CAR_SPIN_DAMP);
+      for (const wheel of rig.wheels) wheel.rotation.z = wheelAngle;
+      prev = { x: pose.pos.x, y: pose.pos.y, z: pose.pos.z };
+    };
+    sync(0);
+    return { sync, dispose: () => rig.dispose() };
+  }
+  const pageCar = attachCarRig(world, scene);
 
   // the menu camera: the crane PARKED — at the porch on the addressed
   // house page, WIDE across the cross-section on the front door (or at
@@ -395,6 +457,9 @@ export async function bootHouse(
       ? (roomParam as FrameRoom)
       : null;
   const houseCam = new HouseCamera(layout);
+  // THE SOLIDS, HOUSE-WIDE (cause D): the six mounted sets' leaf boxes —
+  // the eye stops floating inside the rooms it is meant to be looking at.
+  houseCam.setSolids(houseSets.solids);
   const parked: HousePose = menuRoom ? menuPose(layout, menuRoom) : menuPose(layout, 'porch');
   const homePoseLayout = homePose(layout, 35, 960 / 540);
   let poseTarget: HousePose = home ? (menuRoom ? menuPose(layout, menuRoom) : homePoseLayout) : parked;
@@ -421,6 +486,7 @@ export async function bootHouse(
     camera.position.set(poseTarget.eye[0], poseTarget.eye[1], poseTarget.eye[2]);
     camera.lookAt(poseTarget.target[0], poseTarget.target[1], poseTarget.target[2]);
     if (fog) fog.density = poseTarget.fog;
+    setHouseFace(scene, fog, openRoom); // a parked crane wears its room's face
     placeWindows();
   }
 
@@ -436,7 +502,7 @@ export async function bootHouse(
     const canvasBox = canvas.getBoundingClientRect();
     for (const w of winEls) {
       const deck = layout.decks.find((d) => d.room === w.room)!;
-      proj.set(deck.center[0], deck.center[1] + 0.45, deck.center[2]).project(camera);
+      proj.set(deck.center[0], deck.center[1] + 0.015, deck.center[2]).project(camera);
       w.el.style.left = `${canvasBox.left - stageBox.left + (proj.x * 0.5 + 0.5) * canvasBox.width}px`;
       w.el.style.top = `${canvasBox.top - stageBox.top + (-proj.y * 0.5 + 0.5) * canvasBox.height}px`;
     }
@@ -571,6 +637,7 @@ export async function bootHouse(
   }
   let beat: BeatRuntime | null = null;
   let beatScene: THREE.Scene | null = null;
+  let beatCar: { sync: (alpha: number) => void; dispose: () => void } | null = null;
   const beatSkip: Array<[string, EventListener]> = [];
   if (wantBeat) {
     const beatWorld = await World.create(HOUSE_BEAT_LEVEL, HOUSE.parBuild(), { visuals: true });
@@ -581,6 +648,12 @@ export async function bootHouse(
     if (bTable instanceof THREE.Mesh) {
       bTable.scale.set((layout.floor.half[0] * 2) / 6, (layout.floor.half[2] * 2) / 6, 1);
     }
+    // THE SETS ARE MOUNTED for the beat too — the premise beat is the
+    // journalist's first screenshot and it wears the same world (fresh
+    // instances: `beat.world.dispose()` frees them with its own scene).
+    const beatSets = await mountHouseSets(beatScene, layout);
+    setHouseFace(beatScene, fog, null);
+    beatCar = attachCarRig(beatWorld, beatScene);
     beat = {
       world: beatWorld,
       cam: new HouseCamera(layout),
@@ -593,6 +666,7 @@ export async function bootHouse(
       timer: window.setTimeout(() => endBeat(), HOUSE_BEAT.timeoutMs),
       active: true,
     };
+    beat.cam.setSolids(beatSets.solids);
     const skip: EventListener = (ev: Event) => {
       ev.stopPropagation(); // the dismissing gesture belongs to the beat alone
       endBeat();
@@ -609,6 +683,8 @@ export async function bootHouse(
     root.classList.remove('gw-premiere');
     markPremiereSeen(); // ONE flag, one source (intro.ts owns the key)
     beat.world.dispose(); // the beat's world is presentation: freed, never recorded
+    beatCar?.dispose(); // its rig too — the page's rig rides the page's world
+    beatCar = null;
     beat = null;
     beatScene = null;
     applyIdlePose();
@@ -624,6 +700,7 @@ export async function bootHouse(
       const p = beatPullPose(layout, el, HOUSE_BEAT.pullS, 35, 960 / 540);
       camera.position.set(p.eye[0], p.eye[1], p.eye[2]);
       camera.lookAt(p.target[0], p.target[1], p.target[2]);
+      fog.density = p.fog; // the build-view breath rides the pull in
       if (el >= HOUSE_BEAT.pullS) {
         beat.phase = 'roll';
         beat.acc = 0;
@@ -654,6 +731,7 @@ export async function bootHouse(
         beat.acc -= FIXED_DT;
       }
       beat.cam.apply(camera, w.time, fog);
+      beatCar?.sync(beat.acc / FIXED_DT);
       if (w.status !== 'running' || w.time >= HOUSE_BEAT.rollEndS) {
         beat.phase = 'still';
         beat.stillAt = now;
@@ -685,6 +763,7 @@ export async function bootHouse(
       if (world.status !== 'idle') {
         ghost.sync(world.time);
         houseCam.apply(camera, world.time, fog);
+        pageCar.sync(accum / FIXED_DT); // the sedan rides the same poses
       } else if (home) {
         applyIdlePose(); // the parked crane and its windows, kept aligned
       }

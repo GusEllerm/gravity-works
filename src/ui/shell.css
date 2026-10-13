@@ -622,32 +622,45 @@ h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
  * as it reads on paper, which is the point of putting the menu ON the
  * house. Zero layout flow (the chip law). */
 #gw-house-windows { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+/* THE WINDOWS ARE GEOMETRY (Lane F1, art note plan line 3): each room's
+ * doorframe mesh owns the pixels (house-sets.ts); the DOM button survives
+ * ONLY as a transparent hit target over the opening — the same Tab walk,
+ * the same names, the same Enter (a11y unchanged; the ink moved into the
+ * scene, the accessible name never did). The transparent text is the
+ * standard hidden-ink pattern: layout size stays, the contrast table in
+ * `scripts/a11y-contrast.mjs` retired the visible-text rows with the
+ * pixels they measured. The open tour list keeps its paper face: it is a
+ * menu, not a legend. */
 .gw-house-window {
   position: absolute;
   transform: translate(-50%, -50%);
   pointer-events: auto;
-  max-width: min(240px, 30%);
 }
 .gw-house-window button {
   display: block;
-  width: 100%;
+  min-width: 72px;
+  min-height: 44px;
   font: 12px/1.3 var(--gw-display, system-ui), sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #2c2013;
-  background: rgba(255, 248, 236, 0.88);
-  border: 2px solid #6a5636;
+  color: transparent;
+  background: transparent;
+  border: 2px solid transparent;
   border-radius: 6px 6px 2px 2px;
   padding: 4px 8px 2px;
   cursor: pointer;
   text-align: center;
 }
+.gw-house-window button:hover,
+.gw-house-window button[aria-expanded='true'] {
+  border-color: rgba(106, 86, 54, 0.55); /* affordance on the doorframe, not a card */
+}
 .gw-window-sill {
   display: block;
   font-size: 10px;
   letter-spacing: 0.04em;
-  color: #6a5636;
-  border-top: 1px solid #8a7040;
+  color: transparent;
+  border-top: 1px solid transparent;
   margin-top: 2px;
   padding-top: 1px;
   min-height: 12px;
