@@ -6,8 +6,11 @@
  * file CAN prove deterministically in-process:
  *
  * 1. THE FIREWALL: the import graph. Nothing under `src/sound` imports
- *    world/physics/render/camera/feel, and nothing in world/physics imports
- *    sound — so no audio call can sit on the step path by construction.
+ *    world/physics/render/camera/feel — TRANSITIVELY (h4: the house route
+ *    now mounts the engine through `src/sound/mount.ts`, so the whole
+ *    sound-side graph is walked, mutation-proven in the session log) —
+ *    and nothing in world/physics imports sound, so no audio call can
+ *    sit on the step path by construction.
  * 2. The design gain ceiling (nothing scheduled above 0.5 pre-master; the
  *    master itself is the -12 dBFS constant the e2e measures against).
  * 3. Autoplay: no AudioContext before `unlock()` (the first gesture).
@@ -149,6 +152,28 @@ describe('determinism firewall (import graph)', () => {
       expect(src, file).not.toMatch(/from '\.\.\/(world|physics|render|camera|feel|replay|track)\b/);
     }
   });
+  it('RESOLVED: the src/sound module graph never reaches the sim', () => {
+    // the h4 form of the law — the house route now imports the sound
+    // mount, so "sound touches nothing sim-touching" must hold for the
+    // module's RESOLVED graph, not just one regex shape. Files under
+    // `src/sound` may import each other and the save layer (settings
+    // persistence — whose own `track/build` import belongs to
+    // persistence, pinned by the save tests), NEVER a sim-side path.
+    // MUTATION PROOF (session `Sessions/2026-10-13 Wire the door.md`):
+    // add `import { SIM_SCALE } from '../physics/sim.ts'` to any file
+    // under src/sound — e.g. the mount the house page imports — and
+    // THIS test and the regex one above both go RED.
+    const simLike = /(^|\/)(world|physics|render|camera|feel|replay|track)(\/|$)/;
+    for (const file of walk('src/sound')) {
+      const src = readFileSync(file, 'utf8');
+      for (const m of src.matchAll(/from\s+'([^']+\.ts)'/g)) {
+        if (!m[1].startsWith('.')) continue; // bare specifiers: three/node deps
+        const resolved = join(file, '..', m[1]).replace(/\\/g, '/');
+        if (resolved.startsWith('src/sound/')) continue; // intra-module
+        expect(simLike.test(resolved), `${file} reaches a sim-side file: ${resolved}`).toBe(false);
+      }
+    }
+  });
   it('nothing in world/physics/render imports sound (no step-path call site)', () => {
     for (const dir of ['src/world', 'src/physics', 'src/render', 'src/camera']) {
       for (const file of walk(dir)) {
@@ -157,12 +182,26 @@ describe('determinism firewall (import graph)', () => {
       }
     }
   });
-  it('boot is the only game-side importer', () => {
+  it('boot and the house page are the ONLY mounters, and only via the mount module', () => {
+    // THE SOUND LAW (h4): every boot route wires the engine. The page
+    // wiring lives in ONE module (`src/sound/mount.ts`): boot.ts mounts
+    // it for the addressed/game route and pages/house.ts mounts it at
+    // the front door (and the addressed house page). `src/ui` never
+    // touches sound — page chrome must not put a voice on the step path
+    // by accident — and the other pages stay silent BY CHOICE, stated
+    // in the session log.
     const boot = readFileSync('src/boot.ts', 'utf8');
-    expect(boot).toMatch(/from '\.\/sound\/sound\.ts'/);
+    expect(boot).toMatch(/from '\.\/sound\/mount\.ts'/);
+    const house = readFileSync('src/pages/house.ts', 'utf8');
+    expect(house).toMatch(/from '\.\.\/sound\/mount\.ts'/); // the door is WIRED
     for (const file of walk('src/ui')) {
       const src = readFileSync(file, 'utf8');
       expect(src, file).not.toMatch(/sound\//);
+    }
+    for (const file of walk('src/pages')) {
+      if (file.endsWith('house.ts')) continue;
+      const src = readFileSync(file, 'utf8');
+      expect(src, file).not.toMatch(/sound\/mount\.ts/);
     }
   });
 });
@@ -214,6 +253,28 @@ afterEach(() => {
 });
 
 describe('sound engine', () => {
+  it('a bed switch MID-RUN follows the crane and keeps the roll alive (h4 crossing law)', () => {
+    // the house descent switches rooms bed-per-parcel-crossing; a bed
+    // switch is a ROOM move, not a stop: the sustained roll voice rolls
+    // through it (before h4 `setBed` went through `stopBed`, which also
+    // killed the roll — the door's descent had ambience and no wheels).
+    const e = makeEngine();
+    e.setBed('kitchen');
+    e.unlock();
+    e.beginRun();
+    e.frame({ dtMs: 100, running: true, screenSpeed: 2, upY: 1 });
+    clock += 100; // the module clock the engine reads
+    e.frame({ dtMs: 100, running: true, screenSpeed: 2, upY: 1 });
+    const before = e.state().rollUpdates;
+    expect(before).toBeGreaterThanOrEqual(2);
+    e.setBed('bathroom');
+    expect(e.state().bed).toBe('bathroom');
+    clock += 100;
+    e.frame({ dtMs: 100, running: true, screenSpeed: 2, upY: 1 });
+    expect(e.state().rollUpdates, 'the roll survived the crossing').toBeGreaterThan(before);
+    e.finishRun({ status: 'finished', stars: 0, newBest: false, hazardsTouched: 0 });
+  });
+
   it('creates NO AudioContext before the first gesture (autoplay policy)', () => {
     const e = makeEngine();
     e.voice('snap');

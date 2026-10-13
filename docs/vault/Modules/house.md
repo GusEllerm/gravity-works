@@ -130,6 +130,28 @@ livedocs: live
   (`Level.floor`, top at −0.75, ending 2 m past the frame — the spike's 60 m cruise slab is NOT
   inherited) is a PHYSICAL collider, the tunnel law; the fell line is the spike's departure law.
 
+- SOUND AT THE DOOR (H2 program, 2026-10-13) — the bare house route is no longer silent: `bootHouse`
+  calls `mountSound` (`src/sound/mount.ts`, the shared page wrapper) and feeds the engine from the
+  page alone — a read-only crane-position sink into `setScreenSpeed`/`setUpAxisY` (≤ 20 Hz, the
+  camera's own sampling law, `upAxisYOfQuat`), `beginRun`/`finishRun` + `launch` around `probeLaunch`,
+  and ROOM-BED switches minted at `probeStep`'s parcel crossings (launch → addressed room, catch →
+  released, terminal → `startRoomBed` once, idle = `kitchen` at the home page / `porch` when a room is
+  addressed). The sim stays sound-free; the firewall test walks the resolved import graph. The
+  premise beat keeps its ONE silence BY DESIGN but no longer by accident: no engine is constructed
+  during the beat, the beat swallows the autoplay-unlock gesture, and at `endBeat` the page replays
+  that gesture into `mountSound({ viaGesture })` — one AudioContext ever, chip included, and the
+  beat's own click is what opens the room (hand-off proof in `tests/e2e/sound.spec.ts`).
+- The page carries the `gw-home` class (`document.body.classList.toggle('gw-home', !addressed)`), so
+  the home page can host the daily chip in the FLOW beside the wordmark instead of pinning it over
+  it (the disjoint-rect law; see [[Modules/ui]]).
+
+- THE PAGE CLOCK OWES THE SIM NO DEBT (h4, the fast-forward fix) — the render loop's `accum` is
+  zeroed whenever `world.status` is not `running`: wall time accrued while the crane sits PARKED is
+  not a step debt the launched run may spend, and a run that began by teleporting hundreds of fixed
+  steps (crossings swallowed in the first frame — the bed witness in `tests/e2e/sound.spec.ts` is
+  what caught it) is impossible by construction. A launched run begins "from second zero" on the page
+  exactly as `World.launch` states it does in the sim; the live run now plays at wall speed.
+
 ## See also
 
 - [[Decision Log]] "THE DOWNHILL greenlit" (the law), [[Reference/Downhill Spike]] (the frame

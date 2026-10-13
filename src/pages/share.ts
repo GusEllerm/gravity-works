@@ -33,6 +33,7 @@ import { SET_TOKENS } from '../render/tokens.ts';
 import { createCarRig, CAR_GROUND_LIFT, CAR_SPIN_DAMP } from '../render/car-rig.ts';
 import { parFor, starsFor, type RunOutcome, type RunResult } from '../world/stars.ts';
 import { downloadBlob, generateShareCard } from '../share/card.ts';
+import { mountHomeDoor } from '../ui/home-door.ts';
 import { SETS } from '../sets/index.ts';
 import { reducedMotionActive } from '../ui/motion.ts';
 import { paragraph } from '../ui/dom.ts';
@@ -68,6 +69,17 @@ export async function bootSharedRun(root: HTMLElement): Promise<void> {
   title.id = 'gw-replay-title';
   title.textContent = 'Watch this run';
   root.appendChild(title);
+  // THE WAY BACK (h4, player truth 3 — one-way doors end here): the share
+  // page is a visitor landing INSIDE a run; its chrome gains the same
+  // first crumb every other page now carries — `⌂ the house`, Tab-named,
+  // and a lone Escape is the door here (no build camera claims the key on
+  // this page, so `viewAtHome` is everyone's truth — `src/ui/home-door.ts`).
+  // The row sits BELOW the title on purpose: the T2.2 law that the stage
+  // is the first SUBSTANTIAL node after the caption stays unspent.
+  const nav = document.createElement('p');
+  nav.id = 'gw-levels-nav';
+  root.appendChild(nav);
+  mountHomeDoor({ nav, panelOwnsEscape: false });
 
   const stage = document.createElement('div');
   stage.id = 'gw-stage';

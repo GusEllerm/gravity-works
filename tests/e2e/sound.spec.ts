@@ -26,11 +26,14 @@ type SoundWindow = Window & {
     unlocked: boolean
     deaf: boolean
     running: boolean
+    bed: string | null
     runCounts: Record<string, number>
     rejected: Record<string, number>
     rollUpdates: number
   }
   __gwSoundRender?: (name: string) => Promise<{ peak: number; dc: number }>
+  __gwHouseState?: () => { status: string }
+  __gwCtxCount?: number
 }
 
 const VOICE_NAMES = [
@@ -144,4 +147,140 @@ test('mute is honored across a reload', async ({ page }) => {
   await page.click('#gw-sound-toggle')
   expect((await soundState(page)).muted).toBe(false)
   await expect(page.locator('#gw-sound-toggle')).toHaveText('Sound: on')
+})
+
+// ---- h4, Lane F2: SOUND AT THE DOOR ---------------------------------------
+//
+// THE SOUND LAW: every boot route wires the engine or the game is silent
+// at its own door. The player verdict's truth 1 priced the house-era
+// front door LITERALLY SILENT — `bootHouse` never called the engine, and
+// every spec above boots an ADDRESSED rung (the webdriver law), so the
+// suite never stood at the door. These lanes do. `bed` on the engine
+// seam is what lets the bed-switch crossing be PROVEN, not hoped for.
+
+const house = (page: import('@playwright/test').Page) =>
+  page.waitForFunction(
+    () => typeof (window as unknown as SoundWindow).__gwHouseState === 'function',
+    undefined,
+    { timeout: 60_000 },
+  )
+
+/** Count REAL AudioContext constructions (the no-double-unlock witness). */
+async function countContexts(page: import('@playwright/test').Page): Promise<void> {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __gwCtxCount: number; AudioContext: typeof AudioContext }
+    w.__gwCtxCount = 0
+    const Orig = w.AudioContext
+    w.AudioContext = new Proxy(Orig, {
+      construct(t, a) {
+        w.__gwCtxCount++
+        return new t(...a)
+      },
+    })
+  })
+}
+const ctxCount = (page: import('@playwright/test').Page) =>
+  page.evaluate(() => (window as unknown as SoundWindow).__gwCtxCount ?? 0)
+
+test('the bare route boots the sound engine — the door is not silent', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+  await goto(page, '/?boot=house')
+  await house(page)
+  // the CHIP is home chrome now, and the engine seam stands on this route
+  await expect(page.locator('#gw-sound #gw-sound-toggle')).toBeVisible()
+  expect((await soundState(page)).unlocked).toBe(false) // autoplay law unchanged
+  await page.click('#gw-sound-volume')
+  const s = await soundState(page)
+  expect(s.unlocked).toBe(true)
+  expect(s.deaf).toBe(false)
+  // the door's own idle bed: the kitchen — the house's front room
+  expect(s.bed).toBe('kitchen')
+  expect(errors).toEqual([])
+})
+
+test('a house release mints sound events — launch, roll, beds across the crossings', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await goto(page, '/?boot=house')
+  await house(page)
+  await page.click('#gw-sound-volume') // the gesture unlocks; the run follows
+  // witness the bed through the run: the crossing sequence is the proof
+  await page.evaluate(() => {
+    const w = window as unknown as { __beds: Set<string>; __bedTimer: number }
+    w.__beds = new Set<string>()
+    w.__bedTimer = window.setInterval(() => {
+      const bed = (window as unknown as SoundWindow).__gwSound?.().bed
+      if (bed) w.__beds.add(bed)
+    }, 40)
+  })
+  await page.click('#gw-launch')
+  await expect(page.locator('#gw-house-result')).not.toBeEmpty({ timeout: 90_000 })
+  const beds = await page.evaluate(() => {
+    const w = window as unknown as { __beds: Set<string>; __bedTimer: number }
+    clearInterval(w.__bedTimer)
+    return [...w.__beds]
+  })
+  const s = await soundState(page)
+  // THE EVENT MAP, called at last by the page that always knew about it.
+  // THE TERMINAL EDGE speaks — exactly one outcome voice (this tape ends
+  // off the world's edge after the bathroom: `whoosh`; the downhill's own
+  // verdict line says where it stopped). The launch voice's count rides
+  // the SAME beginRun-reset shape the rung page has (`src/boot.ts` fires
+  // voice→beginRun in that order) — what the run PROVES is the roll and
+  // the beds below.
+  const terminalVoices = ['cup', 'whoosh', 'hum', 'hazard'] as const
+  expect(
+    terminalVoices.reduce((n, v) => n + (s.runCounts[v] ?? 0), 0),
+    `the terminal edge spoke (runCounts ${JSON.stringify(s.runCounts)})`,
+  ).toBe(1)
+  expect(s.rollUpdates, 'the roll voice heard the descent').toBeGreaterThan(0)
+  expect(s.rollUpdates).toBeLessThanOrEqual(20 * 30) // the <=20 Hz law
+  // THE BED SWITCHES ON PARCEL CROSSINGS: the garage opens the descent and
+  // at least two rooms' beds are heard on the way down
+  expect(beds).toContain('garage')
+  expect(beds.length, `beds heard: ${beds}`).toBeGreaterThanOrEqual(2)
+  // the idle bed RETURNS with the parked crane
+  expect(s.bed).toBe('kitchen')
+  // THE FIREWALL LINE on the house route: distinct events, guard quiet
+  for (const [voice, count] of Object.entries(s.runCounts)) {
+    expect(count, `voice ${voice} fired ${count}x in one house run`).toBeLessThanOrEqual(12)
+  }
+  expect(s.rejected).toEqual({})
+  expect(errors).toEqual([])
+})
+
+test('the tour hand-off from a window unlocks exactly once', async ({ page }) => {
+  await countContexts(page)
+  await goto(page, '/?boot=house')
+  await house(page)
+  await page.click('#gw-house-window-kitchen') // gesture 1: unlock, one context
+  expect(await ctxCount(page)).toBe(1)
+  const tour = page.locator('#gw-house-tours-kitchen a').first()
+  await expect(tour).toBeVisible()
+  await tour.click() // gesture 2 + navigation: the hand-off
+  await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
+  expect(await ctxCount(page)).toBe(0) // the new document has built NOTHING yet
+  await page.keyboard.press('Shift') // its own first gesture unlocks ITS engine
+  expect((await soundState(page)).unlocked).toBe(true)
+  expect(await ctxCount(page)).toBe(1) // …exactly one context — no double-unlock
+})
+
+test('the premise beat is silent by construction and unlocks AFTER itself', async ({ page }) => {
+  await countContexts(page)
+  await goto(page, '/?boot=house&intro=1')
+  await house(page)
+  // mid-beat: NO engine exists at all — silence is structural, not a
+  // volume hack (the beat swallows the gesture; the mount happens at
+  // the beat's END and replays that swallowed gesture into unlock)
+  expect(await page.evaluate(() => typeof (window as any).__gwSound)).toBe('undefined')
+  expect(await ctxCount(page)).toBe(0)
+  await page.mouse.click(480, 300) // the dismissing gesture
+  await expect(page.locator('#app')).not.toHaveClass(/gw-premiere/)
+  const s = await soundState(page)
+  expect(s.unlocked).toBe(true) // the swallowed gesture, replayed into the unlock path
+  expect(await ctxCount(page)).toBe(1) // …and STILL one context
 })

@@ -100,7 +100,9 @@ import {
   parGhostRule,
   parGhostSurface,
 } from './pages/ghost.ts';
-import { createSound, surfaceForContact, surfaceForSet, upAxisYOfQuat } from './sound/sound.ts';
+import { surfaceForContact, surfaceForSet, upAxisYOfQuat } from './sound/sound.ts';
+import { mountSound } from './sound/mount.ts';
+import { mountHomeDoor } from './ui/home-door.ts';
 import { createCarRig, CAR_GROUND_LIFT, CAR_SPIN_DAMP } from './render/car-rig.ts';
 import { JuiceFeed } from './juice/juice.ts';
 import { createJuiceLayer, zoneAt } from './juice/layer.ts';
@@ -498,75 +500,22 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
   hashDetails.append(hashSummary, hashValue, hashNote);
   root.appendChild(hashDetails);
 
-  // ---- SOUND (stage 5) -------------------------------------------------
+  // ---- SOUND (stage 5; THE SOUND LAW, h4) -------------------------------
   // The mix is event-driven ONLY: every voice is fired from a boot/UI hook
   // below (a button, an edit, the terminal edge of a run) or from the
   // throttled read-only `sound.frame` sink at the foot of the frame loop.
   // The engine reads NO sim state beyond what the screen already renders,
   // touches NO world object, and the sim/hash never see it (the import
   // graph is asserted in tests/unit/sound.test.ts). The AudioContext is
-  // built on the FIRST gesture only (autoplay policy) — see `unlockSound`.
-  const sound = createSound();
-  const unlockSound = (): void => sound.unlock();
-  window.addEventListener('pointerdown', unlockSound, { capture: true });
-  window.addEventListener('keydown', unlockSound, { capture: true });
-  document.addEventListener('visibilitychange', () =>
-    sound.setVisible(document.visibilityState === 'visible'),
-  );
-  // the per-set ambience bed (kitchen clock, garden birds — sparse, all
-  // synthesized; see src/sound/voices.ts)
-  sound.setBed(setReg?.id ?? null);
-  // surface-honest roll (T1.1): ONE timbre scale per room at boot — the
-  // porcelain hisses brighter than the concrete, never per-frame
-  sound.setSurface(setReg?.id ?? null);
-  // mute + volume, persisted under `settings.sound` (no schema bump — the
-  // optional-key round-trip documented in src/save/save.ts)
-  const soundWrap = document.createElement('div');
-  soundWrap.id = 'gw-sound';
-  // ABSOLUTELY positioned in the page's top-right corner: zero layout
-  // flow (the committed shell baseline is a canvas-element screenshot; a
-  // reflow that nudges the canvas rect by a fraction of a pixel is enough
-  // to break it), and outside the canvas box so it can never land inside
-  // a rendered frame
-  soundWrap.style.cssText =
-    'position:absolute;top:8px;right:12px;z-index:4;display:flex;gap:6px;align-items:center;font:12px system-ui,sans-serif';
-  const soundToggle = document.createElement('button');
-  soundToggle.id = 'gw-sound-toggle';
-  soundToggle.type = 'button';
-  soundToggle.setAttribute('aria-pressed', String(!sound.muted));
-  soundToggle.textContent = sound.muted ? 'Sound: off' : 'Sound: on';
-  soundToggle.style.cssText =
-    'pointer-events:auto;font:12px system-ui,sans-serif;padding:2px 8px;border-radius:4px;border:1px solid rgba(185,163,124,0.7);background:rgba(255,248,236,0.78);color:#6a5636;cursor:pointer';
-  const soundVolume = document.createElement('input');
-  soundVolume.id = 'gw-sound-volume';
-  soundVolume.type = 'range';
-  soundVolume.min = '0';
-  soundVolume.max = '100';
-  soundVolume.step = '5';
-  soundVolume.value = String(Math.round(sound.volume * 100));
-  soundVolume.setAttribute('aria-label', 'Sound volume');
-  soundVolume.style.cssText = 'pointer-events:auto;width:72px;accent-color:#b9915a';
-  soundToggle.addEventListener('click', () => {
-    sound.setMuted(!sound.muted);
-    soundToggle.textContent = sound.muted ? 'Sound: off' : 'Sound: on';
-    soundToggle.setAttribute('aria-pressed', String(!sound.muted));
-    if (document.activeElement === soundToggle) soundToggle.blur(); // playtests P+Q focus policy
-  });
-  soundVolume.addEventListener('input', () => {
-    sound.setVolume(Number(soundVolume.value) / 100);
-  });
-  soundWrap.append(soundToggle, soundVolume);
-  root.appendChild(soundWrap); // page-corner absolute: zero layout flow
+  // built on the FIRST gesture only (autoplay policy). The whole page
+  // wiring — engine, gesture unlock, visibility pause, the `#gw-sound`
+  // chip and the e2e seams — lives in `src/sound/mount.ts`, WHICH THE
+  // HOUSE ROUTE MOUNTS TOO: the wiring used to be code that only
+  // `bootGame` ran, and the bare route’s door-swap left the engine off
+  // the front door (the player verdict’s truth 1). This call is the
+  // whole boot wiring.
+  const sound = mountSound({ root, setId: setReg?.id ?? null });
   createSaveSettings(root); // T0.3/R1 — save row in src/ui/settings.ts (this line is the whole boot wiring)
-  // the e2e seams (debug surface, not UI): engine state for the mute-
-  // across-reload and repetition-guard specs, and the offline loudness
-  // renderer the loudness spec measures through the SAME master chain
-  (window as unknown as Record<string, unknown>).__gwSound = () => sound.state();
-  void import('./sound/bus.ts').then((bus) => {
-    (window as unknown as Record<string, unknown>).__gwSoundRender = (
-      name: Parameters<typeof bus.renderVoice>[1],
-    ) => bus.renderVoice(OfflineAudioContext, name);
-  });
 
   // preserveDrawingBuffer: the QA seam the e2e canvas probe reads pixels
   // through (same convention as the help drawer's and the harness's
@@ -673,6 +622,23 @@ async function bootGame(root: HTMLElement, level: Level): Promise<void> {
     onPlace: (x, y) => {
       if (!premiere?.running) builderRef?.clickPlaceAt(x, y);
     },
+  });
+
+  // THE WAY BACK (h4, player truth 3 — the door stopped being one-way):
+  // this header was always a room you came FROM, and the chrome now says
+  // so — `⌂ the house` first in the nav row, Tab-reachable, with the
+  // lone-Escape key form (the camera's double-Escape chord keeps
+  // precedence while it means something — `src/ui/home-door.ts`).
+  mountHomeDoor({
+    nav: levelsNav,
+    viewAtHome: () =>
+      Math.abs(buildView.yaw) +
+        Math.abs(buildView.panX) +
+        Math.abs(buildView.panY) +
+        Math.abs(buildView.yawTarget) +
+        Math.abs(buildView.panTargetX) +
+        Math.abs(buildView.panTargetY) <
+      1e-9,
   });
 
   // Stage 3 wiring, stage 4 registry: a level that declares a set (or a

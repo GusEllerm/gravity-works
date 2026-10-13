@@ -229,6 +229,44 @@ THE VERDICT ROW (`verdictLine` in `src/ui/result.ts`, same `#gw-result-vspar` el
 
 THE LINES TAB (`src/ui/levelselect.ts`, `createLinesTab`): the `?levels=1` page grows a two-button tablist (`#gw-tab-levels`/`#gw-tab-lines`, role=tab) with the whole stage-4 page unchanged under LEVELS (default-shown — every existing id, lock law and star readout rides it untouched). The LINES panel is THREE surfaces deep: THE SEED — all thirty authored pars republished as links "published by the house" (`#gw-lines-house`, one `#gw-line-<id>` per ladder rung, `?level=<id>&line=house`, the row carries the shipped par, today's seed fold marks "today's link"), then THE CHAIN — this device's walked links straight from the payloads (`#gw-lines-chain`, `?level=<id>&link=<hash>` addressing the stored payload by its receipt-hash, name/par/board/what-it-beat per row) under the rank sentence `chainRankLine` (a count WALKED ON THIS DEVICE, honesty clause inside; badges never enter the RANK — the CHAIN law's NOT-an-input clause; the sheet's counts get their OWN read-only footline at the panel's end, see the SHEET FOOTLINE below). The addresses land in `src/boot.ts`: `?line=house` races the level's own par build as a LINK (explicit ask — the ghost law never locks a link, the par wind is the same cheap `cachedGhostTrace`), `?link=<hash>` decodes the stored payload and races it through the pasted-link's own `racePayload` path. Proofs: `tests/e2e/chain.spec.ts` (seed thirty listed and playable; named-line publish → v2 payload → chain row → one click → the named verdict on the bar) and the verdict sweep in `tests/unit/chain.test.ts`. THE SHEET FOOTLINE (final-sheet probe item (e)/(10), 2026-10-12 — "give the sheet a face or stop counting"): the panel ends in ONE quiet `<p id="gw-lines-sheet">` — every badge kind in the sheet's own row order (`BADGE_ORDER`, exported from `src/ui/result.ts`) with the tally's own words (`BADGE_WORDS`) and its lifetime count, campaign-only kinds printing their zeros, the device-honesty sentence (`RECORDS_HONESTY`) verbatim: `air 7 · clean catch 6 · chain fall 0 · room crossing 0 · booster spend 5 — your own runs on this device only`. Read-only, no button, no streak, no rank; absent while the device has earned nothing; the read side of the FACE (the write-side restraint lives in the tally tail above) — proofs `tests/e2e/pullback.spec.ts`.
 
+## THE HOUSE'S CHROME — the disjoint-rect law at home, and one way to get back (H2 program, 2026-10-13)
+
+**THE DISJOINT-RECT LAW EXTENDS TO THE HOUSE (law: two pieces of chrome must not touch, and the test
+is `elementFromPoint`, not eyeballs).** The zero-flow corner law (above) exists because a chrome
+layer must never move the canvas; on the HOME page it produced the collision it was meant to prevent
+— the absolutely-pinned `#gw-daily-board` sat ON TOP of the `h1` wordmark, because the law was a
+viewport-corner law and the home page is the one page whose top-left chrome is a WORDMARK, not a
+level page's empty margin. `tests/e2e/home-chrome.spec.ts` sweeps the law at 1280x633, 633x900 and
+390x844 by POINT-TESTING the wordmark's corners (a point whose `elementFromPoint` is the `h1` itself
+is testable; one covered by another element is a violation; the daily chip's own rect is excluded —
+that is the other side of the disjointness claim). The fix is the FIRST sanctioned exception to the
+corner law: on `body.gw-home` the chip enters the flow under the wordmark (`position: static`,
+`display: inline-block`) — it may enter the flow THERE because the home route owns no canvas truth
+the chip could move... it moves the flow below it, which is exactly what a flow row is FOR — and its
+line is INTEGER PIXELS ON EVERY EDGE (stated `14px` line box + padding + border + margin), because a
+fractional flow line lands the house canvas at a sub-pixel top and `canvas.screenshot()` then
+returns a 541-pixel-tall clip. Rung/sandbox pages keep the corner law untouched: `home-chrome.spec`
+asserts the chip stays `position: absolute` there and clears the sound chip in every sweep.
+
+**THERE IS EXACTLY ONE WAY BACK FROM EVERY VIEW — THE HOUSE DOOR — AND IT IS NAMED, FOCUSABLE, AND
+THE ONLY THING A LONE ESCAPE DOES.** `src/ui/home-door.ts` (`mountHomeDoor`) adds `⌂ the house` — an
+`<a href="?">` carrying the word "house" with the ⌂ glyph as memory only, the nav row's FIRST crumb,
+hence the tab order's first stop — to the rung/sandbox chrome (`bootGame`) and to the share/replay
+page (`src/pages/share.ts`, which previously had NO way home in its DOM at all: a replay-page visitor
+either dead-ended or Esc'd and hoped). `Escape` keeps the chord law (`resetViewIfParked`, double-
+press-inside-`RECENTER_MS` recenters) AND gets one unambiguous new meaning: a lone Escape, the chord
+window closed, the view already home and no panel owning the key, is the door — `goHome()` to
+`pageURL({})`. Panel precedence stays playtest AA's (the first Escape dismisses the panel and walks
+the view home; `panelOwnsEscape` keeps the door's promise "an Escape that closed a panel is never a
+navigation"); sandbox keeps the recenter-first guard; the share page never registers a chord, so
+there Escape is only ever the door. The chord-wins precedence is TIME, not ordering luck: the door
+tracks the `lastSeen` press itself (initialised far in the past — a young page's first Escape is
+chord-eligible, which is what killed the first cut), so on a real keyboard where chord-presses land
+~50 ms apart the door waits, and a deliberate lone Escape (after the 350 ms window) walks home —
+`playtest-aa.spec` was reconciled where its second act changed meaning: the now-DETERMINISTIC half
+second after a first press the view is home and the window is open, so the next lone press goes HOME
+(spec waits it out past the window rather than racing it).
+
 ## Depends on / used by
 
 `src/track` only (snap/pieces/socket) — never `src/physics`; `src/ui/levelselect.ts` additionally reads `src/world/campaign` + `src/world/stars` + `src/save` + `src/share/chain.ts` (data, progress and the walked-link payloads only, no `World`). Used by `src/boot.ts`.
