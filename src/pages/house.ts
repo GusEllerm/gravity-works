@@ -97,6 +97,8 @@ import { reducedMotionActive } from '../ui/motion.ts';
 import { recordHouseRun, readHouseBest, RECORDS_HONESTY, type HouseBest } from '../save/records.ts';
 import { dailyLinkLine, dailySeed, utcDateKey } from '../save/daily.ts';
 import { createLinesTab } from '../ui/levelselect.ts';
+import { encodeShareUrl, type SharePayload } from '../share/share.ts';
+import { rememberLink } from '../share/chain.ts';
 import { premiereWanted, markPremiereSeen } from './intro.ts';
 import { mountSound } from '../sound/mount.ts';
 import { upAxisYOfQuat } from '../sound/sound.ts';
@@ -256,6 +258,27 @@ export async function bootHouse(
   dailyChip.textContent =
     `today’s board — ${board.name} · ${utcDateKey()} · ${dailyLinkLine(board.name, board.par.time)}`;
   root.appendChild(dailyChip);
+  // THE SIX FREE BUILDS AT THE DOOR (h4, loop-four truth 7: "Home carries
+  // exactly three anchors … ZERO sandbox links — free is two hops"). The
+  // six doors' free-build siblings ride the door's own flow line: one hop
+  // from `/`, named in the Tab walk, in the descent order the windows walk
+  // (garage first). Nav data only — the shipped `?level=<room>-sandbox`
+  // addresses the level select already writes.
+  const doorRooms = ROOM_IDS.map((id) => CAMPAIGN.find((r) => r.id === id)!);
+  if (home) {
+    const freeRow = document.createElement('p');
+    freeRow.id = 'gw-home-sandboxes';
+    freeRow.textContent = 'free builds: ';
+    doorRooms.forEach((room, i) => {
+      if (i > 0) freeRow.append(' \u00B7 ');
+      const a = document.createElement('a');
+      a.id = `gw-home-sandbox-${room.id}`;
+      a.href = `?level=${room.sandboxId}`;
+      a.textContent = `${room.label.toLowerCase()} free build`;
+      freeRow.appendChild(a);
+    });
+    root.appendChild(freeRow);
+  }
   const linesCorner = document.createElement('button');
   linesCorner.id = 'gw-lines-corner';
   linesCorner.type = 'button';
@@ -298,7 +321,29 @@ export async function bootHouse(
   const hashValue = document.createElement('code');
   hashValue.id = 'gw-hash-value';
   hashDetails.append(hashSummary, hashValue);
-  host.append(launch, statusLine, resultLine, bestLine, hashDetails);
+  // THE TRAILER VERB (h4, loop-four truth 7: the door's own run was the
+  // only run in the game that could not leave the laptop). NOTHING new
+  // rides the payload: the INPUT law means the RECEIPT already commits
+  // every force (the wind is step-keyed LEVEL data, and the link names
+  // the level), so the share is the tape the run already was — (levelId,
+  // build, seed, hash) in the v2 envelope the chain law stamps on every
+  // new write, the registry name as the honest fallback name. The button
+  // waits for a terminal edge (there is no run to share while one runs).
+  const shareBtn = document.createElement('button');
+  shareBtn.id = 'gw-house-share';
+  shareBtn.type = 'button';
+  shareBtn.textContent = 'Share this run';
+  shareBtn.hidden = true;
+  const shareRow = document.createElement('p');
+  shareRow.id = 'gw-house-share-row';
+  shareRow.hidden = true;
+  const shareUrl = document.createElement('input');
+  shareUrl.id = 'gw-house-share-url';
+  shareUrl.type = 'text';
+  shareUrl.readOnly = true;
+  shareUrl.setAttribute('aria-label', 'Share link — copy to send to a friend');
+  shareRow.appendChild(shareUrl);
+  host.append(launch, statusLine, resultLine, bestLine, shareBtn, shareRow, hashDetails);
   root.appendChild(host);
 
   const stage = document.createElement('div');
@@ -366,10 +411,15 @@ export async function bootHouse(
   let openRoom: FrameRoom | null = null;
   if (home) {
     const windows = document.createElement('nav');
-    windows.id = 'gw-house-windows';
     windows.setAttribute('aria-label', 'The house — six windows');
+    windows.id = 'gw-house-windows';
     stage.appendChild(windows);
-    for (const room of CAMPAIGN) {
+    // THE TAB WALK WALKS DOWNHILL (h4, loop-four truth 5): the windows are
+    // emitted in the DESCENT order (`ROOM_IDS` — garage first, the first
+    // room down and visually first), not the CAMPAIGN projection order
+    // that parked garage fifth. Nav order only — every room's data, name,
+    // sill and tour bytes come from the SAME CAMPAIGN rows, unchanged.
+    for (const room of doorRooms) {
       const stars = room.levelIds.reduce(
         (sum, id) => sum + Math.min(3, Math.max(0, Math.trunc(save.progress.stars[id] ?? 0))),
         0,
@@ -598,6 +648,32 @@ export async function bootHouse(
     openWindow(menuRoom);
   }
 
+  // ESCAPE CLOSES WHAT THE DOOR OPENED (h4, loop-four truth 5: "Escape
+  // still closes NOTHING at the door"). The same verb the way-back link
+  // speaks on the OTHER pages (`mountHomeDoor`) has work to do HERE: the
+  // door has panels. The open window closes (the camera unparks, the tour
+  // list lifts) and focus returns to the window that opened it; with no
+  // window open, the Lines corner closes onto its own button. Nothing
+  // else on this page claims Escape — there is no camera chord here and
+  // no panel during a run — so the key is free wherever a panel is up.
+  if (home) {
+    window.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Escape' || ev.defaultPrevented) return;
+      if (world.status === 'running') return;
+      if (openRoom !== null) {
+        const room = openRoom;
+        openWindow(null);
+        winEls.find((w) => w.room === room)?.btn.focus();
+        ev.preventDefault();
+      } else if (!linesPanel.hidden) {
+        linesPanel.hidden = true;
+        linesCorner.setAttribute('aria-expanded', 'false');
+        linesCorner.focus();
+        ev.preventDefault();
+      }
+    });
+  }
+
   // ---- the par ghost: afterlife default (ON unless reduced motion says
   // so or the player's stored choice says otherwise — the SAME rule the
   // sandboxes race, no new setting) --------------------------------------
@@ -618,6 +694,9 @@ export async function bootHouse(
   const approvals: ParcelApproval[] = [];
   const seen = new Set<string>();
   let launchStep = 0;
+  /** The last run's terminal hash — the "same film" truth of a re-release
+   *  (the seating law, spoken): identical bytes, said honestly. */
+  let lastRunHash: string | null = null;
 
   function probeStep(): void {
     const s = world.state();
@@ -642,7 +721,7 @@ export async function bootHouse(
   }
 
   function finalize(): void {
-    // the terminal stall branch (the spike's approval law, per parcel):
+    // THE TERMINAL STALL BRANCH (the spike's approval law, per parcel):
     // a car that ENDED stopped with its nose in a bowl is in the bowl
     if (world.status === 'stalled') {
       const s = world.state();
@@ -662,7 +741,21 @@ export async function bootHouse(
     resultLine.textContent = houseResultLine(approvals.length, world.time, stoppedAt);
     const outcome = recordHouseRun(HOUSE_ID, approvals.length, world.time);
     bestLine.textContent = houseBestLine(outcome.best);
-    hashValue.textContent = world.hashHex();
+    const runHash = world.hashHex();
+    // ONE RUN PRINTS ONE VERDICT (h4, loop-four truth 6 — the door's tape
+    // contradicted itself: "4 rooms · 3.7 s" printed above "4 rooms ·
+    // 6.7 s — you stopped at the bathroom", BOTH `role=status`, because
+    // the live counter never retired). The result line IS the verdict;
+    // the status line is RETIRED — its `role` lifted, so the one live
+    // status after a run is the result line alone (the frozen clock is
+    // not a live region). A re-release rides the SAME tape (the seating
+    // law), and the retired line says so honestly: "same film".
+    const sameFilm = lastRunHash !== null && lastRunHash === runHash;
+    lastRunHash = runHash;
+    statusLine.removeAttribute('role');
+    statusLine.textContent = sameFilm ? 'same film — this release replayed the same tape' : '';
+    hashValue.textContent = runHash;
+    shareBtn.hidden = false; // the trailer verb waits for a terminal edge
     ghost.park();
     // THE TERMINAL EDGE (the sound event map's run outcome, stated once):
     // exactly the fields the result bar prints — rooms decide, the clock
@@ -690,6 +783,13 @@ export async function bootHouse(
     approvals.length = 0;
     seen.clear();
     resultLine.textContent = '';
+    // the live counter is RE-ARMED for this run (retired again at the
+    // next terminal edge) — the status line is live only while a run is
+    // on the table; the share verb steps aside until the run ends
+    statusLine.setAttribute('role', 'status');
+    statusLine.textContent = houseStatusLine(0, 0);
+    shareBtn.hidden = true;
+    shareRow.hidden = true;
     if (home) for (const w of winEls) w.el.hidden = true; // the run owns the screen
     world.launch();
     launchStep = world.stepCount;
@@ -726,6 +826,44 @@ export async function bootHouse(
   }
 
   launch.addEventListener('click', launchRun);
+
+  // THE SHARE PRESS (the trailer verb): the payload is the tape the run
+  // already carries — the reference build and the hash the page just
+  // printed, in a v2 envelope, NOTHING added (`encodeShareUrl` stamps
+  // `"v":2`; the wind needs no field because the link names the level
+  // and the INPUT law put the wind IN the level). A link this device
+  // publishes is a link it walked — the chain walk records it, and the
+  // visible input is the copy fallback that never fails (`runEnd` law).
+  shareBtn.addEventListener('click', () => {
+    if (world.status === 'running' || world.stepCount === 0) return;
+    shareBtn.disabled = true;
+    shareBtn.textContent = 'making link…';
+    const payload: SharePayload = {
+      v: 2,
+      levelId: HOUSE_ID,
+      seed: HOUSE.parBuild().seed,
+      hash: world.hashHex(),
+      build: HOUSE.parBuild(),
+      name: HOUSE.name.slice(0, 48),
+    };
+    void encodeShareUrl(payload).then(
+      (frag) => {
+        const url = `${window.location.origin}${window.location.pathname}${frag}`;
+        shareUrl.value = url;
+        shareRow.hidden = false;
+        rememberLink(payload);
+        shareBtn.disabled = false;
+        shareBtn.textContent = 'Share this run';
+        void navigator.clipboard?.writeText(url).catch(() => {
+          /* the visible link is the fallback that never fails */
+        });
+      },
+      () => {
+        shareBtn.disabled = false;
+        shareBtn.textContent = 'this browser could not build the link';
+      },
+    );
+  });
 
   // ---- THE PREMISE BEAT (build 2's repurposed opening) ------------------
   // A SECOND stepped World over `HOUSE_BEAT_LEVEL` (the wind off in the

@@ -152,6 +152,43 @@ livedocs: live
   what caught it) is impossible by construction. A launched run begins "from second zero" on the page
   exactly as `World.launch` states it does in the sim; the live run now plays at wall speed.
 
+- ONE RUN PRINTS ONE VERDICT (h4, loop-four truth 6 — the door's tape contradicted itself: "4 rooms
+  · 3.7 s" printed directly above "4 rooms · 6.7 s — you stopped at the bathroom", both `role=status`,
+  because the live counter never retired) — `finalize()` writes the result line and RETIRES the
+  status line: its `role` is lifted and its text cleared, so exactly ONE live status element remains
+  after a run (the result line; a frozen clock is not a live region — asserted page-wide in
+  `tests/e2e/downhill.spec.ts`). `launchRun` RE-ARMS the line (`role=status`, `houseStatusLine(0, 0)`)
+  and the parcel probe keeps writing it mid-run as the live counter it always was. A re-release rides
+  the SAME tape (the seating law) and the retired line SAYS SO — `lastRunHash` against the terminal
+  hash prints "same film — this release replayed the same tape", the freeze made honest.
+
+- THE TRAILER TRAVELS (h4, loop-four truth 7 — the door's own run was the only run in the game that
+  could not leave the laptop) — the downhill result gains the SHARE verb: `#gw-house-share` waits for
+  a terminal edge and mints a `#s=` link whose payload carries NOTHING the run did not already carry
+  — the INPUT law means the RECEIPT already commits every force (the wind is step-keyed LEVEL data
+  and the link names the level), so the payload is the tape the run was: `levelId = house`, the
+  reference `HOUSE.parBuild()`, the printed hash, the registry name as the honest fallback name, and
+  the v2 envelope every new write stamps ([[Modules/share]]). Proof in two halves in
+  `tests/e2e/downhill.spec.ts`: the node side decodes the link and RE-SIMS the carried build to a
+  hash identical to the receipt (`6caea49b` answers for the link), and the friend page replayed from
+  the link prints `verified`. A published link enters the chain store like any other share press
+  (`rememberLink`). In HOME MODE the door also gains its SIX FREE-BUILD DOORS — `#gw-home-sandboxes`
+  puts each room's shipped `?level=<room>-sandbox` on the home flow line ("<room> free build", in
+  descent order): free is one hop from `/`, named in the Tab walk, not two hops through the board.
+
+- THE KEYBOARD SEAMS AT THE DOOR (h4, loop-four truth 5 — "Escape still closes NOTHING at the door"
+  and "GARAGE … is visited FIFTH") — TWO laws, no new machinery. ESCAPE CLOSES WHAT THE DOOR OPENED:
+  the home boot listens once — the open window's panel closes (via `openWindow(null)`: the camera
+  unparks, `aria-expanded` goes false) and focus returns to the window button that opened it; with
+  no window open the LINES corner closes onto `#gw-lines-corner`. Nothing else on the home page
+  claims Escape (no camera chord, no panel during a run), so the key is free wherever a panel is up
+  — the sibling of the `mountHomeDoor` verb the OTHER pages speak (`src/ui/home-door.ts`), asserted
+  in `tests/e2e/front-door.spec.ts`. THE TAB WALK WALKS DOWNHILL: the six window buttons are
+  emitted in DESCENT order (`ROOM_IDS` — garage first, the first room down and visually first),
+  not the `CAMPAIGN` projection order that parked garage fifth; nav order only — every room's rows,
+  names (`windowAriaName`) and sill stars (`windowSillLine`) ride the same CAMPAIGN data unchanged
+  (the sill-stars grammar is untouched; the order assertion lives in `tests/e2e/a11y.spec.ts`).
+
 ## See also
 
 - [[Decision Log]] "THE DOWNHILL greenlit" (the law), [[Reference/Downhill Spike]] (the frame

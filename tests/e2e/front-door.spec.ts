@@ -164,6 +164,63 @@ test.describe('the front door — the bare route is the house', () => {
     await expect(page.locator('#gw-tray')).toBeVisible()
     await expect(page.locator('#gw-house-windows')).toHaveCount(0)
   })
+
+  test('Escape closes whatever the door opened — the window panel, focus home to the window', async ({
+    page,
+  }) => {
+    // THE KEYBOARD SEAM (h4, loop-four truth 5): at the door Escape closed
+    // NOTHING — open a window, press Escape, `aria-expanded` stayed true.
+    // The door now answers the key it already speaks: the open panel
+    // closes and focus returns to the window that opened it.
+    await page.goto('/?boot=house')
+    await page.waitForFunction(() => typeof (window as any).__gwHouseState === 'function', undefined, { timeout: 60_000 })
+    await page.click('#gw-house-window-kitchen')
+    await expect(page.locator('#gw-house-window-kitchen')).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.locator('#gw-house-tours-kitchen')).toBeVisible()
+    await page.keyboard.press('Tab') // step INTO the opened panel — Escape must walk focus back
+    await page.keyboard.press('Escape')
+    await expect(page.locator('#gw-house-window-kitchen')).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.locator('#gw-house-tours-kitchen')).toBeHidden()
+    expect(await page.evaluate(() => document.activeElement?.id)).toBe('gw-house-window-kitchen')
+  })
+
+  test('Escape closes the Lines corner too, and focus returns to the button', async ({ page }) => {
+    await page.goto('/?boot=house')
+    await page.waitForFunction(() => typeof (window as any).__gwHouseState === 'function', undefined, { timeout: 60_000 })
+    await page.click('#gw-lines-corner')
+    await expect(page.locator('#gw-lines-corner-panel')).toBeVisible()
+    await page.keyboard.press('Tab') // into the panel's rows — same walk back
+    await page.keyboard.press('Escape')
+    await expect(page.locator('#gw-lines-corner')).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.locator('#gw-lines-corner-panel')).toBeHidden()
+    expect(await page.evaluate(() => document.activeElement?.id)).toBe('gw-lines-corner')
+  })
+
+  test('FREE is one hop: the six sandboxes ride the home page, named and Tab-reachable', async ({ page }) => {
+    test.slow() // THE FURNISHED BUDGET (Lane F1 law): six tabTo walks on a
+    // six-set page block on the frame; a saturated runner is ~4× (the same
+    // budget the window-name walk above documents — ASSERTIONS untouched).
+    // loop-four truth 7's home half — "Home carries exactly three anchors
+    // … ZERO sandbox links". The six doors' free-build siblings join the
+    // door's own chrome (the rooms in DESCENT order, garage first), one
+    // hop from `/`, named in the Tab walk.
+    await page.goto('/?boot=house')
+    await page.waitForFunction(() => typeof (window as any).__gwHouseState === 'function', undefined, { timeout: 60_000 })
+    const hrefs = await page.locator('#gw-home-sandboxes a').evaluateAll((as) =>
+      as.map((a) => a.getAttribute('href')),
+    )
+    expect(hrefs).toEqual(
+      ['garage', 'kitchen', 'bedroom', 'bathroom', 'garden', 'porch'].map((r) => `?level=${r}-sandbox`),
+    )
+    for (const room of ['garage', 'kitchen', 'bedroom', 'bathroom', 'garden', 'porch']) {
+      await tabTo(page, `#gw-home-sandbox-${room}`)
+      await expect(page.locator(`#gw-home-sandbox-${room}`)).toContainText('free build')
+    }
+    // one hop: a hop lands the sandbox page, the way-back crumb and all
+    await page.click('#gw-home-sandbox-garage')
+    await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
+    await expect(page.locator('#gw-home-link')).toBeVisible()
+  })
 })
 
 test.describe('the front-door run — the cold-load tripwire, extended', () => {
