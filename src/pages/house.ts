@@ -97,6 +97,8 @@ import { reducedMotionActive } from '../ui/motion.ts';
 import { recordHouseRun, readHouseBest, RECORDS_HONESTY, type HouseBest } from '../save/records.ts';
 import { dailyLinkLine, dailySeed, utcDateKey } from '../save/daily.ts';
 import { createLinesTab } from '../ui/levelselect.ts';
+import { encodeShareUrl, type SharePayload } from '../share/share.ts';
+import { rememberLink } from '../share/chain.ts';
 import { premiereWanted, markPremiereSeen } from './intro.ts';
 import { mountSound } from '../sound/mount.ts';
 import { upAxisYOfQuat } from '../sound/sound.ts';
@@ -256,6 +258,27 @@ export async function bootHouse(
   dailyChip.textContent =
     `today’s board — ${board.name} · ${utcDateKey()} · ${dailyLinkLine(board.name, board.par.time)}`;
   root.appendChild(dailyChip);
+  // THE SIX FREE BUILDS AT THE DOOR (h4, loop-four truth 7: "Home carries
+  // exactly three anchors … ZERO sandbox links — free is two hops"). The
+  // six doors' free-build siblings ride the door's own flow line: one hop
+  // from `/`, named in the Tab walk, in the descent order the windows walk
+  // (garage first). Nav data only — the shipped `?level=<room>-sandbox`
+  // addresses the level select already writes.
+  const doorRooms = ROOM_IDS.map((id) => CAMPAIGN.find((r) => r.id === id)!);
+  if (home) {
+    const freeRow = document.createElement('p');
+    freeRow.id = 'gw-home-sandboxes';
+    freeRow.textContent = 'free builds: ';
+    doorRooms.forEach((room, i) => {
+      if (i > 0) freeRow.append(' \u00B7 ');
+      const a = document.createElement('a');
+      a.id = `gw-home-sandbox-${room.id}`;
+      a.href = `?level=${room.sandboxId}`;
+      a.textContent = `${room.label.toLowerCase()} free build`;
+      freeRow.appendChild(a);
+    });
+    root.appendChild(freeRow);
+  }
   const linesCorner = document.createElement('button');
   linesCorner.id = 'gw-lines-corner';
   linesCorner.type = 'button';
@@ -298,7 +321,29 @@ export async function bootHouse(
   const hashValue = document.createElement('code');
   hashValue.id = 'gw-hash-value';
   hashDetails.append(hashSummary, hashValue);
-  host.append(launch, statusLine, resultLine, bestLine, hashDetails);
+  // THE TRAILER VERB (h4, loop-four truth 7: the door's own run was the
+  // only run in the game that could not leave the laptop). NOTHING new
+  // rides the payload: the INPUT law means the RECEIPT already commits
+  // every force (the wind is step-keyed LEVEL data, and the link names
+  // the level), so the share is the tape the run already was — (levelId,
+  // build, seed, hash) in the v2 envelope the chain law stamps on every
+  // new write, the registry name as the honest fallback name. The button
+  // waits for a terminal edge (there is no run to share while one runs).
+  const shareBtn = document.createElement('button');
+  shareBtn.id = 'gw-house-share';
+  shareBtn.type = 'button';
+  shareBtn.textContent = 'Share this run';
+  shareBtn.hidden = true;
+  const shareRow = document.createElement('p');
+  shareRow.id = 'gw-house-share-row';
+  shareRow.hidden = true;
+  const shareUrl = document.createElement('input');
+  shareUrl.id = 'gw-house-share-url';
+  shareUrl.type = 'text';
+  shareUrl.readOnly = true;
+  shareUrl.setAttribute('aria-label', 'Share link — copy to send to a friend');
+  shareRow.appendChild(shareUrl);
+  host.append(launch, statusLine, resultLine, bestLine, shareBtn, shareRow, hashDetails);
   root.appendChild(host);
 
   const stage = document.createElement('div');
@@ -679,6 +724,7 @@ export async function bootHouse(
     statusLine.removeAttribute('role');
     statusLine.textContent = sameFilm ? 'same film — this release replayed the same tape' : '';
     hashValue.textContent = runHash;
+    shareBtn.hidden = false; // the trailer verb waits for a terminal edge
     ghost.park();
     // THE TERMINAL EDGE (the sound event map's run outcome, stated once):
     // exactly the fields the result bar prints — rooms decide, the clock
@@ -708,9 +754,11 @@ export async function bootHouse(
     resultLine.textContent = '';
     // the live counter is RE-ARMED for this run (retired again at the
     // next terminal edge) — the status line is live only while a run is
-    // on the table
+    // on the table; the share verb steps aside until the run ends
     statusLine.setAttribute('role', 'status');
     statusLine.textContent = houseStatusLine(0, 0);
+    shareBtn.hidden = true;
+    shareRow.hidden = true;
     if (home) for (const w of winEls) w.el.hidden = true; // the run owns the screen
     world.launch();
     launchStep = world.stepCount;
@@ -747,6 +795,44 @@ export async function bootHouse(
   }
 
   launch.addEventListener('click', launchRun);
+
+  // THE SHARE PRESS (the trailer verb): the payload is the tape the run
+  // already carries — the reference build and the hash the page just
+  // printed, in a v2 envelope, NOTHING added (`encodeShareUrl` stamps
+  // `"v":2`; the wind needs no field because the link names the level
+  // and the INPUT law put the wind IN the level). A link this device
+  // publishes is a link it walked — the chain walk records it, and the
+  // visible input is the copy fallback that never fails (`runEnd` law).
+  shareBtn.addEventListener('click', () => {
+    if (world.status === 'running' || world.stepCount === 0) return;
+    shareBtn.disabled = true;
+    shareBtn.textContent = 'making link…';
+    const payload: SharePayload = {
+      v: 2,
+      levelId: HOUSE_ID,
+      seed: HOUSE.parBuild().seed,
+      hash: world.hashHex(),
+      build: HOUSE.parBuild(),
+      name: HOUSE.name.slice(0, 48),
+    };
+    void encodeShareUrl(payload).then(
+      (frag) => {
+        const url = `${window.location.origin}${window.location.pathname}${frag}`;
+        shareUrl.value = url;
+        shareRow.hidden = false;
+        rememberLink(payload);
+        shareBtn.disabled = false;
+        shareBtn.textContent = 'Share this run';
+        void navigator.clipboard?.writeText(url).catch(() => {
+          /* the visible link is the fallback that never fails */
+        });
+      },
+      () => {
+        shareBtn.disabled = false;
+        shareBtn.textContent = 'this browser could not build the link';
+      },
+    );
+  });
 
   // ---- THE PREMISE BEAT (build 2's repurposed opening) ------------------
   // A SECOND stepped World over `HOUSE_BEAT_LEVEL` (the wind off in the

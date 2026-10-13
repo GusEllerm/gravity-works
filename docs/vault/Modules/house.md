@@ -162,6 +162,20 @@ livedocs: live
   the SAME tape (the seating law) and the retired line SAYS SO — `lastRunHash` against the terminal
   hash prints "same film — this release replayed the same tape", the freeze made honest.
 
+- THE TRAILER TRAVELS (h4, loop-four truth 7 — the door's own run was the only run in the game that
+  could not leave the laptop) — the downhill result gains the SHARE verb: `#gw-house-share` waits for
+  a terminal edge and mints a `#s=` link whose payload carries NOTHING the run did not already carry
+  — the INPUT law means the RECEIPT already commits every force (the wind is step-keyed LEVEL data
+  and the link names the level), so the payload is the tape the run was: `levelId = house`, the
+  reference `HOUSE.parBuild()`, the printed hash, the registry name as the honest fallback name, and
+  the v2 envelope every new write stamps ([[Modules/share]]). Proof in two halves in
+  `tests/e2e/downhill.spec.ts`: the node side decodes the link and RE-SIMS the carried build to a
+  hash identical to the receipt (`6caea49b` answers for the link), and the friend page replayed from
+  the link prints `verified`. A published link enters the chain store like any other share press
+  (`rememberLink`). In HOME MODE the door also gains its SIX FREE-BUILD DOORS — `#gw-home-sandboxes`
+  puts each room's shipped `?level=<room>-sandbox` on the home flow line ("<room> free build", in
+  descent order): free is one hop from `/`, named in the Tab walk, not two hops through the board.
+
 ## See also
 
 - [[Decision Log]] "THE DOWNHILL greenlit" (the law), [[Reference/Downhill Spike]] (the frame

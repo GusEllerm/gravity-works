@@ -164,6 +164,29 @@ test.describe('the front door — the bare route is the house', () => {
     await expect(page.locator('#gw-tray')).toBeVisible()
     await expect(page.locator('#gw-house-windows')).toHaveCount(0)
   })
+
+  test('FREE is one hop: the six sandboxes ride the home page, named and Tab-reachable', async ({ page }) => {
+    // loop-four truth 7's home half — "Home carries exactly three anchors
+    // … ZERO sandbox links". The six doors' free-build siblings join the
+    // door's own chrome (the rooms in DESCENT order, garage first), one
+    // hop from `/`, named in the Tab walk.
+    await page.goto('/?boot=house')
+    await page.waitForFunction(() => typeof (window as any).__gwHouseState === 'function', undefined, { timeout: 60_000 })
+    const hrefs = await page.locator('#gw-home-sandboxes a').evaluateAll((as) =>
+      as.map((a) => a.getAttribute('href')),
+    )
+    expect(hrefs).toEqual(
+      ['garage', 'kitchen', 'bedroom', 'bathroom', 'garden', 'porch'].map((r) => `?level=${r}-sandbox`),
+    )
+    for (const room of ['garage', 'kitchen', 'bedroom', 'bathroom', 'garden', 'porch']) {
+      await tabTo(page, `#gw-home-sandbox-${room}`)
+      await expect(page.locator(`#gw-home-sandbox-${room}`)).toContainText('free build')
+    }
+    // one hop: a hop lands the sandbox page, the way-back crumb and all
+    await page.click('#gw-home-sandbox-garage')
+    await expect(page.locator('#gw-status')).toContainText('ready', { timeout: 60_000 })
+    await expect(page.locator('#gw-home-link')).toBeVisible()
+  })
 })
 
 test.describe('the front-door run — the cold-load tripwire, extended', () => {

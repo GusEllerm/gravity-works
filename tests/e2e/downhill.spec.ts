@@ -17,6 +17,7 @@ import { goto } from './goto.ts'
 import { replayRun } from '../../src/replay/replay.ts'
 import { HOUSE, HOUSE_ID } from '../../src/world/levels/house.level.ts'
 import { CAMPAIGN_LADDER, CAMPAIGN } from '../../src/world/campaign.ts'
+import { parseShareUrl } from '../../src/share/share.ts'
 
 const PAR = HOUSE.parBuild()
 const DESCENT = ['garage', 'kitchen', 'bedroom', 'bathroom', 'garden', 'porch'] as const
@@ -150,6 +151,37 @@ test.describe('the downhill — the run verifies its own hash', () => {
     expect(second.hash).toBe(first.hash)
     expect((await liveStatuses()).map((r) => r.id)).toEqual(['gw-house-result'])
     await expect(page.locator('#gw-house-status')).toContainText('same film')
+  })
+
+  test('THE TRAILER TRAVELS — Share mints a link whose replay verifies against the receipt', async ({
+    page,
+  }) => {
+    // THE TRAVELING TRAILER (h4, loop-four truth 7): the downhill minted
+    // a receipt it could not send. The Share verb rides the result bar;
+    // the payload carries NOTHING the run did not already carry — the
+    // INPUT law means the RECEIPT already commits the wind, so the link
+    // is the (levelId, build, seed, hash) the tape always was, in a v2
+    // envelope. Proof in two halves: (a) the node side decodes the link,
+    // re-sims the carried build, and the receipt hash MATCHES the link's;
+    // (b) the friend page — replay from the link — prints `verified`.
+    const s = await runDownhill(page)
+    const REF = await ref()
+    expect(s.hash).toBe(REF.hash)
+    await expect(page.locator('#gw-house-share')).toBeVisible()
+    await page.click('#gw-house-share')
+    await expect(page.locator('#gw-house-share-row')).toBeVisible({ timeout: 30_000 })
+    const url = await page.inputValue('#gw-house-share-url')
+    expect(url).toContain('#s=')
+    // (a) the node half: the link's payload, decoded and RE-SIMMED here
+    const payload = await parseShareUrl(url)
+    expect(payload.levelId).toBe(HOUSE_ID)
+    expect(payload.v).toBe(2) // the new path rides v2, nothing new inside
+    expect(payload.hash).toBe(REF.hash)
+    const linkSim = await replayRun(HOUSE, payload.build, {})
+    expect(linkSim.hash).toBe(REF.hash) // the receipt answers for the link
+    // (b) the friend half: the link OPENS INTO a replay that verifies
+    await page.goto(url)
+    await expect(page.locator('#gw-replay-status')).toHaveText('verified', { timeout: 180_000 })
   })
 })
 

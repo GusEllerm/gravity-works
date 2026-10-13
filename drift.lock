@@ -698,7 +698,7 @@ sig = "314961a8c4ab0518"
 [[bindings]]
 doc = "docs/vault/Modules/house.md"
 target = "src/pages/house.ts"
-sig = "0309d49e31cc91a8"
+sig = "f7edd09d410ff783"
 
 [[bindings]]
 doc = "docs/vault/Modules/house.md"
@@ -733,7 +733,7 @@ sig = "b5ce4907f6a9074e"
 [[bindings]]
 doc = "docs/vault/Modules/house.md"
 target = "tests/e2e/downhill.spec.ts"
-sig = "0f3fc4779fc6f641"
+sig = "8b11955644244c9e"
 
 [[bindings]]
 doc = "docs/vault/Modules/house.md"
@@ -1307,6 +1307,11 @@ sig = "f82276202a825f48"
 
 [[bindings]]
 doc = "docs/vault/Modules/share.md"
+target = "src/pages/house.ts"
+sig = "f7edd09d410ff783"
+
+[[bindings]]
+doc = "docs/vault/Modules/share.md"
 target = "src/pages/share.ts"
 sig = "601501f2ac74d46d"
 
@@ -1803,7 +1808,7 @@ sig = "314961a8c4ab0518"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "src/pages/house.ts"
-sig = "0309d49e31cc91a8"
+sig = "f7edd09d410ff783"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -1963,7 +1968,7 @@ sig = "8c3e72f7dca77458"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/front-door.spec.ts"
-sig = "9929974dc8c86261"
+sig = "361e3d7cf1c58f48"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
@@ -2403,7 +2408,7 @@ sig = "8cce90d8ad95a55e"
 [[bindings]]
 doc = "docs/vault/Reference/Action Plan 2026-10-13.md"
 target = "src/pages/house.ts"
-sig = "0309d49e31cc91a8"
+sig = "f7edd09d410ff783"
 
 [[bindings]]
 doc = "docs/vault/Reference/Action Plan 2026-10-13.md"
