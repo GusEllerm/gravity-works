@@ -450,6 +450,33 @@ h2 { font-family: var(--gw-display); letter-spacing: 0.06em; }
   font: 11px/1.4 system-ui, sans-serif;
   font-style: italic;
 }
+/* THE DISJOINT-RECT LAW COMES TO THE DOOR (h4, Lane F2 — player truth 2:
+ * "at the most common window the door wears no name"). The corner-pin
+ * law above was written for pages whose h1 the chip could never reach;
+ * the home screen's wordmark is exactly what it reached — at 1280x633
+ * the compact h1 rendered UNDER the chip (proof shot
+ * `03-wordmark-under-chip-proof.png` — elementFromPoint over the name
+ * returned the chip's link). On the door the chip therefore rides a
+ * FLOW line below the nav — a named nameplate over the cross-section at
+ * every window (1280x633 / 633x900 / 390x844, pixel truth via
+ * elementFromPoint in tests/e2e/home-chrome.spec.ts). Corner chrome
+ * keeps its corners everywhere ELSE; the `.gw-premiere` hide still
+ * wins (display:none overrides position). */
+.gw-home #gw-daily-board {
+  position: static;
+  display: inline-block;
+  /* INTEGER PIXELS ON EVERY EDGE (14px stated line + 4 padding + 2
+   * border + 8 margin = 28): the committed home pixel truth captures the
+   * CANVAS BOX, and a fractional flow line (the 11px/1.4 normal =
+   * 15.4 px) lands the canvas at y=256.39 — an element screenshot of a
+   * sub-pixel-box canvas is 960x541, not 960x540. Stated integer, the
+   * capture stays honest. */
+  font: italic 11px/14px system-ui, sans-serif;
+  margin: 2px 0 6px 12px;
+}
+/* THE WAY BACK crumb (`src/ui/home-door.ts`) — same ink as its row. */
+#gw-home-link { font-weight: 600; }
+.gw-nav-sep { opacity: 0.6; }
 /* THE DEV-PREVIEW BADGE (playtest BB item 5: "?level= loads a locked
  * level; the map shows it locked"). A locked CAMPAIGN rung addressed via
  * `?level=` wears this honest corner tag — the debug-param doctrine

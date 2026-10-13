@@ -824,3 +824,40 @@ ladder tests; ledger in [[Sessions/2026-10-11 Round2 choice]].
 ## 2026-10-12 — THE PULL-BACK AND THE FACE: an advice sentence owns a verb; the sheet gets a read-only face `[agent decision]` `[level designer]`
 
 The final-sheet probe found two ways the freeplay door lied by omission. (c) THE OVERSHOOT SOFT-LOCK — the note said `the straight sits past the cup — pull it back` while the Remove button could only take the LAST piece placed; on 3 of 6 sandboxes (garage/bathroom/garden sightings, the probe's method stated) the sentence owned no reachable verb. The fix adds NO new key: `removeIndex` gains a first clause — a piece the player placed and the tray owns, seated joined to the goal fixture's own open exit, is what the click takes — read from `goalExitJoinIndex`/`pullbackTargetIndex` in `src/track/build.ts`, the SAME join fact `moveHintFor`'s ORPHAN clause reads (one source: the sentence can never name a piece the click will not take; the fixture-run-out and tray-gate laws keep kitchen02's authored curve and every campaign LIFO rebuild byte-exact). Rejected: a Replace-on-the-sitting-piece verb (a second button for a sentence one button already points at) and an advice rewrite (the sentence was TRUE — the verb was missing). Proof law — verbs ACTUALLY heal, per room: `tools/pullback-verify.mjs` replays the probe's overshoot build on all six sandboxes (dies, is named, is not LIFO-reachable, the Remove→Place→Launch sequence rebuilds the par line to its exact par time); the porch cell needed one honesty footnote — its sink sling-shot reaches the cup from the ride-to-cup seat, so porch's scenario overshoots the DROP instead, and the sweep says so rather than staging a fake death. `tests/unit/pullback.test.ts` (the agreement laws, authored-run-out silence, tray gate) and `tests/e2e/pullback.spec.ts` (the live kitchen-sandbox walk, note as the only instruction) pin it; `replay:all` stayed 30/30 byte-same. (g) THE CHROME TRAP — the name-`save` button collided with the Save dropdown's `Save` (one page, two controls, one name; the probe's click opened settings mid-result). The row is a FIELD now: `name this line` is the input's `<label>`, the commit says `name it`, ids unchanged, and the rects are asserted disjoint. (e)/(10) THE SHEET GETS A FACE, modestly: the ledger is printed where reading lives — the LINES tab's one footline (every kind, its lifetime count, zeros honest, `RECORDS_HONESTY` verbatim, absent while nothing is earned) — and on a SANDBOX result bar the lifetime number rides ONLY the earned line, in parentheses, only for kinds this run moved, never a fourth line, never on a run that earned nothing; campaign bars pass `null` and stay byte-identical. Rejected: a standing tally board on every bar — the probe proved the invisible ledger carried no temptation, so the face is a footline you can only read, not a streak, rank or counter to feed. Proofs: `tests/unit/pullback.test.ts`, the FACE block in `tests/unit/tally.test.ts`, `tests/e2e/pullback.spec.ts`, `tests/e2e/tally.spec.ts` (field law + disjoint rects); receipt `Sessions/2026-10-12 Pullback + face.md`.
+
+## 2026-10-13 — THE SOUND LAW AT THE DOOR, THE HOUSE'S CHROME, THE PAR GATE `[technical artist]` `[agent decision]`
+
+H2 Lane F2 wired the three places the house program stayed silent while the tours got rich. **(1) THE
+SOUND LAW MOVED TO THE DOOR, AND THE FIREWALL BECAME A GRAPH.** The engine reached the bare house
+route through one page-facing module, `src/sound/mount.ts` (unlock gesture, `#gw-sound`, visibility
+pause, seam), mounted by BOTH `bootGame` and `bootHouse`; the house feeds it page-only reads — a
+≤ 20 Hz crane-position sink into `setScreenSpeed`/`setUpAxisY` (the wobble IS the crane's lean; the
+camera's law untouched), `beginRun`/`finishRun` around the probe, and room-bed switches minted at the
+probe's parcel crossings (`setBed` stops only `stopBedVoices` so a crossing never cuts the roll
+voice; `state()` now reports `bed` because the silent-voice law makes the right-bed-audible claim
+untestable by volume). The sim imports nothing sound-adjacent and sound imports nothing
+sim-adjacent — enforced by a RESOLVED-import-graph walk in `tests/unit/sound.test.ts`, mutation-
+proved (one injected `physics/sim.ts` import in `mount.ts` turns it red; the old boot-is-the-only-
+importer assertion could not see that leak once `house.ts` imported sound directly). The premise
+beat's silence is kept BY DESIGN but no longer BY ACCIDENT: no engine is constructed inside the
+beat, the swallowed autoplay-unlock gesture is REPLAYED into `mountSound({ viaGesture })` at
+`endBeat` — the film's own click opens the room, one `AudioContext` ever. **(2) THE DISJOINT-RECT LAW
+EXTENDED TO THE HOUSE, AND THE ONE-WAY DOOR GOT NAMED.** The daily chip covered the home wordmark
+(the corner law was a VIEWPORT law; the home page's chrome is a wordmark); the house route now flows
+the chip under the wordmark — the first sanctioned flow exception, legal because the home canvas
+position is house-owned — with an INTEGER-PIXEL flow line (a fractional canvas top makes a
+`canvas.screenshot()` clip 541 px tall, which is how the capture lied), and the law is swept by
+`elementFromPoint` at three viewports in `tests/e2e/home-chrome.spec.ts` (red-first: it failed with
+the chip still pinned). Every view gained `⌂ the house` (`src/ui/home-door.ts`) — an `<a>` carrying
+the WORD, nav's first crumb, hence Tab's first stop — on the rung/sandbox chrome and the share page
+(which had NO way home in its DOM); a lone Escape, chord window closed and view already home, IS the
+door, with chord precedence TIME-tracked (`lastSeen`), not DOM-order luck, and panel dismissal
+keeping playtest AA's precedence. `replay:all` 30/30 byte-identical throughout; the one DELIBERATE
+pixel move is the rung shell (the crumb makes the page 1 px taller, which shifts the bottom strip's
+COMPOSITING over the canvas — canvas BITMAPS verified byte-identical), darwin re-captured, the linux
+row left for the CI bootstrap. **(3) THE PAR TABLE GOT A GATE, AFTER LYING FOR FOUR PROGRAMS.**
+bedroom-sandbox shipped par 3.15 against a 2.75 declaration: `74f8ed7` hand-edited the derived
+file with bedroom05's encore-stagger value on the wrong row, and append-only regenerations froze it —
+because `pars --check` existed in NO workflow. The row is the recomputed truth; `pars --check` joined
+CI; `tests/unit/pars-parity.test.ts` binds table↔declaration for every level both ways (placeholders
+stated), with the 2.75 pinned as the tombstone. Proofs: `Sessions/2026-10-13 Wire the door.md`.

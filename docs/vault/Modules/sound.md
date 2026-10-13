@@ -94,6 +94,40 @@ nothing and trips no guard; mute honored across reload through localStorage) and
 `tests/e2e/save-volume.spec.ts` (a keyboard drag then an INSTANT reload lands the value — the flush
 rides the pagehide edge exactly like the build autosave).
 
+## SOUND AT THE DOOR — the engine reaches the bare house (H2 program, 2026-10-13)
+
+**The sound firewall is now a HOUSING law, not a boot law: nothing outside `src/sound/` may import
+anything sim-touching, and the sim stays sound-free.** `src/sound/mount.ts` is the one page-facing
+module — it owns the AudioContext unlock gesture (`document`+`window` pointer/key capture, the
+`#gw-sound` wrap, the visibility auto-pause, the `window.__gwSound` seam) and BOTH mounts call it:
+`bootGame` exactly where the inline block used to sit, `bootHouse` beside its camera. A static test
+walks the RESOLVED import graph of every `src/sound/*.ts` — every page-layer import must land inside
+the folder — which `src/boot.ts` alone could not see while `house.ts` pulled sim paths (mutation-
+proved: one injected `import … from '../physics/sim.ts'` in `mount.ts` turns
+`tests/unit/sound.test.ts` red). The sim never imports sound anywhere: the house's `probeStep` only
+READS its own crane quaternion (`upAxisYOfQuat`) and hands numbers to `SoundEngine`.
+
+**Where the sound comes from at the door (the law the page enforces):** the LAUNCH VOICE rides the
+`beginRun`/`finishRun` calls around `HouseController.step`; the ROLL VOICE tracks the parcel-in-hand —
+`screenSpeed` from the crane's position delta (≤ 20 Hz, a pure read of the state the camera already
+samples) and `upY` from the crane's own up axis, so the wobble is the crane's lean and the camera's
+wobble law is untouched. Room beds switch where parcels CROSS (`probeStep`'s crossing edges: the
+launch mints the addressed room's bed, catch releases it, the terminal room runs `startRoomBed` once —
+its `hasRoomBed` re-entry guard holds because the engine's `bed` NAME moved at catch); the idle bed is
+`kitchen` at the address-free home page and `porch` when a room is addressed. `setBed` stops only the
+bed voice (`stopBedVoices`, the sibling of `stopBed`) so a room crossing MID-RUN never cuts the roll
+voice. `state()` now reports `bed` (the silent-voice law says a resting room bed is audible NOWHERE —
+the e2e test reads the name, never a volume).
+
+**The premise beat is the one silence, and it unlocks the room.** `?boot=house&premise=1&sound=on`
+holds the engine out of the scene — nothing is constructed, the chip sleeps — AND swallows the unlock
+gesture (an autoplay-blocked context created inside the beat would start the whole film with sound,
+which is the silence's own spec). When the beat ENDS the swallowed gesture replays into
+`mountSound({ viaGesture })`: the same pointer path `unlock()` takes from a real click, so the film's
+one click is what opens the room — and exactly one AudioContext is ever constructed (the tour hand-off
+proves it: the premise page builds its sound once, and `?boot=house` alone never double-unlocks).
+
 ## Depends on / used by
 
-`src/save` (settings persistence only). Used by `src/boot.ts` (the only game-side importer).
+`src/save` (settings persistence only). Used by `src/boot.ts` and `src/pages/house.ts`, both through
+`src/sound/mount.ts` — the page wrapper the firewall test walks (see SOUND AT THE DOOR).

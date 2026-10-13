@@ -69,6 +69,13 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run typecheck
       - run: npm run replay:all
+      # THE PAR TRUTH GATE (h4 (d), engineering note §4 — the bedroom-sandbox
+      # drift that rode FOUR programs silent): `pars --check` recomputes every
+      # level's par line by headless replay and fails on any drift between
+      # `pars.json` and what the physics actually measures. Same runner image
+      # as `replay:all`, so the 0.05 s ceil absorbs nothing but real drift —
+      # the script's header always CLAIMED this ran in CI; now it does.
+      - run: npm run pars -- --check
       # THE TALLY SWEEP (freeplay Lane B — THE TALLY LAW): no single rig
       # farms more than 6 badges/run (measured max 4, booster-farm 3;
       # tools/tally-sweep.mjs publishes the table).

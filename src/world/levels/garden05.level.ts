@@ -170,7 +170,10 @@ export const GARDEN05: GardenLevel = registerGarden(
     startSocket: startSocketFromBuild(parBuild(), GARD_GEOM.release * GARD05_CHUTE_BLEND),
     // measured on the par build (regenerate via `npm run pars`); the
     // stage-6 brevity trim moves the clock 3.05 → 1.35 (measured 1.342)
-    par: { pieces: 4, time: 1.4 },
+    // — the inline line now SAYS what its own comment and the
+    // `pars.json` row say (h4 tripwire (d): the two claims of ONE truth,
+    // finally compared; the row was 1.35 while this line still read 1.4)
+    par: { pieces: 4, time: 1.35 },
     maxTime: 12,
     tray: { drop: 2, straight: 2, landing: 1, booster: 1 },
     trayParams: { booster: {} },

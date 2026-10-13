@@ -488,11 +488,15 @@ export class SoundEngine {
     }
   }
 
-  /** Set the per-set ambience bed (called at level boot). The room tone
-   *  runs; kitchen adds a clock tick, garden adds sparse birds. */
+  /** Set the per-set ambience bed (called at level boot AND at every room
+   *  crossing of the house descent — h4). SWITCHING A BED IS NOT STOPPING
+   *  A RUN: the room tone and the bed scheduler move with the crane, the
+   *  sustained ROLL voice rolls straight through the crossing (only the
+   *  mute/visibility/dispose edges may close it — the shape `bootGame`
+   *  always relied on, now with the crossing on the same path). */
   setBed(bed: string | null): void {
     this.bed = bed;
-    this.stopBed();
+    this.stopBedVoices();
     this.startBed();
   }
 
@@ -512,6 +516,10 @@ export class SoundEngine {
     unlocked: boolean;
     deaf: boolean;
     running: boolean;
+    /** The ambience bed's current room (h4: the e2e proves the bed FOLLOWS
+     *  THE CRANE across parcel crossings — a fact of this surface, not of
+     *  the sim). */
+    bed: string | null;
     runCounts: Record<string, number>;
     rejected: Record<string, number>;
     rollUpdates: number;
@@ -522,6 +530,7 @@ export class SoundEngine {
       unlocked: this.unlocked,
       deaf: this.deaf,
       running: this.running,
+      bed: this.bed,
       runCounts: { ...this.runCounts },
       rejected: { ...this.rejected },
       rollUpdates: this.rollUpdates,
@@ -554,6 +563,13 @@ export class SoundEngine {
   }
 
   private stopBed(): void {
+    this.stopBedVoices();
+    this.stopRoll(0);
+  }
+
+  /** The bed's OWN voices (room tone + scheduler). `setBed` stops THESE,
+   *  never the roll (h4 — the crossing law above). */
+  private stopBedVoices(): void {
     if (this.bedTimer) {
       clearTimeout(this.bedTimer);
       this.bedTimer = null;
@@ -562,7 +578,6 @@ export class SoundEngine {
       this.bedRoom.stop(this.ctx.currentTime);
     }
     this.bedRoom = null;
-    this.stopRoll(0);
   }
 
   private stopRoll(_t: number): void {

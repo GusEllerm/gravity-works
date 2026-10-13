@@ -96,6 +96,9 @@ import { recordHouseRun, readHouseBest, RECORDS_HONESTY, type HouseBest } from '
 import { dailyLinkLine, dailySeed, utcDateKey } from '../save/daily.ts';
 import { createLinesTab } from '../ui/levelselect.ts';
 import { premiereWanted, markPremiereSeen } from './intro.ts';
+import { mountSound } from '../sound/mount.ts';
+import { upAxisYOfQuat } from '../sound/sound.ts';
+import type { SoundEngine } from '../sound/sound.ts';
 
 /** Room labels for the result copy — the rooms of the descent order. */
 const ROOM_LABEL: Record<string, string> = {
@@ -198,6 +201,11 @@ export async function bootHouse(
   // the player never sees chrome for a frame.
   const wantBeat = home && !params.has('launch') && premiereWanted(params);
   if (wantBeat) root.classList.add('gw-premiere');
+  // THE DOOR'S FACE (h4, truth 2): the home boot marks the root so the
+  // corner chrome obeys the DISJOINT-RECT LAW AT THE DOOR — the daily
+  // chip rides a flow line below the nav instead of painting over the
+  // wordmark at the compact heights (`ui/shell.css`).
+  if (home) root.classList.add('gw-home');
 
   root.innerHTML = '<h1>Gravity Works — the House</h1>';
   const nav = document.createElement('p');
@@ -401,6 +409,39 @@ export async function bootHouse(
   camera.position.set(poseTarget.eye[0], poseTarget.eye[1], poseTarget.eye[2]);
   camera.lookAt(poseTarget.target[0], poseTarget.target[1], poseTarget.target[2]);
 
+  // ---- SOUND AT THE DOOR (h4, Lane F2 — THE SOUND LAW: every boot route
+  // wires the engine or the game is silent at its own door) -------------
+  // The player verdict's truth 1: the door-swap moved the front page out
+  // of `bootGame`, and the SOUND block lived only inside `bootGame` — the
+  // house was LITERALLY silent. The page wiring (engine, gesture unlock,
+  // visibility pause, the `#gw-sound` chip, the e2e seams) now lives in
+  // `src/sound/mount.ts`, which BOTH routes mount; what the page adds are
+  // the EVENTS, which are exactly the sound module's existing event map:
+  // the launch voice, the roll (a read-only `frame` sink at the foot of
+  // the render loop — the same two facts the screen already renders),
+  // the ROOM BEDS and roll surfaces that follow the crane — parked at a
+  // window, dwelling where physics approved, parcel crossing by parcel
+  // crossing — and the terminal edge (`finishRun`, the outcome fields
+  // only). THE FIREWALL STANDS: nothing in `src/sound` reaches for the
+  // sim, transitively (the unit test mutates to prove it); the page feeds
+  // the engine, never the reverse.
+  // THE BEAT stays silent BY CONSTRUCTION: on the beat path the engine
+  // does not EXIST until `endBeat` mounts it — the beat's skip listener
+  // swallows the first gesture (`src/pages/intro.ts` documents the
+  // swallow), so endBeat replays that swallowed gesture into `unlock()`
+  // inside the still-live event: the beat unlocks AFTER itself.
+  let sound: SoundEngine | null = null;
+  /** The room the PARKED crane listens from: a deep-linked window, else
+   *  the kitchen (the front door's own room) on the home route, the porch
+   *  (build 1's parked eye) on the addressed house page. */
+  const idleBed: string = menuRoom ?? (home ? 'kitchen' : 'porch');
+  function mountTheDoorSound(viaGesture: boolean): void {
+    if (sound) return; // ONE engine, ONE unlock — no double-unlock, ever
+    sound = mountSound({ root, setId: idleBed });
+    if (viaGesture) sound.unlock(); // the beat's swallowed gesture, replayed
+  }
+  if (!wantBeat) mountTheDoorSound(false);
+
   /** Open (or close, with null) a window: the camera parks AT the room —
    *  the `?room=` gesture, presentation only, no force enters the sim —
    *  and its tour list lands under it. One open window at a time: the
@@ -414,6 +455,12 @@ export async function bootHouse(
     }
     poseTarget = room ? menuPose(layout, room) : homePoseLayout;
     applyIdlePose();
+    // the bed follows the parked eye (idle only — a RUNNING run owns its
+    // beds, parcel crossing by parcel crossing, below)
+    if (world.status === 'idle') {
+      sound?.setBed(room ?? idleBed);
+      sound?.setSurface(room ?? idleBed);
+    }
   }
 
   function applyIdlePose(): void {
@@ -479,6 +526,11 @@ export async function bootHouse(
         const ev = { room: p.room as FrameRoom, step: world.stepCount - launchStep, time: world.time };
         approvals.push(ev);
         houseCam.approved(ev.room, ev.time);
+        // the ROOM BED switches at the crossing — the eye and the ear
+        // move together down the house (the sound module's event map,
+        // finally called by the page that always knew about crossings)
+        sound?.setBed(ev.room);
+        sound?.setSurface(ev.room);
         statusLine.textContent = houseStatusLine(approvals.length, world.time);
       }
     }
@@ -507,6 +559,21 @@ export async function bootHouse(
     bestLine.textContent = houseBestLine(outcome.best);
     hashValue.textContent = world.hashHex();
     ghost.park();
+    // THE TERMINAL EDGE (the sound event map's run outcome, stated once):
+    // exactly the fields the result bar prints — rooms decide, the clock
+    // ties-breaks, and the victory arpeggio is PROGRESS (minted/beat),
+    // never repetition. The bed returns to the parked eye's room.
+    sound?.finishRun({
+      status:
+        world.status === 'finished' || world.status === 'fell' || world.status === 'timeout'
+          ? world.status
+          : 'stalled',
+      stars: 0, // rooms, not stars, are the house's currency
+      newBest: outcome.outcome === 'minted' || outcome.outcome === 'beat',
+      hazardsTouched: 0,
+    });
+    sound?.setBed(openRoom ?? idleBed);
+    sound?.setSurface(openRoom ?? idleBed);
     if (home) {
       // the front door returns: the windows over the cross-section again
       for (const w of winEls) w.el.hidden = false;
@@ -523,6 +590,12 @@ export async function bootHouse(
     launchStep = world.stepCount;
     houseCam.reset();
     houseCam.approved('garage', 0); // the launch deck is where the eye is
+    // the launch voice and the roll, opening on the garage deck — the
+    // same hook shape `bootGame` fires at its Launch button
+    sound?.voice('launch');
+    sound?.beginRun();
+    sound?.setBed('garage');
+    sound?.setSurface('garage');
     ghost.beginRace();
     if (ended) {
       // a re-release restarts the render loop the terminal frame stopped
@@ -595,13 +668,20 @@ export async function bootHouse(
     };
     const skip: EventListener = (ev: Event) => {
       ev.stopPropagation(); // the dismissing gesture belongs to the beat alone
-      endBeat();
+      // THE SWALLOW, FINISHED HONEST (h4): the beat swallows the FIRST
+      // gesture — that is the premiere law `src/pages/intro.ts` states —
+      // but the swallow must not COST the door its audio. The gesture is
+      // still live HERE, so endBeat replays it into the unlock path (the
+      // autoplay policy trusts this exact handler stack); the beat stays
+      // silent BY CONSTRUCTION (the engine does not exist yet) and
+      // unlocks AFTER itself.
+      endBeat(true);
     };
     beatSkip.push(['pointerdown', skip], ['keydown', skip]);
     for (const [type, fn] of beatSkip) window.addEventListener(type, fn, true);
   }
 
-  function endBeat(): void {
+  function endBeat(viaGesture = false): void {
     if (!beat?.active) return;
     beat.active = false;
     clearTimeout(beat.timer);
@@ -612,6 +692,7 @@ export async function bootHouse(
     beat = null;
     beatScene = null;
     applyIdlePose();
+    mountTheDoorSound(viaGesture); // the engine exists only AFTER the beat
     renderer.render(scene, camera);
   }
 
@@ -666,6 +747,32 @@ export async function bootHouse(
   let last = performance.now();
   let accum = 0;
   let ended = false;
+  // THE ROLL VOICE'S TWO FACTS (the same READ-ONLY pair `bootGame` feeds):
+  // the car's on-screen speed (position delta over wall dt, throttled to
+  // <=20 Hz by the engine) and how visibly inverted it is. The engine
+  // pulls NOTHING from the world.
+  let prevCarSoundPos: { x: number; y: number; z: number } | null = null;
+  let prevCarSoundAt = 0;
+  function soundFrame(now: number): void {
+    if (!sound || world.status === 'idle') return;
+    const s = world.state();
+    const dtS = (now - prevCarSoundAt) / 1000;
+    let screenSpeed = 0;
+    if (prevCarSoundPos && dtS > 0.001) {
+      const dx = s.car.pos.x - prevCarSoundPos.x;
+      const dy = s.car.pos.y - prevCarSoundPos.y;
+      const dz = s.car.pos.z - prevCarSoundPos.z;
+      screenSpeed = Math.sqrt(dx * dx + dy * dy + dz * dz) / dtS;
+    }
+    prevCarSoundPos = { x: s.car.pos.x, y: s.car.pos.y, z: s.car.pos.z };
+    prevCarSoundAt = now;
+    sound.frame({
+      dtMs: dtS * 1000,
+      running: world.status === 'running',
+      screenSpeed,
+      upY: upAxisYOfQuat(s.car.quat),
+    });
+  }
   function frame(now: number): void {
     if (ended) return;
     if (!document.hidden) {
@@ -682,6 +789,7 @@ export async function bootHouse(
         probeStep();
         accum -= FIXED_DT;
       }
+      if (sound) soundFrame(now); // READ-ONLY sink, outside the stepping block
       if (world.status !== 'idle') {
         ghost.sync(world.time);
         houseCam.apply(camera, world.time, fog);

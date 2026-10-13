@@ -9,8 +9,10 @@
  *    page and verifies — the acceptance line, end to end, no hand-forging.
  * 2. ESC CLOSES THE OVERLAY FIRST (AA: "Home did nothing with the failure
  *    overlay up — camera stayed parked in a far failure vista"): the first
- *    Escape dismisses the panel and walks the framing home; the second is
- *    a lone first half of the camera's chord and does nothing violent.
+ *    Escape dismisses the panel and walks the framing home; afterwards —
+ *    chord window closed, view home — a LONE Escape is the h4 door: the
+ *    house, the way back (`src/ui/home-door.ts`; the law reconciliation
+ *    is stated in `Sessions/2026-10-13 Wire the door.md`).
  * 3. THE PANEL NEVER YANKS SCROLL (AA: "the results card yanks the page
  *    scroll — I lost the canvas twice"): opening or closing the panel at
  *    1280x720 AND 1280x633 moves no scroll and no canvas rect, and the
@@ -55,7 +57,7 @@ test('the panel shares the run: the produced link opens the replay page and veri
   expect(errors).toEqual([])
 })
 
-test('Escape closes the failure overlay and brings the view home; the second Escape is harmless', async ({ page }) => {
+test('Escape closes the failure overlay; a lone Escape once the chord window closes walks you HOME (h4)', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (err) => errors.push(String(err)))
 
@@ -79,14 +81,22 @@ test('Escape closes the failure overlay and brings the view home; the second Esc
     .poll(() => cameraPose(page).then((p) => dist(p, home)), { timeout: 30_000 })
     .toBeLessThan(0.01)
 
-  // SECOND Escape: a lone first half of the camera's chord — the view it is
-  // not even aimed at is already home, so it must move nothing
-  const back = await cameraPose(page)
+  // SECOND act (h4, Lane F2 — the door stops being one-way): the rung
+  // page is a room you came FROM. The camera's double-Escape chord keeps
+  // precedence WHILE IT MEANS SOMETHING (offset view: covered in
+  // camera-torture; a quick chord: covered in home-chrome), but with the
+  // view home and the chord window closed, a LONE Escape is the house —
+  // the same verb as the `⌂ the house` crumb (`src/ui/home-door.ts`).
+  // Stated law change: the pre-h4 "second Escape is harmless" law is
+  // subsumed — the harmless half-chord case is still the camera's, and
+  // the deterministic lone press now walks out of the room.
+  await page.waitForTimeout(1600) // the chord window closes
   await page.keyboard.press('Escape')
-  await page.waitForTimeout(400)
-  const after = await cameraPose(page)
-  expect(dist(after, back)).toBeLessThan(1e-3)
-  await expect(page.locator('#gw-result')).toBeHidden()
+  await page.waitForFunction(
+    () => typeof (window as any).__gwHouseState === 'function',
+    undefined,
+    { timeout: 60_000 },
+  )
 
   expect(errors).toEqual([])
 })
