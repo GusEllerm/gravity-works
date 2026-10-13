@@ -2351,6 +2351,21 @@ target = "src/world/campaign.ts"
 sig = "8cce90d8ad95a55e"
 
 [[bindings]]
+doc = "docs/vault/Reference/Action Plan 2026-10-13.md"
+target = "src/pages/house.ts"
+sig = "3d52407c37a67ace"
+
+[[bindings]]
+doc = "docs/vault/Reference/Action Plan 2026-10-13.md"
+target = "src/ui/result.ts"
+sig = "cd7b8d2f177f37a7"
+
+[[bindings]]
+doc = "docs/vault/Reference/Action Plan 2026-10-13.md"
+target = "src/world/pars.json"
+sig = "043116115de8179a"
+
+[[bindings]]
 doc = "docs/vault/Reference/Canonical Cameras.md"
 target = "src/dev/cameras.ts"
 sig = "f82276202a825f48"
