@@ -152,6 +152,16 @@ livedocs: live
   what caught it) is impossible by construction. A launched run begins "from second zero" on the page
   exactly as `World.launch` states it does in the sim; the live run now plays at wall speed.
 
+- ONE RUN PRINTS ONE VERDICT (h4, loop-four truth 6 — the door's tape contradicted itself: "4 rooms
+  · 3.7 s" printed directly above "4 rooms · 6.7 s — you stopped at the bathroom", both `role=status`,
+  because the live counter never retired) — `finalize()` writes the result line and RETIRES the
+  status line: its `role` is lifted and its text cleared, so exactly ONE live status element remains
+  after a run (the result line; a frozen clock is not a live region — asserted page-wide in
+  `tests/e2e/downhill.spec.ts`). `launchRun` RE-ARMS the line (`role=status`, `houseStatusLine(0, 0)`)
+  and the parcel probe keeps writing it mid-run as the live counter it always was. A re-release rides
+  the SAME tape (the seating law) and the retired line SAYS SO — `lastRunHash` against the terminal
+  hash prints "same film — this release replayed the same tape", the freeze made honest.
+
 ## See also
 
 - [[Decision Log]] "THE DOWNHILL greenlit" (the law), [[Reference/Downhill Spike]] (the frame

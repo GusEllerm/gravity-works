@@ -366,8 +366,8 @@ export async function bootHouse(
   let openRoom: FrameRoom | null = null;
   if (home) {
     const windows = document.createElement('nav');
-    windows.id = 'gw-house-windows';
     windows.setAttribute('aria-label', 'The house — six windows');
+    windows.id = 'gw-house-windows';
     stage.appendChild(windows);
     for (const room of CAMPAIGN) {
       const stars = room.levelIds.reduce(
@@ -618,6 +618,9 @@ export async function bootHouse(
   const approvals: ParcelApproval[] = [];
   const seen = new Set<string>();
   let launchStep = 0;
+  /** The last run's terminal hash — the "same film" truth of a re-release
+   *  (the seating law, spoken): identical bytes, said honestly. */
+  let lastRunHash: string | null = null;
 
   function probeStep(): void {
     const s = world.state();
@@ -642,7 +645,7 @@ export async function bootHouse(
   }
 
   function finalize(): void {
-    // the terminal stall branch (the spike's approval law, per parcel):
+    // THE TERMINAL STALL BRANCH (the spike's approval law, per parcel):
     // a car that ENDED stopped with its nose in a bowl is in the bowl
     if (world.status === 'stalled') {
       const s = world.state();
@@ -662,7 +665,20 @@ export async function bootHouse(
     resultLine.textContent = houseResultLine(approvals.length, world.time, stoppedAt);
     const outcome = recordHouseRun(HOUSE_ID, approvals.length, world.time);
     bestLine.textContent = houseBestLine(outcome.best);
-    hashValue.textContent = world.hashHex();
+    const runHash = world.hashHex();
+    // ONE RUN PRINTS ONE VERDICT (h4, loop-four truth 6 — the door's tape
+    // contradicted itself: "4 rooms · 3.7 s" printed above "4 rooms ·
+    // 6.7 s — you stopped at the bathroom", BOTH `role=status`, because
+    // the live counter never retired). The result line IS the verdict;
+    // the status line is RETIRED — its `role` lifted, so the one live
+    // status after a run is the result line alone (the frozen clock is
+    // not a live region). A re-release rides the SAME tape (the seating
+    // law), and the retired line says so honestly: "same film".
+    const sameFilm = lastRunHash !== null && lastRunHash === runHash;
+    lastRunHash = runHash;
+    statusLine.removeAttribute('role');
+    statusLine.textContent = sameFilm ? 'same film — this release replayed the same tape' : '';
+    hashValue.textContent = runHash;
     ghost.park();
     // THE TERMINAL EDGE (the sound event map's run outcome, stated once):
     // exactly the fields the result bar prints — rooms decide, the clock
@@ -690,6 +706,11 @@ export async function bootHouse(
     approvals.length = 0;
     seen.clear();
     resultLine.textContent = '';
+    // the live counter is RE-ARMED for this run (retired again at the
+    // next terminal edge) — the status line is live only while a run is
+    // on the table
+    statusLine.setAttribute('role', 'status');
+    statusLine.textContent = houseStatusLine(0, 0);
     if (home) for (const w of winEls) w.el.hidden = true; // the run owns the screen
     world.launch();
     launchStep = world.stepCount;

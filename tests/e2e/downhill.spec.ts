@@ -122,6 +122,35 @@ test.describe('the downhill — the run verifies its own hash', () => {
     expect(second.hash).toBe(first.hash)
     expect(second.hash).toBe(REF.hash)
   })
+
+  test('ONE run prints ONE verdict — one live status after a run; a re-release says so honestly', async ({
+    page,
+  }) => {
+    // THE CONTRADICTION (h4, loop-four truth 6): "3.7 s" printed directly
+    // above "6.7 s" — the live counter kept its `role=status` after the
+    // terminal edge, so one run announced TWO verdicts. The law: exactly
+    // ONE live status element on the page after a run — the result line.
+    // `finalize()` writes it and RETIRES the status line (role lifted, the
+    // frozen clock is not a live region). A second Release rides the same
+    // tape and the retired line SAYS SO — "same film", no silent freeze.
+    const liveStatuses = () =>
+      page
+        .locator('[role="status"]')
+        .evaluateAll((els) =>
+          els
+            .map((e) => ({ id: e.id, text: (e.textContent ?? '').trim() }))
+            .filter((r) => r.text !== ''),
+        )
+    await runDownhill(page)
+    expect((await liveStatuses()).map((r) => r.id)).toEqual(['gw-house-result'])
+    const first = await runDownhill(page)
+    // the re-release: the run is the SAME film, and the page says it
+    await page.click('#gw-launch')
+    const second = await runDownhill(page)
+    expect(second.hash).toBe(first.hash)
+    expect((await liveStatuses()).map((r) => r.id)).toEqual(['gw-house-result'])
+    await expect(page.locator('#gw-house-status')).toContainText('same film')
+  })
 })
 
 test.describe('the house page — tours are the unchanged campaign addresses', () => {
