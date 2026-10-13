@@ -912,6 +912,14 @@ export async function bootHouse(
         probeStep();
         accum -= FIXED_DT;
       }
+      // A STEP DEBT ONLY EXISTS WHILE THERE IS A RUN TO OWE IT TO (h4, the
+      // fast-forward fix): an idle page accrues wall time in `accum` the
+      // stepping loop can never spend, so a run launched after minutes of
+      // parked crane would TELEPORT — hundreds of fixed steps in the first
+      // frame, parcel crossings swallowed whole, the result bar answering
+      // for a run nobody could watch. `World.launch` starts a run "from
+      // second zero"; the page clock now agrees with the sim.
+      if (world.status !== 'running') accum = 0;
       if (sound) soundFrame(now); // READ-ONLY sink, outside the stepping block
       if (world.status !== 'idle') {
         ghost.sync(world.time);

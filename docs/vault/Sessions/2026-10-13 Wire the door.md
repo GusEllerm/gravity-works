@@ -73,6 +73,20 @@ house 100.0) stated where they live, so a future drift fails IN the suite, not i
 bedroom-sandbox 2.75 is pinned in the test as the regression's tombstone. (`garden05`'s inline `par.time` was also 1.4 against its own comment's 1.35 — the comment
 was right, the number rotted; fixed.)
 
+## The merge caught a real bug (the bed witness earns its keep)
+
+Merging Lane F1's furnished door (`h4-furnish`) into this branch turned the release-mints test red,
+and the chase root-caused a law violation BOTH lanes had been carrying: the house page loop accrues
+wall time into `accum` while the world is IDLE (`last` updates, the stepping `while` refuses), so a
+run launched after the crane sat parked came alive by **teleport — ~350 fixed steps in the first
+frame**, swallowing parcel crossings whole and answering for two seconds of a run nobody watched.
+The bed witness (polling `state().bed` through the run — the only observer on the page that samples
+faster than the frame) caught it, because a teleported garage crossing leaves no bed to witness. The
+fix is one line and one law: a step debt only exists while there is a run to owe it to — the page
+drops `accum` whenever the world is not running, so a launched run starts on the sim's own "from
+second zero" (the seating law `World.launch` already states). Sim step sequences are untouched —
+`replay:all` 30/30 byte-identical stands — and every house run now plays at wall speed on screen.
+
 ## Proofs
 
 - `npm run replay:all` — 30 rungs verified, hashes byte-identical; house e2e receipt `6caea49b`

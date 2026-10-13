@@ -145,6 +145,13 @@ livedocs: live
   the home page can host the daily chip in the FLOW beside the wordmark instead of pinning it over
   it (the disjoint-rect law; see [[Modules/ui]]).
 
+- THE PAGE CLOCK OWES THE SIM NO DEBT (h4, the fast-forward fix) — the render loop's `accum` is
+  zeroed whenever `world.status` is not `running`: wall time accrued while the crane sits PARKED is
+  not a step debt the launched run may spend, and a run that began by teleporting hundreds of fixed
+  steps (crossings swallowed in the first frame — the bed witness in `tests/e2e/sound.spec.ts` is
+  what caught it) is impossible by construction. A launched run begins "from second zero" on the page
+  exactly as `World.launch` states it does in the sim; the live run now plays at wall speed.
+
 ## See also
 
 - [[Decision Log]] "THE DOWNHILL greenlit" (the law), [[Reference/Downhill Spike]] (the frame
