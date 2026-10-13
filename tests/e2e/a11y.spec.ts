@@ -294,3 +294,30 @@ test('the share row speaks through a live region and the input is a tab stop', a
   await expect(page.locator('#gw-result-share-note')).toHaveAttribute('aria-live', 'polite')
   await expect(page.locator('#gw-result-share-url')).toHaveAttribute('aria-label', /share link/i)
 })
+
+test('THE FRONT DOOR windows tab in the DOWNHILL ORDER — garage first, the first room down', async ({ page }) => {
+  // Loop-four truth 5: the walk was clean and complete but visited the
+  // six windows in CAMPAIGN order — GARAGE, visually first and the first
+  // room down, fifth. The sill-stars grammar and the names are unchanged;
+  // only the ORDER moves, to the one the cross-section already reads.
+  test.slow() // the furnished door: every Tab blocks on the frame (Lane F1 budget)
+  await goto(page, '/?boot=house')
+  await page.waitForFunction(
+    () => typeof (window as any).__gwHouseState === 'function',
+    undefined,
+    { timeout: 60_000 },
+  )
+  const walk: string[] = []
+  for (const room of ['garage', 'kitchen', 'bedroom', 'bathroom', 'garden', 'porch']) {
+    walk.push(...(await tabTo(page, `#gw-house-window-${room}`, 60)))
+  }
+  const windows = walk.filter((n) => n.startsWith('#gw-house-window-'))
+  expect(windows).toEqual([
+    '#gw-house-window-garage',
+    '#gw-house-window-kitchen',
+    '#gw-house-window-bedroom',
+    '#gw-house-window-bathroom',
+    '#gw-house-window-garden',
+    '#gw-house-window-porch',
+  ])
+})

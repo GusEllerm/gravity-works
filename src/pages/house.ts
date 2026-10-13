@@ -414,7 +414,12 @@ export async function bootHouse(
     windows.setAttribute('aria-label', 'The house — six windows');
     windows.id = 'gw-house-windows';
     stage.appendChild(windows);
-    for (const room of CAMPAIGN) {
+    // THE TAB WALK WALKS DOWNHILL (h4, loop-four truth 5): the windows are
+    // emitted in the DESCENT order (`ROOM_IDS` — garage first, the first
+    // room down and visually first), not the CAMPAIGN projection order
+    // that parked garage fifth. Nav order only — every room's data, name,
+    // sill and tour bytes come from the SAME CAMPAIGN rows, unchanged.
+    for (const room of doorRooms) {
       const stars = room.levelIds.reduce(
         (sum, id) => sum + Math.min(3, Math.max(0, Math.trunc(save.progress.stars[id] ?? 0))),
         0,
@@ -641,6 +646,32 @@ export async function bootHouse(
   if (home && menuRoom) {
     // an opened-by-address landing: the window the deep-link names is open
     openWindow(menuRoom);
+  }
+
+  // ESCAPE CLOSES WHAT THE DOOR OPENED (h4, loop-four truth 5: "Escape
+  // still closes NOTHING at the door"). The same verb the way-back link
+  // speaks on the OTHER pages (`mountHomeDoor`) has work to do HERE: the
+  // door has panels. The open window closes (the camera unparks, the tour
+  // list lifts) and focus returns to the window that opened it; with no
+  // window open, the Lines corner closes onto its own button. Nothing
+  // else on this page claims Escape — there is no camera chord here and
+  // no panel during a run — so the key is free wherever a panel is up.
+  if (home) {
+    window.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Escape' || ev.defaultPrevented) return;
+      if (world.status === 'running') return;
+      if (openRoom !== null) {
+        const room = openRoom;
+        openWindow(null);
+        winEls.find((w) => w.room === room)?.btn.focus();
+        ev.preventDefault();
+      } else if (!linesPanel.hidden) {
+        linesPanel.hidden = true;
+        linesCorner.setAttribute('aria-expanded', 'false');
+        linesCorner.focus();
+        ev.preventDefault();
+      }
+    });
   }
 
   // ---- the par ghost: afterlife default (ON unless reduced motion says

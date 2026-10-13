@@ -176,6 +176,19 @@ livedocs: live
   puts each room's shipped `?level=<room>-sandbox` on the home flow line ("<room> free build", in
   descent order): free is one hop from `/`, named in the Tab walk, not two hops through the board.
 
+- THE KEYBOARD SEAMS AT THE DOOR (h4, loop-four truth 5 — "Escape still closes NOTHING at the door"
+  and "GARAGE … is visited FIFTH") — TWO laws, no new machinery. ESCAPE CLOSES WHAT THE DOOR OPENED:
+  the home boot listens once — the open window's panel closes (via `openWindow(null)`: the camera
+  unparks, `aria-expanded` goes false) and focus returns to the window button that opened it; with
+  no window open the LINES corner closes onto `#gw-lines-corner`. Nothing else on the home page
+  claims Escape (no camera chord, no panel during a run), so the key is free wherever a panel is up
+  — the sibling of the `mountHomeDoor` verb the OTHER pages speak (`src/ui/home-door.ts`), asserted
+  in `tests/e2e/front-door.spec.ts`. THE TAB WALK WALKS DOWNHILL: the six window buttons are
+  emitted in DESCENT order (`ROOM_IDS` — garage first, the first room down and visually first),
+  not the `CAMPAIGN` projection order that parked garage fifth; nav order only — every room's rows,
+  names (`windowAriaName`) and sill stars (`windowSillLine`) ride the same CAMPAIGN data unchanged
+  (the sill-stars grammar is untouched; the order assertion lives in `tests/e2e/a11y.spec.ts`).
+
 ## See also
 
 - [[Decision Log]] "THE DOWNHILL greenlit" (the law), [[Reference/Downhill Spike]] (the frame
