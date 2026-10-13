@@ -197,6 +197,9 @@ test.describe('the front door — the bare route is the house', () => {
   })
 
   test('FREE is one hop: the six sandboxes ride the home page, named and Tab-reachable', async ({ page }) => {
+    test.slow() // THE FURNISHED BUDGET (Lane F1 law): six tabTo walks on a
+    // six-set page block on the frame; a saturated runner is ~4× (the same
+    // budget the window-name walk above documents — ASSERTIONS untouched).
     // loop-four truth 7's home half — "Home carries exactly three anchors
     // … ZERO sandbox links". The six doors' free-build siblings join the
     // door's own chrome (the rooms in DESCENT order, garage first), one

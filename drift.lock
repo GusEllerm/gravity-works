@@ -748,7 +748,7 @@ sig = "8b11955644244c9e"
 [[bindings]]
 doc = "docs/vault/Modules/house.md"
 target = "tests/e2e/front-door.spec.ts"
-sig = "b20a345242623ff6"
+sig = "adee2a8ac86c1a29"
 
 [[bindings]]
 doc = "docs/vault/Modules/house.md"
@@ -1983,7 +1983,7 @@ sig = "8c3e72f7dca77458"
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
 target = "tests/e2e/front-door.spec.ts"
-sig = "b20a345242623ff6"
+sig = "adee2a8ac86c1a29"
 
 [[bindings]]
 doc = "docs/vault/Modules/ui.md"
