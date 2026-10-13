@@ -44,18 +44,59 @@ livedocs: live
   the sill (`windowSillLine`), Tab reaches every window and Enter opens it (`aria-expanded`; the
   camera parks at that deck — the `?room=` gesture, presentation only), and the corner chrome
   keeps its corners (the daily chip `#gw-daily-board` → `?daily=1`; the LINES corner
-  `#gw-lines-corner` opening the level select's own `createLinesTab`). THE PREMISE BEAT lives
+  `#gw-lines-corner` opening the level select's own `createLinesTab`). SINCE FURNISHING (Lane F1,
+  the 8→9 program) the page MOUNTS THE SETS (`mountHouseSets`, below) on its own world AND the
+  beat's, wears the `SET_TOKENS` face (`setHouseFace`: the cross-section the kitchen token's
+  `background`, a room the crane parks at its own, the fog breathing the same colour), breathes
+  the build-view haze at the home pose only (`homePose`'s `fog` = `HOME_HAZE`; the run's physics
+  footage stays fog-free), clamps the run eye against the house-wide camera solids
+  (`HouseCamera.setSolids` ← `setCameraSolids` over the mounted sets), and retires the red proxy
+  box AT THE DOOR: the page mounts the ratified `createCarRig` through `attachCarRig` (the
+  replay/share precedent — the rig rides `World.carPose(alpha)`, the hidden box keeps its
+  transforms written, the wheel spin is a render-side omega read, never a physics drive; the beat
+  gets its own rig, disposed with the beat). The render layer's probe seam `__gwHouseScene`
+  (visuals-only debugging, the same family as `__gwHouseState`/`__gwHouseCameraPose`). THE PREMISE BEAT lives
   HERE (law 4): `HOUSE_BEAT` + `HOUSE_BEAT_LEVEL` (the house with the wind OFF in the data and
   one legal launch push — every force still in replayed data; a stepped `World` on its own scene,
   disposed at the beat's end, recording nothing): the crane pulls back from the KITCHEN window
   (`beatPullPose`), the car free-rolls one room and dies in the next (garage @ ~1.4 s, kitchen
-  @ ~3.2 s, measured), one still beat, then the chrome returns; `src/pages/intro.ts` keeps the
+  @ ~3.2 s, measured), one still beat, then the chrome returns; the beat MOUNTS THE SETS too (fresh
+  instances, freed with its own `world.dispose()`), the skip listener registers from the CLASS-ADD
+  tick (a press during the mounted boot skips the beat the moment it forms), and the phase walk +
+  ending (`pull → roll → still`, `endedBy: still | timeout | skip`) is the seam `__gwHouseBeat` —
+  "ends by itself on the dead car" is a claim about the PLAN, not a stopwatch;
+  `src/pages/intro.ts` keeps the
   audience law and the ONE seen flag (`markPremiereSeen`). `?level=house&room=<id>` re-parks the
   menu camera (presentation only); the family is recorded in `tests/e2e/goto.ts`.
 - `src/camera/house-camera.ts` — camera v1 + the door's wide stance: `menuPose` (the crane parked
   at a room's deck), `homePose` (the SAME crane pulled to frame the whole cross-section — build
-  2's menu camera, pure over the deck bounds), `beatPullPose` (kitchen window → wide), and the
-  run's dwell/leg/dwell hand-offs read off `roomGraph` and the live parcel approvals.
+  2's menu camera, pure over the deck bounds; SINCE FURNISHING it carries the build-view haze,
+  `HOME_HAZE` = 0.018, the ONLY pose that does — the run stays fog-free except the leg's own
+  haze sine, and `beatPullPose` ramps 0 → `HOME_HAZE` with the pull), `beatPullPose` (kitchen
+  window → wide), and the run's dwell/leg/dwell hand-offs read off `roomGraph` and the live parcel
+  approvals. SINCE FURNISHING the page may hand the wrapper `setSolids` — `setCameraSolids`
+  HOUSE-WIDE over the mounted sets — and every pose then answers with its eye pushed clear by
+  `eyeClear` (a pure walk toward the viewer until no leaf box contains it: poses stay functions
+  of plan time, the spike's unfunded house-wide solids item now funded).
+- `src/pages/house-sets.ts` — THE FURNISHING PASS (Lane F1, spec =
+  [[Reference/Evaluation 2026-10-13 art of the house]] §5 mock): `mountHouseSets` mounts all six
+  ratified sets at their decks EXACTLY as their `04`s mount them (`buildGameSet`'s pattern —
+  placement row, then TRANSLATE ONLY by `deck.x`/`deck.alt`; the dressing passes are plain code,
+  they run at any transform — cause A was an ABSENT pass, not a cheap one), under ONE warm key
+  (the World's default white rig is removed; each room's materials ride its own
+  `createLightingRig` fill bands, one house one time of day); `dollhouseCut` culls section-flat
+  backdrop geometry (the mock's bbox rule: > 0.85 m wide/deep or > 0.45 m tall) and the deck wears
+  a painted-wood shelf instead of its floor disc; `doorframe` stands each room's own window —
+  painted-wood posts in the dominant, accent lintel ON the post heads, forward sill plank flush to
+  the shelf top — at the deck centre (the windows are GEOMETRY now; the DOM button is a
+  transparent hit target over the opening); `surfaceHouseTable` pays the boot's T1.2 wood swap the
+  house page never made (the shell's tone with a reduced `fillStrength` — at section altitude the
+  directional fill band alone blew the 20 m platter to flat orange paper; the catch role stays,
+  see [[Modules/render]]); `setHouseFace` is the
+  `SET_TOKENS`-background law. RENDER LAYER ONLY: it arrives after `World.create`, owns no
+  collider, no hashed body — `replay:all` 30/30 and the house's `6caea49b` stay byte-identical
+  with or without the mount, and the downhill e2e is the standing hash-neutrality referee on the
+  house route.
 
 ## The laws it holds
 

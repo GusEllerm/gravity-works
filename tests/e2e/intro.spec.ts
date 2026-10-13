@@ -61,9 +61,15 @@ test('the beat hides the chrome, pulls back from the kitchen window, free-rolls 
   // the beat runs its own stepped world (pull ≈ 1 s, the free-roll to the
   // kitchen crossing ≈ 3.5 s, one still beat) and ENDS on its own — no
   // verdict, no best recorded: the player's first run is the one THEY
-  // release. The 12 s safety timer bounds the wait; the roll ends long
-  // before it.
-  await expect(beatOn).toHaveCount(0, { timeout: 12_000 })
+  // release. The 12 s safety timer bounds the wait; SINCE FURNISHING the
+  // wall clock behind this window includes the furnished boot (two worlds,
+  // six sets each) and a loaded runner stretches SIM time, not the plan —
+  // so the phase walk is read from the `__gwHouseBeat` seam (the plan, the
+  // law) and the wall bound is stated at the page's own timer + boot.
+  await expect(beatOn).toHaveCount(0, { timeout: 20_000 })
+  const witness = await page.evaluate(() => (window as any).__gwHouseBeat())
+  expect(witness.endedBy).toBe('still') // ended on its plan, not the timer
+  expect(witness.phases).toEqual(['pull', 'roll', 'still'])
   await expect(page.locator('#gw-launch')).toBeVisible()
   await expect(page.locator('#gw-house-result')).toBeEmpty()
   // the beat records NOTHING: no house best was minted by watching
@@ -79,6 +85,8 @@ test('a key skips the beat and the front door returns immediately', async ({ pag
   await expect(beatOn).toHaveCount(1)
   await page.keyboard.press('Space')
   await expect(beatOn).toHaveCount(0)
+  const witness = await page.evaluate(() => (window as any).__gwHouseBeat())
+  expect(witness.endedBy).toBe('skip') // the dismissing gesture owns the end
   await expect(page.locator('#gw-launch')).toBeVisible()
   await expect(page.locator('#gw-house-windows section')).toHaveCount(6)
   // the dismissed beat is SEEN: a later bare landing (same storage state)
@@ -93,13 +101,20 @@ test('a key skips the beat and the front door returns immediately', async ({ pag
 test('the beat ends by itself on the dead car (pull + roll + still, no terminal needed)', async ({ page }) => {
   // the free-roll STALLS at ~9 s of sim — well past the beat's own roll
   // end (4.5 s): the beat must end on its plan, not on the physics'
-  // stall-detection. Pull (1 s) + roll (4.5 s) + still (0.5 s) ≈ 6 s.
+  // stall-detection. SINCE FURNISHING the claim is asserted ON THE PLAN
+  // through the `__gwHouseBeat` seam — `endedBy: 'still'` says the beat
+  // ran pull → roll → still and lifted on the still beat; a timer catch
+  // would read `endedBy: 'timeout'`. The wall bound is the page's own
+  // 12 s safety timer plus the furnished boot — frame pacing under a
+  // loaded runner stretches SIM time, which is not the law.
+  test.slow() // 3× budget: the furnished boot on a shared runner
   const beatOn = page.locator('.gw-premiere')
   await page.goto('/?intro=1')
   await expect(beatOn).toHaveCount(1)
-  const t0 = Date.now()
-  await expect(beatOn).toHaveCount(0, { timeout: 11_000 })
-  expect(Date.now() - t0).toBeLessThan(10_000)
+  await expect(beatOn).toHaveCount(0, { timeout: 20_000 })
+  const witness = await page.evaluate(() => (window as any).__gwHouseBeat())
+  expect(witness.endedBy).toBe('still')
+  expect(witness.phases).toEqual(['pull', 'roll', 'still'])
 })
 
 test('reduced motion goes STRAIGHT to the front door, even when forced', async ({ browser }) => {

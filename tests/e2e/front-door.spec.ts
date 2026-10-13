@@ -85,6 +85,10 @@ test.describe('the front door — the bare route is the house', () => {
   })
 
   test('every window is a tab stop with a name that reads the room, and Enter enters', async ({ page }) => {
+    test.slow() // THE FURNISHED BUDGET (Lane F1): every evaluate/keypress on a
+    // six-set page blocks on the frame; on a shared runner that is ~4× the
+    // pre-furnishing cost. The ASSERTIONS are untouched — names, ring,
+    // bytes, Enter; only the wall clock was re-measured.
     await page.addInitScript(seedAllStars())
     await page.goto('/?boot=house')
     await page.waitForFunction(() => typeof (window as any).__gwHouseState === 'function', undefined, { timeout: 60_000 })

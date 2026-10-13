@@ -90,6 +90,8 @@ import {
   type HousePose,
 } from '../camera/house-camera.ts';
 import { SET_TOKENS } from '../render/tokens.ts';
+import { createCarRig, CAR_GROUND_LIFT, CAR_SPIN_DAMP } from '../render/car-rig.ts';
+import { mountHouseSets, setHouseFace } from './house-sets.ts';
 import { loadSave, defaultStorage } from '../save/save.ts';
 import { reducedMotionActive } from '../ui/motion.ts';
 import { recordHouseRun, readHouseBest, RECORDS_HONESTY, type HouseBest } from '../save/records.ts';
@@ -206,6 +208,31 @@ export async function bootHouse(
   // chip rides a flow line below the nav instead of painting over the
   // wordmark at the compact heights (`ui/shell.css`).
   if (home) root.classList.add('gw-home');
+  // THE SKIP EARLY (Lane F1 honesty): the class goes on BEFORE the mounted
+  // boot, so the dismissing gesture must be LISTENING from the same tick —
+  // a key pressed while the two worlds mount skips the beat the moment
+  // they finish, exactly as it skipped it instantly when boot was cheap.
+  let beat: BeatRuntime | null = null;
+  let beatScene: THREE.Scene | null = null;
+  let beatCar: { sync: (alpha: number) => void; dispose: () => void } | null = null;
+  const beatSkip: Array<[string, EventListener]> = [];
+  let beatSkipRequested = false;
+  if (wantBeat) {
+    const skip: EventListener = (ev: Event) => {
+      ev.stopPropagation(); // the dismissing gesture belongs to the beat alone
+      // THE SWALLOW, FINISHED HONEST (h4): the beat swallows the FIRST
+      // gesture — that is the premiere law `src/pages/intro.ts` states —
+      // but the swallow must not COST the door its audio. The gesture is
+      // still live HERE, and it is exactly what `endBeat('skip')` records
+      // (the `skip` verdict IS the gesture fact): the engine, which cannot
+      // exist during the beat, is unlocked AFTER it from this handler
+      // stack — the autoplay policy trusts this exact one.
+      if (beat) endBeat('skip');
+      else beatSkipRequested = true;
+    };
+    beatSkip.push(['pointerdown', skip], ['keydown', skip]);
+    for (const [type, fn] of beatSkip) window.addEventListener(type, fn, true);
+  }
 
   root.innerHTML = '<h1>Gravity Works — the House</h1>';
   const nav = document.createElement('p');
@@ -387,12 +414,86 @@ export async function bootHouse(
   const table = scene.getObjectByName('table');
   if (table instanceof THREE.Mesh) {
     table.scale.set((layout.floor.half[0] * 2) / 6, (layout.floor.half[2] * 2) / 6, 1);
+    // the campaign table is a 6 m plane at the ORIGIN; the house slab is
+    // the frame's platter — scale alone left it centred on x = 0, half of
+    // it off-frame west of the garage (the section's platter wears the
+    // floor's own centre, the collider already does)
+    table.position.x = layout.floor.center[0];
+    table.position.z = layout.floor.center[2];
   }
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio ?? 1));
   renderer.setSize(960, 540, false);
+  // THE ONE KEY casts (cause B): the sets' long soft shadows need the
+  // map the harness always had and the house page never paid for.
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
+  // THE DRESSING DEPTH CUT (the perf law stated): the sets are STATIC, so
+  // the shadow map is rendered ONCE and held — the one dynamic subject
+  // that loses its cast is the car itself (the toon bands keep it lit; the
+  // campaign shell never had cast shadows at all). Per-frame shadow passes
+  // on the section doubled the software-GL cost and blew the specs'
+  // honest budgets; a static-set shadow is the dollhouse's own grammar.
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
   const camera = new THREE.PerspectiveCamera(35, 960 / 540, 0.01, 400);
+
+  // THE SETS ARE MOUNTED (Lane F1, the art note's cause A closed): the six
+  // ratified sets at their decks, the dollhouse cut, the shelves, the
+  // doorframes, the painted-wood table and the ONE warm key — a render
+  // layer over the SAME world: no collider, no hashed body, the
+  // `6caea49b` receipt byte-identical with or without this line.
+  const houseSets = await mountHouseSets(scene, layout);
+  // THE FACE: the cross-section wears the kitchen's token background (the
+  // campaign shell reads its mounted set's `background`; six sets means
+  // the house reads the room the crane is parked at — applyIdlePose).
+  setHouseFace(scene, fog, home ? null : 'porch');
+
+  // THE HERO CAR (the replay/share precedent): the ratified car-a rig
+  // rides the pose the physics already reports; the World's red proxy box
+  // retires at the door (hidden, its transforms still written, exactly
+  // as the shell and the film path mount it — RENDER LAYER ONLY, the
+  // wheel spin a render-side omega read off on-screen motion, never a
+  // physics drive). Mounted per SCENE (the page's world; the beat gets
+  // its own rig for its own world, disposed with the beat).
+  function attachCarRig(w: World, target: THREE.Scene): { sync: (alpha: number) => void; dispose: () => void } {
+    const rig = createCarRig(SET_TOKENS.kitchen);
+    rig.setKeyLight(houseSets.key.color.getHex(), 1.3);
+    const poseGroup = new THREE.Group();
+    poseGroup.name = 'car-pose';
+    poseGroup.add(rig.group);
+    rig.group.position.y = -CAR_GROUND_LIFT;
+    target.add(poseGroup);
+    if (w.carMesh) w.carMesh.visible = false;
+    let wheelAngle = 0;
+    let prev = { ...w.state().car.pos };
+    const sync = (alpha: number): void => {
+      const a = Math.min(1, Math.max(0, alpha));
+      const pose = w.carPose(a);
+      // the hidden proxy keeps its transforms written (the shell's probe
+      // law): the box is retired from the SCREEN, not from the graph
+      if (w.carMesh) {
+        w.carMesh.position.set(pose.pos.x, pose.pos.y, pose.pos.z);
+        w.carMesh.quaternion.set(pose.quat.x, pose.quat.y, pose.quat.z, pose.quat.w);
+      }
+      poseGroup.position.set(pose.pos.x, pose.pos.y, pose.pos.z);
+      poseGroup.quaternion.set(pose.quat.x, pose.quat.y, pose.quat.z, pose.quat.w);
+      const travelled = Math.hypot(
+        pose.pos.x - prev.x,
+        pose.pos.y - prev.y,
+        pose.pos.z - prev.z,
+      );
+      // cosmetic omega, arc length over (radius × SPIN_DAMP) — the same
+      // class of read the share tape integrates, never a physics input
+      wheelAngle += travelled / (rig.wheelRadius * CAR_SPIN_DAMP);
+      for (const wheel of rig.wheels) wheel.rotation.z = wheelAngle;
+      prev = { x: pose.pos.x, y: pose.pos.y, z: pose.pos.z };
+    };
+    sync(0);
+    return { sync, dispose: () => rig.dispose() };
+  }
+  const pageCar = attachCarRig(world, scene);
 
   // the menu camera: the crane PARKED — at the porch on the addressed
   // house page, WIDE across the cross-section on the front door (or at
@@ -403,6 +504,9 @@ export async function bootHouse(
       ? (roomParam as FrameRoom)
       : null;
   const houseCam = new HouseCamera(layout);
+  // THE SOLIDS, HOUSE-WIDE (cause D): the six mounted sets' leaf boxes —
+  // the eye stops floating inside the rooms it is meant to be looking at.
+  houseCam.setSolids(houseSets.solids);
   const parked: HousePose = menuRoom ? menuPose(layout, menuRoom) : menuPose(layout, 'porch');
   const homePoseLayout = homePose(layout, 35, 960 / 540);
   let poseTarget: HousePose = home ? (menuRoom ? menuPose(layout, menuRoom) : homePoseLayout) : parked;
@@ -468,6 +572,7 @@ export async function bootHouse(
     camera.position.set(poseTarget.eye[0], poseTarget.eye[1], poseTarget.eye[2]);
     camera.lookAt(poseTarget.target[0], poseTarget.target[1], poseTarget.target[2]);
     if (fog) fog.density = poseTarget.fog;
+    setHouseFace(scene, fog, openRoom); // a parked crane wears its room's face
     placeWindows();
   }
 
@@ -483,7 +588,7 @@ export async function bootHouse(
     const canvasBox = canvas.getBoundingClientRect();
     for (const w of winEls) {
       const deck = layout.decks.find((d) => d.room === w.room)!;
-      proj.set(deck.center[0], deck.center[1] + 0.45, deck.center[2]).project(camera);
+      proj.set(deck.center[0], deck.center[1] + 0.015, deck.center[2]).project(camera);
       w.el.style.left = `${canvasBox.left - stageBox.left + (proj.x * 0.5 + 0.5) * canvasBox.width}px`;
       w.el.style.top = `${canvasBox.top - stageBox.top + (-proj.y * 0.5 + 0.5) * canvasBox.height}px`;
     }
@@ -642,9 +747,12 @@ export async function bootHouse(
     timer: number;
     active: boolean;
   }
-  let beat: BeatRuntime | null = null;
-  let beatScene: THREE.Scene | null = null;
-  const beatSkip: Array<[string, EventListener]> = [];
+  // THE BEAT'S OWN WITNESS (Lane F1): how the beat ended and the phases it
+  // walked — the e2e law (“ends by itself on the dead car”) is a CLAIM
+  // ABOUT THE PLAN, not a stopwatch, so the specs read the seam, not the
+  // wall (frame pacing under a loaded runner is not the law)
+  const beatPhases: string[] = ['pull'];
+  let beatEnd: { endedBy: 'still' | 'timeout' | 'skip'; phases: string[] } | null = null;
   if (wantBeat) {
     const beatWorld = await World.create(HOUSE_BEAT_LEVEL, HOUSE.parBuild(), { visuals: true });
     beatScene = beatWorld.scene!;
@@ -653,7 +761,15 @@ export async function bootHouse(
     const bTable = beatScene.getObjectByName('table');
     if (bTable instanceof THREE.Mesh) {
       bTable.scale.set((layout.floor.half[0] * 2) / 6, (layout.floor.half[2] * 2) / 6, 1);
+      bTable.position.x = layout.floor.center[0];
+      bTable.position.z = layout.floor.center[2];
     }
+    // THE SETS ARE MOUNTED for the beat too — the premise beat is the
+    // journalist's first screenshot and it wears the same world (fresh
+    // instances: `beat.world.dispose()` frees them with its own scene).
+    const beatSets = await mountHouseSets(beatScene, layout);
+    setHouseFace(beatScene, fog, null);
+    beatCar = attachCarRig(beatWorld, beatScene);
     beat = {
       world: beatWorld,
       cam: new HouseCamera(layout),
@@ -663,36 +779,33 @@ export async function bootHouse(
       prev: performance.now(),
       acc: 0,
       stillAt: 0,
-      timer: window.setTimeout(() => endBeat(), HOUSE_BEAT.timeoutMs),
+      timer: window.setTimeout(() => endBeat('timeout'), HOUSE_BEAT.timeoutMs),
       active: true,
     };
-    const skip: EventListener = (ev: Event) => {
-      ev.stopPropagation(); // the dismissing gesture belongs to the beat alone
-      // THE SWALLOW, FINISHED HONEST (h4): the beat swallows the FIRST
-      // gesture — that is the premiere law `src/pages/intro.ts` states —
-      // but the swallow must not COST the door its audio. The gesture is
-      // still live HERE, so endBeat replays it into the unlock path (the
-      // autoplay policy trusts this exact handler stack); the beat stays
-      // silent BY CONSTRUCTION (the engine does not exist yet) and
-      // unlocks AFTER itself.
-      endBeat(true);
-    };
-    beatSkip.push(['pointerdown', skip], ['keydown', skip]);
-    for (const [type, fn] of beatSkip) window.addEventListener(type, fn, true);
+    beat.cam.setSolids(beatSets.solids);
+    if (beatSkipRequested) endBeat('skip'); // a press DURING the mounted boot
   }
 
-  function endBeat(viaGesture = false): void {
+  function endBeat(endedBy: 'still' | 'timeout' | 'skip' = 'skip'): void {
     if (!beat?.active) return;
     beat.active = false;
+    beatEnd = { endedBy, phases: [...beatPhases] };
     clearTimeout(beat.timer);
     for (const [type, fn] of beatSkip) window.removeEventListener(type, fn, true);
     root.classList.remove('gw-premiere');
     markPremiereSeen(); // ONE flag, one source (intro.ts owns the key)
     beat.world.dispose(); // the beat's world is presentation: freed, never recorded
+    beatCar?.dispose(); // its rig too — the page's rig rides the page's world
+    beatCar = null;
     beat = null;
     beatScene = null;
     applyIdlePose();
-    mountTheDoorSound(viaGesture); // the engine exists only AFTER the beat
+    // THE DOOR OPENS AFTER THE FILM (h4): a beat ended by the player's own
+    // gesture (`skip` IS the gesture fact) replays that live gesture into
+    // the unlock path; a beat that ended by itself unlocks normally, and
+    // the engine NEVER existed while the film ran.
+    mountTheDoorSound(endedBy === 'skip');
+    renderer.shadowMap.needsUpdate = true; // the page's OWN static map, re-baked once
     renderer.render(scene, camera);
   }
 
@@ -705,8 +818,10 @@ export async function bootHouse(
       const p = beatPullPose(layout, el, HOUSE_BEAT.pullS, 35, 960 / 540);
       camera.position.set(p.eye[0], p.eye[1], p.eye[2]);
       camera.lookAt(p.target[0], p.target[1], p.target[2]);
+      fog.density = p.fog; // the build-view breath rides the pull in
       if (el >= HOUSE_BEAT.pullS) {
         beat.phase = 'roll';
+        beatPhases.push('roll');
         beat.acc = 0;
         beat.world.launch();
         beat.cam.approved('garage', 0); // the eye starts where the car is
@@ -735,18 +850,21 @@ export async function bootHouse(
         beat.acc -= FIXED_DT;
       }
       beat.cam.apply(camera, w.time, fog);
+      beatCar?.sync(beat.acc / FIXED_DT);
       if (w.status !== 'running' || w.time >= HOUSE_BEAT.rollEndS) {
         beat.phase = 'still';
+        beatPhases.push('still');
         beat.stillAt = now;
       }
       return;
     }
-    if (now - beat.stillAt >= HOUSE_BEAT.stillS * 1000) endBeat();
+    if (now - beat.stillAt >= HOUSE_BEAT.stillS * 1000) endBeat('still');
   }
 
   let last = performance.now();
   let accum = 0;
   let ended = false;
+  let beatSceneFirst = true; // the beat scene's once-baked static shadow map
   // THE ROLL VOICE'S TWO FACTS (the same READ-ONLY pair `bootGame` feeds):
   // the car's on-screen speed (position delta over wall dt, throttled to
   // <=20 Hz by the engine) and how visibly inverted it is. The engine
@@ -778,6 +896,11 @@ export async function bootHouse(
     if (!document.hidden) {
       if (beat?.active) {
         stepBeat(now);
+        if (beatSceneFirst) {
+          // the beat's static shadow map bakes on its first frame
+          renderer.shadowMap.needsUpdate = true;
+          beatSceneFirst = false;
+        }
         renderer.render(beatScene ?? scene, camera);
         requestAnimationFrame(frame);
         return;
@@ -793,6 +916,7 @@ export async function bootHouse(
       if (world.status !== 'idle') {
         ghost.sync(world.time);
         houseCam.apply(camera, world.time, fog);
+        pageCar.sync(accum / FIXED_DT); // the sedan rides the same poses
       } else if (home) {
         applyIdlePose(); // the parked crane and its windows, kept aligned
       }
@@ -821,6 +945,9 @@ export async function bootHouse(
     ghostEnabled: ghost.state().enabled,
   });
   (window as unknown as Record<string, unknown>).__gwHouseState = state;
+  (window as unknown as Record<string, unknown>).__gwHouseScene = () => scene; // the render-layer probe seam (visuals-only debugging, same family as the pose seam below)
+  (window as unknown as Record<string, unknown>).__gwHouseBeat = () =>
+    beat ? { phase: beat.phase, phases: [...beatPhases], endedBy: null } : beatEnd;
   (window as unknown as Record<string, unknown>).__gwHouseCameraPose = () =>
     home ? poseTarget : world.status === 'idle' && world.stepCount === 0 ? parked : houseCam.pose(world.time);
   requestAnimationFrame(frame);
