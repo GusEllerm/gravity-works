@@ -9,7 +9,7 @@
  */
 import { describe, expect, test } from 'vitest';
 import { windowAriaName, windowSillLine, HOUSE_BEAT, HOUSE_BEAT_LEVEL } from '../../src/pages/house.ts';
-import { homePose, beatPullPose, menuPose } from '../../src/camera/house-camera.ts';
+import { homePose, beatPullPose, menuPose, HOME_HAZE } from '../../src/camera/house-camera.ts';
 import { HOUSE } from '../../src/world/levels/house.level.ts';
 import { houseLayout } from '../../src/world/house-frame.ts';
 
@@ -41,7 +41,13 @@ describe('the parked wide crane — the menu camera the door projects through', 
       expect(dy).toBeLessThan(z * Math.tan(vFov / 2));
     }
     expect(p.eye[2]).toBeGreaterThan(8); // wide, not a porch close-up
-    expect(p.fog).toBe(0);
+    // THE BUILD-VIEW BREATH rides the HOME pose ONLY (Furnish law): the
+    // void gets air where a stranger sits; menuPose stays clear (the
+    // dwell's face, house.test) and the run's footage stays fog-free
+    expect(p.fog).toBe(HOME_HAZE);
+    expect(HOME_HAZE).toBeGreaterThan(0);
+    expect(HOME_HAZE).toBeLessThan(0.02); // the art note's ≤ 0.02 band
+    expect(menuPose(layout, 'kitchen').fog).toBe(0);
   });
   test('beatPullPose starts AT the kitchen window and ends at the wide house', () => {
     const from = menuPose(layout, 'kitchen');
@@ -53,6 +59,12 @@ describe('the parked wide crane — the menu camera the door projects through', 
     const mid = beatPullPose(layout, HOUSE_BEAT.pullS / 2, HOUSE_BEAT.pullS, 35, 960 / 540);
     expect(mid.eye[2]).toBeGreaterThan(p0.eye[2]); // it only ever pulls back
     expect(mid.eye[2]).toBeLessThan(p1.eye[2]);
+    // the haze breathes IN with the pull (Furnish law): clear at the
+    // kitchen window, the home breath at the wide end, monotone between
+    expect(p0.fog).toBe(0);
+    expect(p1.fog).toBe(HOME_HAZE);
+    expect(mid.fog).toBeGreaterThan(0);
+    expect(mid.fog).toBeLessThan(HOME_HAZE);
   });
 });
 
